@@ -2,3 +2,4 @@ data/*.csv
 data/*.xls
 data/*.xlsx
 causal_testing_framework
+.idea
