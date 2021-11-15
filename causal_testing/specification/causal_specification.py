@@ -1,5 +1,6 @@
 from abc import ABC
 import networkx as nx
+import numpy as np
 
 
 class CausalDAG(nx.DiGraph):
@@ -40,8 +41,14 @@ class CausalDAG(nx.DiGraph):
         return f'Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}'
 
 
-class Scenario(ABC):
-    pass
+class Scenario(dict):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__dict__ = self
+
+    def add_constraint(self, input_variable, constraint):
+        self[input_variable] = constraint
 
 
 class CausalSpecification(ABC):
@@ -49,3 +56,19 @@ class CausalSpecification(ABC):
     def __init__(self, scenario: Scenario, causal_dag: CausalDAG):
         self.scenario = scenario
         self.causal_dag = causal_dag
+
+    def __str__(self):
+        return f'Scenario: {self.scenario}\nCausal DAG:\n{self.causal_dag}'
+
+
+if __name__ == "__main__":
+    scenario = Scenario({"Vaccine": "Pfizer"})
+    scenario.add_constraint("Age", np.random.normal(40, 10))
+
+    causal_dag = CausalDAG()
+    causal_dag.add_edge("Vaccine", "Cumulative Infections")
+    causal_dag.add_edge("Age", "Vaccine")
+    causal_dag.add_edge("Age", "Cumulative Infections")
+
+    causal_specification = CausalSpecification(scenario, causal_dag)
+    print(causal_specification)
