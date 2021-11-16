@@ -2,7 +2,8 @@
 
 Causal testing is a causal inference-driven framework for functional black-box testing. But what does this mean?
 
-![Causal Testing Workflow](images/workflow.pdf)
+![Causal Testing Workflow](images/workflow.png)
+
 ## Causal Inference
 - Causal inference (CI) is a family of statistical techniques designed to quanitfy and establish **causal** relationships in data. In contrast to purely statistical techniques that are driven by associations in data, CI encorporates knowledge about the data-generating mechanisms behind relationships in data to derive causal conclusions. 
 - One of the key advantages of CI is that it is possible to answer causal questions using **observational data**. That is, data which has been passively observed rather than collected from an experiment and, therefore, may contain all kinds of bias. In a testing context, we would like to leverage this advantage to test causal relationships in software without having to run costly experiments.
