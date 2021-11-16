@@ -15,7 +15,6 @@ class CausalDAG(nx.DiGraph):
         else:
             self.graph = nx.DiGraph()
 
-        # Raise an exception if the DAG contains a cycle
         if not self.is_acyclic():
             raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
@@ -42,6 +41,9 @@ class CausalDAG(nx.DiGraph):
 
 
 class Scenario(dict):
+    """ Given a system with X distinct inputs, a scenario is a series of constraints placed over a subset of these
+    inputs that characterises some use-case of the system-under-test.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,6 +51,9 @@ class Scenario(dict):
 
     def add_constraint(self, input_variable, constraint):
         self[input_variable] = constraint
+
+    def add_constraints(self, constraints_dict):
+        self.update(constraints_dict)
 
 
 class CausalSpecification(ABC):

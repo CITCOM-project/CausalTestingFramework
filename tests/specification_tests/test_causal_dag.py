@@ -29,7 +29,7 @@ class TestCausalDAG(unittest.TestCase):
         assert list(causal_dag.graph.nodes) == [] and list(causal_dag.graph.edges) == []
 
     def tearDown(self) -> None:
-        os.remove('temp/dag.dot')
+        os.remove(self.dag_dot_path)
 
 
 if __name__ == '__main__':
