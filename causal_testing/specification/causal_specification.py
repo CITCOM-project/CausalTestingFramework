@@ -1,6 +1,6 @@
-from abc import ABC
+from abc import ABC, abstractmethod
+from causal_testing.specification.constraint import NormalDistribution
 import networkx as nx
-import numpy as np
 
 
 class CausalDAG(nx.DiGraph):
@@ -68,7 +68,8 @@ class CausalSpecification(ABC):
 
 if __name__ == "__main__":
     scenario = Scenario({"Vaccine": "Pfizer"})
-    scenario.add_constraint("Age", np.random.normal(40, 10))
+    age_constraint = NormalDistribution(40, 10)
+    scenario.add_constraint("Age", age_constraint)
 
     causal_dag = CausalDAG()
     causal_dag.add_edge("Vaccine", "Cumulative Infections")
