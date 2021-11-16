@@ -4,7 +4,7 @@ from causal_testing.specification.causal_specification import Scenario
 from causal_testing.specification.constraint import UniformDistribution, AbsoluteValue
 
 
-class Observational(DataCollector):
+class ObservationalDataCollector(DataCollector):
 
     def __init__(self, scenario: Scenario):
         super().__init__()

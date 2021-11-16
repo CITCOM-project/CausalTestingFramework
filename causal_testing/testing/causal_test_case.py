@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from intervention import Intervention
 
 
@@ -40,6 +40,10 @@ class CausalTestResult(ABC):
         if self.confidence_level:
             confidence_str += f"Confidence level: {self.confidence_level}"
         return base_str + confidence_str
+
+    def apply_test_oracle_procedure(self):
+        """ Based on the results of the causal test case, determine whether the test passes or fails. """
+        pass
 
 
 if __name__ == "__main__":

@@ -5,6 +5,24 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 
 
 class CausalTestEngine:
+    """
+    Overarching workflow for Causal Testing. The CausalTestEngine proceeds in four steps.
+    (1) Given a causal test case, specification, and (optionally) observational data, compute the causal estimand
+        that, once estimated, yields the desired causal effect. This is essentially the recipe for a statistical
+        procedure that, according to the assumptions encoded in the causal specification, estimates the casual effect
+        of interest.
+    (2) If using observational data, check whether the data is sufficient for estimating the causal effect of interest.
+        If the data is insufficient, identify the missing data to guide the user towards un-exercised areas of the
+        system-under-test. Else, if generating experimental data, run the model in the experimental conditions required
+        to isolate the causal effect of interest.
+    (3) Using the gathered data (whether observational or experimental), implement the statistical procedure prescribed
+        by the causal estimand. For example, apply a linear regression model which includes a term for the set of
+        variables which block (d-separate) all back-door paths. Return the causal estimate obtained following this
+        procedure and, optionally, (depending on the estimator used) confidence intervals for this estimate. These are
+        provided as an instance of the CausalTestResult class.
+    (4) Define a test oracle procedure which uses the causal test results to determine whether the intervention has
+        had the anticipated causal effect. This should assign a pass/fail value to the CausalTestResult.
+    """
 
     def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification,
                  observational_data: pd.DataFrame = None):
@@ -30,7 +48,10 @@ class CausalTestEngine:
             pass  # Execute the model to gather the data: this should use the experimental data collection class
         causal_estimate = self._compute_causal_estimate(causal_estimand)
         confidence_intervals = self._compute_confidence_intervals(confidence_level=.05)
-        return CausalTestResult(causal_estimand, causal_estimate, confidence_intervals, confidence_level=.05)
+        causal_test_result = CausalTestResult(causal_estimand, causal_estimate, confidence_intervals,
+                                              confidence_level=.05)
+        causal_test_result.apply_test_oracle_procedure()
+        return causal_test_result
 
     def _data_is_sufficient(self, causal_estimand):
         """

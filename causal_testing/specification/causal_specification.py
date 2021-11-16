@@ -1,12 +1,14 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from causal_testing.specification.constraint import NormalDistribution
 import networkx as nx
 
 
 class CausalDAG(nx.DiGraph):
-    """ A causal DAG is a directed acyclic graph in which nodes represent random variables and edges represent causality
-        between a pair of random variables. We implement a CausalDAG as a networkx DiGraph with an additional check that
-        ensures it is acyclic. A CausalDAG must be specified as a dot file. """
+    """
+    A causal DAG is a directed acyclic graph in which nodes represent random variables and edges represent causality
+    between a pair of random variables. We implement a CausalDAG as a networkx DiGraph with an additional check that
+    ensures it is acyclic. A CausalDAG must be specified as a dot file.
+    """
 
     def __init__(self, dot_path=None, **attr):
         super().__init__(**attr)
