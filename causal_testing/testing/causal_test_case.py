@@ -7,38 +7,18 @@ class CausalTestCase(ABC):
     A causal test case is a triple (X, Delta, Y), where X is an input configuration, Delta is an intervention, and
     Y is the expected causal effect on a particular output. The goal of a causal test case is to test whether the
     intervention Delta made to the input configuration X causes the model-under-test to produce the expected change
-    in Y. To this end, a causal test case will use causal inference and causal knowledge (from the causal specification)
-    to design a statistical experiment which can isolate the causal effect of interest.
+    in Y.
     """
 
-    def __init__(self, input_configuration: dict, intervention: Intervention, expected_causal_effect: float):
-        self.input_configuration = input_configuration
+    def __init__(self, input_configuration: dict, intervention: Intervention, expected_causal_effect: {str: float}):
+        self.control_input_configuration = input_configuration
         self.intervention = intervention
+        self.treatment_input_configuration = intervention.apply(self.control_input_configuration)
         self.expected_causal_effect = expected_causal_effect
-        super().__init__()
 
-    @abstractmethod
-    def apply_intervention(self):
-        """
-        A causal test case should apply the intervention to the input configuration, creating a treated input
-        configuration.
-        """
-        pass
-
-    @abstractmethod
-    def collect_data(self):
-        """
-        Collect data for causal testing. The user can do this in two ways: (1) experimental - run the model to
-        gather the data (running an RCT); (2) observational - the user provides existing data from previous model
-        runs. In the observational case, the data should be filtered to ensure it is valid for the given modelling
-        scenario.
-        """
-
-    @abstractmethod
-    def estimate_causal_effect(self):
-        """
-        A causal test case should estimate the causal effect of the intervention on the outcome of interest.
-        """
+    def __str__(self):
+        return f'Applying {self.intervention} to {self.control_input_configuration} should cause the following ' \
+               f'changes: {self.expected_causal_effect}.'
 
 
 class CausalTestResult(ABC):

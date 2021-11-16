@@ -16,7 +16,7 @@ class Intervention(ABC):
         self.treatment_values = treatment_values
 
     @abstractmethod
-    def modify_input_configuration(self, input_configuration: dict):
+    def apply(self, input_configuration: dict):
         """
         Take an input configuration and modify it in a particular way. It is the effect of this change which the
         causal test case will focus on.
