@@ -19,10 +19,15 @@ class CausalTestEngine:
         :return: A CausalTestResult if data is sufficient, otherwise inform user of missing data.
         """
         causal_estimand = self._compute_causal_estimand()
-        if not self._data_is_sufficient(causal_estimand):
-            data_to_collect = self._compute_data_to_collect(causal_estimand)
-            # TODO: Replace with custom exception
-            raise Exception(f'Data is insufficient for estimating the estimand. User should collect {data_to_collect}.')
+        if hasattr(self, 'observational_df'):
+            # Dealing with observational data, check if it is sufficient
+            if not self._data_is_sufficient(causal_estimand):
+                data_to_collect = self._compute_data_to_collect(causal_estimand)
+                # TODO: Replace with custom exception
+                raise Exception(f'Data is insufficient for estimating the estimand. '
+                                f'User should collect {data_to_collect}.')
+        else:
+            pass  # Execute the model to gather the data: this should use the experimental data collection class
         causal_estimate = self._compute_causal_estimate(causal_estimand)
         confidence_intervals = self._compute_confidence_intervals(confidence_level=.05)
         return CausalTestResult(causal_estimand, causal_estimate, confidence_intervals, confidence_level=.05)
