@@ -55,7 +55,7 @@ class CausalTestEngine:
         confidence_intervals = self._compute_confidence_intervals(confidence_level=.05)
         causal_test_result = CausalTestResult(causal_estimand, causal_estimate, confidence_intervals,
                                               confidence_level=.05)
-        causal_test_result.apply_test_oracle_procedure()
+        causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         return causal_test_result
 
     def _data_is_sufficient(self, causal_estimand) -> bool:

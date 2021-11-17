@@ -1,8 +1,7 @@
-from abc import ABC
 from intervention import Intervention
 
 
-class CausalTestCase(ABC):
+class CausalTestCase:
     """
     A causal test case is a triple (X, Delta, Y), where X is an input configuration, Delta is an intervention, and
     Y is the expected causal effect on a particular output. The goal of a causal test case is to test whether the
@@ -11,6 +10,16 @@ class CausalTestCase(ABC):
     """
 
     def __init__(self, input_configuration: dict, intervention: Intervention, expected_causal_effect: {str: float}):
+        """
+        When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
+        create two distinct input configurations: a control input configuration and a treatment input configuration.
+        The former is the input configuration before applying the intervention and the latter is the input configuration
+        after applying the intervention.
+
+        :param input_configuration:
+        :param intervention:
+        :param expected_causal_effect:
+        """
         self.control_input_configuration = input_configuration
         self.intervention = intervention
         self.treatment_input_configuration = intervention.apply(self.control_input_configuration)
@@ -21,7 +30,7 @@ class CausalTestCase(ABC):
                f'changes: {self.expected_causal_effect}.'
 
 
-class CausalTestResult(ABC):
+class CausalTestResult:
     """ A container to hold the results of a causal test case. Every causal test case provides a point estimate of
         the ATE for a particular estimand. Some but not all estimators can provide confidence intervals. """
 
@@ -41,9 +50,12 @@ class CausalTestResult(ABC):
             confidence_str += f"Confidence level: {self.confidence_level}"
         return base_str + confidence_str
 
-    def apply_test_oracle_procedure(self):
-        """ Based on the results of the causal test case, determine whether the test passes or fails. """
-        pass
+    def apply_test_oracle_procedure(self, expected_causal_effect, *args, **kwargs):
+        """ Based on the results of the causal test case, determine whether the test passes or fails. By default, we
+            check whether the casual estimate is equal to the expected causal effect. However, a user may override
+            this method to define precise oracles. """
+        # TODO: Work out the best way to implement test oracle procedure. A test oracle object?
+        return self.point_estimate == expected_causal_effect
 
 
 if __name__ == "__main__":
