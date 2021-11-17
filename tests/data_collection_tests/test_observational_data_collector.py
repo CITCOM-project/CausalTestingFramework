@@ -1,10 +1,9 @@
 import unittest
 import os
 import pandas as pd
-import numpy as np
-from causal_testing.data_collection.observational_data_collector import ObservationalDataCollector
+from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import Scenario
-from causal_testing.specification.constraint import NormalDistribution, UniformDistribution, AbsoluteValue
+from causal_testing.specification.constraint import UniformDistribution, AbsoluteValue
 
 
 class TestObservationalDataCollector(unittest.TestCase):
@@ -20,8 +19,8 @@ class TestObservationalDataCollector(unittest.TestCase):
         scenario = Scenario({"X1": UniformDistribution(1, 4), "X2": AbsoluteValue(7),
                              "X3": UniformDistribution(10, 40)})
         observational_data_collector = ObservationalDataCollector(scenario)
-        observational_data_collector.collect_data(self.observational_df_path)
-        assert not observational_data_collector.df.empty
+        df = observational_data_collector.collect_data(self.observational_df_path)
+        assert not df.empty
 
     def test_not_all_variables_in_data(self):
         scenario = Scenario({"X1": UniformDistribution(1, 4), "X2": AbsoluteValue(7),

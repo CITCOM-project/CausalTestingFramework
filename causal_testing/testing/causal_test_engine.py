@@ -1,5 +1,5 @@
 import pandas as pd
-
+from causal_testing.data_collection.data_collector import ExperimentalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase, CausalTestResult
 from causal_testing.specification.causal_specification import CausalSpecification
 
@@ -31,7 +31,7 @@ class CausalTestEngine:
         if observational_data:
             self.observational_df = observational_data
 
-    def execute_test(self):
+    def execute_test(self) -> CausalTestResult:
         """
         Execute the causal test
         :return: A CausalTestResult if data is sufficient, otherwise inform user of missing data.
@@ -44,8 +44,13 @@ class CausalTestEngine:
                 # TODO: Replace with custom exception
                 raise Exception(f'Data is insufficient for estimating the estimand. '
                                 f'User should collect {data_to_collect}.')
+            else:
+                execution_df = self.observational_df
         else:
-            pass  # Execute the model to gather the data: this should use the experimental data collection class
+            experimental_data_collector = ExperimentalDataCollector(self.causal_test_case.control_input_configuration,
+                                                                    self.causal_test_case.treatment_input_configuration,
+                                                                    n_repeats=1)
+            execution_df = experimental_data_collector.collect_data()
         causal_estimate = self._compute_causal_estimate(causal_estimand)
         confidence_intervals = self._compute_confidence_intervals(confidence_level=.05)
         causal_test_result = CausalTestResult(causal_estimand, causal_estimate, confidence_intervals,
@@ -53,7 +58,7 @@ class CausalTestEngine:
         causal_test_result.apply_test_oracle_procedure()
         return causal_test_result
 
-    def _data_is_sufficient(self, causal_estimand):
+    def _data_is_sufficient(self, causal_estimand) -> bool:
         """
         If using observational data, check whether the data contains necessary data to compute the casual estimand.
         :return:
@@ -62,7 +67,7 @@ class CausalTestEngine:
         """
         pass
 
-    def _compute_causal_estimand(self):
+    def _compute_causal_estimand(self) -> str:
         """
         Compute the causal estimand for the current causal test case. This step checks the structure of the causal DAG
         and identifies any open back-door paths between the treatment and outcome variable. If any back-door paths
@@ -74,7 +79,7 @@ class CausalTestEngine:
         """
         pass
 
-    def _compute_data_to_collect(self, causal_estimand):
+    def _compute_data_to_collect(self, causal_estimand) -> [str]:
         """
         If the current data is insufficient to estimate the causal estimand, this method will compute the set of
         variables that are currently missing data and preventing estimation. This can be used to guide execution of
@@ -84,7 +89,7 @@ class CausalTestEngine:
         """
         pass
 
-    def _compute_causal_estimate(self, causal_estimand):
+    def _compute_causal_estimate(self, causal_estimand) -> float:
         """
         Given a causal estimand, compute the causal estimate from the available data.
         :param causal_estimand: The casual estimand to be estimated.
@@ -93,7 +98,7 @@ class CausalTestEngine:
         """
         pass
 
-    def _compute_confidence_intervals(self, confidence_level):
+    def _compute_confidence_intervals(self, confidence_level) -> [float, float]:
         """
         Compute the confidence intervals at the specified confidence level for the causal estimate. This gives the user
         and indication of the precision/reliability of the causal estimate. If this is too low, it indicates that more
