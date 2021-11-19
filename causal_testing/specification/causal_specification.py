@@ -1,6 +1,7 @@
 from abc import ABC
 from causal_testing.specification.constraint import Constraint, NormalDistribution
 from typing import Union
+from itertools import product
 import networkx as nx
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
@@ -55,8 +56,8 @@ class CausalDAG(nx.DiGraph):
     def get_proper_backdoor_graph(self, treatments: [str], outcomes: [str]) -> 'CausalDAG':
         """
         Convert the causal DAG to a proper back-door graph. A proper back-door graph of a causal DAG is obtained by
-        removing the first edge of every proper causal path from X to Y. A proper causal path from X to Y is a path
-        of directed edges that starts from X and ends in Y.
+        removing the first edge of every proper causal path from treatments to outcomes. A proper causal path from
+        X to Y is a path of directed edges that starts from X and ends in Y.
 
         Reference: (Separators and adjustment sets in causal graphs: Complete criteria and an algorithmic framework,
         Zander et al.,  2019, Definition 3, p.15)
@@ -65,7 +66,23 @@ class CausalDAG(nx.DiGraph):
         :param outcomes: A list of outcomes.
         :return: A CausalDAG corresponding to the proper back-door graph.
         """
-        pass
+        for var in treatments + outcomes:
+            if var not in self.graph.nodes:
+                raise IndexError(f'{var} not a node in Causal DAG.')
+
+        proper_backdoor_graph = self.copy()
+        for (treatment, outcome) in product(treatments, outcomes):
+            # PCP = {Descendants*(X) \ X} intersect {Ancestors(Y)}, where Descendants*(X) is descendants of X in
+            # a back-door graph (a DAG with incoming edges to X removed).
+            treatment_descendants = nx.descendants(proper_backdoor_graph.graph, treatment).difference(treatment)
+            outcome_ancestors = nx.ancestors(proper_backdoor_graph.graph, outcome)
+            nodes_on_proper_causal_path = treatment_descendants.intersection(outcome_ancestors)
+            neighbour_to_remove_edge_to = set(proper_backdoor_graph.graph.neighbors(treatment)).intersection(
+                nodes_on_proper_causal_path).pop()
+            if neighbour_to_remove_edge_to not in treatments:  # See Fig. 8 in referenced paper
+                proper_backdoor_graph.graph.remove_edge(treatment, neighbour_to_remove_edge_to)
+        return proper_backdoor_graph
+
 
     def minimal_d_separator(self, treatments: [str], outcomes: [str]) -> [str]:
         """
