@@ -50,7 +50,7 @@ class CausalTestResult:
             confidence_str += f"Confidence level: {self.confidence_level}"
         return base_str + confidence_str
 
-    def apply_test_oracle_procedure(self, expected_causal_effect, *args, **kwargs):
+    def apply_test_oracle_procedure(self, expected_causal_effect, *args, **kwargs) -> bool:
         """ Based on the results of the causal test case, determine whether the test passes or fails. By default, we
             check whether the casual estimate is equal to the expected causal effect. However, a user may override
             this method to define precise oracles. """
