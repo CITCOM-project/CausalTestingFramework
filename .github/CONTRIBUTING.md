@@ -18,17 +18,17 @@ In order to directly contribute to the Causal Testing Framework, the following s
       your main branch with `causal_testing_framework:main`.
 2. Create a new [branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository)
    from the latest main in your fork. 
-   - This branch should have a name which describes the feature which is changed or added.
+   - This branch should have a name that describes the feature which is changed or added.
    - Work directly onto this branch, making sure that you follow our style guidelines outlined below.
 3. Open a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) 
    from your branch to the main branch.
    - Explain the changes made or feature added.
    - [Request a review](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review).
-   - The pull request will have to pass or [continuous integration (CI) checks]() and receive an 
+   - The pull request will have to pass our [continuous integration (CI) checks](#continuous-integration-ci) and receive an 
      approving review, which will be determined by our [review guidelines]().
      
 ### Continuous Integration (CI)
-Upon pushing or pulling, the following GitHub will be triggered:
+Upon pushing or pulling, the following GitHub actions will be triggered:
     - Build: install Python dependencies
     - Linting: check style guidelines have been met.
     - Testing: run unit and regression tests.
