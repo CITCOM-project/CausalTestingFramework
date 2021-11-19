@@ -51,14 +51,14 @@ class CausalTestEngine:
                                                                     self.causal_test_case.treatment_input_configuration,
                                                                     n_repeats=1)
             execution_df = experimental_data_collector.collect_data()
-        causal_estimate = self._compute_causal_estimate(causal_estimand)
+        causal_estimate = self._compute_causal_estimate(causal_estimand, execution_df)
         confidence_intervals = self._compute_confidence_intervals(confidence_level=.05)
         causal_test_result = CausalTestResult(causal_estimand, causal_estimate, confidence_intervals,
                                               confidence_level=.05)
         causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         return causal_test_result
 
-    def _data_is_sufficient(self, causal_estimand) -> bool:
+    def _data_is_sufficient(self, causal_estimand: str) -> bool:
         """
         If using observational data, check whether the data contains necessary data to compute the casual estimand.
         :return:
@@ -79,7 +79,7 @@ class CausalTestEngine:
         """
         pass
 
-    def _compute_data_to_collect(self, causal_estimand) -> [str]:
+    def _compute_data_to_collect(self, causal_estimand: str) -> [str]:
         """
         If the current data is insufficient to estimate the causal estimand, this method will compute the set of
         variables that are currently missing data and preventing estimation. This can be used to guide execution of
@@ -89,7 +89,7 @@ class CausalTestEngine:
         """
         pass
 
-    def _compute_causal_estimate(self, causal_estimand) -> float:
+    def _compute_causal_estimate(self, causal_estimand: str, execution_data_df: pd.DataFrame) -> float:
         """
         Given a causal estimand, compute the causal estimate from the available data.
         :param causal_estimand: The casual estimand to be estimated.
@@ -98,7 +98,7 @@ class CausalTestEngine:
         """
         pass
 
-    def _compute_confidence_intervals(self, confidence_level) -> [float, float]:
+    def _compute_confidence_intervals(self, confidence_level: float) -> [float, float]:
         """
         Compute the confidence intervals at the specified confidence level for the causal estimate. This gives the user
         and indication of the precision/reliability of the causal estimate. If this is too low, it indicates that more
