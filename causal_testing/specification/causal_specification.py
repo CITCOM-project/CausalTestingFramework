@@ -2,8 +2,10 @@ from abc import ABC
 from causal_testing.specification.constraint import Constraint, NormalDistribution
 from typing import Union
 import networkx as nx
+import logging
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
+logger = logging.getLogger(__name__)
 
 
 class CausalDAG(nx.DiGraph):
@@ -118,13 +120,14 @@ class CausalDAG(nx.DiGraph):
                                                                    {proper_causal_path_var})
                                                          for proper_causal_path_var in proper_causal_path_vars])
         if not set(covariates).issubset(set(self.graph.nodes).difference(descendents_of_proper_casual_paths)):
-            print("Failed Condition 1: Z **is** a descendent of some variable on a proper causal path between X and Y.")
+            logger.info("Failed Condition 1: Z **is** a descendent of some variable on a proper causal path between X"
+                        " and Y.")
             return False
 
         # Condition (2)
         if not nx.d_separated(proper_backdoor_graph.graph, set(treatments), set(outcomes), set(covariates)):
-            print("Failed Condition 2: Z **does not** d-separate X and Y in the proper back-door graph relative to"
-                  " X and Y.")
+            logger.info("Failed Condition 2: Z **does not** d-separate X and Y in the proper back-door graph relative"
+                        " to X and Y.")
             return False
 
         return True
