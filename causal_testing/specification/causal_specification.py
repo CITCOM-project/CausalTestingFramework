@@ -72,7 +72,7 @@ class CausalDAG(nx.DiGraph):
                 raise IndexError(f'{var} not a node in Causal DAG.')
 
         proper_backdoor_graph = self.copy()
-        nodes_on_proper_causal_path = self.proper_causal_pathway(proper_backdoor_graph, treatments, outcomes)
+        nodes_on_proper_causal_path = proper_backdoor_graph.proper_causal_pathway(treatments, outcomes)
         edges_to_remove = [(u, v) for (u, v) in proper_backdoor_graph.graph.out_edges(treatments) if v in
                            nodes_on_proper_causal_path]
         proper_backdoor_graph.graph.remove_edges_from(edges_to_remove)
@@ -115,7 +115,7 @@ class CausalDAG(nx.DiGraph):
         """
 
         # Condition (1)
-        proper_causal_path_vars = self.proper_causal_pathway(self, treatments, outcomes)
+        proper_causal_path_vars = self.proper_causal_pathway(treatments, outcomes)
         descendents_of_proper_casual_paths = set.union(*[set.union(nx.descendants(self.graph, proper_causal_path_var),
                                                                    {proper_causal_path_var})
                                                          for proper_causal_path_var in proper_causal_path_vars])
@@ -132,43 +132,40 @@ class CausalDAG(nx.DiGraph):
 
         return True
 
-    def __str__(self):
-        return f'Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}'
-
-    @staticmethod
-    def proper_causal_pathway(causal_graph: 'CausalDAG', treatments: [str], outcomes: [str]) -> [str]:
+    def proper_causal_pathway(self, treatments: [str], outcomes: [str]) -> [str]:
         """
         Given a list of treatments and outcomes, compute the proper causal pathways between them.
         PCP(X, Y) = {DeX^(X) - X} intersect AnX_(Y)}, where:
         - DeX^(X) refers to the descendents of X in the graph obtained by deleting all edges into X.
         - AnX_(Y) refers to the ancestors of Y in the graph obtained by deleting all edges leaving X.
-        :param causal_graph: The Causal DAG that contains the treatments and outcomes.
+
         :param treatments: A list of treatment variables in the causal DAG.
         :param outcomes: A list of outcomes in the causal DAG.
         :return vars_on_proper_causal_pathway: Return a list of the variables on the proper causal pathway between
         treatments and outcomes.
         """
-        treatments_descendants = set.union(*[nx.descendants(causal_graph.graph, treatment) for treatment in treatments])
+        treatments_descendants = set.union(*[nx.descendants(self.graph, treatment) for treatment in treatments])
         treatments_descendants_without_treatments = set(treatments_descendants).difference(treatments)
-        backdoor_graph = CausalDAG.get_backdoor_graph(causal_graph, set(treatments))
+        backdoor_graph = self.get_backdoor_graph(set(treatments))
         outcome_ancestors = set.union(*[nx.ancestors(backdoor_graph, outcome) for outcome in outcomes])
         nodes_on_proper_causal_paths = treatments_descendants_without_treatments.intersection(outcome_ancestors)
         return nodes_on_proper_causal_paths
 
-    @staticmethod
-    def get_backdoor_graph(causal_graph: 'CausalDAG', treatments: [str]) -> 'CausalDAG':
+    def get_backdoor_graph(self, treatments: [str]) -> 'CausalDAG':
         """
         A back-door graph is a graph for the list of treatments is a Causal DAG in which all edges leaving the treatment
         nodes are deleted.
 
-        :param causal_graph: A causal DAG from which the back-door graph will be derived.
         :param treatments: The set of treatments whose outgoing edges will be deleted.
         :return: A back-door graph corresponding to the given causal DAG and set of treatments.
         """
-        outgoing_edges = causal_graph.graph.out_edges(treatments)
-        backdoor_graph = causal_graph.graph.copy()
+        outgoing_edges = self.graph.out_edges(treatments)
+        backdoor_graph = self.graph.copy()
         backdoor_graph.remove_edges_from(outgoing_edges)
         return backdoor_graph
+
+    def __str__(self):
+        return f'Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}'
 
 
 class Scenario(dict):
