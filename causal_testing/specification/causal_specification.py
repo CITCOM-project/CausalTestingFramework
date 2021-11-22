@@ -1,7 +1,6 @@
 from abc import ABC
 from causal_testing.specification.constraint import Constraint, NormalDistribution
 from typing import Union
-from itertools import product
 import networkx as nx
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
@@ -71,18 +70,11 @@ class CausalDAG(nx.DiGraph):
                 raise IndexError(f'{var} not a node in Causal DAG.')
 
         proper_backdoor_graph = self.copy()
-        for (treatment, outcome) in product(treatments, outcomes):
-            # PCP = {Descendants*(X) \ X} intersect {Ancestors(Y)}, where Descendants*(X) is descendants of X in
-            # a back-door graph (a DAG with incoming edges to X removed).
-            treatment_descendants = nx.descendants(proper_backdoor_graph.graph, treatment).difference(treatment)
-            outcome_ancestors = nx.ancestors(proper_backdoor_graph.graph, outcome)
-            nodes_on_proper_causal_path = treatment_descendants.intersection(outcome_ancestors)
-            neighbour_to_remove_edge_to = set(proper_backdoor_graph.graph.neighbors(treatment)).intersection(
-                nodes_on_proper_causal_path).pop()
-            if neighbour_to_remove_edge_to not in treatments:  # See Fig. 8 in referenced paper
-                proper_backdoor_graph.graph.remove_edge(treatment, neighbour_to_remove_edge_to)
+        nodes_on_proper_causal_path = self.proper_causal_pathway(proper_backdoor_graph, treatments, outcomes)
+        edges_to_remove = [(u, v) for (u, v) in proper_backdoor_graph.graph.out_edges(treatments) if v in
+                           nodes_on_proper_causal_path]
+        proper_backdoor_graph.graph.remove_edges_from(edges_to_remove)
         return proper_backdoor_graph
-
 
     def minimal_d_separator(self, treatments: [str], outcomes: [str]) -> [str]:
         """
@@ -99,6 +91,41 @@ class CausalDAG(nx.DiGraph):
 
     def __str__(self):
         return f'Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}'
+
+    @staticmethod
+    def proper_causal_pathway(causal_graph, treatments: [str], outcomes: [str]) -> str:
+        """
+        Given a list of treatments and outcomes, compute the proper causal pathways between them.
+        PCP(X, Y) = {DeX^(X) - X} intersect AnX_(Y)}, where:
+        - DeX^(X) refers to the descendents of X in the graph obtained by deleting all edges into X.
+        - AnX_(Y) refers to the ancestors of Y in the graph obtained by deleting all edges leaving X.
+        :param causal_graph: The Causal DAG that contains the treatments and outcomes.
+        :param treatments: A list of treatment variables in the causal DAG.
+        :param outcomes: A list of outcomes in the causal DAG.
+        :return vars_on_proper_causal_pathway: Return a list of the variables on the proper causal pathway between
+        treatments and outcomes.
+        """
+        treatments_descendants = set.union(*[nx.descendants(causal_graph.graph, treatment) for treatment in treatments])
+        treatments_descendants_without_treatments = set(treatments_descendants).difference(treatments)
+        backdoor_graph = CausalDAG.get_backdoor_graph(causal_graph, set(treatments))
+        outcome_ancestors = set.union(*[nx.ancestors(backdoor_graph, outcome) for outcome in outcomes])
+        nodes_on_proper_causal_paths = treatments_descendants_without_treatments.intersection(outcome_ancestors)
+        return nodes_on_proper_causal_paths
+
+    @staticmethod
+    def get_backdoor_graph(causal_graph, treatments):
+        """
+        A back-door graph is a graph for the list of treatments is a Causal DAG in which all edges leaving the treatment
+        nodes are deleted.
+
+        :param causal_graph: A causal DAG from which the back-door graph will be derived.
+        :param treatments: The set of treatments whose outgoing edges will be deleted.
+        :return: A back-door graph corresponding to the given causal DAG and set of treatments.
+        """
+        outgoing_edges = causal_graph.graph.out_edges(treatments)
+        backdoor_graph = causal_graph.graph.copy()
+        backdoor_graph.remove_edges_from(outgoing_edges)
+        return backdoor_graph
 
 
 class Scenario(dict):
