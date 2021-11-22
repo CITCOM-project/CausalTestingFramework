@@ -49,10 +49,32 @@ class TestGraphTransformations(unittest.TestCase):
         """
         causal_dag = CausalDAG(self.dag_dot_path)
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(['X1', 'X2'], ['Y'])
-        print(proper_backdoor_graph.graph.edges)
         self.assertEqual(list(proper_backdoor_graph.graph.edges),
                          [('X1', 'X2'), ('X2', 'V'), ('X2', 'D2'), ('D1', 'D2'), ('D1', 'Y'), ('Y', 'D3'), ('Z', 'X2'),
                           ('Z', 'Y')])
+
+    def test_constructive_backdoor_criterion_should_hold(self):
+        """ Test whether the constructive criterion holds when it should. """
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys, zs = ['X1', 'X2'], ['Y'], ['Z']
+        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+        self.assertTrue(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
+
+    def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_proper_backdoor_graph(self):
+        """ Test whether the constructive criterion holds when the adjustment set Z is not a d-separator in the proper
+        back-door graph. """
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys, zs = ['X1', 'X2'], ['Y'], ['V']
+        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+        self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
+
+    def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_causal_path(self):
+        """ Test whether the constructive criterion holds when the adjustment set Z contains a descendent of a variable
+        on a proper causal path between X and Y. """
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys, zs = ['X1', 'X2'], ['Y'], ['D1']
+        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+        self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def tearDown(self) -> None:
         os.remove(self.dag_dot_path)

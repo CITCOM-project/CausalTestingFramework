@@ -89,11 +89,51 @@ class CausalDAG(nx.DiGraph):
         """
         pass
 
+    def constructive_backdoor_criterion(self, proper_backdoor_graph: 'CausalDAG', treatments: [str], outcomes: [str],
+                                        covariates: [str]) -> bool:
+        """
+        A variation of Pearl's back-door criterion applied to a proper_backdoor_graph which enables more efficient
+        computation of minimal adjustment sets for the effect of a set of treatments on a set of outcomes.
+
+        The constructive back-door criterion is satisfied for a causal DAG G, a set of treatments X, a set of outcomes
+        Y, and a set of covariates Z, if:
+        (1) Z is not a descendent of any variable on a proper causal path between X and Y.
+        (2) Z d-separates X and Y in the proper back-door graph relative to X and Y.
+
+        Reference: (Separators and adjustment sets in causal graphs: Complete criteria and an algorithmic framework,
+        Zander et al.,  2019, Definition 4, p.16)
+
+        :param proper_backdoor_graph: A proper back-door graph relative to the specified treatments and outcomes.
+        :param treatments: A list of treatment variables that appear in the proper back-door graph.
+        :param outcomes: A list of outcome variables that appear in the proper back-door graph.
+        :param covariates: A list of variables that appear in the proper back-door graph that we will check against
+        the constructive back-door criterion.
+        :return: True or False, depending on whether the set of covariates satisfies the constructive back-door
+        criterion.
+        """
+
+        # Condition (1)
+        proper_causal_path_vars = self.proper_causal_pathway(self, treatments, outcomes)
+        descendents_of_proper_casual_paths = set.union(*[set.union(nx.descendants(self.graph, proper_causal_path_var),
+                                                                   {proper_causal_path_var})
+                                                         for proper_causal_path_var in proper_causal_path_vars])
+        if not set(covariates).issubset(set(self.graph.nodes).difference(descendents_of_proper_casual_paths)):
+            print("Failed Condition 1: Z **is** a descendent of some variable on a proper causal path between X and Y.")
+            return False
+
+        # Condition (2)
+        if not nx.d_separated(proper_backdoor_graph.graph, set(treatments), set(outcomes), set(covariates)):
+            print("Failed Condition 2: Z **does not** d-separate X and Y in the proper back-door graph relative to"
+                  " X and Y.")
+            return False
+
+        return True
+
     def __str__(self):
         return f'Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}'
 
     @staticmethod
-    def proper_causal_pathway(causal_graph, treatments: [str], outcomes: [str]) -> str:
+    def proper_causal_pathway(causal_graph: 'CausalDAG', treatments: [str], outcomes: [str]) -> [str]:
         """
         Given a list of treatments and outcomes, compute the proper causal pathways between them.
         PCP(X, Y) = {DeX^(X) - X} intersect AnX_(Y)}, where:
@@ -113,7 +153,7 @@ class CausalDAG(nx.DiGraph):
         return nodes_on_proper_causal_paths
 
     @staticmethod
-    def get_backdoor_graph(causal_graph, treatments):
+    def get_backdoor_graph(causal_graph: 'CausalDAG', treatments: [str]) -> 'CausalDAG':
         """
         A back-door graph is a graph for the list of treatments is a Causal DAG in which all edges leaving the treatment
         nodes are deleted.
