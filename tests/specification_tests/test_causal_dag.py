@@ -1,7 +1,8 @@
 import unittest
 import os
 import networkx as nx
-from causal_testing.specification.causal_specification import CausalDAG
+import numpy as np
+from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
 
 
 class TestCausalDAG(unittest.TestCase):
@@ -112,8 +113,36 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertEqual(list(ancestor_graph.graph.nodes), ['X1', 'X2', 'D1', 'Y', 'Z'])
         self.assertEqual(list(ancestor_graph.graph.edges), [('X1', 'X2'), ('D1', 'Y'), ('Z', 'X2'), ('Z', 'Y')])
 
+    def test_enumerate_minimal_adjustment_sets(self):
+        """ Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets for a
+        CausalDAG. """
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys = ['X1', 'X2'], ['Y']
+        causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+
     def tearDown(self) -> None:
         os.remove(self.dag_dot_path)
+
+
+class TestUndirectedGraphAlgorithms(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.graph = nx.Graph()
+        self.graph.add_edges_from([('a', 2), ('a', 3), (2, 4), (3, 5), (3, 4), (4, 'b'), (5, 'b')])
+        self.treatment_node = 'a'
+        self.outcome_node = 'b'
+        self.treatment_node_set = {'a'}
+        self.outcome_node_set = set(nx.neighbors(self.graph, 'b'))
+        self.outcome_node_set.add('b')
+
+    def test_close_separator(self):
+        result = close_separator(self.graph, self.treatment_node, self.outcome_node, self.treatment_node_set)
+        self.assertEqual({2, 3}, result)
+
+    def test_list_all_min_sep(self):
+        min_separators = list_all_min_sep(self.graph, self.treatment_node, self.outcome_node, self.treatment_node_set,
+                                          self.outcome_node_set)
+        print(min_separators)
 
 
 if __name__ == '__main__':

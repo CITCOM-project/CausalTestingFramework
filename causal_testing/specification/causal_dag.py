@@ -1,9 +1,83 @@
 import networkx as nx
 import logging
+import numpy as np
+from random import sample
 from typing import Union
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 logger = logging.getLogger(__name__)
+
+
+def list_all_min_sep(graph: nx.Graph, treatment_node: Node, outcome_node: Node, treatment_node_set: {Node},
+                     outcome_node_set: {Node}, min_separators=[]):
+    """
+    A backtracking algorithm for listing all minimal treatment-outcome separators in an undirected graph.
+
+    Reference: (Space-optimal, backtracking algorithms to list the minimal vertex separators of a graph, Ken Takata,
+    2013, p.5, ListMinSep procedure).
+
+    :param graph: An undirected graph.
+    :param treatment_node: The node corresponding to the treatment variable we wish to separate from the output.
+    :param outcome_node: The node corresponding to the outcome variable we wish to separate from the input.
+    :param treatment_node_set: Set of treatment nodes.
+    :param outcome_node_set: Set of outcome nodes.
+    :param min_separators: An initially empty set of minimum separators.
+    :return: A list of minimal-sized sets of variables which separate treatment and outcome in the undirected graph.
+    """
+    close_separator_set = close_separator(graph, treatment_node, outcome_node, treatment_node_set)
+    components_graph = graph.copy()
+    components_graph.remove_nodes_from(close_separator_set)
+    graph_components = nx.connected_components(components_graph)
+    for component in graph_components:
+        if treatment_node in component:
+            treatment_connected_component_node_set = component
+    if not treatment_connected_component_node_set.intersection(outcome_node_set):
+        treatment_node_set = treatment_connected_component_node_set
+        treatment_node_set_neighbours = set.union(*[set(nx.neighbors(graph, node))
+                                                    for node in treatment_node_set]) - treatment_node_set
+        if treatment_node_set_neighbours.difference(outcome_node_set):
+            node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
+            results = []
+            results.append(list_all_min_sep(graph, treatment_node, outcome_node, treatment_node_set.union(node),
+                             outcome_node_set))
+            results.append(list_all_min_sep(graph, treatment_node, outcome_node, treatment_node_set,
+                             outcome_node_set.union(node)))
+
+            return [result for result in results if result is not None]
+        else:
+            # print(treatment_node_set_neighbours)
+            return treatment_node_set_neighbours
+
+
+def close_separator(graph: nx.Graph, treatment_node: Node, outcome_node: Node, treatment_node_set: {Node}) -> {Node}:
+    """
+    Compute the close separator for a set of treatments in an undirected graph.
+
+    A close separator (relative to a set of variables X) is a separator whose vertices are adjacent to those in X.
+    An X-Y separator is a set of variables which, once deleted from a graph, create a subgraph in which X and Y
+    are in different components.
+
+    Reference: (Space-optimal, backtracking algorithms to list the minimal vertex separators of a graph, Ken Takata,
+    2013, p.4, CloseSeparator procedure).
+
+    :param graph: An undirected graph.
+    :param treatment_node: A label for the treatment node (parent of treatments in undirected graph).
+    :param outcome_node: A label for the outcome node (parent of outcomes in undirected graph).
+    :param treatment_node_set: The set of variables containing the treatment node ({treatment_node}).
+    :return: A treatment_node-outcome_node separator whose vertices are adjacent to those in treatments.
+    """
+    treatment_neighbours = set.union(*[set(nx.neighbors(graph, treatment)) for treatment in treatment_node_set])
+    components_graph = graph.copy()
+    components_graph.remove_nodes_from(treatment_neighbours)
+    graph_components = nx.connected_components(components_graph)
+    for component in graph_components:
+        if outcome_node in component:
+            neighbours_of_variables_in_component = set.union(*[set(nx.neighbors(graph, variable)) for
+                                                               variable in component])
+            # For this algorithm, the neighbours of a node do not include the node itself
+            neighbours_of_variables_in_component = neighbours_of_variables_in_component.difference(component)
+            return neighbours_of_variables_in_component
+    raise ValueError(f'No {treatment_node}-{outcome_node} separator in the graph.')
 
 
 class CausalDAG(nx.DiGraph):
@@ -61,7 +135,7 @@ class CausalDAG(nx.DiGraph):
         :return: A list of strings representing the minimal adjustment set.
         """
         backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
-        return backdoor_graph.minimal_d_separator(treatments, outcomes)
+        return backdoor_graph.enumerate_minimal_adjustment_sets(treatments, outcomes)
 
     def get_proper_backdoor_graph(self, treatments: [str], outcomes: [str]) -> 'CausalDAG':
         """
@@ -109,18 +183,26 @@ class CausalDAG(nx.DiGraph):
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
 
-    def minimal_d_separator(self, treatments: [str], outcomes: [str]) -> [str]:
+    def enumerate_minimal_adjustment_sets(self, treatments: [str], outcomes: [str]) -> [{str}]:
         """
-        Get the smallest set of variables which d-separates treatments from outcomes. In other words, a set of variables
-        from which the removal of any subset of variables would no d-connect the treatments and outcomes (i.e. no longer
-        block all back-door paths).
+        Enumerate all minimal adjustment sets for the causal effect of the list of treatments on the list of outcomes.
+        A minimal adjustment set is the smallest set of variables that satisfy the constructive back-door criterion.
 
         :param treatments: A list of treatment variables.
         :param outcomes: A list of outcomes.
-        :return: A list of variables representing the smallest set of variables that d-separates the treatments from the
-        outcomes.
+        :return: A list of minimal adjustment sets.
         """
-        pass
+        proper_backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
+        ancestor_proper_backdoor_graph = proper_backdoor_graph.get_ancestor_graph(treatments, outcomes)
+        moralised_proper_backdoor_graph = nx.moral_graph(ancestor_proper_backdoor_graph.graph)
+        edges_to_add = [('TREATMENT', treatment) for treatment in treatments]
+        edges_to_add += [('OUTCOME', outcome) for outcome in outcomes]
+        moralised_proper_backdoor_graph.add_edges_from(edges_to_add)
+        treatment_node_set = {'TREATMENT'}
+        outcome_node_set = set(nx.neighbors(moralised_proper_backdoor_graph, 'OUTCOME')).union({'OUTCOME'})
+        minimum_adjustment_sets = list_all_min_sep(moralised_proper_backdoor_graph, 'TREATMENT', 'OUTCOME',
+                                                   treatment_node_set, outcome_node_set)
+        print(minimum_adjustment_sets)
 
     def adjustment_set_is_minimal(self, treatments: [str], outcomes: [str], adjustment_set: {str}) -> bool:
         """
