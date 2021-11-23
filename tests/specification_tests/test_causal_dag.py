@@ -32,7 +32,7 @@ class TestCausalDAG(unittest.TestCase):
         os.remove(self.dag_dot_path)
 
 
-class TestGraphTransformations(unittest.TestCase):
+class TestDAGIdentification(unittest.TestCase):
 
     def setUp(self) -> None:
         self.dag_dot_path = 'temp/dag.dot'
@@ -75,6 +75,24 @@ class TestGraphTransformations(unittest.TestCase):
         xs, ys, zs = ['X1', 'X2'], ['Y'], ['D1']
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
         self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
+
+    def test_is_min_adjustment_for_min_adjustment(self):
+        """ Test whether is_min_adjustment can correctly test whether the minimum adjustment set is minimal."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys, zs = ['X1', 'X2'], ['Y'], {'Z'}
+        self.assertTrue(causal_dag.adjustment_set_is_minimal(xs, ys, zs))
+
+    def test_is_min_adjustment_for_not_min_adjustment(self):
+        """ Test whether is_min_adjustment can correctly test whether the minimum adjustment set is not minimal."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys, zs = ['X1', 'X2'], ['Y'], {'Z', 'V'}
+        self.assertFalse(causal_dag.adjustment_set_is_minimal(xs, ys, zs))
+
+    def test_is_min_adjustment_for_invalid_adjustment(self):
+        """ Test whether is min_adjustment can correctly identify that the minimum adjustment set is invalid."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys, zs = ['X1', 'X2'], ['Y'], set()
+        self.assertRaises(ValueError, causal_dag.adjustment_set_is_minimal, xs, ys, zs)
 
     def tearDown(self) -> None:
         os.remove(self.dag_dot_path)

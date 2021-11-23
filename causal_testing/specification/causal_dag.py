@@ -1,6 +1,7 @@
 import networkx as nx
 import logging
 from typing import Union
+
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,18 @@ class CausalDAG(nx.DiGraph):
     def get_minimal_adjustment_set(self, treatments: [str], outcomes: [str]) -> {str}:
         """
         Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
-        and outcomes.
+        and outcomes. This is an implementation of the Algorithm presented in Adjustment Criteria in Causal Diagrams: An
+        Algorithmic Perspective, Textor and Lískiewicz, 2012) and extended in Separators and adjustment sets in causal
+        graphs: Complete criteria and an algorithmic framework, Zander et al.,  2019. These works use the algorithm
+        presented by Takata et al. in their work entitled: Space-optimal, backtracking algorithms to list the minimal
+        vertex separators of a graph, 2013.
+
+        At a high-level, this algorithm proceeds as follows for a causal DAG G, set of treatments X, and set of
+        outcomes Y):
+        1). Transform G to a proper back-door graph G_pbd (remove the first edge from X on all proper causal paths).
+        2). Transform G_pbd to the ancestor moral graph (G_pbd[An(X union Y)])^m.
+        3). Apply Takata's algorithm to output all minimal X-Y separators in the graph.
+
         :param treatments: A list of strings representing treatments.
         :param outcomes: A list of strings representing outcomes.
         :return: A list of strings representing the minimal adjustment set.
@@ -88,6 +100,37 @@ class CausalDAG(nx.DiGraph):
         """
         pass
 
+    def adjustment_set_is_minimal(self, treatments: [str], outcomes: [str], adjustment_set: {str}) -> bool:
+        """
+        Given a list of treatments X, a list of outcomes Y, and an adjustment set Z, determine whether Z is the smallest
+        possible adjustment set. Z is the minimal adjustment set if no element of Z can be removed without breaking the
+        constructive back-door criterion.
+
+        :param treatments: List of treatment variables.
+        :param outcomes: List of outcome variables.
+        :param adjustment_set: Set of adjustment variables.
+        :return: True or False depending on whether the adjustment set is minimal.
+        """
+        proper_backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
+
+        # Ensure that constructive back-door criterion is satisfied
+        if not self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes, adjustment_set):
+            raise ValueError(f'{adjustment_set} is not a valid adjustment set.')
+
+        # Remove each variable one at a time and return false if constructive back-door criterion remains satisfied
+        for variable in adjustment_set:
+            smaller_adjustment_set = adjustment_set.copy()
+            smaller_adjustment_set.remove(variable)
+            if not smaller_adjustment_set:  # Treat None as the empty set
+                smaller_adjustment_set = set()
+            if self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes,
+                                                    smaller_adjustment_set):
+                logger.info(f'Z={adjustment_set} is not minimal because Z\'=Z\\{{\'{variable}\'}}='
+                            f'{smaller_adjustment_set} is also a valid adjustment set.')
+                return False
+
+        return True
+
     def constructive_backdoor_criterion(self, proper_backdoor_graph: 'CausalDAG', treatments: [str], outcomes: [str],
                                         covariates: [str]) -> bool:
         """
@@ -110,21 +153,21 @@ class CausalDAG(nx.DiGraph):
         :return: True or False, depending on whether the set of covariates satisfies the constructive back-door
         criterion.
         """
-
         # Condition (1)
         proper_causal_path_vars = self.proper_causal_pathway(treatments, outcomes)
         descendents_of_proper_casual_paths = set.union(*[set.union(nx.descendants(self.graph, proper_causal_path_var),
                                                                    {proper_causal_path_var})
                                                          for proper_causal_path_var in proper_causal_path_vars])
+
         if not set(covariates).issubset(set(self.graph.nodes).difference(descendents_of_proper_casual_paths)):
-            logger.info("Failed Condition 1: Z **is** a descendent of some variable on a proper causal path between X"
-                        " and Y.")
+            logger.info(f'Failed Condition 1: Z={covariates} **is** a descendent of some variable on a proper causal '
+                        f'path between X={treatments} and Y={outcomes}.')
             return False
 
         # Condition (2)
         if not nx.d_separated(proper_backdoor_graph.graph, set(treatments), set(outcomes), set(covariates)):
-            logger.info("Failed Condition 2: Z **does not** d-separate X and Y in the proper back-door graph relative"
-                        " to X and Y.")
+            logger.info(f'Failed Condition 2: Z={covariates} **does not** d-separate X={treatments} and Y={outcomes} in'
+                        f' the proper back-door graph relative to X and Y.')
             return False
 
         return True
