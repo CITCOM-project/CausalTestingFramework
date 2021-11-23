@@ -45,7 +45,7 @@ class CausalDAG(nx.DiGraph):
         """
         Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes. This is an implementation of the Algorithm presented in Adjustment Criteria in Causal Diagrams: An
-        Algorithmic Perspective, Textor and Lískiewicz, 2012) and extended in Separators and adjustment sets in causal
+        Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in Separators and adjustment sets in causal
         graphs: Complete criteria and an algorithmic framework, Zander et al.,  2019. These works use the algorithm
         presented by Takata et al. in their work entitled: Space-optimal, backtracking algorithms to list the minimal
         vertex separators of a graph, 2013.
@@ -86,6 +86,28 @@ class CausalDAG(nx.DiGraph):
                            nodes_on_proper_causal_path]
         proper_backdoor_graph.graph.remove_edges_from(edges_to_remove)
         return proper_backdoor_graph
+
+    def get_ancestor_graph(self, treatments: [str], outcomes: [str]) -> 'CausalDAG':
+        """
+        Given a list of treament variables and a list of outcome variables, transform a CausalDAG into an ancestor
+        graph. An ancestor graph G[An(W)] for a CausalDAG G is a subgraph of G consisting of only the vertices who are
+        ancestors of the set of variables W and all edges between them. Note that a node is ancestor of itself.
+
+        Reference: (Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective, Textor and Lískiewicz, 2012,
+        p. 3 [Descendants and Ancestors]).
+
+        :param treatments: A list of treatment variables to include in the ancestral graph (and their ancestors).
+        :param outcomes: A list of outcome variables to include in the ancestral graph (and their ancestors).
+        :return: An ancestral graph relative to the set of variables X union Y.
+        """
+        ancestor_graph = self.copy()
+        treatment_ancestors = set.union(*[nx.ancestors(ancestor_graph.graph, treatment).union({treatment}) for treatment
+                                          in treatments])
+        outcome_ancestors = set.union(*[nx.ancestors(ancestor_graph.graph, outcome).union({outcome}) for outcome in
+                                        outcomes])
+        variables_to_remove = set(self.graph.nodes).difference(treatment_ancestors.union(outcome_ancestors))
+        ancestor_graph.graph.remove_nodes_from(variables_to_remove)
+        return ancestor_graph
 
     def minimal_d_separator(self, treatments: [str], outcomes: [str]) -> [str]:
         """

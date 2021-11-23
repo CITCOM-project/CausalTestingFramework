@@ -94,6 +94,24 @@ class TestDAGIdentification(unittest.TestCase):
         xs, ys, zs = ['X1', 'X2'], ['Y'], set()
         self.assertRaises(ValueError, causal_dag.adjustment_set_is_minimal, xs, ys, zs)
 
+    def test_get_ancestor_graph_of_causal_dag(self):
+        """ Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys = ['X1', 'X2'], ['Y']
+        ancestor_graph = causal_dag.get_ancestor_graph(xs, ys)
+        self.assertEqual(list(ancestor_graph.graph.nodes), ['X1', 'X2', 'D1', 'Y', 'Z'])
+        self.assertEqual(list(ancestor_graph.graph.edges), [('X1', 'X2'), ('X2', 'D1'), ('D1', 'Y'), ('Z', 'X2'),
+                                                            ('Z', 'Y')])
+
+    def test_get_ancestor_graph_of_proper_backdoor_graph(self):
+        """ Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys = ['X1', 'X2'], ['Y']
+        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+        ancestor_graph = proper_backdoor_graph.get_ancestor_graph(xs, ys)
+        self.assertEqual(list(ancestor_graph.graph.nodes), ['X1', 'X2', 'D1', 'Y', 'Z'])
+        self.assertEqual(list(ancestor_graph.graph.edges), [('X1', 'X2'), ('D1', 'Y'), ('Z', 'X2'), ('Z', 'Y')])
+
     def tearDown(self) -> None:
         os.remove(self.dag_dot_path)
 
