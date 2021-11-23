@@ -106,6 +106,9 @@ class CausalDAG(nx.DiGraph):
         possible adjustment set. Z is the minimal adjustment set if no element of Z can be removed without breaking the
         constructive back-door criterion.
 
+        Reference: Separators and adjustment sets in causal graphs: Complete criteria and an algorithmic framework,
+        Zander et al., 2019, Corollary 5, p.19)
+
         :param treatments: List of treatment variables.
         :param outcomes: List of outcome variables.
         :param adjustment_set: Set of adjustment variables.
