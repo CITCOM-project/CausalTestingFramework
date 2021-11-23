@@ -91,7 +91,7 @@ class CausalDAG(nx.DiGraph):
         """
         Given a list of treament variables and a list of outcome variables, transform a CausalDAG into an ancestor
         graph. An ancestor graph G[An(W)] for a CausalDAG G is a subgraph of G consisting of only the vertices who are
-        ancestors of the set of variables W and all edges between them. Note that a node is ancestor of itself.
+        ancestors of the set of variables W and all edges between them. Note that a node is an ancestor of itself.
 
         Reference: (Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective, Textor and Lískiewicz, 2012,
         p. 3 [Descendants and Ancestors]).
