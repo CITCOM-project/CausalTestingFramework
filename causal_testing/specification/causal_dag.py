@@ -132,28 +132,6 @@ class CausalDAG(nx.DiGraph):
         """
         return not list(nx.simple_cycles(self.graph))
 
-    def get_minimal_adjustment_set(self, treatments: [str], outcomes: [str]) -> {str}:
-        """
-        Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
-        and outcomes. This is an implementation of the Algorithm presented in Adjustment Criteria in Causal Diagrams: An
-        Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in Separators and adjustment sets in causal
-        graphs: Complete criteria and an algorithmic framework, Zander et al.,  2019. These works use the algorithm
-        presented by Takata et al. in their work entitled: Space-optimal, backtracking algorithms to list the minimal
-        vertex separators of a graph, 2013.
-
-        At a high-level, this algorithm proceeds as follows for a causal DAG G, set of treatments X, and set of
-        outcomes Y):
-        1). Transform G to a proper back-door graph G_pbd (remove the first edge from X on all proper causal paths).
-        2). Transform G_pbd to the ancestor moral graph (G_pbd[An(X union Y)])^m.
-        3). Apply Takata's algorithm to output all minimal X-Y separators in the graph.
-
-        :param treatments: A list of strings representing treatments.
-        :param outcomes: A list of strings representing outcomes.
-        :return: A list of strings representing the minimal adjustment set.
-        """
-        backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
-        return backdoor_graph.enumerate_minimal_adjustment_sets(treatments, outcomes)
-
     def get_proper_backdoor_graph(self, treatments: [str], outcomes: [str]) -> 'CausalDAG':
         """
         Convert the causal DAG to a proper back-door graph. A proper back-door graph of a causal DAG is obtained by
@@ -196,29 +174,49 @@ class CausalDAG(nx.DiGraph):
                                           in treatments])
         outcome_ancestors = set.union(*[nx.ancestors(ancestor_graph.graph, outcome).union({outcome}) for outcome in
                                         outcomes])
-        variables_to_remove = set(self.graph.nodes).difference(treatment_ancestors.union(outcome_ancestors))
+        variables_to_keep = treatment_ancestors.union(outcome_ancestors)
+        variables_to_remove = set(self.graph.nodes).difference(variables_to_keep)
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
 
     def enumerate_minimal_adjustment_sets(self, treatments: [str], outcomes: [str]) -> [{str}]:
         """
-        Enumerate all minimal adjustment sets for the causal effect of the list of treatments on the list of outcomes.
-        A minimal adjustment set is the smallest set of variables that satisfy the constructive back-door criterion.
+        Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
+        and outcomes. This is an implementation of the Algorithm presented in Adjustment Criteria in Causal Diagrams: An
+        Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in Separators and adjustment sets in causal
+        graphs: Complete criteria and an algorithmic framework, Zander et al.,  2019. These works use the algorithm
+        presented by Takata et al. in their work entitled: Space-optimal, backtracking algorithms to list the minimal
+        vertex separators of a graph, 2013.
 
-        :param treatments: A list of treatment variables.
-        :param outcomes: A list of outcomes.
-        :return: A list of minimal adjustment sets.
+        At a high-level, this algorithm proceeds as follows for a causal DAG G, set of treatments X, and set of
+        outcomes Y):
+        1). Transform G to a proper back-door graph G_pbd (remove the first edge from X on all proper causal paths).
+        2). Transform G_pbd to the ancestor moral graph (G_pbd[An(X union Y)])^m.
+        3). Apply Takata's algorithm to output all minimal X-Y separators in the graph.
+
+        :param treatments: A list of strings representing treatments.
+        :param outcomes: A list of strings representing outcomes.
+        :return: A list of strings representing the minimal adjustment set.
         """
+        # 1. Construct the proper back-door graph's ancestor moral graph
         proper_backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
         ancestor_proper_backdoor_graph = proper_backdoor_graph.get_ancestor_graph(treatments, outcomes)
         moralised_proper_backdoor_graph = nx.moral_graph(ancestor_proper_backdoor_graph.graph)
+
+        # 2. Add an edge X^m to treatment nodes and Y^m to outcome nodes
         edges_to_add = [('TREATMENT', treatment) for treatment in treatments]
         edges_to_add += [('OUTCOME', outcome) for outcome in outcomes]
         moralised_proper_backdoor_graph.add_edges_from(edges_to_add)
+
+        # 3.  Find all minimal separators of X^m and Y^m using Takata's algorithm for listing minimal separators
         treatment_node_set = {'TREATMENT'}
         outcome_node_set = set(nx.neighbors(moralised_proper_backdoor_graph, 'OUTCOME')).union({'OUTCOME'})
-        minimum_adjustment_sets = list_all_min_sep(moralised_proper_backdoor_graph, 'TREATMENT', 'OUTCOME',
-                                                   treatment_node_set, outcome_node_set)
+        minimum_adjustment_sets = list(list_all_min_sep(moralised_proper_backdoor_graph, 'TREATMENT', 'OUTCOME',
+                                                        treatment_node_set, outcome_node_set))
+
+        # 4. Remove the treatments and outcomes from minimal separators
+        minimum_adjustment_sets.remove(set(treatments))
+        minimum_adjustment_sets.remove(set(outcomes))
         return minimum_adjustment_sets
 
     def adjustment_set_is_minimal(self, treatments: [str], outcomes: [str], adjustment_set: {str}) -> bool:

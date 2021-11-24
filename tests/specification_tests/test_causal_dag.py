@@ -119,7 +119,25 @@ class TestDAGIdentification(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ['X1', 'X2'], ['Y']
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        print(list(adjustment_sets))
+        self.assertEqual([{'Z'}], adjustment_sets)
+
+    def test_enumerate_minimal_adjustment_sets_multiple(self):
+        """ Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets in the M-bias
+        DAG. """
+        causal_dag = CausalDAG()
+        causal_dag.graph.add_edges_from([('X1', 'X2'),
+                                         ('X2', 'V'),
+                                         ('Z1', 'X2'),
+                                         ('Z1', 'Z2'),
+                                         ('Z2', 'Z3'),
+                                         ('Z3', 'Y'),
+                                         ('D1', 'Y'),
+                                         ('D1', 'D2'),
+                                         ('Y', 'D3')])
+        xs, ys = ['X1', 'X2'], ['Y']
+        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        set_of_adjustment_sets = set(frozenset(min_separator) for min_separator in adjustment_sets)
+        self.assertEqual({frozenset({'Z1'}), frozenset({'Z2'}), frozenset({'Z3'})}, set_of_adjustment_sets)
 
     def tearDown(self) -> None:
         os.remove(self.dag_dot_path)
