@@ -1,5 +1,6 @@
 import networkx as nx
 import logging
+from itertools import combinations
 from random import sample
 from typing import Union
 
@@ -208,15 +209,20 @@ class CausalDAG(nx.DiGraph):
         edges_to_add += [('OUTCOME', outcome) for outcome in outcomes]
         moralised_proper_backdoor_graph.add_edges_from(edges_to_add)
 
-        # 3.  Find all minimal separators of X^m and Y^m using Takata's algorithm for listing minimal separators
+        # 3. Remove treatment and outcome nodes from graph and connect neighbours
+        treatment_neighbours = set.union(*[set(nx.neighbors(moralised_proper_backdoor_graph, treatment)) for treatment
+                                           in treatments]) - set(treatments)
+        outcome_neighbours = set.union(*[set(nx.neighbors(moralised_proper_backdoor_graph, outcome)) for outcome in
+                                         outcomes]) - set(outcomes)
+
+        neighbour_edges_to_add = list(combinations(treatment_neighbours, 2)) + list(combinations(outcome_neighbours, 2))
+        moralised_proper_backdoor_graph.add_edges_from(neighbour_edges_to_add)
+
+        # 4.  Find all minimal separators of X^m and Y^m using Takata's algorithm for listing minimal separators
         treatment_node_set = {'TREATMENT'}
         outcome_node_set = set(nx.neighbors(moralised_proper_backdoor_graph, 'OUTCOME')).union({'OUTCOME'})
         minimum_adjustment_sets = list(list_all_min_sep(moralised_proper_backdoor_graph, 'TREATMENT', 'OUTCOME',
                                                         treatment_node_set, outcome_node_set))
-
-        # 4. Remove the treatments and outcomes from minimal separators
-        minimum_adjustment_sets.remove(set(treatments))
-        minimum_adjustment_sets.remove(set(outcomes))
         return minimum_adjustment_sets
 
     def adjustment_set_is_minimal(self, treatments: [str], outcomes: [str], adjustment_set: {str}) -> bool:
