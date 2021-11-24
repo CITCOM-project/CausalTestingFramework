@@ -1,6 +1,5 @@
 import networkx as nx
 import logging
-import numpy as np
 from random import sample
 from typing import Union
 
@@ -9,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def list_all_min_sep(graph: nx.Graph, treatment_node: Node, outcome_node: Node, treatment_node_set: {Node},
-                     outcome_node_set: {Node}, min_separators=[]):
+                     outcome_node_set: {Node}):
     """
     A backtracking algorithm for listing all minimal treatment-outcome separators in an undirected graph.
 
@@ -21,32 +20,50 @@ def list_all_min_sep(graph: nx.Graph, treatment_node: Node, outcome_node: Node, 
     :param outcome_node: The node corresponding to the outcome variable we wish to separate from the input.
     :param treatment_node_set: Set of treatment nodes.
     :param outcome_node_set: Set of outcome nodes.
-    :param min_separators: An initially empty set of minimum separators.
     :return: A list of minimal-sized sets of variables which separate treatment and outcome in the undirected graph.
     """
+    # 1. Compute the close separator of the treatment set
     close_separator_set = close_separator(graph, treatment_node, outcome_node, treatment_node_set)
+
+    # 2. Use the close separator to separate the graph and obtain the connected components (connected sub-graphs)
     components_graph = graph.copy()
     components_graph.remove_nodes_from(close_separator_set)
     graph_components = nx.connected_components(components_graph)
+
+    # 3. Find the connected component that contains the treatment node
+    treatment_connected_component_node_set = set()
     for component in graph_components:
         if treatment_node in component:
             treatment_connected_component_node_set = component
+
+    # 4. Confirm that the connected component containing the treatment node is disjoint with the outcome node set
     if not treatment_connected_component_node_set.intersection(outcome_node_set):
+
+        # 5. Update the treatment node set to the set of nodes in the connected component containing the treatment node
         treatment_node_set = treatment_connected_component_node_set
+
+        # 6. Obtain the neighbours of the new treatment node set (this excludes the treatment nodes themselves)
         treatment_node_set_neighbours = set.union(*[set(nx.neighbors(graph, node))
                                                     for node in treatment_node_set]) - treatment_node_set
-        if treatment_node_set_neighbours.difference(outcome_node_set):
-            node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
-            results = []
-            results.append(list_all_min_sep(graph, treatment_node, outcome_node, treatment_node_set.union(node),
-                             outcome_node_set))
-            results.append(list_all_min_sep(graph, treatment_node, outcome_node, treatment_node_set,
-                             outcome_node_set.union(node)))
 
-            return [result for result in results if result is not None]
+        # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
+        if treatment_node_set_neighbours.difference(outcome_node_set):
+
+            # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
+            node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
+
+            # 7.2. Add this node to the treatment node set and recurse (left branch)
+            yield from list_all_min_sep(graph, treatment_node, outcome_node, treatment_node_set.union(node),
+                                        outcome_node_set)
+
+            # 7.3. Add this node to the outcome node set and recurse (right branch)
+            yield from list_all_min_sep(graph, treatment_node, outcome_node, treatment_node_set,
+                                        outcome_node_set.union(node))
         else:
-            # print(treatment_node_set_neighbours)
-            return treatment_node_set_neighbours
+
+            # 8. If all neighbours of the treatments nodes are in the outcome node set, return the set of treatment
+            # node neighbours
+            yield treatment_node_set_neighbours
 
 
 def close_separator(graph: nx.Graph, treatment_node: Node, outcome_node: Node, treatment_node_set: {Node}) -> {Node}:
@@ -202,7 +219,7 @@ class CausalDAG(nx.DiGraph):
         outcome_node_set = set(nx.neighbors(moralised_proper_backdoor_graph, 'OUTCOME')).union({'OUTCOME'})
         minimum_adjustment_sets = list_all_min_sep(moralised_proper_backdoor_graph, 'TREATMENT', 'OUTCOME',
                                                    treatment_node_set, outcome_node_set)
-        print(minimum_adjustment_sets)
+        return minimum_adjustment_sets
 
     def adjustment_set_is_minimal(self, treatments: [str], outcomes: [str], adjustment_set: {str}) -> bool:
         """

@@ -118,7 +118,8 @@ class TestDAGIdentification(unittest.TestCase):
         CausalDAG. """
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ['X1', 'X2'], ['Y']
-        causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        print(list(adjustment_sets))
 
     def tearDown(self) -> None:
         os.remove(self.dag_dot_path)
@@ -140,9 +141,12 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         self.assertEqual({2, 3}, result)
 
     def test_list_all_min_sep(self):
-        min_separators = list_all_min_sep(self.graph, self.treatment_node, self.outcome_node, self.treatment_node_set,
-                                          self.outcome_node_set)
-        print(min_separators)
+        min_separators = list(list_all_min_sep(self.graph, self.treatment_node, self.outcome_node,
+                                               self.treatment_node_set, self.outcome_node_set))
+
+        # Convert list of sets to set of frozen sets for comparison
+        min_separators = set(frozenset(min_separator) for min_separator in min_separators)
+        self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
 
 
 if __name__ == '__main__':
