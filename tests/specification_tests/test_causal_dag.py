@@ -56,11 +56,7 @@ class TestDAGIdentification(unittest.TestCase):
         f.close()
 
     def test_proper_backdoor_graph(self):
-        """Test whether converting a Causal DAG to a proper back-door graph works correctly.
-
-        A proper back-door graph should remove the first edge from all proper causal paths from X to Y, where
-        X is the set of treatments and Y is the set of outcomes.
-        """
+        """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
         causal_dag = CausalDAG(self.dag_dot_path)
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(['X1', 'X2'], ['Y'])
         self.assertEqual(list(proper_backdoor_graph.graph.edges),
