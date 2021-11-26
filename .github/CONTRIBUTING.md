@@ -12,15 +12,10 @@ should clearly explain the bug or feature to be improved and, where necessary, i
 
 ### Making a Pull Request
 In order to directly contribute to the Causal Testing Framework, the following steps must be taken:
-1. [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) the Causal Testing Framework repository.
-    - While working on this fork, ensure that you 
-      [sync](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork) 
-      your main branch with `causal_testing_framework:main`.
-2. Create a new [branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository)
-   from the latest main in your fork. 
+1. Create a new [branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository).
    - This branch should have a name that describes the feature which is changed or added.
    - Work directly onto this branch, making sure that you follow our style guidelines outlined below.
-3. Open a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) 
+2. Open a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) 
    from your branch to the main branch.
    - Explain the changes made or feature added.
    - [Request a review](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review).
