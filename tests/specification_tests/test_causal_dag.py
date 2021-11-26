@@ -1,7 +1,6 @@
 import unittest
 import os
 import networkx as nx
-import numpy as np
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
 
 
@@ -15,6 +14,7 @@ class TestCausalDAG(unittest.TestCase):
         f.close()
 
     def test_valid_causal_dag(self):
+        """Test whether the Causal DAG is valid."""
         causal_dag = CausalDAG(self.dag_dot_path)
         assert list(causal_dag.graph.nodes) == ['A', 'B', 'C', 'D'] and list(causal_dag.graph.edges) == [('A', 'B'),
                                                                                                          ('B', 'C'),
@@ -22,10 +22,12 @@ class TestCausalDAG(unittest.TestCase):
                                                                                                          ('D', 'C')]
 
     def test_invalid_causal_dag(self):
+        """Test whether a cycle-containing directed graph is an invalid causal DAG."""
         causal_dag = CausalDAG(self.dag_dot_path)
         self.assertRaises(nx.HasACycle, causal_dag.add_edge, 'C', 'A')
 
     def test_empty_casual_dag(self):
+        """Test whether an empty dag can be created."""
         causal_dag = CausalDAG()
         assert list(causal_dag.graph.nodes) == [] and list(causal_dag.graph.edges) == []
 
@@ -43,8 +45,7 @@ class TestDAGIdentification(unittest.TestCase):
         f.close()
 
     def test_proper_backdoor_graph(self):
-        """
-        Test whether converting a Causal DAG to a proper back-door graph works correctly.
+        """ Test whether converting a Causal DAG to a proper back-door graph works correctly.
         A proper back-door graph should remove the first edge from all proper causal paths from X to Y, where
         X is the set of treatments and Y is the set of outcomes.
         """
@@ -55,48 +56,48 @@ class TestDAGIdentification(unittest.TestCase):
                           ('Z', 'Y')])
 
     def test_constructive_backdoor_criterion_should_hold(self):
-        """ Test whether the constructive criterion holds when it should. """
+        """Test whether the constructive criterion holds when it should."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ['X1', 'X2'], ['Y'], ['Z']
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
         self.assertTrue(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_proper_backdoor_graph(self):
-        """ Test whether the constructive criterion holds when the adjustment set Z is not a d-separator in the proper
-        back-door graph. """
+        """Test whether the constructive criterion holds when the adjustment set Z is not a d-separator in the proper
+        back-door graph."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ['X1', 'X2'], ['Y'], ['V']
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
         self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_causal_path(self):
-        """ Test whether the constructive criterion holds when the adjustment set Z contains a descendent of a variable
-        on a proper causal path between X and Y. """
+        """Test whether the constructive criterion holds when the adjustment set Z contains a descendent of a variable
+        on a proper causal path between X and Y."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ['X1', 'X2'], ['Y'], ['D1']
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
         self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_is_min_adjustment_for_min_adjustment(self):
-        """ Test whether is_min_adjustment can correctly test whether the minimum adjustment set is minimal."""
+        """Test whether is_min_adjustment can correctly test whether the minimum adjustment set is minimal."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ['X1', 'X2'], ['Y'], {'Z'}
         self.assertTrue(causal_dag.adjustment_set_is_minimal(xs, ys, zs))
 
     def test_is_min_adjustment_for_not_min_adjustment(self):
-        """ Test whether is_min_adjustment can correctly test whether the minimum adjustment set is not minimal."""
+        """Test whether is_min_adjustment can correctly test whether the minimum adjustment set is not minimal."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ['X1', 'X2'], ['Y'], {'Z', 'V'}
         self.assertFalse(causal_dag.adjustment_set_is_minimal(xs, ys, zs))
 
     def test_is_min_adjustment_for_invalid_adjustment(self):
-        """ Test whether is min_adjustment can correctly identify that the minimum adjustment set is invalid."""
+        """Test whether is min_adjustment can correctly identify that the minimum adjustment set is invalid."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ['X1', 'X2'], ['Y'], set()
         self.assertRaises(ValueError, causal_dag.adjustment_set_is_minimal, xs, ys, zs)
 
     def test_get_ancestor_graph_of_causal_dag(self):
-        """ Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
+        """Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ['X1', 'X2'], ['Y']
         ancestor_graph = causal_dag.get_ancestor_graph(xs, ys)
@@ -105,7 +106,7 @@ class TestDAGIdentification(unittest.TestCase):
                                                             ('Z', 'Y')])
 
     def test_get_ancestor_graph_of_proper_backdoor_graph(self):
-        """ Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
+        """Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ['X1', 'X2'], ['Y']
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
@@ -122,8 +123,8 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertEqual([{'Z'}], adjustment_sets)
 
     def test_enumerate_minimal_adjustment_sets_multiple(self):
-        """ Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets in the M-bias
-        DAG. """
+        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets in the M-bias
+        DAG."""
         causal_dag = CausalDAG()
         causal_dag.graph.add_edges_from([('X1', 'X2'),
                                          ('X2', 'V'),
@@ -140,8 +141,8 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertEqual({frozenset({'Z1'}), frozenset({'Z2'}), frozenset({'Z3'})}, set_of_adjustment_sets)
 
     def test_enumerate_minimal_adjustment_sets_two_adjustments(self):
-        """ Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets in the M-bias
-        DAG. """
+        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets in the M-bias
+        DAG."""
         causal_dag = CausalDAG()
         causal_dag.graph.add_edges_from([('X1', 'X2'),
                                          ('X2', 'V'),
@@ -177,10 +178,12 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         self.outcome_node_set.add('b')
 
     def test_close_separator(self):
+        """Test whether close_separator correctly identifies the close separator of {2,3} in the undirected graph."""
         result = close_separator(self.graph, self.treatment_node, self.outcome_node, self.treatment_node_set)
         self.assertEqual({2, 3}, result)
 
     def test_list_all_min_sep(self):
+        """Test whether list_all_min_sep finds all minimal separators for the undirected graph relative to a and b."""
         min_separators = list(list_all_min_sep(self.graph, self.treatment_node, self.outcome_node,
                                                self.treatment_node_set, self.outcome_node_set))
 
