@@ -5,9 +5,10 @@ from causal_testing.specification.causal_dag import CausalDAG, close_separator, 
 
 
 class TestCausalDAG(unittest.TestCase):
+    """Test the CausalDAG class for creation of Causal Directed Acyclic Graphs (DAGs).
 
-    """Test the CausalDAG class to confirm whether it creates valid causal directed acyclic graphs and refuses to
-    create invalid (cycle-containing) graphs, as well as the methods for identifying adjustment sets."""
+    In particular, confirm whether the Causal DAG class creates valid causal directed acyclic graphs (empty and directed
+    graphs without cycles) and refuses to create invalid (cycle-containing) graphs."""
 
     def setUp(self) -> None:
         self.dag_dot_path = 'temp/dag.dot'
@@ -39,6 +40,7 @@ class TestCausalDAG(unittest.TestCase):
 
 
 class TestDAGIdentification(unittest.TestCase):
+    """Test the Causal DAG identification algorithms and supporting algorithms."""
 
     def setUp(self) -> None:
         self.dag_dot_path = 'temp/dag.dot'
@@ -67,8 +69,7 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertTrue(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_proper_backdoor_graph(self):
-        """Test whether the constructive criterion holds when the adjustment set Z is not a d-separator in the proper
-        back-door graph."""
+        """Test whether the constructive criterion fails when the adjustment set is not a d-separator."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ['X1', 'X2'], ['Y'], ['V']
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
@@ -110,7 +111,7 @@ class TestDAGIdentification(unittest.TestCase):
                                                             ('Z', 'Y')])
 
     def test_get_ancestor_graph_of_proper_backdoor_graph(self):
-        """Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
+        """Test whether get_ancestor_graph converts a CausalDAG to the correct proper back-door graph."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ['X1', 'X2'], ['Y']
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
@@ -119,16 +120,14 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertEqual(list(ancestor_graph.graph.edges), [('X1', 'X2'), ('D1', 'Y'), ('Z', 'X2'), ('Z', 'Y')])
 
     def test_enumerate_minimal_adjustment_sets(self):
-        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets for a
-        CausalDAG."""
+        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ['X1', 'X2'], ['Y']
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
         self.assertEqual([{'Z'}], adjustment_sets)
 
     def test_enumerate_minimal_adjustment_sets_multiple(self):
-        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets in the M-bias
-        DAG."""
+        """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
         causal_dag = CausalDAG()
         causal_dag.graph.add_edges_from([('X1', 'X2'),
                                          ('X2', 'V'),
@@ -171,9 +170,11 @@ class TestDAGIdentification(unittest.TestCase):
 
 
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
+    """ Test the graph algorithms designed for the undirected graph variants of a Causal DAG.
 
-    """Test the graph algorithms designed for the undirected graph variants of a Causal DAG (ancestor and moral graphs
-    that are generated as part of the list minimal adjustment sets algorithm."""
+    During the identification process, a Causal DAG is converted into several forms of undirected graph which allow for
+    more efficient computation of minimal separators. This suite of tests covers the two main algorithms applied to
+    these forms of undirected graphs (ancestor and moral graphs): close_separator and list_all_min_sep."""
 
     def setUp(self) -> None:
         self.graph = nx.Graph()
