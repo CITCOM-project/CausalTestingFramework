@@ -5,6 +5,7 @@ from causal_testing.specification.causal_dag import CausalDAG, close_separator, 
 
 
 class TestCausalDAG(unittest.TestCase):
+
     """Test the CausalDAG class for creation of Causal Directed Acyclic Graphs (DAGs).
 
     In particular, confirm whether the Causal DAG class creates valid causal directed acyclic graphs (empty and directed
@@ -40,6 +41,7 @@ class TestCausalDAG(unittest.TestCase):
 
 
 class TestDAGIdentification(unittest.TestCase):
+
     """Test the Causal DAG identification algorithms and supporting algorithms."""
 
     def setUp(self) -> None:
@@ -50,7 +52,7 @@ class TestDAGIdentification(unittest.TestCase):
         f.close()
 
     def test_proper_backdoor_graph(self):
-        """ Test whether converting a Causal DAG to a proper back-door graph works correctly.
+        """Test whether converting a Causal DAG to a proper back-door graph works correctly.
 
         A proper back-door graph should remove the first edge from all proper causal paths from X to Y, where
         X is the set of treatments and Y is the set of outcomes.
@@ -144,8 +146,7 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertEqual({frozenset({'Z1'}), frozenset({'Z2'}), frozenset({'Z3'})}, set_of_adjustment_sets)
 
     def test_enumerate_minimal_adjustment_sets_two_adjustments(self):
-        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets in the M-bias
-        DAG."""
+        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets of arity two."""
         causal_dag = CausalDAG()
         causal_dag.graph.add_edges_from([('X1', 'X2'),
                                          ('X2', 'V'),
@@ -170,6 +171,7 @@ class TestDAGIdentification(unittest.TestCase):
 
 
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
+
     """ Test the graph algorithms designed for the undirected graph variants of a Causal DAG.
 
     During the identification process, a Causal DAG is converted into several forms of undirected graph which allow for
