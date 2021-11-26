@@ -6,6 +6,9 @@ from causal_testing.specification.causal_dag import CausalDAG, close_separator, 
 
 class TestCausalDAG(unittest.TestCase):
 
+    """Test the CausalDAG class to confirm whether it creates valid causal directed acyclic graphs and refuses to
+    create invalid (cycle-containing) graphs, as well as the methods for identifying adjustment sets."""
+
     def setUp(self) -> None:
         self.dag_dot_path = 'temp/dag.dot'
         dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C}"""
@@ -46,6 +49,7 @@ class TestDAGIdentification(unittest.TestCase):
 
     def test_proper_backdoor_graph(self):
         """ Test whether converting a Causal DAG to a proper back-door graph works correctly.
+
         A proper back-door graph should remove the first edge from all proper causal paths from X to Y, where
         X is the set of treatments and Y is the set of outcomes.
         """
@@ -115,8 +119,8 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertEqual(list(ancestor_graph.graph.edges), [('X1', 'X2'), ('D1', 'Y'), ('Z', 'X2'), ('Z', 'Y')])
 
     def test_enumerate_minimal_adjustment_sets(self):
-        """ Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets for a
-        CausalDAG. """
+        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets for a
+        CausalDAG."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ['X1', 'X2'], ['Y']
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
@@ -167,6 +171,9 @@ class TestDAGIdentification(unittest.TestCase):
 
 
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
+
+    """Test the graph algorithms designed for the undirected graph variants of a Causal DAG (ancestor and moral graphs
+    that are generated as part of the list minimal adjustment sets algorithm."""
 
     def setUp(self) -> None:
         self.graph = nx.Graph()
