@@ -6,10 +6,12 @@ from causal_testing.specification.causal_dag import CausalDAG, close_separator, 
 
 class TestCausalDAG(unittest.TestCase):
 
-    """Test the CausalDAG class for creation of Causal Directed Acyclic Graphs (DAGs).
+    """
+    Test the CausalDAG class for creation of Causal Directed Acyclic Graphs (DAGs).
 
     In particular, confirm whether the Causal DAG class creates valid causal directed acyclic graphs (empty and directed
-    graphs without cycles) and refuses to create invalid (cycle-containing) graphs."""
+    graphs without cycles) and refuses to create invalid (cycle-containing) graphs.
+    """
 
     def setUp(self) -> None:
         self.dag_dot_path = 'temp/dag.dot'
@@ -42,7 +44,9 @@ class TestCausalDAG(unittest.TestCase):
 
 class TestDAGIdentification(unittest.TestCase):
 
-    """Test the Causal DAG identification algorithms and supporting algorithms."""
+    """
+    Test the Causal DAG identification algorithms and supporting algorithms.
+    """
 
     def setUp(self) -> None:
         self.dag_dot_path = 'temp/dag.dot'
@@ -172,7 +176,8 @@ class TestDAGIdentification(unittest.TestCase):
 
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
 
-    """ Test the graph algorithms designed for the undirected graph variants of a Causal DAG.
+    """
+    Test the graph algorithms designed for the undirected graph variants of a Causal DAG.
 
     During the identification process, a Causal DAG is converted into several forms of undirected graph which allow for
     more efficient computation of minimal separators. This suite of tests covers the two main algorithms applied to
