@@ -1,19 +1,40 @@
 from causal_testing.testing.intervention import Intervention
+from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
-from z3 import ExprRef
+import z3
 
 
 class AbstractCausalTestCase:
+    """
+    An abstract test case serves as a generator for concrete test cases. Instead of having concrete conctrol
+    and treatment values, we instead just specify the intervention and the treatment variables. This then
+    enables potentially infinite concrete test cases to be generated between different values of the treatment.
+    """
+
     def __init__(
         self,
-        scenario: Scenario,
-        intervention: {ExprRef},
+        scenario_constraints: {z3.ExprRef},
+        intervention: Intervention,
+        treatment_vars: {Variable},
         expected_causal_effect: {Variable: ExprRef},
+        effect_modifiers: {Variable} = {},
     ):
-        self.scenario = scenario
+        self.scenario_constraints = scenario_constraints
         self.intervention = intervention
+        self.treatment_vars = treatment_vars
         self.expected_causal_effect = expected_causal_effect
+        self.effect_modifiers = effect_modifiers
+
+    def generate_concrete_tests(num: int) -> [CausalTestCase]:
+        """Generates a list of `num` concrete test cases.
+
+        :param int num: The number of test cases to generate.
+        :return: Description of returned object.
+        :rtype: [CausalTestCase]
+
+        """
+        pass
 
 
 class CausalTestCase:
@@ -26,9 +47,9 @@ class CausalTestCase:
 
     def __init__(
         self,
-        input_configuration: dict,
+        input_configuration: {Variable: any},
         intervention: Intervention,
-        expected_causal_effect: {str: float},
+        expected_causal_effect: {Variable: CausalTestOutcome},
     ):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
@@ -36,9 +57,9 @@ class CausalTestCase:
         The former is the input configuration before applying the intervention and the latter is the input configuration
         after applying the intervention.
 
-        :param input_configuration:
-        :param intervention:
-        :param expected_causal_effect:
+        :param {Variable: any} input_configuration: The input configuration representing the control values of the treatment variables.
+        :param Intervention intervention: The metamorphic operator which transforms the control configuration to the treatment configuration.
+        :param {Variable: CausalTestOutcome} The expected outcome.
         """
         self.control_input_configuration = input_configuration
         self.intervention = intervention

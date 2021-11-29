@@ -1,15 +1,29 @@
 from z3 import ExprRef, substitute
 from .variable import Variable, Input, Output, Meta
 from tabulate import tabulate
+from causal_testing.testing.causal_test_case import (
+    CausalTestCase,
+    AbstractCausalTestCase,
+)
 
 
 class Scenario:
     variables: {str: Variable}
     constraints: {ExprRef}
+    test_cases: [CausalTestCase]
+    abstract_test_cases: [CausalTestCase]
 
-    def __init__(self, variables: {Variable}, constraints: {ExprRef} = set()):
+    def __init__(
+        self,
+        variables: {Variable},
+        constraints: {ExprRef} = set(),
+        test_cases: [CausalTestCase] = [],
+        abstract_test_cases: [AbstractCausalTestCase] = [],
+    ):
         self.variables = {v.name: v for v in variables}
         self.constraints = constraints
+        self.test_cases = test_cases
+        self.abstract_test_cases = abstract_test_cases
 
     def __repr__(self):
         """Returns a printable representational string of a scenario, e.g.
