@@ -6,7 +6,8 @@ requirements = [
     'setuptools~=58.5.3',
     'networkx~=2.6.3',
     'pygraphviz~=1.7',
-    'pytest~=6.2.5'
+    'pytest~=6.2.5',
+    'scikit-learn~=1.0.1'
 ]
 
 setup(
