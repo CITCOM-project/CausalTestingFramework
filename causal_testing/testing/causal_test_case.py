@@ -1,4 +1,4 @@
-from intervention import Intervention
+from causal_testing.testing.intervention import Intervention
 
 
 class CausalTestCase:
