@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 requirements = [
     'numpy~=1.21.4',
@@ -6,16 +6,11 @@ requirements = [
     'setuptools~=58.5.3',
     'networkx~=2.6.3',
     'pygraphviz~=1.7',
-    'dowhy~=0.6',
-    'rpy2~=3.4.5'
+    'pytest~=6.2.5'
 ]
 
 setup(
-    name='causaltest',
+    name='causal_testing_framework',
     version='0.0.1',
-    entry_points={
-        'console_scripts': [
-            'myscript=myscript:run'
-        ]
-    }
+    packages=find_packages()
 )
