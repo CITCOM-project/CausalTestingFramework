@@ -7,8 +7,8 @@ class Scenario:
     variables: {str: Variable}
     constraints: {ExprRef}
 
-    def __init__(self, variables: {str, Variable}, constraints: {ExprRef} = set()):
-        self.variables = variables
+    def __init__(self, variables: {Variable}, constraints: {ExprRef} = set()):
+        self.variables = {v.name: v for v in variables}
         self.constraints = constraints
 
     def __repr__(self):
@@ -116,3 +116,6 @@ class Scenario:
         :rtype: {Input}
         """
         return self.variables_of_type(Meta)
+
+    def add_variable(v: Variable) -> None:
+        self.variables[v.name]: v

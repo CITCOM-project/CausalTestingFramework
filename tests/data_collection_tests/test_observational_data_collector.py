@@ -34,15 +34,13 @@ class TestObservationalDataCollector(unittest.TestCase):
     X4 = Input("X4", int, rv_discrete(values=([10], [1])))
 
     def test_all_variables_in_data(self):
-        scenario = Scenario({"X1": self.X1, "X2": self.X2, "X3": self.X3})
+        scenario = Scenario({self.X1, self.X2, self.X3})
         observational_data_collector = ObservationalDataCollector(scenario)
         df = observational_data_collector.collect_data(self.observational_df_path)
         assert not df.empty
 
     def test_not_all_variables_in_data(self):
-        scenario = Scenario(
-            {"X1": self.X1, "X2": self.X2, "X3": self.X3, "X4": self.X4}
-        )
+        scenario = Scenario({self.X1, self.X2, self.X3, self.X4})
         observational_data_collector = ObservationalDataCollector(scenario)
         self.assertRaises(
             IndexError,

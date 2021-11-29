@@ -266,7 +266,7 @@ class TestDependsOnOutputs(unittest.TestCase):
         B = Output("B", float, uniform(0, 1))
         C = Meta("C", float, uniform(0, 1))
 
-        self.scenario = Scenario({"A": A, "B": B, "C": C, "D": D})
+        self.scenario = Scenario({A, B, C, D})
 
     def test_depends_on_outputs_output(self):
         causal_dag = CausalDAG(self.dag_dot_path)
