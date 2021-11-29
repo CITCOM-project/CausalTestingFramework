@@ -6,7 +6,8 @@ from shutil import rmtree
 
 
 def create_temp_dir_if_non_existent():
-    """Create a temporary directory in the current working directory if one does not exist already and return path.
+    """
+    Create a temporary directory in the current working directory if one does not exist already and return path.
 
     :return: Path to the temporary directory.
     """
