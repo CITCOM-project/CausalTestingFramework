@@ -2,6 +2,7 @@ import unittest
 import os
 import networkx as nx
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
+from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 
 
 class TestCausalDAG(unittest.TestCase):
@@ -14,7 +15,8 @@ class TestCausalDAG(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.dag_dot_path = 'temp/dag.dot'
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, 'dag.dot')
         dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C}"""
         f = open(self.dag_dot_path, 'w')
         f.write(dag_dot)
@@ -23,6 +25,7 @@ class TestCausalDAG(unittest.TestCase):
     def test_valid_causal_dag(self):
         """Test whether the Causal DAG is valid."""
         causal_dag = CausalDAG(self.dag_dot_path)
+        print(causal_dag)
         assert list(causal_dag.graph.nodes) == ['A', 'B', 'C', 'D'] and list(causal_dag.graph.edges) == [('A', 'B'),
                                                                                                          ('B', 'C'),
                                                                                                          ('D', 'A'),
@@ -39,7 +42,7 @@ class TestCausalDAG(unittest.TestCase):
         assert list(causal_dag.graph.nodes) == [] and list(causal_dag.graph.edges) == []
 
     def tearDown(self) -> None:
-        os.remove(self.dag_dot_path)
+        remove_temp_dir_if_existent()
 
 
 class TestDAGIdentification(unittest.TestCase):
@@ -49,7 +52,8 @@ class TestDAGIdentification(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.dag_dot_path = 'temp/dag.dot'
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, 'dag.dot')
         dag_dot = """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
         f = open(self.dag_dot_path, 'w')
         f.write(dag_dot)
@@ -167,7 +171,7 @@ class TestDAGIdentification(unittest.TestCase):
                          set_of_adjustment_sets)
 
     def tearDown(self) -> None:
-        os.remove(self.dag_dot_path)
+        remove_temp_dir_if_existent()
 
 
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
