@@ -58,3 +58,6 @@ docs/_build/
 
 # vscode
 .vscode/
+
+# temporary files
+temp/

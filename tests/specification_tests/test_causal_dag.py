@@ -51,6 +51,22 @@ class TestCausalDAG(unittest.TestCase):
         remove_temp_dir_if_existent()
 
 
+class TestCyclicCausalDAG(unittest.TestCase):
+    def setUp(self) -> None:
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C; C -> A;}"""
+        f = open(self.dag_dot_path, "w")
+        f.write(dag_dot)
+        f.close()
+
+    def test_invalid_causal_dag(self):
+        self.assertRaises(nx.HasACycle, CausalDAG, self.dag_dot_path)
+
+    def tearDown(self) -> None:
+        remove_temp_dir_if_existent()
+
+
 class TestDAGIdentification(unittest.TestCase):
 
     """
@@ -232,11 +248,58 @@ class TestDAGIdentification(unittest.TestCase):
         remove_temp_dir_if_existent()
 
 
+class TestDependsOnOutputs(unittest.TestCase):
+    def setUp(self) -> None:
+        from scipy.stats import uniform
+        from causal_testing.specification.variable import Input, Output, Meta
+        from causal_testing.specification.scenario import Scenario
+
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C}"""
+        f = open(self.dag_dot_path, "w")
+        f.write(dag_dot)
+        f.close()
+
+        D = Input("D", float, uniform(0, 1))
+        A = Meta("A", float, uniform(0, 1))
+        B = Output("B", float, uniform(0, 1))
+        C = Meta("C", float, uniform(0, 1))
+
+        self.scenario = Scenario({"A": A, "B": B, "C": C, "D": D})
+
+    def test_depends_on_outputs_output(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        print("nodes:", causal_dag.nodes())
+        print("graph:", causal_dag)
+        self.assertTrue(causal_dag.depends_on_outputs("B", self.scenario))
+
+    def test_depends_on_outputs_output_meta(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        print("nodes:", causal_dag.nodes())
+        print("graph:", causal_dag)
+        self.assertTrue(causal_dag.depends_on_outputs("C", self.scenario))
+
+    def test_depends_on_outputs_input_meta(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        print("nodes:", causal_dag.nodes())
+        print("graph:", causal_dag)
+        self.assertFalse(causal_dag.depends_on_outputs("A", self.scenario))
+
+    def test_depends_on_outputs_input(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        print("nodes:", causal_dag.nodes())
+        print("graph:", causal_dag)
+        self.assertFalse(causal_dag.depends_on_outputs("D", self.scenario))
+
+    def tearDown(self) -> None:
+        remove_temp_dir_if_existent()
+
+
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
 
     """
     Test the graph algorithms designed for the undirected graph variants of a Causal DAG.
-
     During the identification process, a Causal DAG is converted into several forms of undirected graph which allow for
     more efficient computation of minimal separators. This suite of tests covers the two main algorithms applied to
     these forms of undirected graphs (ancestor and moral graphs): close_separator and list_all_min_sep."""
@@ -278,3 +341,6 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         self.assertEqual(
             {frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators
         )
+
+    def tearDown(self) -> None:
+        remove_temp_dir_if_existent()

@@ -458,9 +458,14 @@ class CausalDAG(nx.DiGraph):
         :return: Whether the given variable is or depends on an output.
         :rtype: bool
         """
-        if isinstance(n, Output):
+        if isinstance(scenario.variables[node], Output):
             return True
-        return any([depends_on_outputs(n, scenario) for n in self.predecessors(node)])
+        return any(
+            [
+                self.depends_on_outputs(n, scenario)
+                for n in self.graph.predecessors(node)
+            ]
+        )
 
     def __str__(self):
         return f"Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}"

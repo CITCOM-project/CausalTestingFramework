@@ -6,15 +6,18 @@ from causal_testing.specification.causal_specification import Scenario
 
 from causal_testing.specification.variable import Input
 from scipy.stats import uniform, rv_discrete
+from tests.test_helpers import (
+    create_temp_dir_if_non_existent,
+    remove_temp_dir_if_existent,
+)
 
 
 class TestObservationalDataCollector(unittest.TestCase):
     def setUp(self) -> None:
-        self.observational_df_dir = "temp"
-        if not os.path.exists(self.observational_df_dir):
-            os.makedirs(self.observational_df_dir)
-        self.observational_df_path = (
-            f"{self.observational_df_dir}/observational_data.csv"
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.observational_df_path = os.path.join(
+            temp_dir_path, "observational_data.csv"
         )
         # Y = 3*X1 + X2*X3 + 10
         observational_df = pd.DataFrame(
@@ -48,7 +51,7 @@ class TestObservationalDataCollector(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        os.remove(self.observational_df_path)
+        remove_temp_dir_if_existent()
 
 
 if __name__ == "__main__":
