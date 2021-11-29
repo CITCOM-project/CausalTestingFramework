@@ -205,7 +205,3 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         # Convert list of sets to set of frozen sets for comparison
         min_separators = set(frozenset(min_separator) for min_separator in min_separators)
         self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
-
-
-if __name__ == '__main__':
-    unittest.main()
