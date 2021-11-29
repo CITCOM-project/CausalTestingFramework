@@ -1,8 +1,11 @@
 import networkx as nx
 import logging
 from typing import Union
+
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 logger = logging.getLogger(__name__)
+from .scenario import Scenario
+from .variable import Output
 
 
 class CausalDAG(nx.DiGraph):
@@ -51,7 +54,9 @@ class CausalDAG(nx.DiGraph):
         backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
         return backdoor_graph.minimal_d_separator(treatments, outcomes)
 
-    def get_proper_backdoor_graph(self, treatments: [str], outcomes: [str]) -> 'CausalDAG':
+    def get_proper_backdoor_graph(
+        self, treatments: [str], outcomes: [str]
+    ) -> "CausalDAG":
         """
         Convert the causal DAG to a proper back-door graph. A proper back-door graph of a causal DAG is obtained by
         removing the first edge of every proper causal path from treatments to outcomes. A proper causal path from
@@ -66,12 +71,17 @@ class CausalDAG(nx.DiGraph):
         """
         for var in treatments + outcomes:
             if var not in self.graph.nodes:
-                raise IndexError(f'{var} not a node in Causal DAG.')
+                raise IndexError(f"{var} not a node in Causal DAG.")
 
         proper_backdoor_graph = self.copy()
-        nodes_on_proper_causal_path = proper_backdoor_graph.proper_causal_pathway(treatments, outcomes)
-        edges_to_remove = [(u, v) for (u, v) in proper_backdoor_graph.graph.out_edges(treatments) if v in
-                           nodes_on_proper_causal_path]
+        nodes_on_proper_causal_path = proper_backdoor_graph.proper_causal_pathway(
+            treatments, outcomes
+        )
+        edges_to_remove = [
+            (u, v)
+            for (u, v) in proper_backdoor_graph.graph.out_edges(treatments)
+            if v in nodes_on_proper_causal_path
+        ]
         proper_backdoor_graph.graph.remove_edges_from(edges_to_remove)
         return proper_backdoor_graph
 
@@ -88,8 +98,13 @@ class CausalDAG(nx.DiGraph):
         """
         pass
 
-    def constructive_backdoor_criterion(self, proper_backdoor_graph: 'CausalDAG', treatments: [str], outcomes: [str],
-                                        covariates: [str]) -> bool:
+    def constructive_backdoor_criterion(
+        self,
+        proper_backdoor_graph: "CausalDAG",
+        treatments: [str],
+        outcomes: [str],
+        covariates: [str],
+    ) -> bool:
         """
         A variation of Pearl's back-door criterion applied to a proper_backdoor_graph which enables more efficient
         computation of minimal adjustment sets for the effect of a set of treatments on a set of outcomes.
@@ -113,18 +128,32 @@ class CausalDAG(nx.DiGraph):
 
         # Condition (1)
         proper_causal_path_vars = self.proper_causal_pathway(treatments, outcomes)
-        descendents_of_proper_casual_paths = set.union(*[set.union(nx.descendants(self.graph, proper_causal_path_var),
-                                                                   {proper_causal_path_var})
-                                                         for proper_causal_path_var in proper_causal_path_vars])
-        if not set(covariates).issubset(set(self.graph.nodes).difference(descendents_of_proper_casual_paths)):
-            logger.info("Failed Condition 1: Z **is** a descendent of some variable on a proper causal path between X"
-                        " and Y.")
+        descendents_of_proper_casual_paths = set.union(
+            *[
+                set.union(
+                    nx.descendants(self.graph, proper_causal_path_var),
+                    {proper_causal_path_var},
+                )
+                for proper_causal_path_var in proper_causal_path_vars
+            ]
+        )
+        if not set(covariates).issubset(
+            set(self.graph.nodes).difference(descendents_of_proper_casual_paths)
+        ):
+            logger.info(
+                "Failed Condition 1: Z **is** a descendent of some variable on a proper causal path between X"
+                " and Y."
+            )
             return False
 
         # Condition (2)
-        if not nx.d_separated(proper_backdoor_graph.graph, set(treatments), set(outcomes), set(covariates)):
-            logger.info("Failed Condition 2: Z **does not** d-separate X and Y in the proper back-door graph relative"
-                        " to X and Y.")
+        if not nx.d_separated(
+            proper_backdoor_graph.graph, set(treatments), set(outcomes), set(covariates)
+        ):
+            logger.info(
+                "Failed Condition 2: Z **does not** d-separate X and Y in the proper back-door graph relative"
+                " to X and Y."
+            )
             return False
 
         return True
@@ -141,15 +170,28 @@ class CausalDAG(nx.DiGraph):
         :return vars_on_proper_causal_pathway: Return a list of the variables on the proper causal pathway between
         treatments and outcomes.
         """
-        treatments_descendants = set.union(*[nx.descendants(self.graph, treatment).union(treatment) for treatment in
-                                             treatments])
-        treatments_descendants_without_treatments = set(treatments_descendants).difference(treatments)
+        treatments_descendants = set.union(
+            *[
+                nx.descendants(self.graph, treatment).union(treatment)
+                for treatment in treatments
+            ]
+        )
+        treatments_descendants_without_treatments = set(
+            treatments_descendants
+        ).difference(treatments)
         backdoor_graph = self.get_backdoor_graph(set(treatments))
-        outcome_ancestors = set.union(*[nx.ancestors(backdoor_graph, outcome).union(outcome) for outcome in outcomes])
-        nodes_on_proper_causal_paths = treatments_descendants_without_treatments.intersection(outcome_ancestors)
+        outcome_ancestors = set.union(
+            *[
+                nx.ancestors(backdoor_graph, outcome).union(outcome)
+                for outcome in outcomes
+            ]
+        )
+        nodes_on_proper_causal_paths = treatments_descendants_without_treatments.intersection(
+            outcome_ancestors
+        )
         return nodes_on_proper_causal_paths
 
-    def get_backdoor_graph(self, treatments: [str]) -> 'CausalDAG':
+    def get_backdoor_graph(self, treatments: [str]) -> "CausalDAG":
         """
         A back-door graph is a graph for the list of treatments is a Causal DAG in which all edges leaving the treatment
         nodes are deleted.
@@ -162,5 +204,21 @@ class CausalDAG(nx.DiGraph):
         backdoor_graph.remove_edges_from(outgoing_edges)
         return backdoor_graph
 
+    def depends_on_outputs(self, node: Node, scenario: Scenario) -> bool:
+        """Check whether a given node in a given scenario is or depends on a
+        model output in the given scenario. That is, whether or not the model
+        needs to be run to determine its value.
+
+        NOTE: The graph must be acyclic for this to terminate.
+
+        :param Node node: The node in the DAG representing the variable of interest.
+        :param Scenario scenario: The modelling scenario.
+        :return: Whether the given variable is or depends on an output.
+        :rtype: bool
+        """
+        if isinstance(n, Output):
+            return True
+        return any([depends_on_outputs(n, scenario) for n in self.predecessors(node)])
+
     def __str__(self):
-        return f'Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}'
+        return f"Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}"
