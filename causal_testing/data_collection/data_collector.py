@@ -97,11 +97,12 @@ class ObservationalDataCollector(DataCollector):
         # For each variable in the scenario, remove rows where a constraint is violated
         scenario_execution_data_df = execution_data_df.copy()
         for constraint in self.scenario.constraints:
-            scenario_execution_data_df = execution_data_df[
-                execution_data_df[variable].map(
-                    lambda x: value_meets_constraint(x, constraint)
-                )
-            ]
+            for variable in self.scenario.variables:
+                scenario_execution_data_df = execution_data_df[
+                    execution_data_df[variable].map(
+                        lambda x: value_meets_constraint(x, constraint)
+                    )
+                ]
 
         return scenario_execution_data_df
 

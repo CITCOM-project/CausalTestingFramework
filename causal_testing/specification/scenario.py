@@ -8,6 +8,26 @@ from causal_testing.testing.causal_test_case import (
 
 
 class Scenario:
+    """A scenario defines the setting by listing the endogenous variables, their
+    datatypes, distributions, and any constraints over them. This is a common
+    practice in CI and is analogous to an investigator specifying “we are
+    interested in individuals over 40 who regularly eat cheese” or whatever. A
+    scenario, here, is not a specific test case; it just defines the population
+    of interest, in our case “runs of the model with parameters meeting the
+    constraints”. The model may have other inputs/outputs which the investigator
+    may choose to leave out. These are then exogenous variables and behave
+    accordingly.
+
+    :param {Variable} variables: The set of endogenous variables.
+    :param {ExprRef} constraints: The set of constraints relating the endogenous variables.
+    :param [CausalTestCase] test_cases: A list of causal test cases (defaults to empty).
+    :param [AbstractCausalTestCase] abstract_test_cases: A list of abstract causal test cases (defaults to empty).
+    :attr variables:
+    :attr constraints:
+    :attr test_cases:
+    :attr abstract_test_cases:
+    """
+
     variables: {str: Variable}
     constraints: {ExprRef}
     test_cases: [CausalTestCase]
@@ -16,7 +36,7 @@ class Scenario:
     def __init__(
         self,
         variables: {Variable},
-        constraints: {ExprRef} = set(),
+        constraints: {ExprRef} = {},
         test_cases: [CausalTestCase] = [],
         abstract_test_cases: [AbstractCausalTestCase] = [],
     ):
@@ -25,8 +45,8 @@ class Scenario:
         self.test_cases = test_cases
         self.abstract_test_cases = abstract_test_cases
 
-    def __repr__(self):
-        """Returns a printable representational string of a scenario, e.g.
+    def __str__(self):
+        """Returns a printable string of a scenario, e.g.
         Modelling scenario with variables:
             ------  ---------------  -----
             INPUT   location         str

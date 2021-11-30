@@ -52,6 +52,10 @@ class TestCausalDAG(unittest.TestCase):
 
 
 class TestCyclicCausalDAG(unittest.TestCase):
+    """
+    Test the creation of a cyclic causal graph.
+    """
+
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
@@ -68,7 +72,6 @@ class TestCyclicCausalDAG(unittest.TestCase):
 
 
 class TestDAGIdentification(unittest.TestCase):
-
     """
     Test the Causal DAG identification algorithms and supporting algorithms.
     """
@@ -249,6 +252,10 @@ class TestDAGIdentification(unittest.TestCase):
 
 
 class TestDependsOnOutputs(unittest.TestCase):
+    """
+    Test the depends_on_outputs method.
+    """
+
     def setUp(self) -> None:
         from scipy.stats import uniform
         from causal_testing.specification.variable import Input, Output, Meta

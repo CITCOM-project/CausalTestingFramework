@@ -1,40 +1,7 @@
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
 import z3
-
-
-class AbstractCausalTestCase:
-    """
-    An abstract test case serves as a generator for concrete test cases. Instead of having concrete conctrol
-    and treatment values, we instead just specify the intervention and the treatment variables. This then
-    enables potentially infinite concrete test cases to be generated between different values of the treatment.
-    """
-
-    def __init__(
-        self,
-        scenario_constraints: {z3.ExprRef},
-        intervention: Intervention,
-        treatment_vars: {Variable},
-        expected_causal_effect: {Variable: ExprRef},
-        effect_modifiers: {Variable} = {},
-    ):
-        self.scenario_constraints = scenario_constraints
-        self.intervention = intervention
-        self.treatment_vars = treatment_vars
-        self.expected_causal_effect = expected_causal_effect
-        self.effect_modifiers = effect_modifiers
-
-    def generate_concrete_tests(num: int) -> [CausalTestCase]:
-        """Generates a list of `num` concrete test cases.
-
-        :param int num: The number of test cases to generate.
-        :return: Description of returned object.
-        :rtype: [CausalTestCase]
-
-        """
-        pass
 
 
 class CausalTestCase:
@@ -57,8 +24,10 @@ class CausalTestCase:
         The former is the input configuration before applying the intervention and the latter is the input configuration
         after applying the intervention.
 
-        :param {Variable: any} input_configuration: The input configuration representing the control values of the treatment variables.
-        :param Intervention intervention: The metamorphic operator which transforms the control configuration to the treatment configuration.
+        :param {Variable: any} input_configuration: The input configuration representing the control values of the
+        treatment variables.
+        :param Intervention intervention: The metamorphic operator which transforms the control configuration to the
+        treatment configuration.
         :param {Variable: CausalTestOutcome} The expected outcome.
         """
         self.control_input_configuration = input_configuration
@@ -110,6 +79,42 @@ class CausalTestResult:
         return self.point_estimate == expected_causal_effect
 
 
-if __name__ == "__main__":
-    test_results = CausalTestResult("y ~ x0*t1 + x1*z0", 100, [90, 110], 0.05)
-    print(test_results)
+class AbstractCausalTestCase:
+    """
+    An abstract test case serves as a generator for concrete test cases. Instead of having concrete conctrol
+    and treatment values, we instead just specify the intervention and the treatment variables. This then
+    enables potentially infinite concrete test cases to be generated between different values of the treatment.
+    """
+
+    def __init__(
+        self,
+        scenario_constraints: {z3.ExprRef},
+        intervention: Intervention,
+        treatment_vars: {Variable},
+        expected_causal_effect: {Variable: z3.ExprRef},
+        effect_modifiers: {Variable} = None,
+    ):
+        self.scenario_constraints = scenario_constraints
+        self.intervention = intervention
+        self.treatment_vars = treatment_vars
+        self.expected_causal_effect = expected_causal_effect
+
+        if effect_modifiers is not None:
+            self.effect_modifiers = effect_modifiers
+        else:
+            self.effect_modifiers = {}
+
+    def generate_concrete_tests(num: int) -> [CausalTestCase]:
+        """Generates a list of `num` concrete test cases.
+
+        :param int num: The number of test cases to generate.
+        :return: Description of returned object.
+        :rtype: [CausalTestCase]
+
+        """
+        raise NotImplementedError("Yet to implement this.")
+
+
+# if __name__ == "__main__":
+#     test_results = CausalTestResult("y ~ x0*t1 + x1*z0", 100, [90, 110], 0.05)
+#     print(test_results)

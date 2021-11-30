@@ -2,7 +2,7 @@ from __future__ import annotations
 from pandas import DataFrame
 from typing import Callable, TypeVar
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import ExprRef, Context, Int, String, Real
+from z3 import Context, Int, String, Real, BoolRef
 from abc import ABC, abstractmethod
 import lhsmdu
 
@@ -28,6 +28,18 @@ def _coerce(val: any) -> any:
 
 
 class Variable(ABC):
+    """An abstract class representing causal variables.
+
+    :param str name: The name of the variable.
+    :param T datatype: The datatype of the variable.
+    :param rv_generic distribution: The expected distribution of the variable values.
+    :attr type z3: The Z3 mirror of the variable.
+    :attr name:
+    :attr datatype:
+    :attr distribution:
+
+    """
+
     name: str
     datatype: T
     distribution: rv_generic
@@ -86,7 +98,7 @@ class Variable(ABC):
         :return: The supplied value as an instance of T.
         :rtype: T
         """
-        return datatype(t)
+        return self.datatype(t)
 
     def sample(n_samples: int) -> [T]:
         """Generate a Latin Hypercube Sample of size n_samples according to the
@@ -112,7 +124,7 @@ class Variable(ABC):
         :rtype: str
 
         """
-        pass
+        raise NotImplementedError("Method `typestring` must be instantiated.")
 
     @abstractmethod
     def copy(self, name: str = None) -> Variable:
@@ -124,10 +136,12 @@ class Variable(ABC):
         :rtype: Variable
 
         """
-        pass
+        raise NotImplementedError("Method `copy` must be instantiated.")
 
 
 class Input(Variable):
+    """An extension of the Variable class representing inputs."""
+
     def typestring(self) -> str:
         return "INPUT"
 
@@ -138,6 +152,8 @@ class Input(Variable):
 
 
 class Output(Variable):
+    """An extension of the Variable class representing outputs."""
+
     def typestring(self) -> str:
         return "OUTPUT"
 
@@ -148,6 +164,18 @@ class Output(Variable):
 
 
 class Meta(Variable):
+    """An extension of the Variable class representing metavariables. These are variables which are relevant to the
+    _causal_ structure and properties we may want to test, but are not directly related to the computational model
+    either as inputs or outputs.
+
+    :param str name: The name of the variable.
+    :param T datatype: The datatype of the variable.
+    :param Callable[[DataFrame], DataFrame] populate: Populate a given dataframe containing runtime data with the
+    metavariable values as calculated from model inputs and ouputs.
+    :attr populate:
+
+    """
+
     populate: Callable[[DataFrame], DataFrame]
 
     def __init__(
