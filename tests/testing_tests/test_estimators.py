@@ -17,7 +17,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def setUpClass(cls) -> None:
         """ Get the data for examples in the second chapter: fake data from chapter 11 and NHEFS data from chapter 12
         onwards. NHEFS = National Health and Nutrition Examination Survey Data I Epidemiological Follow-up Study."""
-        cls.nhefs_csv = pd.read_csv('https://cdn1.sph.harvard.edu/wp-content/uploads/sites/1268/1268/20/nhefs.csv')
+        cls.nhefs_df = pd.read_csv('https://cdn1.sph.harvard.edu/wp-content/uploads/sites/1268/1268/20/nhefs.csv')
         A, Y = zip(*(
             (3, 21),
             (11, 54),
@@ -37,23 +37,66 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             (45, 190),
         ))
         cls.chapter_11_df = pd.DataFrame({'A': A, 'Y': Y, 'constant': np.ones(16)})
+        cls.nhefs_df['one'] = 1
+        cls.nhefs_df['zero'] = 0
+        edu_dummies = pd.get_dummies(cls.nhefs_df.education, prefix='edu')
+        exercise_dummies = pd.get_dummies(cls.nhefs_df.exercise, prefix='exercise')
+        active_dummies = pd.get_dummies(cls.nhefs_df.active, prefix='active')
+        cls.nhefs_df = pd.concat([cls.nhefs_df, edu_dummies, exercise_dummies, active_dummies], axis=1)
 
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator(('A',), 100, 90, set(), ('Y',), df)
-        intercept, coefficients = linear_regression_estimator._estimate_unit_effect()
-        self.assertEqual(round(intercept[0] + 90*coefficients[0, 0], 1), 216.9)
+        linear_regression_estimator = LinearRegressionEstimator(('A',), 100, 90, {'constant'}, ('Y',), df)
+        params, _ = linear_regression_estimator._run_linear_regression()
+        ate, _ = linear_regression_estimator.estimate_average_treatment_effect()
+
+        self.assertEqual(round(params['constant'] + 90*params['A'], 1), 216.9)
+
         # Increasing A from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(10*coefficients[0, 0], linear_regression_estimator.estimate_average_treatment_effect())
+        self.assertEqual(round(10*params['A'], 1), round(ate, 1))
 
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
-        df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator(('A',), 100, 90, set(), ('Y',), df)
+        df = self.chapter_11_df.copy()
+        linear_regression_estimator = LinearRegressionEstimator(('A',), 100, 90, {'constant'}, ('Y',), df)
         linear_regression_estimator.add_squared_term_to_df('A')
-        intercept, coefficients = linear_regression_estimator._estimate_unit_effect()
-        self.assertEqual(round(intercept[0] + 90*coefficients[0, 0] + 90*90*coefficients[0, 1], 1), 197.1)
+        params, _ = linear_regression_estimator._run_linear_regression()
+        ate, _ = linear_regression_estimator.estimate_average_treatment_effect()
+        self.assertEqual(round(params['constant'] + 90*params['A'] + 90*90*params['A^2'], 1), 197.1)
         # Increasing A from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(10*coefficients[0, 0], 3),
-                         round(linear_regression_estimator.estimate_average_treatment_effect(), 3))
+        self.assertEqual(round(10*params['A'], 3), round(ate, 3))
+
+    def test_program_15_1A(self):
+        """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
+        df = self.nhefs_df
+        covariates = {'sex', 'race', 'age', 'edu_2', 'edu_3', 'edu_4', 'edu_5', 'exercise_1', 'exercise_2',
+                      'active_1', 'active_2', 'wt71', 'smokeintensity', 'smokeyrs'}
+        linear_regression_estimator = LinearRegressionEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',), df)
+        terms_to_square = ['age', 'wt71', 'smokeintensity', 'smokeyrs']
+        terms_to_product = [('qsmk', 'smokeintensity')]
+        for term_to_square in terms_to_square:
+            linear_regression_estimator.add_squared_term_to_df(term_to_square)
+        for term_a, term_b in terms_to_product:
+            linear_regression_estimator.add_product_term_to_df(term_a, term_b)
+
+        params, _ = linear_regression_estimator._run_linear_regression()
+        self.assertEqual(round(params['qsmk'], 1), 2.6)
+        self.assertEqual(round(params['qsmk*smokeintensity'], 2), 0.05)
+
+    def test_program_15_no_interaction(self):
+        """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
+        without product parameter. """
+        df = self.nhefs_df
+        covariates = {'sex', 'race', 'age', 'edu_2', 'edu_3', 'edu_4', 'edu_5', 'exercise_1', 'exercise_2',
+                      'active_1', 'active_2', 'wt71', 'smokeintensity', 'smokeyrs'}
+        linear_regression_estimator = LinearRegressionEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',),
+                                                                df)
+        terms_to_square = ['age', 'wt71', 'smokeintensity', 'smokeyrs']
+        for term_to_square in terms_to_square:
+            linear_regression_estimator.add_squared_term_to_df(term_to_square)
+        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_average_treatment_effect()
+        self.assertEqual(round(ate, 1), 3.5)
+        self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
+
+
