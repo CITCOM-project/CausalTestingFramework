@@ -2,7 +2,7 @@ from __future__ import annotations
 from pandas import DataFrame
 from typing import Callable, TypeVar
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Context, Int, String, Real, BoolRef
+from z3 import Int, String, Real, BoolRef
 from abc import ABC, abstractmethod
 import lhsmdu
 
@@ -91,16 +91,16 @@ class Variable(ABC):
         print(self, other)
         return self.z3.__lt__(_coerce(other))
 
-    def cast(val: any) -> T:
+    def cast(self, val: any) -> T:
         """Cast the supplied value to the datatype T of the variable.
 
         :param any val: The value to cast.
         :return: The supplied value as an instance of T.
         :rtype: T
         """
-        return self.datatype(t)
+        return self.datatype(val)
 
-    def sample(n_samples: int) -> [T]:
+    def sample(self, n_samples: int) -> [T]:
         """Generate a Latin Hypercube Sample of size n_samples according to the
         Variable's distribution.
 

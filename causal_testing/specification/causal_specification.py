@@ -1,6 +1,7 @@
 from abc import ABC
 
 from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.specification.scenario import Scenario
 
 from typing import Union
 import logging
