@@ -2,7 +2,7 @@ from __future__ import annotations
 from pandas import DataFrame
 from typing import Callable, TypeVar
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Int, String, Real, BoolRef
+from z3 import Int, String, Real, BoolRef, RatNumRef
 from abc import ABC, abstractmethod
 import lhsmdu
 
@@ -98,7 +98,9 @@ class Variable(ABC):
         :return: The supplied value as an instance of T.
         :rtype: T
         """
-        return self.datatype(val)
+        if isinstance(val, RatNumRef) and self.datatype == float:
+            return float(val.numerator().as_long() / val.denominator().as_long())
+        return self.datatype(str(val))
 
     def sample(self, n_samples: int) -> [T]:
         """Generate a Latin Hypercube Sample of size n_samples according to the

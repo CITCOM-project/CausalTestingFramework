@@ -35,8 +35,8 @@ class Scenario:
 
     def __init__(
         self,
-        variables: {Variable},
-        constraints: {ExprRef} = {},
+        variables: {Variable} = set(),
+        constraints: {ExprRef} = set(),
         test_cases: [CausalTestCase] = [],
         abstract_test_cases: [AbstractCausalTestCase] = [],
     ):
