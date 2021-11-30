@@ -120,7 +120,6 @@ class LinearRegressionEstimator(Estimator):
         outcomes_col = reduced_df[list(self.outcomes)]
         regression = sm.OLS(outcomes_col, treatment_and_adjustments_cols)
         results = regression.fit()
-        print(results.summary().tables[1])
         confidence_intervals = results.conf_int(alpha=0.05, cols=None)
         ci_low, ci_high = confidence_intervals[0][list(self.treatment)], confidence_intervals[1][list(self.treatment)]
         ci_low, ci_high = ci_low.values[0], ci_high.values[0]
