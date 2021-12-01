@@ -22,7 +22,7 @@ jobs:
       - name: Install OS Level Dependencies
         run:   |
               if [ "$RUNNER_OS" == "Linux" ]; then
-                    apt install graphviz
+                    sudo apt install graphviz
               elif [ "$RUNNER_OS" == "Windows" ]; then
                     echo Windows
               elif [ "$RUNNER_OS" == "macOS" ]; then
