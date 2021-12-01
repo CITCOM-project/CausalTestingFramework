@@ -23,7 +23,7 @@ jobs:
       - name: Install OS Level Dependencies
         run:   |
               if [ "$RUNNER_OS" == "Linux" ]; then
-                    sudo apt install libgraphviz-dev graphviz
+                    conda install -c conda-forge pygraphviz
               elif [ "$RUNNER_OS" == "Windows" ]; then
                     conda install -c conda-forge pygraphviz
               elif [ "$RUNNER_OS" == "macOS" ]; then
