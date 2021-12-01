@@ -35,13 +35,19 @@ class Scenario:
 
     def __init__(
         self,
-        variables: {Variable} = set(),
-        constraints: {ExprRef} = set(),
+        variables: {Variable} = None,
+        constraints: {ExprRef} = None,
         test_cases: [CausalTestCase] = [],
         abstract_test_cases: [AbstractCausalTestCase] = [],
     ):
-        self.variables = {v.name: v for v in variables}
-        self.constraints = constraints
+        if variables is not None:
+            self.variables = {v.name: v for v in variables}
+        else:
+            self.variables = set()
+        if constraints is not None:
+            self.constraints = constraints
+        else:
+            self.constraints = set()
         self.test_cases = test_cases
         self.abstract_test_cases = abstract_test_cases
 
@@ -70,8 +76,8 @@ class Scenario:
         def indent(txt, spaces=4):
             return "\n".join(" " * spaces + ln for ln in txt.splitlines())
 
-        repr = "Modelling scenario with variables:\n"
-        repr += indent(
+        string = "Modelling scenario with variables:\n"
+        string += indent(
             tabulate(
                 sorted(
                     [
@@ -82,9 +88,9 @@ class Scenario:
             )
         )
         if len(self.constraints) > 0:
-            repr += "\nAnd constraints:\n    "
-            repr += "\n    ".join([str(c) for c in self.constraints])
-        return repr
+            string += "\nAnd constraints:\n    "
+            string += "\n    ".join([str(c) for c in self.constraints])
+        return string
 
     def _fresh(self, variable: Variable) -> Variable:
         """Create a "primed" version of the given variable to represent the CI

@@ -1,8 +1,5 @@
 from causal_testing.testing.intervention import Intervention
-from causal_testing.testing.causal_test_outcome import (
-    CausalTestOutcome,
-    CausalTestResult,
-)
+from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.specification.variable import Variable, Input
 import z3
 import lhsmdu
@@ -136,7 +133,8 @@ class AbstractCausalTestCase:
             sat = optimizer.check()
             if sat == z3.unsat:
                 logger.warn(
-                    f"Satisfiability of test case was unsat.\nConstraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
+                    f"Satisfiability of test case was unsat.\n"
+                    + "Constraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
                 )
             model = optimizer.model()
             concrete_tests.append(
