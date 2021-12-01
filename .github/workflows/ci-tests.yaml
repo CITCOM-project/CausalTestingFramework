@@ -25,6 +25,10 @@ jobs:
                     sudo apt install libgraphviz-dev graphviz
               elif [ "$RUNNER_OS" == "Windows" ]; then
                     choco install graphviz
+                    pip install --global-option=build_ext \
+                      --global-option="-IC:\Program Files\Graphviz\include" \
+                      --global-option="-LC:\Program Files\Graphviz\lib" \
+                      pygraphviz
               elif [ "$RUNNER_OS" == "macOS" ]; then
                     echo MacOS
               else
