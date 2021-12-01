@@ -27,7 +27,7 @@ jobs:
               elif [ "$RUNNER_OS" == "Windows" ]; then
                     conda install -c conda-forge pygraphviz
               elif [ "$RUNNER_OS" == "macOS" ]; then
-                    echo MacOS
+                    conda install -c conda-forge pygraphviz
               else
                     echo "$RUNNER_OS not supported"
                     exit 1
