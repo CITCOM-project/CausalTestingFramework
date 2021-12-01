@@ -35,7 +35,7 @@ jobs:
                     echo "$RUNNER_OS not supported"
                     exit 1
               fi
-        shell: bash
+        shell: bash -l {0}
       - name: Install package and dependencies
         run: |
           python --version
