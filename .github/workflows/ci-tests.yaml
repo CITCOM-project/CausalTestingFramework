@@ -25,7 +25,7 @@ jobs:
               if [ "$RUNNER_OS" == "Linux" ]; then
                     sudo apt install libgraphviz-dev graphviz
               elif [ "$RUNNER_OS" == "Windows" ]; then
-                    conda install pygraphviz
+                    conda install -c conda-forge pygraphviz
               elif [ "$RUNNER_OS" == "macOS" ]; then
                     echo MacOS
               else
