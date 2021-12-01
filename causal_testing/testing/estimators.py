@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Union
 import statsmodels.api as sm
 import pandas as pd
 
@@ -11,15 +12,14 @@ class Estimator(ABC):
     """
 
     def __init__(self, treatment: tuple, treatment_values: tuple, control_values: tuple, adjustment_set: set,
-                 outcomes: tuple, df: pd.DataFrame, estimand: str = None):
+                 outcomes: tuple, df: pd.DataFrame, effect_modifiers: {str: [Union[int, float, str]]} = None):
         self.treatment = treatment
         self.treatment_values = treatment_values
         self.control_values = control_values
         self.adjustment_set = adjustment_set
         self.outcomes = outcomes
         self.df = df
-        if estimand:
-            self.estimand = estimand
+        self.effect_modifiers = effect_modifiers
         self.modelling_assumptions = []
 
     @abstractmethod
@@ -93,21 +93,41 @@ class LinearRegressionEstimator(Estimator):
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += f'{term_a} and {term_b} vary linearly with each other.'
 
-    def estimate_average_treatment_effect(self) -> float:
-        """ Estimate the average treatment effect of changing the treatment from control value to treatment value
-        (intervention) on the outcomes.
+    def estimate_unit_ate(self) -> float:
+        """ Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
+        caused by a unit change in treatment.
+
+        :return: The unit average treatment effect and the 95% Wald confidence intervals.
+        """
+        model = self._run_linear_regression()
+        unit_effect = model.params[list(self.treatment)].values[0]  # Unit effect is the coefficient of the treatment
+        [ci_low, ci_high] = self._get_confidence_intervals(model)
+        return unit_effect*self.treatment_values - unit_effect*self.control_values, [ci_low, ci_high]
+
+    def estimate_ate(self) -> float:
+        """ Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
+        by changing the treatment variable from the control value to the treatment value.
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
-        params, [ci_low, ci_high] = self._run_linear_regression()
-        unit_effect = params[list(self.treatment)].values[0]  # Unit effect is the partial coefficient of treatment
-        return unit_effect*self.treatment_values - unit_effect*self.control_values, [ci_low, ci_high]
+        model = self._run_linear_regression()
+
+        # Create an empty individual for the control and treated
+        individuals = pd.DataFrame(0, index=['control', 'treated'], columns=model.params.index)
+        individuals.loc['control', list(self.treatment)] = self.control_values
+        individuals.loc['treated', list(self.treatment)] = self.treatment_values
+
+        # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
+        t_test_results = model.t_test(individuals.loc['treated'] - individuals.loc['control'])
+        ate = t_test_results.effect
+        confidence_intervals = t_test_results.conf_int()
+        p_value = t_test_results.pvalue
+        return ate, confidence_intervals, p_value
 
     def _run_linear_regression(self) -> pd.Series:
-        """ Run linear regression of the treatment and adjustment set against the outcomes and return the results.
+        """ Run linear regression of the treatment and adjustment set against the outcomes and return the model.
 
-        :return: A pandas series containing the regression results for each parameter in the linear mean model and the
-        95% Wald confidence intervals.
+        :return: The model after fitting to data.
         """
         # 1. Reduce dataframe to contain only the necessary columns
         reduced_df = self.df.copy()
@@ -119,8 +139,10 @@ class LinearRegressionEstimator(Estimator):
         treatment_and_adjustments_cols = reduced_df[list(self.treatment) + list(self.adjustment_set)]
         outcomes_col = reduced_df[list(self.outcomes)]
         regression = sm.OLS(outcomes_col, treatment_and_adjustments_cols)
-        results = regression.fit()
-        confidence_intervals = results.conf_int(alpha=0.05, cols=None)
+        model = regression.fit()
+        return model
+
+    def _get_confidence_intervals(self, model):
+        confidence_intervals = model.conf_int(alpha=0.05, cols=None)
         ci_low, ci_high = confidence_intervals[0][list(self.treatment)], confidence_intervals[1][list(self.treatment)]
-        ci_low, ci_high = ci_low.values[0], ci_high.values[0]
-        return results.params, [ci_low, ci_high]
+        return [ci_low.values[0], ci_high.values[0]]

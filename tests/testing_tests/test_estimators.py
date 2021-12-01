@@ -48,24 +48,24 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
         linear_regression_estimator = LinearRegressionEstimator(('A',), 100, 90, {'constant'}, ('Y',), df)
-        params, _ = linear_regression_estimator._run_linear_regression()
-        ate, _ = linear_regression_estimator.estimate_average_treatment_effect()
+        model = linear_regression_estimator._run_linear_regression()
+        ate, _ = linear_regression_estimator.estimate_unit_ate()
 
-        self.assertEqual(round(params['constant'] + 90*params['A'], 1), 216.9)
+        self.assertEqual(round(model.params['constant'] + 90*model.params['A'], 1), 216.9)
 
         # Increasing A from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(10*params['A'], 1), round(ate, 1))
+        self.assertEqual(round(10*model.params['A'], 1), round(ate, 1))
 
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator(('A',), 100, 90, {'constant'}, ('Y',), df)
         linear_regression_estimator.add_squared_term_to_df('A')
-        params, _ = linear_regression_estimator._run_linear_regression()
-        ate, _ = linear_regression_estimator.estimate_average_treatment_effect()
-        self.assertEqual(round(params['constant'] + 90*params['A'] + 90*90*params['A^2'], 1), 197.1)
+        model = linear_regression_estimator._run_linear_regression()
+        ate, _ = linear_regression_estimator.estimate_unit_ate()
+        self.assertEqual(round(model.params['constant'] + 90*model.params['A'] + 90*90*model.params['A^2'], 1), 197.1)
         # Increasing A from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(10*params['A'], 3), round(ate, 3))
+        self.assertEqual(round(10*model.params['A'], 3), round(ate, 3))
 
     def test_program_15_1A(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
@@ -80,9 +80,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         for term_a, term_b in terms_to_product:
             linear_regression_estimator.add_product_term_to_df(term_a, term_b)
 
-        params, _ = linear_regression_estimator._run_linear_regression()
-        self.assertEqual(round(params['qsmk'], 1), 2.6)
-        self.assertEqual(round(params['qsmk*smokeintensity'], 2), 0.05)
+        model = linear_regression_estimator._run_linear_regression()
+        self.assertEqual(round(model.params['qsmk'], 1), 2.6)
+        self.assertEqual(round(model.params['qsmk*smokeintensity'], 2), 0.05)
 
     def test_program_15_no_interaction(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -95,8 +95,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         terms_to_square = ['age', 'wt71', 'smokeintensity', 'smokeyrs']
         for term_to_square in terms_to_square:
             linear_regression_estimator.add_squared_term_to_df(term_to_square)
-        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_average_treatment_effect()
+        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_unit_ate()
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
-
 
