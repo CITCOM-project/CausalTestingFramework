@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ["ubuntu-latest"] #, "macos-latest", "windows-latest"]
+        os: ["ubuntu-latest", "windows-latest"] #, "macos-latest",
         python-version: ["3.7"]
     steps:
       - uses: actions/checkout@v2
@@ -24,7 +24,7 @@ jobs:
               if [ "$RUNNER_OS" == "Linux" ]; then
                     sudo apt install libgraphviz-dev graphviz
               elif [ "$RUNNER_OS" == "Windows" ]; then
-                    echo Windows
+                    choco install graphviz
               elif [ "$RUNNER_OS" == "macOS" ]; then
                     echo MacOS
               else
