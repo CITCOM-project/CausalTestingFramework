@@ -29,11 +29,7 @@ jobs:
         shell: bash -l {0}
       - name: Test with pytest
         run: |
-          pytest --cov=causal_testing
-        shell: bash -l {0}
-      - name: Determine coverage
-        run: |
-          coverage xml
+          pytest --cov=causal_testing --cov-report=xml
         shell: bash -l {0}
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v2
