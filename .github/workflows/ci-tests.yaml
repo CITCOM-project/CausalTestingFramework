@@ -22,7 +22,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install package and dependencies
         run: |
-          echo python --version
+          python --version
           conda install pygraphviz
           pip install -e .
           pip install pytest pytest-cov
