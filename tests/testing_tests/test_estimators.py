@@ -1,7 +1,25 @@
 import unittest
 import pandas as pd
 import numpy as np
-from causal_testing.testing.estimators import LinearRegressionEstimator
+import matplotlib.pyplot as plt
+from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
+
+
+def plot_results_df(df):
+    """
+    A helper method to plot results dataframe for estimators, where the df parameter must have columns for the cate,
+    ci_low, and ci_high.
+
+    :param df: A dataframe containing the columns cate, ci_low, and ci_high, where each row is an observation.
+    :return: Plot the treatment effect with confidence intervals for each observation.
+    """
+    df.sort_values('smokeintensity', inplace=True, ascending=True)
+    df.reset_index(inplace=True, drop=True)
+    plt.scatter(df['smokeintensity'], df['cate'], label='CATE', color='black')
+    plt.fill_between(df['smokeintensity'], df['ci_low'], df['ci_high'], alpha=.2)
+    plt.ylabel('Weight Change (kg) caused by stopping smoking')
+    plt.xlabel('Smoke intensity (cigarettes smoked per day)')
+    plt.show()
 
 
 class TestLinearRegressionEstimator(unittest.TestCase):
@@ -99,3 +117,59 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
 
+
+class TestCausalForestEstimator(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """ Get the data for examples in the second chapter: fake data from chapter 11 and NHEFS data from chapter 12
+        onwards. NHEFS = National Health and Nutrition Examination Survey Data I Epidemiological Follow-up Study."""
+        cls.nhefs_df = pd.read_csv('https://cdn1.sph.harvard.edu/wp-content/uploads/sites/1268/1268/20/nhefs.csv')
+        A, Y = zip(*(
+            (3, 21),
+            (11, 54),
+            (17, 33),
+            (23, 101),
+            (29, 85),
+            (37, 65),
+            (41, 157),
+            (53, 120),
+            (67, 111),
+            (79, 200),
+            (83, 140),
+            (97, 220),
+            (60, 230),
+            (71, 217),
+            (15, 11),
+            (45, 190),
+        ))
+        cls.chapter_11_df = pd.DataFrame({'A': A, 'Y': Y, 'constant': np.ones(16)})
+        cls.nhefs_df['one'] = 1
+        cls.nhefs_df['zero'] = 0
+        edu_dummies = pd.get_dummies(cls.nhefs_df.education, prefix='edu')
+        exercise_dummies = pd.get_dummies(cls.nhefs_df.exercise, prefix='exercise')
+        active_dummies = pd.get_dummies(cls.nhefs_df.active, prefix='active')
+        cls.nhefs_df = pd.concat([cls.nhefs_df, edu_dummies, exercise_dummies, active_dummies], axis=1)
+
+    def test_program_15_ate(self):
+        """Test whether our causal forest implementation produces the similar ATE to program 15.1 (p. 163, 184)."""
+        df = self.nhefs_df
+        covariates = {'sex', 'race', 'age', 'edu_2', 'edu_3', 'edu_4', 'edu_5', 'exercise_1', 'exercise_2',
+                      'active_1', 'active_2', 'wt71', 'smokeintensity', 'smokeyrs'}
+        causal_forest = CausalForestEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',), df,
+                                              {'smokeintensity'})
+        ate, _ = causal_forest.estimate_ate()
+        self.assertGreater(round(ate, 1), 2.5)
+        self.assertLess(round(ate, 1), 4.5)
+
+    def test_program_15_cate(self):
+        """Test whether our causal forest implementation produces the similar CATE to program 15.1 (p. 163, 184)."""
+        df = self.nhefs_df
+        smoking_intensity_5_and_40_df = df.loc[(df['smokeintensity'] == 5) | (df['smokeintensity'] == 40)]
+        covariates = {'sex', 'race', 'age', 'edu_2', 'edu_3', 'edu_4', 'edu_5', 'exercise_1', 'exercise_2',
+                      'active_1', 'active_2', 'wt71', 'smokeintensity', 'smokeyrs'}
+        causal_forest = CausalForestEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',), smoking_intensity_5_and_40_df,
+                                              {'smokeintensity'})
+        cates_df = causal_forest.estimate_cates()
+        plot_results_df(cates_df)
+        # TODO: How can we test the non-parametric estimators? Their estimates change every run.
