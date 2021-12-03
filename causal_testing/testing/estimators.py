@@ -150,7 +150,6 @@ class LinearRegressionEstimator(Estimator):
         outcomes_col = reduced_df[list(self.outcomes)]
         regression = sm.OLS(outcomes_col, treatment_and_adjustments_cols)
         model = regression.fit()
-        print(type(model))
         return model
 
     def _get_confidence_intervals(self, model):
