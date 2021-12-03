@@ -10,7 +10,17 @@ class Estimator(ABC):
     """ An estimator contains all of the information necessary to compute a causal estimate for the effect of changing
     a set of treatment variables to a set of values.
 
-    All estimators must implement the abstract methods add_modelling_assumptions and estimate_ate.
+    All estimators must implement the following two methods:
+
+    1) add_modelling_assumptions: The validity of a model-assisted causal inference result depends on whether
+    the modelling assumptions imposed by a model actually hold. Therefore, for each model, is important to state
+    the modelling assumption upon which the validity of the results depend. To achieve this, the estimator object
+    maintains a list of modelling assumptions (as strings). If a user wishes to implement their own estimator, they
+    must implement this method and add all assumptions to the list of modelling assumptions.
+
+    2) estimate_ate: All estimators must be capable of returning the average treatment effect as a minimum. That is, the
+    average effect of the intervention (changing treatment from control to treated value) on the outcome of interest
+    adjusted for all confounders.
     """
 
     def __init__(self, treatment: tuple, treatment_values: tuple, control_values: tuple, adjustment_set: set,
@@ -51,9 +61,7 @@ class Estimator(ABC):
 
 
 class LinearRegressionEstimator(Estimator):
-
-    """
-    A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
+    """ A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
 
@@ -152,20 +160,24 @@ class LinearRegressionEstimator(Estimator):
 
 
 class CausalForestEstimator(Estimator):
-    """
-    A causal random forest estimator is a non-parametric estimator which recursively partitions the covariate space
-    to learn a low-dimensional representation of treatment effect heterogeneity. Assuming the CATE is constant within
-    some neighbourhood in the covariate space, then it is possible to solve a partially linear model over the
-    neighbourhood to find estimate the average treatment effect. The goal is to find leaves where the treatment effect
-    is constant but different from other leave (i.e. partition into groups of individuals that observe different
-    treatment effects).
-
+    """ A causal random forest estimator is a non-parametric estimator which recursively partitions the covariate space
+    to learn a low-dimensional representation of treatment effect heterogeneity. This form of estimator is best suited
+    to the estimation of heterogeneous treatment effects i.e. the estimated effect for every sample rather than the
+    population average.
     """
 
     def add_modelling_assumptions(self):
+        """ Add any modelling assumptions to the estimator.
+
+        :return self: Update self.modelling_assumptions
+        """
         self.modelling_assumptions += 'Non-parametric estimator: no restrictions imposed on the data.'
 
     def estimate_ate(self) -> float:
+        """ Estimate the average treatment effect.
+
+        :return ate, confidence_intervals: The average treatment effect and 95% confidence intervals.
+        """
         # Remove any NA containing rows
         reduced_df = self.df.copy()
         necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcomes)
@@ -181,14 +193,26 @@ class CausalForestEstimator(Estimator):
         treatment_df = reduced_df[list(self.treatment)]
         outcomes_df = reduced_df[list(self.outcomes)]
 
+        # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
         model = CausalForestDML(model_y=GradientBoostingRegressor(), model_t=GradientBoostingRegressor())
         model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
+
+        # Obtain the ATE and 95% confidence intervals
         ate = model.ate(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
         ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
         ci_low, ci_high = ate_interval[0][0], ate_interval[1][0]
         return ate[0], [ci_low, ci_high]
 
     def estimate_cates(self) -> float:
+        """ Estimate the conditional average treatment effect for each sample in the data as a function of a set of
+        covariates (X) i.e. effect modifiers. That is, the predicted change in outcome caused by the intervention
+        (change in treatment from control to treatment value) for every execution of the system-under-test, taking into
+        account the value of each effect modifier X. As a result, for every unique setting of the set of covariates X,
+        we expect a different CATE.
+
+        :return results_df: A dataframe containing a conditional average treatment effect, 95% confidence intervals, and
+        the covariate (effect modifier) values for each sample.
+        """
 
         # Remove any NA containing rows
         reduced_df = self.df.copy()
@@ -222,4 +246,3 @@ class CausalForestEstimator(Estimator):
         effect_modifier_df.reset_index(drop=True, inplace=True)
         results_df[list(self.effect_modifiers)] = effect_modifier_df
         return results_df
-
