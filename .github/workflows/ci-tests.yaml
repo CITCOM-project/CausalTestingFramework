@@ -33,5 +33,3 @@ jobs:
         shell: bash -l {0}
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: true
