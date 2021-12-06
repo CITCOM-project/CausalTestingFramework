@@ -32,5 +32,5 @@ jobs:
           pytest --cov=causal_testing --cov-report=xml
         shell: bash -l {0}
       - name: "Upload coverage to Codecov"
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v1
 
