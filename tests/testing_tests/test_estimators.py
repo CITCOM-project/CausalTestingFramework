@@ -76,7 +76,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_2(self):
         """ Test whether our linear regression implementation produces the same results as program 11.2 (p. 141). """
         df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator(('treatments',), 100, 90, {'constant'}, ('outcomes',), df)
+        linear_regression_estimator = LinearRegressionEstimator(('treatments',), 100, 90, {'constant'}, ('outcomes',),
+                                                                df)
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
 
@@ -133,6 +134,11 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 
 
 class TestCausalForestEstimator(unittest.TestCase):
+    """ Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].
+
+    Reference: Hernán MA, Robins JM (2020). Causal Inference: What If. Boca Raton: Chapman & Hall/CRC.
+    Link: https://www.hsph.harvard.edu/miguel-hernan/causal-inference-book/
+    """
 
     @classmethod
     def setUpClass(cls) -> None:
