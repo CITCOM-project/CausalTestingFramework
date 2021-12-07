@@ -47,7 +47,7 @@ class TestCausalTestEngine(unittest.TestCase):
         self.observational_data_csv_path = os.path.join(temp_dir_path, 'observational_data.csv')
         df.to_csv(self.observational_data_csv_path, index=False)
 
-    def test_check_no_positivty_violation(self):
+    def test_check_no_positivity_violation(self):
         """ Check that no positivity violation is identified when there is no positivity violation. """
         self.causal_test_engine.load_data(self.observational_data_csv_path)
         minimal_adjustment_sets = self.causal_dag.enumerate_minimal_adjustment_sets(['A'], ['C'])
@@ -55,7 +55,7 @@ class TestCausalTestEngine(unittest.TestCase):
         variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
         self.assertFalse(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
-    def test_check_positivty_violation_missing_confounder(self):
+    def test_check_positivity_violation_missing_confounder(self):
         """ Check that a positivity violation is identified when there is a positivity violation due to a missing
         confounder. """
         self.causal_test_engine.load_data(self.observational_data_csv_path)
@@ -65,7 +65,7 @@ class TestCausalTestEngine(unittest.TestCase):
         variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
-    def test_check_positivty_violation_missing_treatment(self):
+    def test_check_positivity_violation_missing_treatment(self):
         """ Check that a positivity violation is identified when there is a positivity violation due to a missing
         treatment. """
         self.causal_test_engine.load_data(self.observational_data_csv_path)
@@ -75,7 +75,7 @@ class TestCausalTestEngine(unittest.TestCase):
         variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
-    def test_check_positivty_violation_missing_outcome(self):
+    def test_check_positivity_violation_missing_outcome(self):
         """ Check that a positivity violation is identified when there is a positivity violation due to a missing
         outcome. """
         self.causal_test_engine.load_data(self.observational_data_csv_path)
