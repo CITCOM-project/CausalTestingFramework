@@ -19,6 +19,7 @@ class Intervention:
         :param input_configuration: Input configuration for the scenario-under-test.
         :return treatment_input_configuration: a modified input configuration.
         """
-        second_input_configuration = input_configuration.copy()
-        treatment_input_configuration = second_input_configuration[self.treatment_variables] = self.treatment_values
+        treatment_input_configuration = input_configuration.copy()
+        for t, treatment in enumerate(self.treatment_variables):
+            treatment_input_configuration[treatment] = self.treatment_values[t]
         return treatment_input_configuration

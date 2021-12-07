@@ -1,18 +1,18 @@
 import unittest
 import os
-
 import pandas as pd
 import numpy as np
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.specification.causal_specification import CausalSpecification, Scenario
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.intervention import Intervention
-from causal_testing.testing.causal_test_case import CausalTestCase, CausalTestResult
+from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
+from causal_testing.testing.estimators import CausalForestEstimator
 
 
-class TestCausalTestEngine(unittest.TestCase):
-    """ Test the CausalTestEngine workflow.
+class TestCausalTestEngineObservational(unittest.TestCase):
+    """ Test the CausalTestEngine workflow using observational data.
 
     The causal test engine (CTE) is the main workflow for the causal testing framework. The CTE takes a causal test case
     and a causal specification and computes the causal effect of the intervention on the outcome of interest.
@@ -22,7 +22,7 @@ class TestCausalTestEngine(unittest.TestCase):
         # 1. Create Causal DAG
         temp_dir_path = create_temp_dir_if_non_existent()
         dag_dot_path = os.path.join(temp_dir_path, 'dag.dot')
-        dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C}"""
+        dag_dot = """digraph G { A -> C; D -> A; D -> C}"""
         f = open(dag_dot_path, 'w')
         f.write(dag_dot)
         f.close()
@@ -33,17 +33,17 @@ class TestCausalTestEngine(unittest.TestCase):
         self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.causal_dag)
 
         # 3. Create an intervention and causal test case
-        self.intervention = Intervention(('A',), (10,))
-        self.expected_causal_effect = {'B': 10}
-        self.causal_test_case = CausalTestCase({'A': 5}, self.intervention, self.expected_causal_effect)
+        self.intervention = Intervention(('A',), (1,))
+        self.expected_causal_effect = {'C': 4}
+        self.causal_test_case = CausalTestCase({'A': 0}, self.intervention, self.expected_causal_effect)
 
         # 4. Create causal test engine
         self.causal_test_engine = CausalTestEngine(self.causal_test_case, self.causal_specification)
 
         # 5. Create dummy test data and write to csv
-        df = pd.DataFrame({'D': list(np.random.randint(0, 100, 1000))})  # D = exogenous
-        df['A'] = 2 * df['D']  # A = 2*D
-        df['C'] = df['D'] * (4*df['A'])  # C = (4*A)*D
+        df = pd.DataFrame({'D': list(np.random.normal(70, 20, 1000))})  # D = exogenous
+        df['A'] = [1 if d > 50 else 0 for d in df['D']]
+        df['C'] = df['D'] + (4*(df['A']+2))  # C = (4*(A+2)) + D
         self.observational_data_csv_path = os.path.join(temp_dir_path, 'observational_data.csv')
         df.to_csv(self.observational_data_csv_path, index=False)
 
@@ -84,6 +84,16 @@ class TestCausalTestEngine(unittest.TestCase):
         minimum_adjustment_set = min(minimal_adjustment_sets, key=len)
         variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
+
+    @unittest.skip
+    def test_execute_test_observational(self):
+        """ Check that executing the causal test case returns the correct results for the dummy data.
+        """
+        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        print(self.causal_test_engine.scenario_execution_data_df)
+        causal_test_result = self.causal_test_engine.execute_test(CausalForestEstimator)
+        print(causal_test_result)
+        self.assertAlmostEqual(causal_test_result.ate, 4, delta=1)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
