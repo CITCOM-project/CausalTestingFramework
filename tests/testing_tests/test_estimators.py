@@ -165,5 +165,4 @@ class TestCausalForestEstimator(unittest.TestCase):
         causal_forest = CausalForestEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',), smoking_intensity_5_and_40_df,
                                               {'smokeintensity'})
         cates_df = causal_forest.estimate_cates()
-        plot_results_df(cates_df)
-        # TODO: How can we test the non-parametric estimators? Their estimates change every run.
+        self.assertGreater(cates_df['cate'].mean()[0], 0)
