@@ -88,8 +88,9 @@ class CausalTestEngine:
         """
         if not self.scenario_execution_data_df:
             raise Exception('No data has been loaded. Please call load_data prior to executing a causal test case.')
-        minimal_adjustment_set = self.casual_dag.enumerate_minimal_adjustment_sets(self.treatment_variables,
-                                                                                   self.outcome_variables)
+        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(self.treatment_variables,
+                                                                                    self.outcome_variables)
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         variables_for_positivity = list(minimal_adjustment_set + self.treatment_variables + self.outcome_variables)
         if self._check_positivity_violation(variables_for_positivity):
             # TODO: We should allow users to continue because positivity can be overcome with parametric models
@@ -122,8 +123,8 @@ class CausalTestEngine:
         :return: True if positivity is violated, False otherwise.
         """
         # TODO: Improve positivity checks to look for stratum-specific violations, not just missing variables in df
-        if not variables_list.issubset(self.scenario_execution_data_df.columns):
-            missing_variables = variables_list - set(self.scenario_execution_data_df.columns)
+        if not set(variables_list).issubset(self.scenario_execution_data_df.columns):
+            missing_variables = set(variables_list) - set(self.scenario_execution_data_df.columns)
             logger.warning(f'Positivity violation: missing data for variables {missing_variables}.\n'
                            f'Causal inference is only valid if a well-specified parametric model is used.\n'
                            f'Alternatively, consider restricting analysis to executions without the variables:'
