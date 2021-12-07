@@ -84,3 +84,6 @@ class TestCausalTestEngine(unittest.TestCase):
         minimum_adjustment_set = min(minimal_adjustment_sets, key=len)
         variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
+
+    def tearDown(self) -> None:
+        remove_temp_dir_if_existent()
