@@ -86,27 +86,25 @@ class CausalTestEngine:
         :param estimator: A reference to an Estimator class.
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
-        if not self.scenario_execution_data_df:
+        if self.scenario_execution_data_df.empty:
             raise Exception('No data has been loaded. Please call load_data prior to executing a causal test case.')
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(self.treatment_variables,
                                                                                     self.outcome_variables)
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
-        variables_for_positivity = list(minimal_adjustment_set + self.treatment_variables + self.outcome_variables)
+        variables_for_positivity = list(minimal_adjustment_set) + self.treatment_variables + self.outcome_variables
         if self._check_positivity_violation(variables_for_positivity):
             # TODO: We should allow users to continue because positivity can be overcome with parametric models
             # TODO: When we implement causal contracts, we should also note the positivity violation there
             raise Exception(f'POSITIVITY VIOLATION -- Cannot proceed.')
 
         estimation_model = estimator(self.treatment_variables,
-                                     self.causal_test_case.treatment_input_configuration.values(),
-                                     self.causal_test_case.control_input_configuration.values(),
+                                     list(self.causal_test_case.treatment_input_configuration.values())[0],
+                                     list(self.causal_test_case.control_input_configuration.values())[0],
                                      minimal_adjustment_set,
                                      self.outcome_variables,
                                      self.scenario_execution_data_df)
         # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
-        ate = estimation_model.estimate_ate()
-        # TODO: Not all estimators have confidence intervals. Find the best way to compute them if available.
-        confidence_intervals = estimation_model.compute_confidence_intervals()
+        ate, confidence_intervals = estimation_model.estimate_ate()
         causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
         causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         return causal_test_result

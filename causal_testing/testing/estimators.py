@@ -4,6 +4,7 @@ from econml.dml import CausalForestDML
 from sklearn.ensemble import GradientBoostingRegressor
 import statsmodels.api as sm
 import pandas as pd
+import numpy as np
 
 
 class Estimator(ABC):
@@ -23,7 +24,7 @@ class Estimator(ABC):
     adjusted for all confounders.
     """
 
-    def __init__(self, treatment: tuple, treatment_values: tuple, control_values: tuple, adjustment_set: set,
+    def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
                  outcomes: tuple, df: pd.DataFrame, effect_modifiers: set = None):
         self.treatment = treatment
         self.treatment_values = treatment_values
@@ -189,18 +190,20 @@ class CausalForestEstimator(Estimator):
         else:
             effect_modifier_df = reduced_df[list(self.adjustment_set)]
         confounders_df = reduced_df[list(self.adjustment_set)]
-        treatment_df = reduced_df[list(self.treatment)]
-        outcomes_df = reduced_df[list(self.outcomes)]
+        treatment_df = np.ravel(reduced_df[list(self.treatment)])
+        outcomes_df = np.ravel(reduced_df[list(self.outcomes)])
 
         # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
-        model = CausalForestDML(model_y=GradientBoostingRegressor(), model_t=GradientBoostingRegressor())
+        model = CausalForestDML(model_y=GradientBoostingRegressor(random_state=2),
+                                model_t=GradientBoostingRegressor(random_state=2),
+                                random_state=2)
         model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
         ate = model.ate(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
         ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
-        ci_low, ci_high = ate_interval[0][0], ate_interval[1][0]
-        return ate[0], [ci_low, ci_high]
+        ci_low, ci_high = ate_interval[0], ate_interval[1]
+        return ate, [ci_low, ci_high]
 
     def estimate_cates(self) -> float:
         """ Estimate the conditional average treatment effect for each sample in the data as a function of a set of
