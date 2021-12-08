@@ -130,10 +130,9 @@ class LinearRegressionEstimator(Estimator):
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc['treated'] - individuals.loc['control'])
-        ate = t_test_results.effect
+        ate = t_test_results.effect[0]
         confidence_intervals = t_test_results.conf_int()
-        p_value = t_test_results.pvalue
-        return ate, confidence_intervals, p_value
+        return ate, confidence_intervals
 
     def _run_linear_regression(self) -> RegressionResultsWrapper:
         """ Run linear regression of the treatment and adjustment set against the outcomes and return the model.
@@ -146,8 +145,11 @@ class LinearRegressionEstimator(Estimator):
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
-        # 2. Estimate the unit difference in outcome caused by unit difference in treatment
-        treatment_and_adjustments_cols = reduced_df[list(self.treatment) + list(self.adjustment_set)]
+        # 2. Add intercept
+        reduced_df['Intercept'] = 1
+
+        # 3. Estimate the unit difference in outcome caused by unit difference in treatment
+        treatment_and_adjustments_cols = reduced_df[list(self.treatment) + list(self.adjustment_set) + ['Intercept']]
         outcomes_col = reduced_df[list(self.outcomes)]
         regression = sm.OLS(outcomes_col, treatment_and_adjustments_cols)
         model = regression.fit()

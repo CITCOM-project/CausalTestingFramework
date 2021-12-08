@@ -8,7 +8,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
-from causal_testing.testing.estimators import CausalForestEstimator
+from causal_testing.testing.estimators import CausalForestEstimator, LinearRegressionEstimator
 
 
 class TestCausalTestEngineObservational(unittest.TestCase):
@@ -43,9 +43,13 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         # 5. Create dummy test data and write to csv
         df = pd.DataFrame({'D': list(np.random.normal(70, 20, 1000))})  # D = exogenous
         df['A'] = [1 if d > 50 else 0 for d in df['D']]
-        df['C'] = df['D'] + (4*(df['A']+2))  # C = (4*(A+2)) + D
+        df['C'] = df['D'] + (4 * (df['A'] + 2))  # C = (4*(A+2)) + D
         self.observational_data_csv_path = os.path.join(temp_dir_path, 'observational_data.csv')
         df.to_csv(self.observational_data_csv_path, index=False)
+
+        # 6. Easier to access treatment and outcome values
+        self.treatment_value = 1
+        self.control_value = 0
 
     def test_check_no_positivity_violation(self):
         """ Check that no positivity violation is identified when there is no positivity violation. """
@@ -86,14 +90,45 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
     @unittest.skip
-    def test_execute_test_observational(self):
-        """ Check that executing the causal test case returns the correct results for the dummy data.
-        """
+    def test_execute_test_observational_causal_forest_estimator(self):
+        """ Check that executing the causal test case returns the correct results for the dummy data using a causal
+        forest estimator. """
         self.causal_test_engine.load_data(self.observational_data_csv_path)
-        print(self.causal_test_engine.scenario_execution_data_df)
-        causal_test_result = self.causal_test_engine.execute_test(CausalForestEstimator)
-        print(causal_test_result)
+        estimation_model = CausalForestEstimator(('A',),
+                                                 self.treatment_value,
+                                                 self.control_value,
+                                                 {'D'},
+                                                 ('C',),
+                                                 self.causal_test_engine.scenario_execution_data_df)
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model)
         self.assertAlmostEqual(causal_test_result.ate, 4, delta=1)
+
+    def test_execute_test_observational_linear_regression_estimator(self):
+        """ Check that executing the causal test case returns the correct results for dummy data using a linear
+        regression estimator. """
+        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        estimation_model = LinearRegressionEstimator(('A',),
+                                                     self.treatment_value,
+                                                     self.control_value,
+                                                     {'D'},
+                                                     ('C',),
+                                                     self.causal_test_engine.scenario_execution_data_df)
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model)
+        self.assertEqual(int(causal_test_result.ate), 4)
+
+    def test_execute_test_observational_linear_regression_estimator_squared_term(self):
+        """ Check that executing the causal test case returns the correct results for dummy data with a squared term
+        using a linear regression estimator. C ~ 4*(A+8) + D + D^2"""
+        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        estimation_model = LinearRegressionEstimator(('A',),
+                                                     self.treatment_value,
+                                                     self.control_value,
+                                                     {'D'},
+                                                     ('C',),
+                                                     self.causal_test_engine.scenario_execution_data_df)
+        estimation_model.add_squared_term_to_df('D')
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model)
+        self.assertAlmostEqual(round(causal_test_result.ate, 1), 4, delta=1)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
