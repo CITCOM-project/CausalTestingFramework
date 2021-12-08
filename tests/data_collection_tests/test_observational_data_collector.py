@@ -3,7 +3,6 @@ import os
 import pandas as pd
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import Scenario
-
 from causal_testing.specification.variable import Input
 from scipy.stats import uniform, rv_discrete
 from tests.test_helpers import (
@@ -51,6 +50,11 @@ class TestObservationalDataCollector(unittest.TestCase):
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
 
+    def test_not_all_variables_in_data(self):
+        pass
+
+    def tearDown(self) -> None:
+        pass
 
 if __name__ == "__main__":
     unittest.main()
