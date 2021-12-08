@@ -55,50 +55,42 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
     def test_check_no_positivity_violation(self):
         """ Check that no positivity violation is identified when there is no positivity violation. """
-        self.causal_test_engine.load_data(self.observational_data_csv_path)
-        minimal_adjustment_sets = self.causal_dag.enumerate_minimal_adjustment_sets(['A'], ['C'])
-        minimum_adjustment_set = min(minimal_adjustment_sets, key=len)
-        variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
+        minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
+        variables_to_check = list(minimal_adjustment_set) + ['A'] + ['C']
         self.assertFalse(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
     def test_check_positivity_violation_missing_confounder(self):
         """ Check that a positivity violation is identified when there is a positivity violation due to a missing
         confounder. """
-        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
         self.causal_test_engine.scenario_execution_data_df.drop(columns=['D'], inplace=True)  # Remove confounder
-        minimal_adjustment_sets = self.causal_dag.enumerate_minimal_adjustment_sets(['A'], ['C'])
-        minimum_adjustment_set = min(minimal_adjustment_sets, key=len)
-        variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
+        variables_to_check = list(minimal_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
     def test_check_positivity_violation_missing_treatment(self):
         """ Check that a positivity violation is identified when there is a positivity violation due to a missing
         treatment. """
-        self.causal_test_engine.load_data(self.observational_data_csv_path)
-        self.causal_test_engine.scenario_execution_data_df.drop(columns=['A'], inplace=True)  # Remove confounder
-        minimal_adjustment_sets = self.causal_dag.enumerate_minimal_adjustment_sets(['A'], ['C'])
-        minimum_adjustment_set = min(minimal_adjustment_sets, key=len)
-        variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
+        minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
+        self.causal_test_engine.scenario_execution_data_df.drop(columns=['A'], inplace=True)  # Remove treatment
+        variables_to_check = list(minimal_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
     def test_check_positivity_violation_missing_outcome(self):
         """ Check that a positivity violation is identified when there is a positivity violation due to a missing
         outcome. """
-        self.causal_test_engine.load_data(self.observational_data_csv_path)
-        self.causal_test_engine.scenario_execution_data_df.drop(columns=['C'], inplace=True)  # Remove confounder
-        minimal_adjustment_sets = self.causal_dag.enumerate_minimal_adjustment_sets(['A'], ['C'])
-        minimum_adjustment_set = min(minimal_adjustment_sets, key=len)
-        variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
+        minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
+        self.causal_test_engine.scenario_execution_data_df.drop(columns=['C'], inplace=True)  # Remove outcome
+        variables_to_check = list(minimal_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
     def test_execute_test_observational_causal_forest_estimator(self):
         """ Check that executing the causal test case returns the correct results for the dummy data using a causal
         forest estimator. """
-        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
         estimation_model = CausalForestEstimator(('A',),
                                                  self.treatment_value,
                                                  self.control_value,
-                                                 {'D'},
+                                                 minimal_adjustment_set,
                                                  ('C',),
                                                  self.causal_test_engine.scenario_execution_data_df)
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
@@ -107,11 +99,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
     def test_execute_test_observational_linear_regression_estimator(self):
         """ Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator. """
-        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
         estimation_model = LinearRegressionEstimator(('A',),
                                                      self.treatment_value,
                                                      self.control_value,
-                                                     {'D'},
+                                                     minimal_adjustment_set,
                                                      ('C',),
                                                      self.causal_test_engine.scenario_execution_data_df)
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
@@ -120,11 +112,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
     def test_execute_test_observational_linear_regression_estimator_squared_term(self):
         """ Check that executing the causal test case returns the correct results for dummy data with a squared term
         using a linear regression estimator. C ~ 4*(A+2) + D + D^2"""
-        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
         estimation_model = LinearRegressionEstimator(('A',),
                                                      self.treatment_value,
                                                      self.control_value,
-                                                     {'D'},
+                                                     minimal_adjustment_set,
                                                      ('C',),
                                                      self.causal_test_engine.scenario_execution_data_df)
         estimation_model.add_squared_term_to_df('D')
@@ -134,7 +126,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
     def test_execute_observational_causal_forest_estimator_cates(self):
         """ Check that executing the causal test case returns the correct conditional average treatment effects for
         dummy data with effect multiplicative effect modification. C ~ (4*(A+2) + D)*M """
-        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
         # Add some effect modifier M that has a multiplicative effect on C
         self.causal_test_engine.scenario_execution_data_df['M'] = \
             np.random.randint(1, 5, len(self.causal_test_engine.scenario_execution_data_df))
@@ -144,7 +136,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         estimation_model = CausalForestEstimator(('A',),
                                                  self.treatment_value,
                                                  self.control_value,
-                                                 {'D'},
+                                                 minimal_adjustment_set,
                                                  ('C',),
                                                  self.causal_test_engine.scenario_execution_data_df,
                                                  effect_modifiers={'M'})

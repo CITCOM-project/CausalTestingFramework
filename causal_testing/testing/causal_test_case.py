@@ -57,3 +57,4 @@ class CausalTestResult:
             this method to define precise oracles. """
         # TODO: Work out the best way to implement test oracle procedure. A test oracle object?
         return self.ate == expected_causal_effect
+
