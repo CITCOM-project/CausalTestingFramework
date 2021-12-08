@@ -11,6 +11,7 @@ requirements = [
     "matplotlib~=3.5.0",
     "econml~=0.12.0",
     "statsmodels~=0.13.1",
+    "z3-solver~=4.8.13.0",
 ]
 
 setup(
