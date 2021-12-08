@@ -228,7 +228,7 @@ class CausalForestEstimator(Estimator):
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
-            effect_modifier_df = None
+            raise Exception(f'CATE requires the user to define a set of effect modifiers.')
         confounders_df = reduced_df[list(self.adjustment_set)]
         treatment_df = reduced_df[list(self.treatment)]
         outcomes_df = reduced_df[list(self.outcomes)]
@@ -238,7 +238,7 @@ class CausalForestEstimator(Estimator):
         model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain CATES and confidence intervals
-        conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
+        conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values).flatten()
         [ci_low, ci_high] = model.effect_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values,
                                                   alpha=0.05)
 
@@ -249,4 +249,5 @@ class CausalForestEstimator(Estimator):
         results_df['ci_high'] = list(ci_high.flatten())
         effect_modifier_df.reset_index(drop=True, inplace=True)
         results_df[list(self.effect_modifiers)] = effect_modifier_df
+        results_df.sort_values(by=list(self.effect_modifiers), inplace=True)
         return results_df

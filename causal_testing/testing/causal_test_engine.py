@@ -76,7 +76,7 @@ class CausalTestEngine:
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
 
-    def execute_test(self, estimator: Estimator) -> CausalTestResult:
+    def execute_test(self, estimator: Estimator, estimate_type: str = 'ate') -> CausalTestResult:
         """ Execute a causal test case and return the causal test result.
 
         Test case execution proceeds with the following steps:
@@ -90,6 +90,7 @@ class CausalTestEngine:
         (7) Apply test oracle procedure to assign a pass/fail to the CausalTestResult and return.
 
         :param estimator: A reference to an Estimator class.
+        :param estimate_type: A string which denotes the type of estimate to return, ATE or CATE.
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
         if self.scenario_execution_data_df.empty:
@@ -103,17 +104,18 @@ class CausalTestEngine:
             # TODO: When we implement causal contracts, we should also note the positivity violation there
             raise Exception(f'POSITIVITY VIOLATION -- Cannot proceed.')
 
-        # estimation_model = estimator(self.treatment_variables,
-        #                              list(self.causal_test_case.treatment_input_configuration.values())[0],
-        #                              list(self.causal_test_case.control_input_configuration.values())[0],
-        #                              minimal_adjustment_set,
-        #                              self.outcome_variables,
-        #                              self.scenario_execution_data_df)
-
         # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
-        ate, confidence_intervals = estimator.estimate_ate()
-        causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
-        causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
+        if estimate_type == 'cate':
+            if not hasattr(estimator, 'estimate_cates'):
+                raise NotImplementedError(f'{estimator.__class__} has no CATE method.')
+            else:
+                cates_df = estimator.estimate_cates()
+                # TODO: Work out how to handle CATE test results (just return the results df for now)
+                return cates_df
+        else:
+            ate, confidence_intervals = estimator.estimate_ate()
+            causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
+            causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         return causal_test_result
 
     def _check_positivity_violation(self, variables_list):

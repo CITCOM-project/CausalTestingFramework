@@ -102,7 +102,6 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                  ('C',),
                                                  self.causal_test_engine.scenario_execution_data_df)
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
-        print(causal_test_result)
         self.assertAlmostEqual(causal_test_result.ate, 4, delta=1)
 
     def test_execute_test_observational_linear_regression_estimator(self):
@@ -120,7 +119,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
     def test_execute_test_observational_linear_regression_estimator_squared_term(self):
         """ Check that executing the causal test case returns the correct results for dummy data with a squared term
-        using a linear regression estimator. C ~ 4*(A+8) + D + D^2"""
+        using a linear regression estimator. C ~ 4*(A+2) + D + D^2"""
         self.causal_test_engine.load_data(self.observational_data_csv_path)
         estimation_model = LinearRegressionEstimator(('A',),
                                                      self.treatment_value,
@@ -131,6 +130,34 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         estimation_model.add_squared_term_to_df('D')
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
         self.assertAlmostEqual(round(causal_test_result.ate, 1), 4, delta=1)
+
+    def test_execute_observational_causal_forest_estimator_cates(self):
+        """ Check that executing the causal test case returns the correct conditional average treatment effects for
+        dummy data with effect multiplicative effect modification. C ~ (4*(A+2) + D)*M """
+        self.causal_test_engine.load_data(self.observational_data_csv_path)
+        # Add some effect modifier M that has a multiplicative effect on C
+        self.causal_test_engine.scenario_execution_data_df['M'] = \
+            np.random.randint(1, 5, len(self.causal_test_engine.scenario_execution_data_df))
+        self.causal_test_engine.scenario_execution_data_df['C'] *= \
+            self.causal_test_engine.scenario_execution_data_df['M']
+        print(self.causal_test_engine.scenario_execution_data_df)
+        estimation_model = CausalForestEstimator(('A',),
+                                                 self.treatment_value,
+                                                 self.control_value,
+                                                 {'D'},
+                                                 ('C',),
+                                                 self.causal_test_engine.scenario_execution_data_df,
+                                                 effect_modifiers={'M'})
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model, estimate_type='cate')
+
+        # Check that each effect modifier's strata has a greater ATE than the last (ascending order)
+        causal_test_result_m1 = causal_test_result.loc[causal_test_result['M'] == 1]
+        causal_test_result_m2 = causal_test_result.loc[causal_test_result['M'] == 2]
+        causal_test_result_m3 = causal_test_result.loc[causal_test_result['M'] == 3]
+        causal_test_result_m4 = causal_test_result.loc[causal_test_result['M'] == 4]
+        self.assertLess(causal_test_result_m1['cate'].mean(), causal_test_result_m2['cate'].mean())
+        self.assertLess(causal_test_result_m2['cate'].mean(), causal_test_result_m3['cate'].mean())
+        self.assertLess(causal_test_result_m3['cate'].mean(), causal_test_result_m4['cate'].mean())
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
