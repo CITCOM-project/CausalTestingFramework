@@ -180,9 +180,7 @@ class Meta(Variable):
 
     populate: Callable[[DataFrame], DataFrame]
 
-    def __init__(
-        self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]
-    ):
+    def __init__(self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]):
         super().__init__(name, datatype)
         self.populate = populate
 

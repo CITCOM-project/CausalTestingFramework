@@ -18,13 +18,8 @@ class CausalTestCase:
     in Y.
     """
 
-    def __init__(
-        self,
-        control_input_configuration: {Variable: any},
-        expected_causal_effect: CausalTestOutcome,
-        intervention: Intervention = None,
-        treatment_input_configuration: {Variable: any} = None,
-    ):
+    def __init__(self, control_input_configuration: {Variable: any}, expected_causal_effect: CausalTestOutcome,
+                 intervention: Intervention = None, treatment_input_configuration: {Variable: any} = None):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
         create two distinct input configurations: a control input configuration and a treatment input configuration.
@@ -69,16 +64,9 @@ class AbstractCausalTestCase:
     enables potentially infinite concrete test cases to be generated between different values of the treatment.
     """
 
-    def __init__(
-        self,
-        variables: {Variable},
-        primed_variables: {Variable},
-        scenario_constraints: {z3.ExprRef},
-        intervention_constraints: {z3.ExprRef},
-        treatment_variables: {Variable},
-        expected_causal_effect: {Variable: z3.ExprRef},
-        effect_modifiers: {Variable} = None,
-    ):
+    def __init__(self, variables: {Variable}, primed_variables: {Variable}, scenario_constraints: {z3.ExprRef},
+                 intervention_constraints: {z3.ExprRef}, treatment_variables: {Variable},
+                 expected_causal_effect: {Variable: z3.ExprRef}, effect_modifiers: {Variable} = None):
         assert treatment_variables.issubset(variables), (
             "Treatment variables must be a subset of variables."
             + " Instead got:\ntreatment_variables={treatment_variables}\nvariables={variables}"
@@ -95,9 +83,7 @@ class AbstractCausalTestCase:
         else:
             self.effect_modifiers = {}
 
-    def generate_concrete_tests(
-        self, sample_size: int,
-    ) -> ([CausalTestCase], pd.DataFrame):
+    def generate_concrete_tests(self, sample_size: int, ) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
 
         :param int sample_size: The number of test cases to generate.
@@ -156,8 +142,3 @@ class AbstractCausalTestCase:
                 }
             )
         return (concrete_tests, pd.DataFrame(runs, columns=run_columns))
-
-
-# if __name__ == "__main__":
-#     test_results = CausalTestResult("y ~ x0*t1 + x1*z0", 100, [90, 110], 0.05)
-#     print(test_results)

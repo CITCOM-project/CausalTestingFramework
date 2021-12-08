@@ -9,13 +9,8 @@ class CausalTestResult:
     """ A container to hold the results of a causal test case. Every causal test case provides a point estimate of
         the ATE for a particular estimand. Some but not all estimators can provide confidence intervals. """
 
-    def __init__(
-        self,
-        estimand: float,
-        point_estimate: float,
-        confidence_intervals: [float, float] = None,
-        confidence_level: float = None,
-    ):
+    def __init__(self, estimand: float, point_estimate: float, confidence_intervals: [float, float] = None,
+        confidence_level: float = None):
         self.estimand = estimand
         self.point_estimate = point_estimate
         self.confidence_intervals = confidence_intervals

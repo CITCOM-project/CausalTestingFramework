@@ -10,13 +10,8 @@ from .scenario import Scenario
 from .variable import Output
 
 
-def list_all_min_sep(
-    graph: nx.Graph,
-    treatment_node: Node,
-    outcome_node: Node,
-    treatment_node_set: {Node},
-    outcome_node_set: {Node},
-):
+def list_all_min_sep(graph: nx.Graph, treatment_node: Node, outcome_node: Node,
+    treatment_node_set: {Node}, outcome_node_set: {Node}):
     """ A backtracking algorithm for listing all minimal treatment-outcome separators in an undirected graph.
 
     Reference: (Space-optimal, backtracking algorithms to list the minimal vertex separators of a graph, Ken Takata,
@@ -89,12 +84,7 @@ def list_all_min_sep(
             yield treatment_node_set_neighbours
 
 
-def close_separator(
-    graph: nx.Graph,
-    treatment_node: Node,
-    outcome_node: Node,
-    treatment_node_set: {Node},
-) -> {Node}:
+def close_separator(graph: nx.Graph, treatment_node: Node, outcome_node: Node, treatment_node_set: {Node}) -> {Node}:
     """ Compute the close separator for a set of treatments in an undirected graph.
 
     A close separator (relative to a set of variables X) is a separator whose vertices are adjacent to those in X.
@@ -165,9 +155,7 @@ class CausalDAG(nx.DiGraph):
         """
         return not list(nx.simple_cycles(self.graph))
 
-    def get_proper_backdoor_graph(
-        self, treatments: [str], outcomes: [str]
-    ) -> "CausalDAG":
+    def get_proper_backdoor_graph(self, treatments: [str], outcomes: [str]) -> "CausalDAG":
         """ Convert the causal DAG to a proper back-door graph.
 
         A proper back-door graph of a causal DAG is obtained by
@@ -229,9 +217,7 @@ class CausalDAG(nx.DiGraph):
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
 
-    def enumerate_minimal_adjustment_sets(
-        self, treatments: [str], outcomes: [str]
-    ) -> [{str}]:
+    def enumerate_minimal_adjustment_sets(self, treatments: [str], outcomes: [str]) -> [{str}]:
         """ Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes.
 
@@ -300,9 +286,7 @@ class CausalDAG(nx.DiGraph):
         )
         return minimum_adjustment_sets
 
-    def adjustment_set_is_minimal(
-        self, treatments: [str], outcomes: [str], adjustment_set: {str}
-    ) -> bool:
+    def adjustment_set_is_minimal(self, treatments: [str], outcomes: [str], adjustment_set: {str}) -> bool:
         """ Given a list of treatments X, a list of outcomes Y, and an adjustment set Z, determine whether Z is the
         smallest possible adjustment set.
 
@@ -342,13 +326,8 @@ class CausalDAG(nx.DiGraph):
 
         return True
 
-    def constructive_backdoor_criterion(
-        self,
-        proper_backdoor_graph: "CausalDAG",
-        treatments: [str],
-        outcomes: [str],
-        covariates: [str],
-    ) -> bool:
+    def constructive_backdoor_criterion(self, proper_backdoor_graph: "CausalDAG", treatments: [str],
+        outcomes: [str], covariates: [str]) -> bool:
         """ A variation of Pearl's back-door criterion applied to a proper backdoor graph which enables more efficient
         computation of minimal adjustment sets for the effect of a set of treatments on a set of outcomes.
 
