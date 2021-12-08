@@ -14,6 +14,7 @@ requirements = [
     "z3-solver~=4.8.13.0",
     "lhsmdu",
     "tabulate",
+    "scipy~=1.7.2"
 ]
 
 setup(
