@@ -76,12 +76,12 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_2(self):
         """ Test whether our linear regression implementation produces the same results as program 11.2 (p. 141). """
         df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator(('treatments',), 100, 90, {'constant'}, ('outcomes',),
+        linear_regression_estimator = LinearRegressionEstimator(('treatments',), 100, 90, set(), ('outcomes',),
                                                                 df)
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
 
-        self.assertEqual(round(model.params['constant'] + 90*model.params['treatments'], 1), 216.9)
+        self.assertEqual(round(model.params['Intercept'] + 90*model.params['treatments'], 1), 216.9)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
         self.assertEqual(round(10*model.params['treatments'], 1), round(ate, 1))
@@ -89,12 +89,12 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_3(self):
         """ Test whether our linear regression implementation produces the same results as program 11.3 (p. 144). """
         df = self.chapter_11_df.copy()
-        linear_regression_estimator = LinearRegressionEstimator(('treatments',), 100, 90, {'constant'}, ('outcomes',),
+        linear_regression_estimator = LinearRegressionEstimator(('treatments',), 100, 90, set(), ('outcomes',),
                                                                 df)
         linear_regression_estimator.add_squared_term_to_df('treatments')
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
-        self.assertEqual(round(model.params['constant'] + 90*model.params['treatments'] +
+        self.assertEqual(round(model.params['Intercept'] + 90*model.params['treatments'] +
                                90*90*model.params['treatments^2'], 1), 197.1)
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
         self.assertEqual(round(10*model.params['treatments'], 3), round(ate, 3))
@@ -165,4 +165,4 @@ class TestCausalForestEstimator(unittest.TestCase):
         causal_forest = CausalForestEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',), smoking_intensity_5_and_40_df,
                                               {'smokeintensity'})
         cates_df = causal_forest.estimate_cates()
-        self.assertGreater(cates_df['cate'].mean()[0], 0)
+        self.assertGreater(cates_df['cate'].mean(), 0)

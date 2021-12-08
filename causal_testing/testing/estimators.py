@@ -130,10 +130,9 @@ class LinearRegressionEstimator(Estimator):
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc['treated'] - individuals.loc['control'])
-        ate = t_test_results.effect
+        ate = t_test_results.effect[0]
         confidence_intervals = t_test_results.conf_int()
-        p_value = t_test_results.pvalue
-        return ate, confidence_intervals, p_value
+        return ate, confidence_intervals
 
     def _run_linear_regression(self) -> RegressionResultsWrapper:
         """ Run linear regression of the treatment and adjustment set against the outcomes and return the model.
@@ -146,8 +145,11 @@ class LinearRegressionEstimator(Estimator):
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
-        # 2. Estimate the unit difference in outcome caused by unit difference in treatment
-        treatment_and_adjustments_cols = reduced_df[list(self.treatment) + list(self.adjustment_set)]
+        # 2. Add intercept
+        reduced_df['Intercept'] = 1
+
+        # 3. Estimate the unit difference in outcome caused by unit difference in treatment
+        treatment_and_adjustments_cols = reduced_df[list(self.treatment) + list(self.adjustment_set) + ['Intercept']]
         outcomes_col = reduced_df[list(self.outcomes)]
         regression = sm.OLS(outcomes_col, treatment_and_adjustments_cols)
         model = regression.fit()
@@ -194,9 +196,9 @@ class CausalForestEstimator(Estimator):
         outcomes_df = np.ravel(reduced_df[list(self.outcomes)])
 
         # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
-        model = CausalForestDML(model_y=GradientBoostingRegressor(random_state=2),
-                                model_t=GradientBoostingRegressor(random_state=2),
-                                random_state=2)
+        model = CausalForestDML(model_y=GradientBoostingRegressor(),
+                                model_t=GradientBoostingRegressor(),
+                                )
         model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
@@ -226,7 +228,7 @@ class CausalForestEstimator(Estimator):
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
-            effect_modifier_df = None
+            raise Exception(f'CATE requires the user to define a set of effect modifiers.')
         confounders_df = reduced_df[list(self.adjustment_set)]
         treatment_df = reduced_df[list(self.treatment)]
         outcomes_df = reduced_df[list(self.outcomes)]
@@ -236,7 +238,7 @@ class CausalForestEstimator(Estimator):
         model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain CATES and confidence intervals
-        conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
+        conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values).flatten()
         [ci_low, ci_high] = model.effect_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values,
                                                   alpha=0.05)
 
@@ -247,4 +249,5 @@ class CausalForestEstimator(Estimator):
         results_df['ci_high'] = list(ci_high.flatten())
         effect_modifier_df.reset_index(drop=True, inplace=True)
         results_df[list(self.effect_modifiers)] = effect_modifier_df
+        results_df.sort_values(by=list(self.effect_modifiers), inplace=True)
         return results_df
