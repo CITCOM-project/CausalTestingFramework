@@ -12,6 +12,7 @@ requirements = [
     "econml~=0.12.0",
     "statsmodels~=0.13.1",
     "z3-solver~=4.8.13.0",
+    "z3~=0.2.0",
 ]
 
 setup(
