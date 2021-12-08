@@ -11,8 +11,6 @@ requirements = [
     "matplotlib~=3.5.0",
     "econml~=0.12.0",
     "statsmodels~=0.13.1",
-    # DO NOT CHANGE THE ORDER OF THESE!
-    "z3~=0.2.0",
     "z3-solver~=4.8.13.0",
     "lhsmdu",
     "tabulate",
