@@ -41,7 +41,9 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.causal_test_engine = CausalTestEngine(self.causal_test_case, self.causal_specification)
 
         # 5. Create dummy test data and write to csv
-        df = pd.DataFrame({'D': list(np.random.normal(70, 20, 1000))})  # D = exogenous
+        np.random.seed(1)
+        df = pd.DataFrame({'D': list(np.random.normal(60, 10, 1000))})  # D = exogenous
+        print(df['D'].min(), df['D'].max())
         df['A'] = [1 if d > 50 else 0 for d in df['D']]
         df['C'] = df['D'] + (4 * (df['A'] + 2))  # C = (4*(A+2)) + D
         self.observational_data_csv_path = os.path.join(temp_dir_path, 'observational_data.csv')
@@ -89,7 +91,6 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         variables_to_check = list(minimum_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
-    @unittest.skip
     def test_execute_test_observational_causal_forest_estimator(self):
         """ Check that executing the causal test case returns the correct results for the dummy data using a causal
         forest estimator. """
@@ -101,6 +102,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                  ('C',),
                                                  self.causal_test_engine.scenario_execution_data_df)
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
+        print(causal_test_result)
         self.assertAlmostEqual(causal_test_result.ate, 4, delta=1)
 
     def test_execute_test_observational_linear_regression_estimator(self):

@@ -196,9 +196,9 @@ class CausalForestEstimator(Estimator):
         outcomes_df = np.ravel(reduced_df[list(self.outcomes)])
 
         # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
-        model = CausalForestDML(model_y=GradientBoostingRegressor(random_state=2),
-                                model_t=GradientBoostingRegressor(random_state=2),
-                                random_state=2)
+        model = CausalForestDML(model_y=GradientBoostingRegressor(),
+                                model_t=GradientBoostingRegressor(),
+                                )
         model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
