@@ -37,8 +37,8 @@ class Scenario:
         self,
         variables: {Variable} = None,
         constraints: {ExprRef} = None,
-        test_cases: [CausalTestCase] = [],
-        abstract_test_cases: [AbstractCausalTestCase] = [],
+        test_cases: [CausalTestCase] = None,
+        abstract_test_cases: [AbstractCausalTestCase] = None,
     ):
         if variables is not None:
             self.variables = {v.name: v for v in variables}
@@ -48,8 +48,14 @@ class Scenario:
             self.constraints = constraints
         else:
             self.constraints = set()
-        self.test_cases = test_cases
-        self.abstract_test_cases = abstract_test_cases
+        if test_cases is not None:
+            self.test_cases = test_cases
+        else:
+            self.test_cases = []
+        if abstract_test_cases is not None:
+            self.abstract_test_cases = abstract_test_cases
+        else:
+            self.abstract_test_cases = []
 
     def __str__(self):
         """Returns a printable string of a scenario, e.g.

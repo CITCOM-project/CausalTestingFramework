@@ -133,8 +133,8 @@ class AbstractCausalTestCase:
             sat = optimizer.check()
             if sat == z3.unsat:
                 logger.warn(
-                    f"Satisfiability of test case was unsat.\n"
-                    + "Constraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
+                    "Satisfiability of test case was unsat.\n"
+                    + f"Constraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
                 )
             model = optimizer.model()
             concrete_tests.append(
