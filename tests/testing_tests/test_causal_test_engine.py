@@ -37,6 +37,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.expected_causal_effect = {'C': 4}
         self.causal_test_case = CausalTestCase({'A': 0}, self.expected_causal_effect, self.intervention)
 
+
         # 4. Create causal test engine
         self.causal_test_engine = CausalTestEngine(self.causal_test_case, self.causal_specification)
 
