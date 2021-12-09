@@ -1,7 +1,8 @@
 import pandas as pd
 import logging
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector, ObservationalDataCollector
-from causal_testing.testing.causal_test_case import CausalTestCase, CausalTestResult
+from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.causal_test_outcome import CausalTestResult
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.estimators import Estimator
 
