@@ -34,9 +34,8 @@ class CausalTestCase:
         :param {Variable: any} treatment_input_configuration: The input configuration representing the treatment
         values of the treatment variables.
         """
-        assert (
-            intervention is None or treatment_input_configuration is None
-        ), "Cannot define both treatment configuration and intervention."
+        assert (intervention is None or treatment_input_configuration is None),\
+            "Cannot define both treatment configuration and intervention."
 
         self.control_input_configuration = control_input_configuration
         self.expected_causal_effect = expected_causal_effect
@@ -48,12 +47,10 @@ class CausalTestCase:
             )
 
     def __str__(self):
-        return (
-            f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
-            f"changes: {self.expected_causal_effect}."
-        )
+        return (f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
+                f"changes: {self.expected_causal_effect}.")
 
-    def execute(data):
+    def execute(self, data):
         raise NotImplementedError("Need to implement execute.")
 
 
