@@ -207,7 +207,7 @@ class CausalForestEstimator(Estimator):
         ci_low, ci_high = ate_interval[0], ate_interval[1]
         return ate, [ci_low, ci_high]
 
-    def estimate_cates(self) -> float:
+    def estimate_cates(self) -> pd.DataFrame:
         """ Estimate the conditional average treatment effect for each sample in the data as a function of a set of
         covariates (X) i.e. effect modifiers. That is, the predicted change in outcome caused by the intervention
         (change in treatment from control to treatment value) for every execution of the system-under-test, taking into
