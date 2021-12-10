@@ -30,7 +30,6 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.causal_dag = CausalDAG(dag_dot_path)
 
         # 2. Create Scenario and Causal Specification
-        # TODO: (@MF replace this with updated Scenario/Constraints)
         self.scenario = Scenario({Input("A", float), Output("C", float), Output("D", float)})
         self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.causal_dag)
 
