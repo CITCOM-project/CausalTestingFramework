@@ -3,7 +3,10 @@ from causal_testing.specification.causal_specification import Scenario
 
 from typing import Union
 import pandas as pd
-from z3 import ExprRef
+import z3
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class DataCollector(ABC):
@@ -65,7 +68,7 @@ class ObservationalDataCollector(DataCollector):
         super().__init__()
         self.scenario = scenario
 
-    def collect_data(self, csv_path: str) -> pd.DataFrame:
+    def collect_data(self, csv_path: str, **kwargs) -> pd.DataFrame:
         """
         Read a csv containing execution data for the system-under-test into a pandas dataframe and filter to remove any
         data which does is invalid for the scenario-under-test. Data is invalid if it does not meet the constraints
@@ -74,11 +77,11 @@ class ObservationalDataCollector(DataCollector):
         :return scenario_execution_data_df: A pandas dataframe containing execution data that is valid for the
         scenario-under-test.
         """
-        execution_data_df = pd.read_csv(csv_path)
+        execution_data_df = pd.read_csv(csv_path, **kwargs)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
         return scenario_execution_data_df
 
-    def filter_valid_data(self, execution_data_df: pd.DataFrame) -> pd.DataFrame:
+    def filter_valid_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Check is execution data is valid for the scenario-under-test. Data is invalid if it does not meet the
         constraints imposed in the scenario-under-test (Scenario).
@@ -88,35 +91,41 @@ class ObservationalDataCollector(DataCollector):
         variables = set(self.scenario.variables.keys())
 
         # Check positivity
-        if not variables.issubset(execution_data_df.columns):
-            missing_variables = variables - set(execution_data_df.columns)
+        if not variables.issubset(data.columns):
+            missing_variables = variables - set(data.columns)
             raise IndexError(
                 f"Positivity violation: missing data for variables {missing_variables}."
             )
 
-        # For each variable in the scenario, remove rows where a constraint is violated
-        scenario_execution_data_df = execution_data_df.copy()
-        for constraint in self.scenario.constraints:
-            for variable in self.scenario.variables:
-                scenario_execution_data_df = execution_data_df[
-                    execution_data_df[variable].map(
-                        lambda x: value_meets_constraint(x, constraint)
-                    )
-                ]
+        # Check all variables declared in the modelling scenario
+        # TODO: @andrewc19, does this have a name?
+        if not set(data.columns).issubset(variables):
+            missing_variables = set(data.columns) - set(variables)
+            raise IndexError(
+                f"Variables {missing_variables} not declared in the modelling scenario."
+            )
 
-        return scenario_execution_data_df
+        # For each row, does it satisfy the constraints?
+        solver = z3.Solver()
+        solver.add(self.scenario.constraints)
+        sat = []
+        for _, row in data.iterrows():
+            solver.push()
+            # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
+            model = [self.scenario.variables[var].z3 == self.scenario.variables[var].cast(row[var]) for var in data.columns]
+            solver.add(model)
+            sat.append(solver.check() == z3.sat)
+            solver.pop()
 
+        # Strip out rows which violate the constraints
+        satisfying_data = data.copy()
+        satisfying_data["sat"] = sat
+        satisfying_data = satisfying_data.loc[satisfying_data["sat"]]
+        satisfying_data = satisfying_data.drop("sat", axis=1)
 
-# TODO Implement this
-def value_meets_constraint(value: Union[int, float], constraint: ExprRef) -> bool:
-    """
-    Check that numerical value-specific constraints are met.
-    :param value: The numerical value to check.
-    :param constraint: The constraint to check the value against.
-    :return: True or False depending on whether the value satisfies the constraint.
-    """
-    # if isinstance(constraint, AbsoluteValue):
-    #     return value == constraint.value
-    # elif isinstance(constraint, UniformDistribution):
-    #     return constraint.min <= value <= constraint.max
-    pass
+        # How many rows did we drop?
+        size_diff = len(data) - len(satisfying_data)
+        if size_diff > 0:
+            # TODO: Why does this print out many many times?
+            logger.warn(f"Discarded {size_diff} values due to constraint violations.")
+        return satisfying_data

@@ -115,7 +115,7 @@ class Variable(ABC):
             self.distribution is not None
         ), "Sampling requires a distribution to be specified."
         lhs = lhsmdu.sample(1, n_samples).tolist()[0]
-        return lhsmdu.inverseTransformSample(self.distribution, lhs).tolist()[0]
+        return lhsmdu.inverseTransformSample(self.distribution, lhs).tolist()
 
     @abstractmethod
     def typestring(self) -> str:
