@@ -1,15 +1,14 @@
+import pandas as pd
+import z3
+import logging
 from abc import ABC, abstractmethod
 from causal_testing.specification.causal_specification import Scenario
 
-from typing import Union
-import pandas as pd
-import z3
-
-import logging
 logger = logging.getLogger(__name__)
 
 
 class DataCollector(ABC):
+
     def __init__(self, scenario: Scenario):
         super().__init__()
         self.scenario = scenario
@@ -22,11 +21,12 @@ class DataCollector(ABC):
         """
         pass
 
-    def filter_valid_data(self, data: pd.DataFrame, check_pos:bool=True, check_scenario: bool=True) -> pd.DataFrame:
+    def filter_valid_data(self, data: pd.DataFrame, check_pos: bool = True,
+                          check_scenario: bool = True) -> pd.DataFrame:
         """
         Check is execution data is valid for the scenario-under-test. Data is invalid if it does not meet the
         constraints imposed in the scenario-under-test (Scenario).
-        :param execution_data_df: A pandas dataframe containing execution data from the system-under-test.
+        :param data: A pandas dataframe containing execution data from the system-under-test.
         :param bool check_pos: Check the data for positivity (defaults to true).
         :param bool check_scenario: Make sure all data variables are defined in the scenario (defaults to true).
         :return:
@@ -37,17 +37,11 @@ class DataCollector(ABC):
 
         if check_pos and not scenario_variables.issubset(data.columns):
             missing_variables = scenario_variables - set(data.columns)
-            raise IndexError(
-                f"Positivity violation: missing data for variables {missing_variables}."
-            )
+            raise IndexError(f"Positivity violation: missing data for variables {missing_variables}.")
 
-        # Check all variables declared in the modelling scenario
-        # TODO: @andrewc19, does this have a name?
         if check_scenario and not set(data.columns).issubset(scenario_variables):
-            missing_variables = set(data.columns) - set(variables)
-            raise IndexError(
-                f"Variables {missing_variables} not declared in the modelling scenario."
-            )
+            missing_variables = set(data.columns) - scenario_variables
+            raise IndexError(f"Variables {missing_variables} not declared in the modelling scenario.")
 
         # For each row, does it satisfy the constraints?
         solver = z3.Solver()
@@ -56,7 +50,8 @@ class DataCollector(ABC):
         for _, row in data.iterrows():
             solver.push()
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
-            model = [self.scenario.variables[var].z3 == self.scenario.variables[var].cast(row[var]) for var in data.columns]
+            model = [self.scenario.variables[var].z3 == self.scenario.variables[var].cast(row[var]) for var in
+                     data.columns]
             solver.add(model)
             sat.append(solver.check() == z3.sat)
             solver.pop()
@@ -70,10 +65,8 @@ class DataCollector(ABC):
         # How many rows did we drop?
         size_diff = len(data) - len(satisfying_data)
         if size_diff > 0:
-            # TODO: Why does this print out many many times?
-            logger.warn(f"Discarded {size_diff} values due to constraint violations.")
+            logger.warning(f"Discarded {size_diff} values due to constraint violations.")
         return satisfying_data
-
 
 
 class ExperimentalDataCollector(DataCollector):
@@ -81,14 +74,9 @@ class ExperimentalDataCollector(DataCollector):
     Users should implement these methods to collect data from their system directly.
     """
 
-    def __init__(
-        self,
-        scenario: Scenario,
-        control_input_configuration: dict,
-        treatment_input_configuration: dict,
-        n_repeats: int = 1,
-    ):
-        super(scenario).__init__()
+    def __init__(self, scenario: Scenario, control_input_configuration: dict, treatment_input_configuration: dict,
+                 n_repeats: int = 1):
+        super().__init__(scenario)
         self.control_input_configuration = control_input_configuration
         self.treatment_input_configuration = treatment_input_configuration
         self.n_repeats = n_repeats
@@ -103,14 +91,14 @@ class ExperimentalDataCollector(DataCollector):
 
         # Check runtime configs to make sure they don't violate constraints
         control_df = self.run_system_with_input_configuration(
-            filter_valid_data(self.control_input_configuration, check_pos=False, check_scenario = False)
+            self.filter_valid_data(self.control_input_configuration, check_pos=False, check_scenario=False)
         )
         treatment_df = self.run_system_with_input_configuration(
-            filter_valid_data(self.treatment_input_configuration, check_pos=False, check_scenario = False)
+            self.filter_valid_data(self.treatment_input_configuration, check_pos=False, check_scenario=False)
         )
 
         # Need to check final output too just in case we have constraints on output variables
-        return filter_valid_data(pd.concat([control_df, treatment_df], keys=["control", "treatment"]))
+        return self.filter_valid_data(pd.concat([control_df, treatment_df], keys=["control", "treatment"]))
 
     @abstractmethod
     def run_system_with_input_configuration(
