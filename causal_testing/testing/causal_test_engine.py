@@ -61,7 +61,6 @@ class CausalTestEngine:
         """
 
         if observational_data_path:
-            # TODO: (@MF) Update the observational data collector to work with new constraints/causal test case.
             observational_data_collector = ObservationalDataCollector(self.scenario)
             scenario_execution_data_df = observational_data_collector.collect_data(observational_data_path)
         else:
