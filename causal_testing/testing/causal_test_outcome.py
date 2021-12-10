@@ -26,40 +26,40 @@ class CausalTestResult:
             confidence_str += f"Confidence level: {self.confidence_level}"
         return base_str + confidence_str
 
-    def apply_test_oracle_procedure(self, expected_causal_effect, *args, **kwargs) -> bool:
-        """ Based on the results of the causal test case, determine whether the test passes or fails. By default, we
-            check whether the casual estimate is equal to the expected causal effect. However, a user may override
-            this method to define precise oracles. """
-        # TODO: Work out the best way to implement test oracle procedure. A test oracle object?
-        return self.ate == expected_causal_effect
+    # def apply_test_oracle_procedure(self, expected_causal_effect, *args, **kwargs) -> bool:
+    #     """ Based on the results of the causal test case, determine whether the test passes or fails. By default, we
+    #         check whether the casual estimate is equal to the expected causal effect. However, a user may override
+    #         this method to define precise oracles. """
+    #     # TODO: Work out the best way to implement test oracle procedure. A test oracle object?
+    #     return self.ate == expected_causal_effect
 
 
 class CausalTestOutcome(ABC):
     """An abstract class representing an expected causal effect."""
 
     @abstractmethod
-    def apply(res: CausalTestResult) -> bool:
+    def apply(self, res: CausalTestResult) -> bool:
         pass
 
 
 class Positive(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be positive."""
 
-    def apply(res: CausalTestResult) -> bool:
+    def apply(self, res: CausalTestResult) -> bool:
         # TODO: confidence intervals?
-        return res.value > 0
+        return res.ate > 0
 
 
 class Negative(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be negative."""
 
-    def apply(res: CausalTestResult) -> bool:
+    def apply(self, res: CausalTestResult) -> bool:
         # TODO: confidence intervals?
-        return res.value < 0
+        return res.ate < 0
 
 
 class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
-    def apply(res: CausalTestResult) -> bool:
+    def apply(self, res: CausalTestResult) -> bool:
         return res.ci_low < 0 < res.ci_high

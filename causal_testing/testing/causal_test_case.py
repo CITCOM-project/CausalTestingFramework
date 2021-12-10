@@ -19,7 +19,8 @@ class CausalTestCase:
     """
 
     def __init__(self, control_input_configuration: {Variable: any}, expected_causal_effect: CausalTestOutcome,
-                 intervention: Intervention = None, treatment_input_configuration: {Variable: any} = None):
+                outcome_variables: {Variable}, intervention: Intervention = None,
+                treatment_input_configuration: {Variable: any} = None):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
         create two distinct input configurations: a control input configuration and a treatment input configuration.
@@ -46,6 +47,7 @@ class CausalTestCase:
         self.control_input_configuration = control_input_configuration
         self.expected_causal_effect = expected_causal_effect
         self.intervention = intervention
+        self.outcome_variables = outcome_variables
         self.treatment_input_configuration = treatment_input_configuration
         if intervention:
             self.treatment_input_configuration = intervention.apply(
@@ -53,95 +55,9 @@ class CausalTestCase:
             )
 
     def __str__(self):
-        return (f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
-                f"changes: {self.expected_causal_effect}.")
-
-    def execute(self, data):
-        raise NotImplementedError("Need to implement execute.")
-
-
-class AbstractCausalTestCase:
-    """
-    An abstract test case serves as a generator for concrete test cases. Instead of having concrete conctrol
-    and treatment values, we instead just specify the intervention and the treatment variables. This then
-    enables potentially infinite concrete test cases to be generated between different values of the treatment.
-    """
-
-    def __init__(self, variables: {Variable}, primed_variables: {Variable}, scenario_constraints: {z3.ExprRef},
-                 intervention_constraints: {z3.ExprRef}, treatment_variables: {Variable},
-                 expected_causal_effect: {Variable: z3.ExprRef}, effect_modifiers: {Variable} = None):
-        assert treatment_variables.issubset(variables), (
-            "Treatment variables must be a subset of variables."
-            + " Instead got:\ntreatment_variables={treatment_variables}\nvariables={variables}"
-        )
-        self.variables = variables
-        self.primed_variables = primed_variables
-        self.scenario_constraints = scenario_constraints
-        self.intervention_constraints = intervention_constraints
-        self.treatment_variables = treatment_variables
-        self.expected_causal_effect = expected_causal_effect
-
-        if effect_modifiers is not None:
-            self.effect_modifiers = effect_modifiers
+        if self.intervention is not None:
+            return (f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
+                    f"changes: {self.expected_causal_effect}.")
         else:
-            self.effect_modifiers = {}
-
-    def generate_concrete_tests(self, sample_size: int, ) -> ([CausalTestCase], pd.DataFrame):
-        """Generates a list of `num` concrete test cases.
-
-        :param int sample_size: The number of test cases to generate.
-        :return: A list of causal test cases and a dataframe representing the required model run configurations.
-        :rtype: ([CausalTestCase], pd.DataFrame)
-
-        """
-        # Generate the Latin Hypercube samples and put into a dataframe
-        samples = pd.DataFrame(
-            lhsmdu.sample(len(self.treatment_variables), sample_size).T,
-            columns=[v.name for v in self.treatment_variables],
-        )
-        # Project the samples to the variables' distributions
-        for var in self.treatment_variables:
-            # TODO: This only works for Inputs. We need to do it for Metas too...
-            samples[var.name] = lhsmdu.inverseTransformSample(
-                var.distribution, samples[var.name]
-            )
-
-        concrete_tests = []
-        runs = []
-        run_columns = sorted([v.name for v in self.variables if isinstance(v, Input)])
-        for _, row in samples.iterrows():
-            optimizer = z3.Optimize()
-            for i, c in enumerate(self.scenario_constraints):
-                optimizer.assert_and_track(c, f"constraint_{i}")
-            for i, c in enumerate(self.intervention_constraints):
-                optimizer.assert_and_track(c, f"intervention_{i}")
-
-            # optimizer.add(self.scenario_constraints)
-            # optimizer.add(self.intervention_constraints)
-            optimizer.add_soft([v.z3 == row[v.name] for v in self.treatment_variables])
-            sat = optimizer.check()
-            if sat == z3.unsat:
-                logger.warn(
-                    "Satisfiability of test case was unsat.\n"
-                    + f"Constraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
-                )
-            model = optimizer.model()
-            concrete_tests.append(
-                CausalTestCase(
-                    {v: v.cast(model[v.z3]) for v in self.treatment_variables},
-                    self.expected_causal_effect,
-                    treatment_input_configuration={
-                        v: v.cast(model[v.z3])
-                        for v in self.primed_variables
-                        if v.name in [v.name for v in self.treatment_variables]
-                    },
-                )
-            )
-            runs.append(
-                {
-                    v.name: v.cast(model[v.z3])
-                    for v in self.variables
-                    if v.name in run_columns
-                }
-            )
-        return (concrete_tests, pd.DataFrame(runs, columns=run_columns))
+            return (f"Running {self.treatment_input_configuration} instead of {self.control_input_configuration} should cause the following "
+                    f"changes: {self.expected_causal_effect}.")

@@ -1,7 +1,7 @@
 from z3 import ExprRef, substitute
 from .variable import Variable, Input, Output, Meta
 from tabulate import tabulate
-from causal_testing.testing.causal_test_case import CausalTestCase, AbstractCausalTestCase
+from causal_testing.testing.causal_test_case import CausalTestCase
 
 
 class Scenario:
@@ -18,29 +18,25 @@ class Scenario:
     :param {Variable} variables: The set of endogenous variables.
     :param {ExprRef} constraints: The set of constraints relating the endogenous variables.
     :param [CausalTestCase] test_cases: A list of causal test cases (defaults to empty).
-    :param [AbstractCausalTestCase] abstract_test_cases: A list of abstract causal test cases (defaults to empty).
     :attr variables:
     :attr constraints:
     :attr test_cases:
-    :attr abstract_test_cases:
     """
 
     variables: {str: Variable}
     constraints: {ExprRef}
     test_cases: [CausalTestCase]
-    abstract_test_cases: [CausalTestCase]
 
     def __init__(
         self,
         variables: {Variable} = None,
         constraints: {ExprRef} = None,
         test_cases: [CausalTestCase] = None,
-        abstract_test_cases: [AbstractCausalTestCase] = None,
     ):
         if variables is not None:
             self.variables = {v.name: v for v in variables}
         else:
-            self.variables = set()
+            self.variables = dict()
         if constraints is not None:
             self.constraints = constraints
         else:
@@ -49,10 +45,6 @@ class Scenario:
             self.test_cases = test_cases
         else:
             self.test_cases = []
-        if abstract_test_cases is not None:
-            self.abstract_test_cases = abstract_test_cases
-        else:
-            self.abstract_test_cases = []
 
     def __str__(self):
         """Returns a printable string of a scenario, e.g.
@@ -115,9 +107,15 @@ class Scenario:
         to the contraint set such that the "primed" variables are constrained in
         the same way as their unprimed counterparts.
         """
-        self.treatment_variables = {
-            k: self._fresh(v) for k, v in self.variables.items()
-        }
+        self.prime = {}
+        self.unprime = {}
+        self.treatment_variables = {}
+        for k, v in self.variables.items():
+            v_prime = self._fresh(v)
+            self.treatment_variables[k] = v_prime
+            self.prime[k] = v_prime.name
+            self.unprime[v_prime.name] = k
+
         substitutions = {
             (self.variables[n].z3, self.treatment_variables[n].z3)
             for n in self.variables

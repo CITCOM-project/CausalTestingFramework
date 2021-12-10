@@ -199,6 +199,10 @@ class CausalForestEstimator(Estimator):
         model = CausalForestDML(model_y=GradientBoostingRegressor(),
                                 model_t=GradientBoostingRegressor(),
                                 )
+        print("outcomes_df", outcomes_df)
+        print("treatment_df", treatment_df)
+        print("effect_modifier_df", effect_modifier_df)
+        print("confounders_df", confounders_df)
         model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals

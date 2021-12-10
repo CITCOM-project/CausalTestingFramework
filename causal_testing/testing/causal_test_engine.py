@@ -32,12 +32,18 @@ class CausalTestEngine:
     def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification):
         self.causal_test_case = causal_test_case
         # TODO: (@MF) Process of getting treatment and outcome vars will need changing to updated CausalTestCase class
-        self.treatment_variables = list(self.causal_test_case.intervention.treatment_variables)
-        self.outcome_variables = list(self.causal_test_case.expected_causal_effect.keys())
+        if self.causal_test_case.intervention is not None:
+            self.treatment_variables = list(self.causal_test_case.intervention.treatment_variables)
+        else:
+            # This covers the case where a causal test case is specified in terms of a control/treatment run pair
+            # rather than a control run and an intervention.
+            # It might be better, though, to do this with an intervention which just returns the literal treatment run
+            self.treatment_variables = list(self.causal_test_case.control_input_configuration)
+
         self.casual_dag, self.scenario = causal_specification.causal_dag, causal_specification.scenario
         self.scenario_execution_data_df = pd.DataFrame()
 
-    def load_data(self, observational_data_path: str = None, n_repeats: int = 1):
+    def load_data(self, observational_data_path: str = None, n_repeats: int = 1, **kwargs):
         """ Load execution data corresponding to the causal test case into a pandas dataframe and return the minimal
         adjustment set.
 
@@ -62,7 +68,7 @@ class CausalTestEngine:
 
         if observational_data_path:
             observational_data_collector = ObservationalDataCollector(self.scenario)
-            scenario_execution_data_df = observational_data_collector.collect_data(observational_data_path)
+            scenario_execution_data_df = observational_data_collector.collect_data(observational_data_path, **kwargs)
         else:
             experimental_data_collector = ExperimentalDataCollector(self.causal_test_case.control_input_configuration,
                                                                     self.causal_test_case.treatment_input_configuration,
@@ -70,8 +76,8 @@ class CausalTestEngine:
             scenario_execution_data_df = experimental_data_collector.collect_data()
 
         self.scenario_execution_data_df = scenario_execution_data_df
-        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(self.treatment_variables,
-                                                                                    self.outcome_variables)
+        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets([v.name for v in self.treatment_variables],
+                                                                                    [v.name for v in self.causal_test_case.outcome_variables])
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
 
@@ -94,10 +100,11 @@ class CausalTestEngine:
         """
         if self.scenario_execution_data_df.empty:
             raise Exception('No data has been loaded. Please call load_data prior to executing a causal test case.')
-        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(self.treatment_variables,
-                                                                                    self.outcome_variables)
+        treatments = [v.name for v in self.treatment_variables]
+        outcomes = [v.name for v in self.causal_test_case.outcome_variables]
+        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
-        variables_for_positivity = list(minimal_adjustment_set) + self.treatment_variables + self.outcome_variables
+        variables_for_positivity = list(minimal_adjustment_set) + treatments + outcomes
         if self._check_positivity_violation(variables_for_positivity):
             # TODO: We should allow users to continue because positivity can be overcome with parametric models
             # TODO: When we implement causal contracts, we should also note the positivity violation there
@@ -114,8 +121,11 @@ class CausalTestEngine:
         else:
             ate, confidence_intervals = estimator.estimate_ate()
             causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
-            causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
+            # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         return causal_test_result
+
+    # TODO (MF) I think that the test oracle procedure should go in here.
+    # This way, the user can supply it as a function or something, which can be applied to the result of CI
 
     def _check_positivity_violation(self, variables_list):
         """ Check whether the dataframe has a positivity violation relative to the specified variables list.
