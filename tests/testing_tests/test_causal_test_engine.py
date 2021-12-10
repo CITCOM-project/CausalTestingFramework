@@ -115,7 +115,6 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         """ Check that executing the causal test case returns the correct results for dummy data with a squared term
         using a linear regression estimator. C ~ 4*(A+2) + D + D^2"""
         minimal_adjustment_set = self.causal_test_engine.load_data(self.observational_data_csv_path)
-        print(minimal_adjustment_set)
         estimation_model = LinearRegressionEstimator(('A',),
                                                      self.treatment_value,
                                                      self.control_value,

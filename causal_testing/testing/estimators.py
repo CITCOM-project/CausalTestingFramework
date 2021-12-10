@@ -132,7 +132,7 @@ class LinearRegressionEstimator(Estimator):
         t_test_results = model.t_test(individuals.loc['treated'] - individuals.loc['control'])
         ate = t_test_results.effect[0]
         confidence_intervals = t_test_results.conf_int()
-        return ate, confidence_intervals
+        return ate, confidence_intervals[0]
 
     def _run_linear_regression(self) -> RegressionResultsWrapper:
         """ Run linear regression of the treatment and adjustment set against the outcomes and return the model.
@@ -199,10 +199,6 @@ class CausalForestEstimator(Estimator):
         model = CausalForestDML(model_y=GradientBoostingRegressor(),
                                 model_t=GradientBoostingRegressor(),
                                 )
-        print("outcomes_df", outcomes_df)
-        print("treatment_df", treatment_df)
-        print("effect_modifier_df", effect_modifier_df)
-        print("confounders_df", confounders_df)
         model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals

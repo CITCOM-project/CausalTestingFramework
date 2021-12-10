@@ -26,6 +26,12 @@ class CausalTestResult:
             confidence_str += f"Confidence level: {self.confidence_level}"
         return base_str + confidence_str
 
+    def ci_low(self):
+        return min(self.confidence_intervals)
+
+    def ci_high(self):
+        return max(self.confidence_intervals)
+
     # def apply_test_oracle_procedure(self, expected_causal_effect, *args, **kwargs) -> bool:
     #     """ Based on the results of the causal test case, determine whether the test passes or fails. By default, we
     #         check whether the casual estimate is equal to the expected causal effect. However, a user may override
@@ -62,4 +68,4 @@ class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
     def apply(self, res: CausalTestResult) -> bool:
-        return res.ci_low < 0 < res.ci_high
+        return res.ci_low() < 0 < res.ci_high()
