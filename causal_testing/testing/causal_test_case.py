@@ -53,12 +53,10 @@ class CausalTestCase:
             )
 
     def __str__(self):
-        return (
-            f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
-            f"changes: {self.expected_causal_effect}."
-        )
+        return (f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
+                f"changes: {self.expected_causal_effect}.")
 
-    def execute(data):
+    def execute(self, data):
         raise NotImplementedError("Need to implement execute.")
 
 

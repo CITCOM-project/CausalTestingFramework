@@ -88,18 +88,18 @@ class ObservationalDataCollector(DataCollector):
         :param execution_data_df: A pandas dataframe containing execution data from the system-under-test.
         :return:
         """
-        variables = set(self.scenario.variables.keys())
 
         # Check positivity
-        if not variables.issubset(data.columns):
-            missing_variables = variables - set(data.columns)
+        scenario_variables = set(self.scenario.variables)
+        if not scenario_variables.issubset(data.columns):
+            missing_variables = scenario_variables - set(data.columns)
             raise IndexError(
                 f"Positivity violation: missing data for variables {missing_variables}."
             )
 
         # Check all variables declared in the modelling scenario
         # TODO: @andrewc19, does this have a name?
-        if not set(data.columns).issubset(variables):
+        if not set(data.columns).issubset(scenario_variables):
             missing_variables = set(data.columns) - set(variables)
             raise IndexError(
                 f"Variables {missing_variables} not declared in the modelling scenario."

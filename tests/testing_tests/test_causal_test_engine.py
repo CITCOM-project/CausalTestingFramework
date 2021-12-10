@@ -39,7 +39,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         print("Intervention type:", type(self.intervention))
         self.expected_causal_effect = {'C': 4}
         self.causal_test_case = CausalTestCase({'A': 0}, self.expected_causal_effect, self.intervention)
-        print("Got this far")
+
 
         # 4. Create causal test engine
         self.causal_test_engine = CausalTestEngine(self.causal_test_case, self.causal_specification)
@@ -98,7 +98,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                  ('C',),
                                                  self.causal_test_engine.scenario_execution_data_df)
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
-        self.assertAlmostEqual(causal_test_result.point_estimate, 4, delta=1)
+        self.assertAlmostEqual(causal_test_result.ate, 4, delta=1)
 
     def test_execute_test_observational_linear_regression_estimator(self):
         """ Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -111,7 +111,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                      ('C',),
                                                      self.causal_test_engine.scenario_execution_data_df)
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
-        self.assertEqual(int(causal_test_result.point_estimate), 4)
+        self.assertEqual(int(causal_test_result.ate), 4)
 
     def test_execute_test_observational_linear_regression_estimator_squared_term(self):
         """ Check that executing the causal test case returns the correct results for dummy data with a squared term
@@ -125,7 +125,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                      self.causal_test_engine.scenario_execution_data_df)
         estimation_model.add_squared_term_to_df('D')
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
-        self.assertAlmostEqual(round(causal_test_result.point_estimate, 1), 4, delta=1)
+        self.assertAlmostEqual(round(causal_test_result.ate, 1), 4, delta=1)
 
     def test_execute_observational_causal_forest_estimator_cates(self):
         """ Check that executing the causal test case returns the correct conditional average treatment effects for
