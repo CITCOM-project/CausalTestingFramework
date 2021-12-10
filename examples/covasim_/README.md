@@ -78,6 +78,50 @@ causal specification:
 ![Causal DAG](dag.png)
 
 ## Causal Test Case
+Next, we need to create a set of causal test cases that evaluate the causal effect of intervening
+on beta on the cumulative infections, recoveries, and deaths in the scenario-under-test. A
+causal test case is a triple (X0, Delta, Y), where X0 is the control configuration for the treatment
+variable (a mapping from the variable(s) that we wish to intervene upon to their baseline value), Delta
+is the intervention (the function applied to X0 to yield the treatment configuration X1), and Y is the
+expected causal effect of applying Delta to X0 on the outcome(s) of interest. For the doubling beta
+question, we have the following components of a causal test case:
+1) `X0 = {beta: 1.6}` - We are interested in the effect of changes made to the beta input, and 1.6 is
+the default beta value in Covasim.
+2) `Delta := X1 = 2*beta` - We are interested in the effect of doubling beta.
+3) `Y = change in cumulative infections/deaths > 0` - We expect that doubling beta should
+cause an increase in infections and deaths.
+
+Alternatively, a user can forego specifying the intervention and instead specify a control and
+treatment configuration instead (denoted X0 and X1, respectively). That is, the input
+configuration before and after applying the intervention. Using this approach, we can express the
+same causal test case as before as follows:
+1) `X0 = {beta: 1.6}`
+2) `X1 = {beta: 3.6}`
+3) `Y = change in cumulative infections/deaths > 0`
+
+## Running the Causal Test Case
+Now that we have a causal test case, we need to create an instance of the causal test engine. The causal test
+engine takes the test case and the scenario, and proceeds to run the causal testing procedure in three steps.
+
+First, the user calls the method `load_data` with a path to the observational data csv. This method first loads the
+data and filters any rows (executions) that do not meet the constraints specified in the scenario, and checks for any
+positivity violations (~missing data). Then, graphical causal inference techniques are applied to the causal DAG to
+identify a minimal set of variables that can be adjusted for to isolate the causal effect of interest, if such a set
+exists. If so, the minimal adjustment set is returned.
+
+Second, the user calls the method `execute_test` with an estimator object. We provide a linear regression estimator
+(parametric) and a causal forest estimator (non-parametric), but users are free to implement any estimator provided
+it implements the abstract methods of the `Estimator` class (`estmate_ate` and `add_modelling_assumptions`). Regardless
+of the estimator used, it is essential that the minimal adjustment set is adjusted for to mitigate confounding bias.
+After running `execute_test` with the appropriate estimator, we obtain an average treatment effect and 95% confidence
+intervals. Provided the causal DAG is correctly specified and our modelling assumptions are valid, the returned average
+treatment effect is considered the causal effect.
+
+Finally, the user must implement the test oracle procedure. That is, the method that looks at the outcome of the causal
+test case (the ate and the 95% confidence intervals) and determines whether, relative to the expected outcome, the test
+should pass or fail. In this instance, we simply need to define an assertion checking whether the causal effect is
+greater than zero.
+
 
 
 
