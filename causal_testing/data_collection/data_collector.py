@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 class DataCollector(ABC):
+    def __init__(self, scenario: Scenario):
+        super().__init__()
+        self.scenario = scenario
+
     @abstractmethod
     def collect_data(self, **kwargs) -> pd.DataFrame:
         """
@@ -79,11 +83,12 @@ class ExperimentalDataCollector(DataCollector):
 
     def __init__(
         self,
+        scenario: Scenario,
         control_input_configuration: dict,
         treatment_input_configuration: dict,
         n_repeats: int = 1,
     ):
-        super().__init__()
+        super(scenario).__init__()
         self.control_input_configuration = control_input_configuration
         self.treatment_input_configuration = treatment_input_configuration
         self.n_repeats = n_repeats
@@ -121,10 +126,6 @@ class ExperimentalDataCollector(DataCollector):
 
 
 class ObservationalDataCollector(DataCollector):
-    def __init__(self, scenario: Scenario):
-        super().__init__()
-        self.scenario = scenario
-
     def collect_data(self, csv_path: str, **kwargs) -> pd.DataFrame:
         """
         Read a csv containing execution data for the system-under-test into a pandas dataframe and filter to remove any
