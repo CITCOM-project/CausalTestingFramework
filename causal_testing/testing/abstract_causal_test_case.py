@@ -54,7 +54,7 @@ class AbstractCausalTestCase:
 
         concrete_tests = []
         runs = []
-        run_columns = sorted([v.name for v in self.treatment_variables if isinstance(v, Input)])
+        run_columns = sorted([v.name for v in self.scenario.variables.values() if isinstance(v, Input)])
         for _, row in samples.iterrows():
             optimizer = z3.Optimize()
             for i, c in enumerate(self.scenario.constraints):
@@ -71,9 +71,9 @@ class AbstractCausalTestCase:
                 )
             model = optimizer.model()
             concrete_test = CausalTestCase(
-                {v: v.cast(model[v.z3]) for v in self.treatment_variables},
-                self.expected_causal_effect,
-                self.outcome_variables,
+                control_input_configuration = {v: v.cast(model[v.z3]) for v in self.treatment_variables},
+                expected_causal_effect = self.expected_causal_effect,
+                outcome_variables = self.outcome_variables,
                 treatment_input_configuration={
                     v: v.cast(model[self.scenario.treatment_variables[v.name].z3])
                     for v in self.treatment_variables

@@ -45,15 +45,21 @@ class DataCollector(ABC):
 
         # For each row, does it satisfy the constraints?
         solver = z3.Solver()
-        solver.add(self.scenario.constraints)
+        for c in self.scenario.constraints:
+            solver.assert_and_track(c, f"background: {c}")
         sat = []
+        unsat_core = None
         for _, row in data.iterrows():
             solver.push()
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
             model = [self.scenario.variables[var].z3 == self.scenario.variables[var].cast(row[var]) for var in
                      data.columns]
-            solver.add(model)
-            sat.append(solver.check() == z3.sat)
+            for c in model:
+                solver.assert_and_track(c, f"model: {c}")
+            check = solver.check()
+            if check == z3.unsat and unsat_core is None:
+                unsat_core = solver.unsat_core()
+            sat.append(check == z3.sat)
             solver.pop()
 
         # Strip out rows which violate the constraints
@@ -65,7 +71,8 @@ class DataCollector(ABC):
         # How many rows did we drop?
         size_diff = len(data) - len(satisfying_data)
         if size_diff > 0:
-            logger.warning(f"Discarded {size_diff} values due to constraint violations.")
+            logger.warning(f"Discarded {size_diff}/{len(data)} values due to constraint violations.\n"+
+            f"For example{unsat_core}")
         return satisfying_data
 
 

@@ -59,5 +59,7 @@ class CausalTestCase:
             return (f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
                     f"changes: {self.expected_causal_effect}.")
         else:
-            return (f"Running {self.treatment_input_configuration} instead of {self.control_input_configuration} should cause the following "
+            treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
+            control_config = {k.name: v for k, v in self.control_input_configuration.items()}
+            return (f"Running {treatment_config} instead of {control_config} should cause the following "
                     f"changes: {self.expected_causal_effect}.")

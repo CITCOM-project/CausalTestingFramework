@@ -9,6 +9,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
+from causal_testing.testing.causal_test_outcome import ExactValue
 from causal_testing.testing.estimators import CausalForestEstimator, LinearRegressionEstimator
 
 
@@ -30,14 +31,21 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.causal_dag = CausalDAG(dag_dot_path)
 
         # 2. Create Scenario and Causal Specification
-        self.scenario = Scenario({Input("A", float), Output("C", float), Output("D", float)})
+        A = Input("A", float)
+        C = Output("C", float)
+        D = Output("D", float)
+        self.scenario = Scenario({A, C, D})
         self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.causal_dag)
 
         # 3. Create an intervention and causal test case
-        self.intervention = Intervention(('A',), (1,))
+        self.intervention = Intervention((A,), (1,))
         print("Intervention type:", type(self.intervention))
-        self.expected_causal_effect = {'C': 4}
-        self.causal_test_case = CausalTestCase({'A': 0}, self.expected_causal_effect, self.intervention)
+        self.expected_causal_effect = ExactValue(4)
+        self.causal_test_case = CausalTestCase(
+            control_input_configuration = {D: 0},
+            expected_causal_effect=self.expected_causal_effect,
+            intervention=self.intervention,
+            outcome_variables={C})
 
         # 4. Create causal test engine
         self.causal_test_engine = CausalTestEngine(self.causal_test_case, self.causal_specification)

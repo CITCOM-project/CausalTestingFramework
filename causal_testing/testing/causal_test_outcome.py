@@ -1,10 +1,5 @@
 from abc import ABC, abstractmethod
 
-# TODO: Is it better to have these implemented this way or as a concrete class
-# for which the user just specifies the function? We could then have "shortcut
-# functions" to allow the user to quickly grab the common effects
-
-
 class CausalTestResult:
     """ A container to hold the results of a causal test case. Every causal test case provides a point estimate of
         the ATE, given a particular treatment, outcome, and adjustment set. Some but not all estimators can provide
@@ -47,6 +42,17 @@ class CausalTestOutcome(ABC):
     def apply(self, res: CausalTestResult) -> bool:
         pass
 
+    def __str__(self) -> str:
+        return type(self).__name__
+
+
+class ExactValue(CausalTestOutcome):
+    """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
+    def __init__(self, value: float):
+        self.value = value
+
+    def apply(self, res: CausalTestResult) -> bool:
+        return res.ate == self.value
 
 class Positive(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be positive."""

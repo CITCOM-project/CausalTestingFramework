@@ -17,21 +17,17 @@ class Scenario:
 
     :param {Variable} variables: The set of endogenous variables.
     :param {ExprRef} constraints: The set of constraints relating the endogenous variables.
-    :param [CausalTestCase] test_cases: A list of causal test cases (defaults to empty).
     :attr variables:
     :attr constraints:
-    :attr test_cases:
     """
 
     variables: {str: Variable}
     constraints: {ExprRef}
-    test_cases: [CausalTestCase]
 
     def __init__(
         self,
         variables: {Variable} = None,
-        constraints: {ExprRef} = None,
-        test_cases: [CausalTestCase] = None,
+        constraints: {ExprRef} = None
     ):
         if variables is not None:
             self.variables = {v.name: v for v in variables}
@@ -41,10 +37,6 @@ class Scenario:
             self.constraints = constraints
         else:
             self.constraints = set()
-        if test_cases is not None:
-            self.test_cases = test_cases
-        else:
-            self.test_cases = []
 
     def __str__(self):
         """Returns a printable string of a scenario, e.g.
