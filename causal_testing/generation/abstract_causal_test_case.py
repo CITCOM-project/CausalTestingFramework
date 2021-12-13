@@ -1,10 +1,13 @@
-from causal_testing.specification.scenario import Scenario, Input
+from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 import z3
 import pandas as pd
 import lhsmdu
+
+import logging
+logger = logging.getLogger(__name__)
 
 class AbstractCausalTestCase:
     """
@@ -42,11 +45,11 @@ class AbstractCausalTestCase:
         """
         # Generate the Latin Hypercube samples and put into a dataframe
         samples = pd.DataFrame(
-            lhsmdu.sample(len(self.treatment_variables), sample_size).T,
-            columns=[v.name for v in self.treatment_variables],
+            lhsmdu.sample(len(self.scenario.inputs()), sample_size).T,
+            columns=[v.name for v in self.scenario.inputs()],
         )
         # Project the samples to the variables' distributions
-        for var in self.treatment_variables:
+        for var in self.scenario.inputs():
             # TODO: This only works for Inputs. We need to do it for Metas too...
             samples[var.name] = lhsmdu.inverseTransformSample(
                 var.distribution, samples[var.name]
@@ -54,7 +57,7 @@ class AbstractCausalTestCase:
 
         concrete_tests = []
         runs = []
-        run_columns = sorted([v.name for v in self.scenario.variables.values() if isinstance(v, Input)])
+        run_columns = sorted([v.name for v in self.scenario.inputs()])
         for _, row in samples.iterrows():
             optimizer = z3.Optimize()
             for i, c in enumerate(self.scenario.constraints):
@@ -62,7 +65,7 @@ class AbstractCausalTestCase:
             for i, c in enumerate(self.intervention_constraints):
                 optimizer.assert_and_track(c, f"intervention_{i}")
 
-            optimizer.add_soft([v.z3 == row[v.name] for v in self.treatment_variables])
+            optimizer.add_soft([v.z3 == row[v.name] for v in self.scenario.inputs()])
             sat = optimizer.check()
             if sat == z3.unsat:
                 logger.warn(

@@ -1,12 +1,8 @@
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
-from causal_testing.specification.variable import Variable, Input
-import z3
-import lhsmdu
-import pandas as pd
+from causal_testing.specification.variable import Variable
 
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -57,9 +53,9 @@ class CausalTestCase:
     def __str__(self):
         if self.intervention is not None:
             return (f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
-                    f"changes: {self.expected_causal_effect}.")
+                    f"changes to {self.outcome_variables}: {self.expected_causal_effect}.")
         else:
             treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
             control_config = {k.name: v for k, v in self.control_input_configuration.items()}
             return (f"Running {treatment_config} instead of {control_config} should cause the following "
-                    f"changes: {self.expected_causal_effect}.")
+                    f"changes to {self.outcome_variables}: {self.expected_causal_effect}.")

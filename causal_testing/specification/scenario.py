@@ -1,7 +1,6 @@
 from z3 import ExprRef, substitute
 from .variable import Variable, Input, Output, Meta
 from tabulate import tabulate
-from causal_testing.testing.causal_test_case import CausalTestCase
 
 
 class Scenario:
