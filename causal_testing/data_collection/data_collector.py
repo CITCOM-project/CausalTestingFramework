@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 class DataCollector(ABC):
 
     def __init__(self, scenario: Scenario):
-        super().__init__()
         self.scenario = scenario
 
     @abstractmethod
@@ -121,15 +120,22 @@ class ExperimentalDataCollector(DataCollector):
 
 
 class ObservationalDataCollector(DataCollector):
-    def collect_data(self, csv_path: str, **kwargs) -> pd.DataFrame:
+
+    def __init__(self, scenario: Scenario, csv_path: str):
+        super().__init__(scenario)
+        self.csv_path = csv_path
+
+    def collect_data(self, **kwargs) -> pd.DataFrame:
         """
         Read a csv containing execution data for the system-under-test into a pandas dataframe and filter to remove any
-        data which does is invalid for the scenario-under-test. Data is invalid if it does not meet the constraints
+        data which is invalid for the scenario-under-test. Data is invalid if it does not meet the constraints
         outlined in the scenario-under-test (Scenario).
+
+        :param scenario: Scenario for which the observational data is collected.
         :param csv_path: Path to the csv containing execution data.
         :return scenario_execution_data_df: A pandas dataframe containing execution data that is valid for the
         scenario-under-test.
         """
-        execution_data_df = pd.read_csv(csv_path, **kwargs)
+        execution_data_df = pd.read_csv(self.csv_path, **kwargs)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
         return scenario_execution_data_df

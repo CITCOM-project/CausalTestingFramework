@@ -67,8 +67,8 @@ class CausalTestEngine:
         """
 
         if observational_data_path:
-            observational_data_collector = ObservationalDataCollector(self.scenario)
-            scenario_execution_data_df = observational_data_collector.collect_data(observational_data_path, **kwargs)
+            observational_data_collector = ObservationalDataCollector(self.scenario, observational_data_path)
+            scenario_execution_data_df = observational_data_collector.collect_data(**kwargs)
         else:
             experimental_data_collector = ExperimentalDataCollector(self.causal_test_case.control_input_configuration,
                                                                     self.causal_test_case.treatment_input_configuration,

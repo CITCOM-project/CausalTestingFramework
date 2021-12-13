@@ -26,19 +26,19 @@ class TestObservationalDataCollector(unittest.TestCase):
 
     def test_not_all_variables_in_data(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.X4})
-        observational_data_collector = ObservationalDataCollector(scenario)
-        self.assertRaises(IndexError, observational_data_collector.collect_data, self.observational_df_path)
+        observational_data_collector = ObservationalDataCollector(scenario, self.observational_df_path)
+        self.assertRaises(IndexError, observational_data_collector.collect_data)
 
     def test_all_variables_in_data(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.Y})
-        observational_data_collector = ObservationalDataCollector(scenario)
-        df = observational_data_collector.collect_data(self.observational_df_path, index_col=0)
+        observational_data_collector = ObservationalDataCollector(scenario, self.observational_df_path)
+        df = observational_data_collector.collect_data(index_col=0)
         assert df.equals(self.observational_df), f"{df}\nwas not equal to\n{self.observational_df}"
 
     def test_data_constraints(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.Y}, {self.X1.z3 > 2})
-        observational_data_collector = ObservationalDataCollector(scenario)
-        df = observational_data_collector.collect_data(self.observational_df_path, index_col=0)
+        observational_data_collector = ObservationalDataCollector(scenario, self.observational_df_path)
+        df = observational_data_collector.collect_data(index_col=0)
         expected = self.observational_df.loc[[2, 3]]
         assert df.equals(expected), f"{df}\nwas not equal to\n{expected}"
 
