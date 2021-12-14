@@ -1,7 +1,4 @@
-from abc import ABC, abstractmethod
-
-
-class Intervention(ABC):
+class Intervention:
     """
     An intervention is an object which manipulates the input configuration of the scenario-under-test. It must define
     a method which takes the input configuration, does something to it, and returns a modified input configuration.
@@ -15,7 +12,6 @@ class Intervention(ABC):
         self.treatment_variables = treatment_variables
         self.treatment_values = treatment_values
 
-    @abstractmethod
     def apply(self, input_configuration: dict):
         """
         Take an input configuration and modify it in a particular way. It is the effect of this change which the
@@ -23,6 +19,7 @@ class Intervention(ABC):
         :param input_configuration: Input configuration for the scenario-under-test.
         :return treatment_input_configuration: a modified input configuration.
         """
-        second_input_configuration = input_configuration.copy()
-        treatment_input_configuration = second_input_configuration[self.treatment_variables] = self.treatment_values
+        treatment_input_configuration = input_configuration.copy()
+        for t, treatment in enumerate(self.treatment_variables):
+            treatment_input_configuration[treatment] = self.treatment_values[t]
         return treatment_input_configuration

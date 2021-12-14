@@ -1,7 +1,12 @@
 import pandas as pd
-from causal_testing.data_collection.data_collector import ExperimentalDataCollector
-from causal_testing.testing.causal_test_case import CausalTestCase, CausalTestResult
+import logging
+from causal_testing.data_collection.data_collector import ExperimentalDataCollector, ObservationalDataCollector
+from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.causal_test_outcome import CausalTestResult
 from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.testing.estimators import Estimator
+
+logger = logging.getLogger(__name__)
 
 
 class CausalTestEngine:
@@ -24,87 +29,124 @@ class CausalTestEngine:
         had the anticipated causal effect. This should assign a pass/fail value to the CausalTestResult.
     """
 
-    def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification,
-                 observational_data: pd.DataFrame = None):
+    def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification):
         self.causal_test_case = causal_test_case
-        self.casual_dag, self.scenario = causal_specification.causal_dag, causal_specification.scenario
-        if observational_data:
-            self.observational_df = observational_data
+        # TODO: (@MF) Process of getting treatment and outcome vars will need changing to updated CausalTestCase class
+        if self.causal_test_case.intervention is not None:
+            self.treatment_variables = list(self.causal_test_case.intervention.treatment_variables)
+        else:
+            # This covers the case where a causal test case is specified in terms of a control/treatment run pair
+            # rather than a control run and an intervention.
+            # It might be better, though, to do this with an intervention which just returns the literal treatment run
+            self.treatment_variables = list(self.causal_test_case.control_input_configuration)
 
-    def execute_test(self) -> CausalTestResult:
+        self.casual_dag, self.scenario = causal_specification.causal_dag, causal_specification.scenario
+        self.scenario_execution_data_df = pd.DataFrame()
+
+    def load_data(self, observational_data_path: str = None, n_repeats: int = 1, **kwargs):
+        """ Load execution data corresponding to the causal test case into a pandas dataframe and return the minimal
+        adjustment set.
+
+        Data can be loaded in two ways:
+            (1) Experimentally - the model is executed with the treatment and control input configurations under
+                conditions that guarantee the observed change in outcome must be caused by the change in input
+                (intervention).
+            (2) Observationally - previous execution data is supplied in the form of a csv which is then filtered
+                to remove any data corresponding to executions of a different scenario
+                (i.e. not the scenario-under-test) and checked for positivity violations.
+
+        After the data is loaded, both are treated in the same way and, provided the identifiability and modelling
+        assumptions hold, can be used to estimate the causal effect for the causal test case.
+
+        :param observational_data_path: An optional path to a csv containing observational data.
+        :param n_repeats: An optional int which specifies the number of times to run a causal test case in the
+        experimental case.
+        :return self: Update the causal test case's execution data dataframe.
+        :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
+        estimate as opposed to a purely associational estimate.
         """
-        Execute the causal test
-        :return: A CausalTestResult if data is sufficient, otherwise inform user of missing data.
-        """
-        causal_estimand = self._compute_causal_estimand()
-        if hasattr(self, 'observational_df'):
-            # Dealing with observational data, check if it is sufficient
-            if not self._data_is_sufficient(causal_estimand):
-                data_to_collect = self._compute_data_to_collect(causal_estimand)
-                # TODO: Replace with custom exception
-                raise Exception(f'Data is insufficient for estimating the estimand. '
-                                f'User should collect {data_to_collect}.')
-            else:
-                execution_df = self.observational_df
+
+        if observational_data_path:
+            observational_data_collector = ObservationalDataCollector(self.scenario, observational_data_path)
+            scenario_execution_data_df = observational_data_collector.collect_data(**kwargs)
         else:
             experimental_data_collector = ExperimentalDataCollector(self.causal_test_case.control_input_configuration,
                                                                     self.causal_test_case.treatment_input_configuration,
-                                                                    n_repeats=1)
-            execution_df = experimental_data_collector.collect_data()
-        causal_estimate = self._compute_causal_estimate(causal_estimand, execution_df)
-        confidence_intervals = self._compute_confidence_intervals(confidence_level=.05)
-        causal_test_result = CausalTestResult(causal_estimand, causal_estimate, confidence_intervals,
-                                              confidence_level=.05)
-        causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
+                                                                    n_repeats=n_repeats)
+            scenario_execution_data_df = experimental_data_collector.collect_data()
+
+        self.scenario_execution_data_df = scenario_execution_data_df
+        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
+                [v.name for v in self.treatment_variables],
+                [v.name for v in self.causal_test_case.outcome_variables]
+            )
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
+        return minimal_adjustment_set
+
+    def execute_test(self, estimator: Estimator, estimate_type: str = 'ate') -> CausalTestResult:
+        """ Execute a causal test case and return the causal test result.
+
+        Test case execution proceeds with the following steps:
+        (1) Check that data has been loaded using the method load_data
+        (2) Check loaded data for any positivity violations and warn the user if so
+        (3) Instantiate the estimator with the values of the causal test case.
+        (4) Using the estimator, estimate the average treatment effect of the changing the treatment from control value
+            to treatment value on the outcome of interest, adjusting for the identified adjustment set.
+        (5) Depending on the estimator used, compute 95% confidence intervals for the estimate.
+        (6) Store results in an instance of CausalTestResults.
+        (7) Apply test oracle procedure to assign a pass/fail to the CausalTestResult and return.
+
+        :param estimator: A reference to an Estimator class.
+        :param estimate_type: A string which denotes the type of estimate to return, ATE or CATE.
+        :return causal_test_result: A CausalTestResult for the executed causal test case.
+        """
+        if self.scenario_execution_data_df.empty:
+            raise Exception('No data has been loaded. Please call load_data prior to executing a causal test case.')
+        treatments = [v.name for v in self.treatment_variables]
+        outcomes = [v.name for v in self.causal_test_case.outcome_variables]
+        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
+        variables_for_positivity = list(minimal_adjustment_set) + treatments + outcomes
+        if self._check_positivity_violation(variables_for_positivity):
+            # TODO: We should allow users to continue because positivity can be overcome with parametric models
+            # TODO: When we implement causal contracts, we should also note the positivity violation there
+            raise Exception('POSITIVITY VIOLATION -- Cannot proceed.')
+
+        # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
+        if estimate_type == 'cate':
+            if not hasattr(estimator, 'estimate_cates'):
+                raise NotImplementedError(f'{estimator.__class__} has no CATE method.')
+            else:
+                cates_df = estimator.estimate_cates()
+                # TODO: Work out how to handle CATE test results (just return the results df for now)
+                return cates_df
+        else:
+            ate, confidence_intervals = estimator.estimate_ate()
+            causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
+            # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         return causal_test_result
 
-    def _data_is_sufficient(self, causal_estimand: str) -> bool:
-        """
-        If using observational data, check whether the data contains necessary data to compute the casual estimand.
-        :return:
-        :param causal_estimand: The causal estimand to be estimated.
-        :return: True or False depending on whether the data is sufficient to compute the causal estimand.
-        """
-        pass
+    # TODO (MF) I think that the test oracle procedure should go in here.
+    # This way, the user can supply it as a function or something, which can be applied to the result of CI
 
-    def _compute_causal_estimand(self) -> str:
-        """
-        Compute the causal estimand for the current causal test case. This step checks the structure of the causal DAG
-        and identifies any open back-door paths between the treatment and outcome variable. If any back-door paths
-        exist, this method will attempt to find a set of variables which block (d-separate) these paths, yielding the
-        causal estimand. If no variables can block the back-door path, an exception is raised to alert the user that
-        it is not possible to compute this causal effect from observational data given the current causal assumptions
-        and data.
-        :return causal_estimand: The causal estimand to be estimated.
-        """
-        pass
+    def _check_positivity_violation(self, variables_list):
+        """ Check whether the dataframe has a positivity violation relative to the specified variables list.
 
-    def _compute_data_to_collect(self, causal_estimand: str) -> [str]:
-        """
-        If the current data is insufficient to estimate the causal estimand, this method will compute the set of
-        variables that are currently missing data and preventing estimation. This can be used to guide execution of
-        the system-under-test.
-        :param causal_estimand: The causal estimand to be estimated.
-        :return data_to_collect: The data to be collected that would permit causal inference for this casual test case.
-        """
-        pass
+        A positivity violation occurs when there is a stratum of the dataframe which does not have any data. Put simply,
+        if we split the dataframe into covariate sub-groups, each sub-group must contain both a treated and untreated
+        individual. If a positivity violation occurs, causal inference is still possible using a properly specified
+        parametric estimator. Therefore, we should not throw an exception upon violation but raise a warning instead.
 
-    def _compute_causal_estimate(self, causal_estimand: str, execution_data_df: pd.DataFrame) -> float:
+        :param variables_list: The list of variables for which positivity must be satisfied.
+        :return: True if positivity is violated, False otherwise.
         """
-        Given a causal estimand, compute the causal estimate from the available data.
-        :param causal_estimand: The casual estimand to be estimated.
-        :return causal_estimate: The causal estimate corresponding to the causal test case. That is, the causal effect
-        of applying the intervention to the input configuration on the output(s) of interest.
-        """
-        pass
-
-    def _compute_confidence_intervals(self, confidence_level: float) -> [float, float]:
-        """
-        Compute the confidence intervals at the specified confidence level for the causal estimate. This gives the user
-        and indication of the precision/reliability of the causal estimate. If this is too low, it indicates that more
-        data or better estimators are necessary.
-        :param confidence_level: The specified confidence level at which to compute the confidence intervals e.g. .05
-        corresponds to 95% confidence intervals.
-        :return: confidence intervals of the form [lower, upper] at the specified confidence level.
-        """
-        pass
+        # TODO: Improve positivity checks to look for stratum-specific violations, not just missing variables in df
+        if not set(variables_list).issubset(self.scenario_execution_data_df.columns):
+            missing_variables = set(variables_list) - set(self.scenario_execution_data_df.columns)
+            logger.warning(f'Positivity violation: missing data for variables {missing_variables}.\n'
+                           f'Causal inference is only valid if a well-specified parametric model is used.\n'
+                           f'Alternatively, consider restricting analysis to executions without the variables:'
+                           f' {missing_variables}.')
+            return True
+        else:
+            return False

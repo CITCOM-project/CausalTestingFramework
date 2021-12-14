@@ -171,7 +171,7 @@ class CausalDAG(nx.DiGraph):
         """
         for var in treatments + outcomes:
             if var not in self.graph.nodes:
-                raise IndexError(f"{var} not a node in Causal DAG.")
+                raise IndexError(f"{var} not a node in Causal DAG.\nValid nodes are{self.graph.nodes}.")
 
         proper_backdoor_graph = self.copy()
         nodes_on_proper_causal_path = proper_backdoor_graph.proper_causal_pathway(

@@ -100,6 +100,8 @@ class Variable(ABC):
         """
         if isinstance(val, RatNumRef) and self.datatype == float:
             return float(val.numerator().as_long() / val.denominator().as_long())
+        if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
+            return val.as_string()
         return self.datatype(str(val))
 
     def sample(self, n_samples: int) -> [T]:
@@ -115,7 +117,7 @@ class Variable(ABC):
             self.distribution is not None
         ), "Sampling requires a distribution to be specified."
         lhs = lhsmdu.sample(1, n_samples).tolist()[0]
-        return lhsmdu.inverseTransformSample(self.distribution, lhs).tolist()[0]
+        return lhsmdu.inverseTransformSample(self.distribution, lhs).tolist()
 
     @abstractmethod
     def typestring(self) -> str:
