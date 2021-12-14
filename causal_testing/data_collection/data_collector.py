@@ -124,7 +124,7 @@ class ObservationalDataCollector(DataCollector):
         super().__init__(scenario)
         self.csv_path = csv_path
 
-    def collect_data(self, csv_path: str, index_col: int = None) -> pd.DataFrame:
+    def collect_data(self, index_col: int = None) -> pd.DataFrame:
         """
         Read a csv containing execution data for the system-under-test into a pandas dataframe and filter to remove any
         data which is invalid for the scenario-under-test. Data is invalid if it does not meet the constraints
@@ -142,6 +142,6 @@ class ObservationalDataCollector(DataCollector):
         :rtype: pd.DataFrame
 
         """
-        execution_data_df = pd.read_csv(csv_path, index_col=index_col)
+        execution_data_df = pd.read_csv(self.csv_path, index_col=index_col)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
         return scenario_execution_data_df
