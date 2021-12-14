@@ -35,6 +35,15 @@ class AbstractCausalTestCase:
         else:
             self.effect_modifiers = {}
 
+    def __str__(self):
+        return (f"When we apply intervention {self.intervention_constraints}, "
+        + f"the {self.outcome_variables} should {self.expected_causal_effect}")
+
+    def datapath(self):
+        def sanitise(string):
+            return "".join([x for x in string if x.isalnum()])
+        return sanitise(f"{'-'.join([str(c) for c in self.intervention_constraints])}_{'-'.join([str(c) for c in self.outcome_variables])}_{self.expected_causal_effect}")+".csv"
+
     def generate_concrete_tests(self, sample_size: int, ) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
 
@@ -61,9 +70,9 @@ class AbstractCausalTestCase:
         for _, row in samples.iterrows():
             optimizer = z3.Optimize()
             for i, c in enumerate(self.scenario.constraints):
-                optimizer.assert_and_track(c, f"constraint_{i}")
+                optimizer.assert_and_track(c, f"constraint_{c}")
             for i, c in enumerate(self.intervention_constraints):
-                optimizer.assert_and_track(c, f"intervention_{i}")
+                optimizer.assert_and_track(c, f"intervention_{c}")
 
             optimizer.add_soft([v.z3 == row[v.name] for v in self.scenario.inputs()])
             sat = optimizer.check()
@@ -73,6 +82,7 @@ class AbstractCausalTestCase:
                     + f"Constraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
                 )
             model = optimizer.model()
+
             concrete_test = CausalTestCase(
                 control_input_configuration = {v: v.cast(model[v.z3]) for v in self.treatment_variables},
                 expected_causal_effect = self.expected_causal_effect,

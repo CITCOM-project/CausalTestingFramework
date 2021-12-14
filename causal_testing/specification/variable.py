@@ -51,7 +51,7 @@ class Variable(ABC):
         self.distribution = distribution
 
     def __repr__(self):
-        return f"{self.typestring()}: {self.name}::{self.datatype}"
+        return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
 
     # TODO: We're going to need to implement all the supported Z3 operations like this
     def __ge__(self, other: any) -> BoolRef:
@@ -88,8 +88,44 @@ class Variable(ABC):
         :return: The Z3 expression `other >= self`.
         :rtype: BoolRef
         """
-        print(self, other)
         return self.z3.__lt__(_coerce(other))
+
+    def __mul__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__mul__(_coerce(other))
+
+    def __sub__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__sub__(_coerce(other))
+
+    def __add__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__add__(_coerce(other))
+
+    def __dif__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__dif__(_coerce(other))
+
 
     def cast(self, val: any) -> T:
         """Cast the supplied value to the datatype T of the variable.
@@ -102,6 +138,8 @@ class Variable(ABC):
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
+        if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
+            return self.datatype(val)
         return self.datatype(str(val))
 
     def sample(self, n_samples: int) -> [T]:
@@ -119,7 +157,6 @@ class Variable(ABC):
         lhs = lhsmdu.sample(1, n_samples).tolist()[0]
         return lhsmdu.inverseTransformSample(self.distribution, lhs).tolist()
 
-    @abstractmethod
     def typestring(self) -> str:
         """Return the type of the Variable, e.g. INPUT, or OUTPUT. Note that
         this is NOT the datatype (int, str, etc.).
@@ -128,7 +165,7 @@ class Variable(ABC):
         :rtype: str
 
         """
-        raise NotImplementedError("Method `typestring` must be instantiated.")
+        return type(self).__name__
 
     @abstractmethod
     def copy(self, name: str = None) -> Variable:
@@ -146,9 +183,6 @@ class Variable(ABC):
 class Input(Variable):
     """An extension of the Variable class representing inputs."""
 
-    def typestring(self) -> str:
-        return "INPUT"
-
     def copy(self, name=None) -> Input:
         if name:
             return Input(name, self.datatype, self.distribution)
@@ -157,9 +191,6 @@ class Input(Variable):
 
 class Output(Variable):
     """An extension of the Variable class representing outputs."""
-
-    def typestring(self) -> str:
-        return "OUTPUT"
 
     def copy(self, name=None) -> Output:
         if name:
@@ -185,9 +216,6 @@ class Meta(Variable):
     def __init__(self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]):
         super().__init__(name, datatype)
         self.populate = populate
-
-    def typestring(self) -> str:
-        return "META"
 
     def copy(self, name=None) -> Meta:
         if name:

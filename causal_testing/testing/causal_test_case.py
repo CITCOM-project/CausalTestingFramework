@@ -50,6 +50,8 @@ class CausalTestCase:
             self.treatment_input_configuration = intervention.apply(
                 self.control_input_configuration
             )
+        assert control_input_configuration.keys() == treatment_input_configuration.keys(),\
+               "Control and treatment input configurations must have the same keys."
 
     def __str__(self):
         if self.intervention is not None:
