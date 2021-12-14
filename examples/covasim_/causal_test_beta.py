@@ -54,4 +54,3 @@ causal_test_result = causal_test_engine.execute_test(linear_regression_estimator
 association_test_result = causal_test_engine.execute_test(linear_regression_estimator_no_adjustment, 'ate')
 print(causal_test_result)
 print(association_test_result)
-
