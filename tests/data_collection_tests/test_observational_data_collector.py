@@ -33,7 +33,7 @@ class TestObservationalDataCollector(unittest.TestCase):
     def test_all_variables_in_data(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.Y})
         observational_data_collector = ObservationalDataCollector(scenario, self.observational_df_path)
-        df = observational_data_collector.collect_data()
+        df = observational_data_collector.collect_data(index_col=0)
         assert df.equals(self.observational_df), f"{df}\nwas not equal to\n{self.observational_df}"
 
     def test_data_constraints(self):
