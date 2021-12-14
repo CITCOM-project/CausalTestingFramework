@@ -132,7 +132,6 @@ class ObservationalDataCollector(DataCollector):
 
         :param scenario: Scenario for which the observational data is collected.
 
-        :param str csv_path: Path to the CSV file containing the data.
         :return: A pandas dataframe containing execution data that is valid for the scenario-under-test.
         :rtype: pd.DataFrame
 
