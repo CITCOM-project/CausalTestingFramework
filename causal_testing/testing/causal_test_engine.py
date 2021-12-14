@@ -70,7 +70,8 @@ class CausalTestEngine:
             observational_data_collector = ObservationalDataCollector(self.scenario, observational_data_path)
             scenario_execution_data_df = observational_data_collector.collect_data(**kwargs)
         else:
-            experimental_data_collector = ExperimentalDataCollector(self.causal_test_case.control_input_configuration,
+            experimental_data_collector = ExperimentalDataCollector(self.scenario,
+                                                                    self.causal_test_case.control_input_configuration,
                                                                     self.causal_test_case.treatment_input_configuration,
                                                                     n_repeats=n_repeats)
             scenario_execution_data_df = experimental_data_collector.collect_data()
@@ -102,27 +103,18 @@ class CausalTestEngine:
         """
         if self.scenario_execution_data_df.empty:
             raise Exception('No data has been loaded. Please call load_data prior to executing a causal test case.')
-        treatments = [v.name for v in self.treatment_variables]
-        outcomes = [v.name for v in self.causal_test_case.outcome_variables]
-        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
-        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
-        variables_for_positivity = list(minimal_adjustment_set) + treatments + outcomes
-        if self._check_positivity_violation(variables_for_positivity):
-            # TODO: We should allow users to continue because positivity can be overcome with parametric models
-            # TODO: When we implement causal contracts, we should also note the positivity violation there
-            raise Exception('POSITIVITY VIOLATION -- Cannot proceed.')
-
-        # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
+        estimator.df = self.scenario_execution_data_df
         if estimate_type == 'cate':
             if not hasattr(estimator, 'estimate_cates'):
                 raise NotImplementedError(f'{estimator.__class__} has no CATE method.')
             else:
                 cates_df = estimator.estimate_cates()
-                # TODO: Work out how to handle CATE test results (just return the results df for now)
                 return cates_df
         else:
             ate, confidence_intervals = estimator.estimate_ate()
-            causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
+            causal_test_result = CausalTestResult(estimator.treatment, estimator.outcome, estimator.treatment_values,
+                                                  estimator.control_values, estimator.adjustment_set, ate,
+                                                  confidence_intervals)
             # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         return causal_test_result
 

@@ -394,7 +394,7 @@ class CausalDAG(nx.DiGraph):
         """
         treatments_descendants = set.union(
             *[
-                nx.descendants(self.graph, treatment).union(treatment)
+                nx.descendants(self.graph, treatment).union({treatment})
                 for treatment in treatments
             ]
         )
@@ -404,7 +404,7 @@ class CausalDAG(nx.DiGraph):
         backdoor_graph = self.get_backdoor_graph(set(treatments))
         outcome_ancestors = set.union(
             *[
-                nx.ancestors(backdoor_graph, outcome).union(outcome)
+                nx.ancestors(backdoor_graph, outcome).union({outcome})
                 for outcome in outcomes
             ]
         )

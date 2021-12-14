@@ -42,7 +42,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         print("Intervention type:", type(self.intervention))
         self.expected_causal_effect = ExactValue(4)
         self.causal_test_case = CausalTestCase(
-            control_input_configuration = {D: 0},
+            control_input_configuration={D: 0},
             expected_causal_effect=self.expected_causal_effect,
             intervention=self.intervention,
             outcome_variables={C})
@@ -101,8 +101,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                  self.treatment_value,
                                                  self.control_value,
                                                  minimal_adjustment_set,
-                                                 ('C',),
-                                                 self.causal_test_engine.scenario_execution_data_df)
+                                                 ('C',))
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
         self.assertAlmostEqual(causal_test_result.ate, 4, delta=1)
 
@@ -148,7 +147,6 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                  self.control_value,
                                                  minimal_adjustment_set,
                                                  ('C',),
-                                                 self.causal_test_engine.scenario_execution_data_df,
                                                  effect_modifiers={'M'})
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, estimate_type='cate')
 

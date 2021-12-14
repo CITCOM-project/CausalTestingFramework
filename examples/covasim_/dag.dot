@@ -1,12 +1,12 @@
 digraph CausalDAG {
     rankdir=LR;
-    variants -> beta;
-    beta -> cum_infections;
-    beta -> cum_deaths;
-    beta -> cum_recoveries;
-    location -> variants;
-    location -> avg_age;
-    avg_age -> cum_infections;
-    avg_age -> cum_deaths;
-    avg_age -> cum_recoveries;
+    "variants" -> "beta";
+    "beta" -> "cum_infections";
+    "beta" -> "cum_deaths";
+    "beta" -> "cum_recoveries";
+    "location" -> "variants";
+    "location" -> "avg_age";
+    "avg_age" -> "cum_infections";
+    "avg_age" -> "cum_deaths";
+    "avg_age" -> "cum_recoveries";
 }

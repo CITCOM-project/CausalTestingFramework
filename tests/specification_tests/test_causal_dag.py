@@ -247,6 +247,26 @@ class TestDAGIdentification(unittest.TestCase):
             set_of_adjustment_sets,
         )
 
+    def test_larger_dag(self):
+        """Test identification for a larger DAG."""
+        causal_dag = CausalDAG()
+        causal_dag.graph.add_edges_from(
+            [
+                ('va', 'ba'),
+                ('ba', 'ia'),
+                ('ba', 'da'),
+                ('ba', 'ra'),
+                ('la', 'va'),
+                ('la', 'aa'),
+                ('aa', 'ia'),
+                ('aa', 'da'),
+                ('aa', 'ra'),
+            ]
+        )
+        xs, ys = ['ba'], ['da']
+        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        print(adjustment_sets)
+
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
 
