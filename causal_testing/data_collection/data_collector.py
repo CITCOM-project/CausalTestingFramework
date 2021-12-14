@@ -124,24 +124,20 @@ class ObservationalDataCollector(DataCollector):
         super().__init__(scenario)
         self.csv_path = csv_path
 
-    def collect_data(self, index_col: int = None) -> pd.DataFrame:
+    def collect_data(self, **kwargs) -> pd.DataFrame:
         """
         Read a csv containing execution data for the system-under-test into a pandas dataframe and filter to remove any
         data which is invalid for the scenario-under-test. Data is invalid if it does not meet the constraints
         outlined in the scenario-under-test (Scenario).
 
         :param scenario: Scenario for which the observational data is collected.
-        :param csv_path: Path to the csv containing execution data.
 
         :param str csv_path: Path to the CSV file containing the data.
-        :param int index_col: Column(s) to use as the row labels of the DataFrame, either given as string name or column
-            index. If a sequence of int / str is given, a MultiIndex is used.
-            Note: index_col=False can be used to force pandas to not use the first column as the index, e.g. when you have a
-            malformed file with delimiters at the end of each line.
         :return: A pandas dataframe containing execution data that is valid for the scenario-under-test.
         :rtype: pd.DataFrame
 
         """
-        execution_data_df = pd.read_csv(self.csv_path, index_col=index_col)
+
+        execution_data_df = pd.read_csv(self.csv_path, **kwargs)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
         return scenario_execution_data_df
