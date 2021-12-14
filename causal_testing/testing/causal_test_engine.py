@@ -76,8 +76,10 @@ class CausalTestEngine:
             scenario_execution_data_df = experimental_data_collector.collect_data()
 
         self.scenario_execution_data_df = scenario_execution_data_df
-        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets([v.name for v in self.treatment_variables],
-                                                                                    [v.name for v in self.causal_test_case.outcome_variables])
+        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
+                [v.name for v in self.treatment_variables],
+                [v.name for v in self.causal_test_case.outcome_variables]
+            )
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
 

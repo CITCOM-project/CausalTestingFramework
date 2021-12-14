@@ -38,7 +38,8 @@ class CausalTestCase:
             intervention is not None or treatment_input_configuration is not None
         ), "Must define either a treatment configuration or intervention."
         if intervention is not None:
-            assert isinstance(intervention, Intervention), f"Invervention must be an instance of class Intervention not {type(intervention)}"
+            assert isinstance(intervention, Intervention),\
+            f"Invervention must be an instance of class Intervention not {type(intervention)}"
 
         self.control_input_configuration = control_input_configuration
         self.expected_causal_effect = expected_causal_effect
