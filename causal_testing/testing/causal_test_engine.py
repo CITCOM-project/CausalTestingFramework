@@ -1,6 +1,7 @@
 import pandas as pd
 import logging
-from causal_testing.data_collection.data_collector import ExperimentalDataCollector, ObservationalDataCollector
+from causal_testing.data_collection.data_collector import ExperimentalDataCollector, ObservationalDataCollector,\
+    DataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestResult
 from causal_testing.specification.causal_specification import CausalSpecification
@@ -29,13 +30,15 @@ class CausalTestEngine:
         had the anticipated causal effect. This should assign a pass/fail value to the CausalTestResult.
     """
 
-    def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification):
+    def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification,
+                 data_collector: DataCollector):
         self.causal_test_case = causal_test_case
         self.casual_dag = causal_specification.causal_dag
         self.scenario = causal_specification.scenario
+        self.data_collector = data_collector
         self.scenario_execution_data_df = pd.DataFrame()
 
-    def load_data(self, observational_data_path: str = None, n_repeats: int = 1, **kwargs):
+    def load_data(self, n_repeats: int = 1, **kwargs):
         """ Load execution data corresponding to the causal test case into a pandas dataframe and return the minimal
         adjustment set.
 
@@ -50,25 +53,13 @@ class CausalTestEngine:
         After the data is loaded, both are treated in the same way and, provided the identifiability and modelling
         assumptions hold, can be used to estimate the causal effect for the causal test case.
 
-        :param observational_data_path: An optional path to a csv containing observational data.
         :param n_repeats: An optional int which specifies the number of times to run a causal test case in the
         experimental case.
         :return self: Update the causal test case's execution data dataframe.
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
-
-        if observational_data_path:
-            observational_data_collector = ObservationalDataCollector(self.scenario, observational_data_path)
-            scenario_execution_data_df = observational_data_collector.collect_data(**kwargs)
-        else:
-            experimental_data_collector = ExperimentalDataCollector(self.scenario,
-                                                                    self.causal_test_case.control_input_configuration,
-                                                                    self.causal_test_case.treatment_input_configuration,
-                                                                    n_repeats=n_repeats)
-            scenario_execution_data_df = experimental_data_collector.collect_data()
-
-        self.scenario_execution_data_df = scenario_execution_data_df
+        self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
                 self.causal_test_case.get_treatment_variables(),
                 self.causal_test_case.get_outcome_variables()

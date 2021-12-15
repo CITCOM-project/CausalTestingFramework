@@ -2,6 +2,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
 from causal_testing.testing.intervention import Intervention
@@ -36,16 +37,19 @@ causal_test_case = CausalTestCase(control_input_configuration={beta: 0.016},
                                   outcome_variables={cum_infections},
                                   intervention=Intervention((beta,), (2 * 0.016,), ), )
 
-# 6. Create an instance of the causal test engine
-causal_test_engine = CausalTestEngine(causal_test_case, causal_specification)
+# 6. Create a data collector
+data_collector = ObservationalDataCollector(scenario, './observational_data.csv')
 
-# 7. Obtain the minimal adjustment set for the causal test case from the causal DAG
-minimal_adjustment_set = causal_test_engine.load_data('./observational_data.csv', index_col=0)
+# 7. Create an instance of the causal test engine
+causal_test_engine = CausalTestEngine(causal_test_case, causal_specification, data_collector)
 
-# 8. Define an estimator that adjusts for the variables in the minimal adjustment set to obtain a causal estimate
+# 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
+minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
+
+# 9. Define an estimator that adjusts for the variables in the minimal adjustment set to obtain a causal estimate
 linear_regression_estimator = LinearRegressionEstimator(('beta',), 2 * 0.016, 0.016, minimal_adjustment_set,
                                                         ('cum_infections',))
-# 9. Define an estimator that does not adjust for the variables in the minimal adjustment set (not causal)
+# 10. Define an estimator that does not adjust for the variables in the minimal adjustment set (not causal)
 linear_regression_estimator_no_adjustment = LinearRegressionEstimator(('beta',), 2 * 0.016, 0.016, set(),
                                                                       ('cum_infections',))
 
