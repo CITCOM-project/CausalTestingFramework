@@ -102,6 +102,8 @@ class Variable(ABC):
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
+        if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
+            return self.datatype(val)
         return self.datatype(str(val))
 
     def sample(self, n_samples: int) -> [T]:

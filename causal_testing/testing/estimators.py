@@ -25,12 +25,12 @@ class Estimator(ABC):
     """
 
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcomes: tuple, df: pd.DataFrame, effect_modifiers: set = None):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: set = None):
         self.treatment = treatment
         self.treatment_values = treatment_values
         self.control_values = control_values
         self.adjustment_set = adjustment_set
-        self.outcomes = outcomes
+        self.outcome = outcome
         self.df = df
         self.effect_modifiers = effect_modifiers
         self.modelling_assumptions = []
@@ -46,7 +46,7 @@ class Estimator(ABC):
     @abstractmethod
     def estimate_ate(self) -> float:
         """
-        Estimate the unit effect of the treatment on the outcomes. That is, the coefficient of the treatment variable
+        Estimate the unit effect of the treatment on the outcome. That is, the coefficient of the treatment variable
         in the linear regression equation.
         :return: The intercept and coefficient of the linear regression equation
         """
@@ -55,7 +55,7 @@ class Estimator(ABC):
     def compute_confidence_intervals(self) -> [float, float]:
         """
         Estimate the 95% Wald confidence intervals for the effect of changing the treatment from control values to
-        treatment values on the outcomes.
+        treatment values on the outcome.
         :return: 95% Wald confidence intervals.
         """
         pass
@@ -86,7 +86,7 @@ class LinearRegressionEstimator(Estimator):
         new_term = str(term_to_square) + '^2'
         self.df[new_term] = self.df[term_to_square]**2
         self.adjustment_set.add(new_term)
-        self.modelling_assumptions += f'Relationship between {self.treatment} and {self.outcomes} varies quadratically'\
+        self.modelling_assumptions += f'Relationship between {self.treatment} and {self.outcome} varies quadratically'\
                                       f'with {term_to_square}.'
 
     def add_product_term_to_df(self, term_a: str, term_b: str):
@@ -131,17 +131,17 @@ class LinearRegressionEstimator(Estimator):
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc['treated'] - individuals.loc['control'])
         ate = t_test_results.effect[0]
-        confidence_intervals = t_test_results.conf_int()
-        return ate, confidence_intervals[0]
+        confidence_intervals = list(t_test_results.conf_int().flatten())
+        return ate, confidence_intervals
 
     def _run_linear_regression(self) -> RegressionResultsWrapper:
-        """ Run linear regression of the treatment and adjustment set against the outcomes and return the model.
+        """ Run linear regression of the treatment and adjustment set against the outcome and return the model.
 
         :return: The model after fitting to data.
         """
         # 1. Reduce dataframe to contain only the necessary columns
         reduced_df = self.df.copy()
-        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcomes)
+        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
@@ -150,8 +150,8 @@ class LinearRegressionEstimator(Estimator):
 
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
         treatment_and_adjustments_cols = reduced_df[list(self.treatment) + list(self.adjustment_set) + ['Intercept']]
-        outcomes_col = reduced_df[list(self.outcomes)]
-        regression = sm.OLS(outcomes_col, treatment_and_adjustments_cols)
+        outcome_col = reduced_df[list(self.outcome)]
+        regression = sm.OLS(outcome_col, treatment_and_adjustments_cols)
         model = regression.fit()
         return model
 
@@ -182,24 +182,24 @@ class CausalForestEstimator(Estimator):
         """
         # Remove any NA containing rows
         reduced_df = self.df.copy()
-        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcomes)
+        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
-        # Split data into effect modifiers (X), confounders (W), treatments (T), and outcomes (Y)
+        # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
             effect_modifier_df = reduced_df[list(self.adjustment_set)]
         confounders_df = reduced_df[list(self.adjustment_set)]
         treatment_df = np.ravel(reduced_df[list(self.treatment)])
-        outcomes_df = np.ravel(reduced_df[list(self.outcomes)])
+        outcome_df = np.ravel(reduced_df[list(self.outcome)])
 
         # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
         model = CausalForestDML(model_y=GradientBoostingRegressor(),
                                 model_t=GradientBoostingRegressor(),
                                 )
-        model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
+        model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
         ate = model.ate(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
@@ -220,22 +220,22 @@ class CausalForestEstimator(Estimator):
 
         # Remove any NA containing rows
         reduced_df = self.df.copy()
-        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcomes)
+        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
-        # Split data into effect modifiers (X), confounders (W), treatments (T), and outcomes (Y)
+        # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
             raise Exception('CATE requires the user to define a set of effect modifiers.')
         confounders_df = reduced_df[list(self.adjustment_set)]
         treatment_df = reduced_df[list(self.treatment)]
-        outcomes_df = reduced_df[list(self.outcomes)]
+        outcome_df = reduced_df[list(self.outcome)]
 
         # Fit a model to the data
         model = CausalForestDML(model_y=GradientBoostingRegressor(), model_t=GradientBoostingRegressor())
-        model.fit(outcomes_df, treatment_df, X=effect_modifier_df, W=confounders_df)
+        model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain CATES and confidence intervals
         conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values).flatten()
