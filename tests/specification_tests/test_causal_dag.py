@@ -1,15 +1,8 @@
 import unittest
 import os
 import networkx as nx
-from causal_testing.specification.causal_dag import (
-    CausalDAG,
-    close_separator,
-    list_all_min_sep,
-)
-from tests.test_helpers import (
-    create_temp_dir_if_non_existent,
-    remove_temp_dir_if_existent,
-)
+from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
+from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 
 
 class TestCausalDAG(unittest.TestCase):
@@ -247,8 +240,8 @@ class TestDAGIdentification(unittest.TestCase):
             set_of_adjustment_sets,
         )
 
-    def test_larger_dag(self):
-        """Test identification for a larger DAG."""
+    def test_dag_with_non_character_nodes(self):
+        """Test identification for a DAG whose nodes are not just characters (strings of length greater than 1)."""
         causal_dag = CausalDAG()
         causal_dag.graph.add_edges_from(
             [
@@ -265,7 +258,7 @@ class TestDAGIdentification(unittest.TestCase):
         )
         xs, ys = ['ba'], ['da']
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        print(adjustment_sets)
+        self.assertEqual(adjustment_sets, [{'aa'}, {'la'}, {'va'}])
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
