@@ -31,7 +31,8 @@ class CausalTestEngine:
 
     def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification):
         self.causal_test_case = causal_test_case
-        self.casual_dag, self.scenario = causal_specification.causal_dag, causal_specification.scenario
+        self.casual_dag = causal_specification.causal_dag
+        self.scenario = causal_specification.scenario
         self.scenario_execution_data_df = pd.DataFrame()
 
     def load_data(self, observational_data_path: str = None, n_repeats: int = 1, **kwargs):

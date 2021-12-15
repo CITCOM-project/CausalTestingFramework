@@ -39,10 +39,9 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
         # 3. Create an intervention and causal test case
         self.intervention = Intervention((A,), (1,))
-        print("Intervention type:", type(self.intervention))
         self.expected_causal_effect = ExactValue(4)
         self.causal_test_case = CausalTestCase(
-            control_input_configuration={D: 0},
+            control_input_configuration={A: 0},
             expected_causal_effect=self.expected_causal_effect,
             intervention=self.intervention,
             outcome_variables={C})

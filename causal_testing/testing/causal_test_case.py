@@ -53,7 +53,7 @@ class CausalTestCase:
 
     def get_treatment_variables(self):
         """Return a list of the treatment variables (as strings) for this causal test case."""
-        return [v.name for v in self.treatment_input_configuration]
+        return [v.name for v in self.control_input_configuration]
 
     def get_outcome_variables(self):
         """Return a list of the outcome variables (as strings) for this causal test case."""
