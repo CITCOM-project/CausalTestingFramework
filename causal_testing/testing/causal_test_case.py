@@ -51,6 +51,22 @@ class CausalTestCase:
                 self.control_input_configuration
             )
 
+    def get_treatment_variables(self):
+        """Return a list of the treatment variables (as strings) for this causal test case."""
+        return [v.name for v in self.treatment_input_configuration]
+
+    def get_outcome_variables(self):
+        """Return a list of the outcome variables (as strings) for this causal test case."""
+        return [v.name for v in self.outcome_variables]
+
+    def get_control_values(self):
+        """Return a list of the control values for each treatment variable in this causal test case."""
+        return list(self.control_input_configuration.values())
+
+    def get_treatment_values(self):
+        """Return a list of the treatment values for each treatment variable in this causal test case."""
+        return list(self.treatment_input_configuration.values())
+
     def __str__(self):
         if self.intervention is not None:
             return (f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "

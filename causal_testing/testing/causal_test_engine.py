@@ -31,15 +31,6 @@ class CausalTestEngine:
 
     def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification):
         self.causal_test_case = causal_test_case
-        # TODO: (@MF) Process of getting treatment and outcome vars will need changing to updated CausalTestCase class
-        if self.causal_test_case.intervention is not None:
-            self.treatment_variables = list(self.causal_test_case.intervention.treatment_variables)
-        else:
-            # This covers the case where a causal test case is specified in terms of a control/treatment run pair
-            # rather than a control run and an intervention.
-            # It might be better, though, to do this with an intervention which just returns the literal treatment run
-            self.treatment_variables = list(self.causal_test_case.control_input_configuration)
-
         self.casual_dag, self.scenario = causal_specification.causal_dag, causal_specification.scenario
         self.scenario_execution_data_df = pd.DataFrame()
 
@@ -78,8 +69,8 @@ class CausalTestEngine:
 
         self.scenario_execution_data_df = scenario_execution_data_df
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
-                [v.name for v in self.treatment_variables],
-                [v.name for v in self.causal_test_case.outcome_variables]
+                self.causal_test_case.get_treatment_variables(),
+                self.causal_test_case.get_outcome_variables()
             )
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
