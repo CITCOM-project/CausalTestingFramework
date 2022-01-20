@@ -42,7 +42,7 @@ class AbstractCausalTestCase:
     def datapath(self):
         def sanitise(string):
             return "".join([x for x in string if x.isalnum()])
-        return sanitise(f"{'-'.join([str(c) for c in self.intervention_constraints])}_{'-'.join([str(c) for c in self.outcome_variables])}_{self.expected_causal_effect}")+".csv"
+        return sanitise('-'.join([str(c) for c in self.intervention_constraints]))+f"_{'-'.join([c.name for c in self.outcome_variables])}_{self.expected_causal_effect}"+".csv"
 
     def generate_concrete_tests(self, sample_size: int, ) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
@@ -50,7 +50,6 @@ class AbstractCausalTestCase:
         :param int sample_size: The number of test cases to generate.
         :return: A list of causal test cases and a dataframe representing the required model run configurations.
         :rtype: ([CausalTestCase], pd.DataFrame)
-
         """
         # Generate the Latin Hypercube samples and put into a dataframe
         samples = pd.DataFrame(
@@ -70,9 +69,9 @@ class AbstractCausalTestCase:
         for _, row in samples.iterrows():
             optimizer = z3.Optimize()
             for i, c in enumerate(self.scenario.constraints):
-                optimizer.assert_and_track(c, f"constraint_{c}")
+                optimizer.add(c)
             for i, c in enumerate(self.intervention_constraints):
-                optimizer.assert_and_track(c, f"intervention_{c}")
+                optimizer.add(c)
 
             optimizer.add_soft([v.z3 == row[v.name] for v in self.scenario.inputs()])
             sat = optimizer.check()
@@ -82,6 +81,10 @@ class AbstractCausalTestCase:
                     + f"Constraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
                 )
             model = optimizer.model()
+
+            for v in self.scenario.inputs():
+                if row[v.name] != v.cast(model[v.z3]):
+                    logger.warn(f"Value of variable {v} is {v.cast(model[v.z3])} rather than {row[v.name]}")
 
             concrete_test = CausalTestCase(
                 control_input_configuration = {v: v.cast(model[v.z3]) for v in self.treatment_variables},
