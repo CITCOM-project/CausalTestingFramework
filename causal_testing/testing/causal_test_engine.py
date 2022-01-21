@@ -106,6 +106,9 @@ class CausalTestEngine:
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
 
+        print("treatments", "outcomes", "minimal_adjustment_set")
+        print(treatments, outcomes, minimal_adjustment_set)
+
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in self.causal_test_case.control_input_configuration}
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in self.causal_test_case.outcome_variables}
         assert all([v.name not in minimal_adjustment_set for v in self.causal_test_case.control_input_configuration]), "Treatment vars in adjustment set"
@@ -127,7 +130,15 @@ class CausalTestEngine:
                 return cates_df
         else:
             ate, confidence_intervals = estimator.estimate_ate()
-            causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
+            causal_test_result = CausalTestResult(
+                treatment=estimator.treatment,
+                outcome=estimator.outcome,
+                treatment_value=estimator.treatment_values,
+                control_value=estimator.control_values,
+                adjustment_set=estimator.adjustment_set,
+                ate=ate,
+                confidence_intervals=confidence_intervals)
+            # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
             # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         return causal_test_result
 

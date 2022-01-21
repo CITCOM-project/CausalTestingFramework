@@ -3,6 +3,7 @@ from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.specification.variable import Variable
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,31 +16,30 @@ class CausalTestCase:
     """
 
     def __init__(self, control_input_configuration: {Variable: any}, expected_causal_effect: CausalTestOutcome,
-                outcome_variables: {Variable}, intervention: Intervention = None,
-                treatment_input_configuration: {Variable: any} = None):
+                 outcome_variables: {Variable}, intervention: Intervention = None,
+                 treatment_input_configuration: {Variable: any} = None):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
         create two distinct input configurations: a control input configuration and a treatment input configuration.
         The former is the input configuration before applying the intervention and the latter is the input configuration
         after applying the intervention.
 
-        :param {Variable: any} control_input_configuration: The input configuration representing the control values of
-        the treatment variables.
-        :param CausalTestOutcome The expected outcome.
-        :param Intervention intervention: The metamorphic operator which transforms the control configuration to the
-        treatment configuration. Defaults to None.
-        :param {Variable: any} treatment_input_configuration: The input configuration representing the treatment
-        values of the treatment variables.
+        :param control_input_configuration: The input configuration representing the control values of the treatment
+        variables.
+        :param intervention: The function which transforms the control configuration to the treatment configuration.
+        Defaults to None.
+        :param treatment_input_configuration: The input configuration representing the treatment values of the treatment
+        variables. That is, the input configuration *after* applying the intervention.
         """
         assert (
-            intervention is None or treatment_input_configuration is None
-        ), "Cannot define both treatment configuration and intervention."
+                intervention is None or treatment_input_configuration is None
+        ), 'Cannot define both treatment configuration and intervention.'
         assert (
-            intervention is not None or treatment_input_configuration is not None
-        ), "Must define either a treatment configuration or intervention."
+                intervention is not None or treatment_input_configuration is not None
+        ), 'Must define either a treatment configuration or intervention.'
         if intervention is not None:
-            assert isinstance(intervention, Intervention),\
-            f"Invervention must be an instance of class Intervention not {type(intervention)}"
+            assert isinstance(intervention, Intervention), \
+                f'Intervention must be an instance of class Intervention not {type(intervention)}.'
 
         self.control_input_configuration = control_input_configuration
         self.expected_causal_effect = expected_causal_effect
@@ -52,6 +52,22 @@ class CausalTestCase:
             )
         assert control_input_configuration.keys() == treatment_input_configuration.keys(),\
                "Control and treatment input configurations must have the same keys."
+
+    def get_treatment_variables(self):
+        """Return a list of the treatment variables (as strings) for this causal test case."""
+        return [v.name for v in self.control_input_configuration]
+
+    def get_outcome_variables(self):
+        """Return a list of the outcome variables (as strings) for this causal test case."""
+        return [v.name for v in self.outcome_variables]
+
+    def get_control_values(self):
+        """Return a list of the control values for each treatment variable in this causal test case."""
+        return list(self.control_input_configuration.values())
+
+    def get_treatment_values(self):
+        """Return a list of the treatment values for each treatment variable in this causal test case."""
+        return list(self.treatment_input_configuration.values())
 
     def __str__(self):
         if self.intervention is not None:

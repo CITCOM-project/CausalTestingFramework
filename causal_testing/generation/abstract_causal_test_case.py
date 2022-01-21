@@ -9,6 +9,7 @@ import lhsmdu
 import logging
 logger = logging.getLogger(__name__)
 
+
 class AbstractCausalTestCase:
     """
     An abstract test case serves as a generator for concrete test cases. Instead of having concrete conctrol
@@ -47,7 +48,7 @@ class AbstractCausalTestCase:
     def generate_concrete_tests(self, sample_size: int, ) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
 
-        :param int sample_size: The number of test cases to generate.
+        :param sample_size: The number of test cases to generate.
         :return: A list of causal test cases and a dataframe representing the required model run configurations.
         :rtype: ([CausalTestCase], pd.DataFrame)
         """
@@ -76,7 +77,7 @@ class AbstractCausalTestCase:
             optimizer.add_soft([v.z3 == row[v.name] for v in self.scenario.inputs()])
             sat = optimizer.check()
             if sat == z3.unsat:
-                logger.warn(
+                logger.warning(
                     "Satisfiability of test case was unsat.\n"
                     + f"Constraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
                 )
@@ -87,9 +88,9 @@ class AbstractCausalTestCase:
                     logger.warn(f"Value of variable {v} is {v.cast(model[v.z3])} rather than {row[v.name]}")
 
             concrete_test = CausalTestCase(
-                control_input_configuration = {v: v.cast(model[v.z3]) for v in self.treatment_variables},
-                expected_causal_effect = self.expected_causal_effect,
-                outcome_variables = self.outcome_variables,
+                control_input_configuration={v: v.cast(model[v.z3]) for v in self.treatment_variables},
+                expected_causal_effect=self.expected_causal_effect,
+                outcome_variables=self.outcome_variables,
                 treatment_input_configuration={
                     v: v.cast(model[self.scenario.treatment_variables[v.name].z3])
                     for v in self.treatment_variables
@@ -103,4 +104,4 @@ class AbstractCausalTestCase:
                     if v.name in run_columns
                 }
             )
-        return (concrete_tests, pd.DataFrame(runs, columns=run_columns))
+        return concrete_tests, pd.DataFrame(runs, columns=run_columns)

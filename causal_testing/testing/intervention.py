@@ -13,9 +13,10 @@ class Intervention:
         self.treatment_values = treatment_values
 
     def apply(self, input_configuration: dict):
-        """
-        Take an input configuration and modify it in a particular way. It is the effect of this change which the
-        causal test case will focus on.
+        """Take an input configuration and modify it in a particular way.
+
+        It is the effect of this change a causal test case will focus on.
+
         :param input_configuration: Input configuration for the scenario-under-test.
         :return treatment_input_configuration: a modified input configuration.
         """
