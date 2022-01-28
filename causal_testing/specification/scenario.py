@@ -1,7 +1,7 @@
 from z3 import ExprRef, substitute
 from .variable import Variable, Input, Output, Meta
 from tabulate import tabulate
-
+from typing import Mapping, Set, Iterable
 
 class Scenario:
     """A scenario defines the setting by listing the endogenous variables, their
@@ -20,13 +20,13 @@ class Scenario:
     :attr constraints:
     """
 
-    variables: {str: Variable}
-    constraints: {ExprRef}
+    variables: Mapping[str, Variable]
+    constraints: Set[ExprRef]
 
     def __init__(
         self,
-        variables: {Variable} = None,
-        constraints: {ExprRef} = None
+        variables: Iterable[Variable]= None,
+        constraints: Set[ExprRef] = None
     ):
         if variables is not None:
             self.variables = {v.name: v for v in variables}
