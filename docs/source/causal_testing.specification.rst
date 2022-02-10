@@ -1,10 +1,9 @@
-causal\_testing.specification package
+.. causal_testing.specification package
+
+Specification Package
 =====================================
 
-Submodules
-----------
-
-causal\_testing.specification.causal\_dag module
+causal_testing.specification.causal_dag module
 ------------------------------------------------
 
 .. automodule:: causal_testing.specification.causal_dag
@@ -12,7 +11,7 @@ causal\_testing.specification.causal\_dag module
    :undoc-members:
    :show-inheritance:
 
-causal\_testing.specification.causal\_specification module
+causal_testing.specification.causal_specification module
 ----------------------------------------------------------
 
 .. automodule:: causal_testing.specification.causal_specification
@@ -20,7 +19,7 @@ causal\_testing.specification.causal\_specification module
    :undoc-members:
    :show-inheritance:
 
-causal\_testing.specification.scenario module
+causal_testing.specification.scenario module
 ---------------------------------------------
 
 .. automodule:: causal_testing.specification.scenario
@@ -28,7 +27,7 @@ causal\_testing.specification.scenario module
    :undoc-members:
    :show-inheritance:
 
-causal\_testing.specification.variable module
+causal_testing.specification.variable module
 ---------------------------------------------
 
 .. automodule:: causal_testing.specification.variable

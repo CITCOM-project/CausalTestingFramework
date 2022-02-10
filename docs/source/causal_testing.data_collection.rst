@@ -1,21 +1,13 @@
-causal\_testing.data\_collection package
-========================================
+.. causal_testing.data_collection package
 
-Submodules
-----------
+Data Collection Package
+================
 
-causal\_testing.data\_collection.data\_collector module
--------------------------------------------------------
+
+causal_testing.data_collection.data_collector module
+----------------------------------------------------
 
 .. automodule:: causal_testing.data_collection.data_collector
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: causal_testing.data_collection
-   :members:
-   :undoc-members:
-   :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:

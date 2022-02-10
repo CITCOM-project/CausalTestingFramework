@@ -1,10 +1,9 @@
-causal\_testing.testing package
+.. causal_testing.testing package
+
+Testing Package
 ===============================
 
-Submodules
-----------
-
-causal\_testing.testing.causal\_test\_case module
+causal_testing.testing.causal_test_case module
 -------------------------------------------------
 
 .. automodule:: causal_testing.testing.causal_test_case
@@ -12,7 +11,7 @@ causal\_testing.testing.causal\_test\_case module
    :undoc-members:
    :show-inheritance:
 
-causal\_testing.testing.causal\_test\_engine module
+causal_testing.testing.causal_test_engine module
 ---------------------------------------------------
 
 .. automodule:: causal_testing.testing.causal_test_engine
@@ -20,7 +19,7 @@ causal\_testing.testing.causal\_test\_engine module
    :undoc-members:
    :show-inheritance:
 
-causal\_testing.testing.causal\_test\_outcome module
+causal_testing.testing.causal_test_outcome module
 ----------------------------------------------------
 
 .. automodule:: causal_testing.testing.causal_test_outcome
@@ -28,7 +27,7 @@ causal\_testing.testing.causal\_test\_outcome module
    :undoc-members:
    :show-inheritance:
 
-causal\_testing.testing.estimators module
+causal_testing.testing.estimators module
 -----------------------------------------
 
 .. automodule:: causal_testing.testing.estimators
@@ -36,7 +35,7 @@ causal\_testing.testing.estimators module
    :undoc-members:
    :show-inheritance:
 
-causal\_testing.testing.intervention module
+causal_testing.testing.intervention module
 -------------------------------------------
 
 .. automodule:: causal_testing.testing.intervention

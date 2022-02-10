@@ -1,4 +1,4 @@
-causal\_testing package
+.. causal_testing package
 =======================
 
 Subpackages
