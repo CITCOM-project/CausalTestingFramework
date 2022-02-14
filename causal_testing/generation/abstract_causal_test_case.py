@@ -43,8 +43,8 @@ class AbstractCausalTestCase:
     def datapath(self):
         def sanitise(string):
             return "".join([x for x in string if x.isalnum()])
-        return sanitise('-'.join([str(c) for c in self.intervention_constraints]))
-        +f"_{'-'.join([c.name for c in self.outcome_variables])}_{self.expected_causal_effect}"+".csv"
+        return (sanitise('-'.join([str(c) for c in self.intervention_constraints]))
+        + f"_{'-'.join([c.name for c in self.outcome_variables])}_{self.expected_causal_effect}"+".csv")
 
     def generate_concrete_tests(self, sample_size: int, rct: bool = False) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
@@ -84,7 +84,6 @@ class AbstractCausalTestCase:
                 )
             model = optimizer.model()
 
-
             concrete_test = CausalTestCase(
                 control_input_configuration={v: v.cast(model[v.z3]) for v in self.treatment_variables},
                 treatment_input_configuration={
@@ -98,8 +97,8 @@ class AbstractCausalTestCase:
             for v in self.scenario.inputs():
                 if row[v.name] != v.cast(model[v.z3]):
                     constraints = "\n  ".join([str(c) for c in self.scenario.constraints if v.name in str(c)])
-                    logger.warn(f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n"
-                    +"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}")
+                    logger.warn(f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n" +
+                                f"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}")
 
             concrete_tests.append(concrete_test)
             # Control run
