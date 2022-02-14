@@ -7,6 +7,7 @@ import pandas as pd
 import lhsmdu
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,9 +18,15 @@ class AbstractCausalTestCase:
     enables potentially infinite concrete test cases to be generated between different values of the treatment.
     """
 
-    def __init__(self, scenario: Scenario, intervention_constraints: {z3.ExprRef}, treatment_variables: {Variable},
-                 expected_causal_effect: CausalTestOutcome, outcome_variables: {Variable},
-                 effect_modifiers: {Variable} = None):
+    def __init__(
+        self,
+        scenario: Scenario,
+        intervention_constraints: {z3.ExprRef},
+        treatment_variables: {Variable},
+        expected_causal_effect: CausalTestOutcome,
+        outcome_variables: {Variable},
+        effect_modifiers: {Variable} = None,
+    ):
         assert treatment_variables.issubset(scenario.variables.values()), (
             "Treatment variables must be a subset of variables."
             + " Instead got:\ntreatment_variables={treatment_variables}\nvariables={variables}"
@@ -37,16 +44,24 @@ class AbstractCausalTestCase:
             self.effect_modifiers = {}
 
     def __str__(self):
-        return (f"When we apply intervention {self.intervention_constraints}, "
-        + f"the effect on {self.outcome_variables} should be {str(self.expected_causal_effect)}")
+        return (
+            f"When we apply intervention {self.intervention_constraints}, "
+            + f"the effect on {self.outcome_variables} should be {str(self.expected_causal_effect)}"
+        )
 
     def datapath(self):
         def sanitise(string):
             return "".join([x for x in string if x.isalnum()])
-        return (sanitise('-'.join([str(c) for c in self.intervention_constraints]))
-        + f"_{'-'.join([c.name for c in self.outcome_variables])}_{str(self.expected_causal_effect)}"+".csv")
 
-    def generate_concrete_tests(self, sample_size: int, rct: bool = False, seed: int = 0) -> ([CausalTestCase], pd.DataFrame):
+        return (
+            sanitise("-".join([str(c) for c in self.intervention_constraints]))
+            + f"_{'-'.join([c.name for c in self.outcome_variables])}_{str(self.expected_causal_effect)}"
+            + ".csv"
+        )
+
+    def generate_concrete_tests(
+        self, sample_size: int, rct: bool = False, seed: int = 0
+    ) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
 
         :param sample_size: The number of test cases to generate.
@@ -86,7 +101,9 @@ class AbstractCausalTestCase:
             model = optimizer.model()
 
             concrete_test = CausalTestCase(
-                control_input_configuration={v: v.cast(model[v.z3]) for v in self.treatment_variables},
+                control_input_configuration={
+                    v: v.cast(model[v.z3]) for v in self.treatment_variables
+                },
                 treatment_input_configuration={
                     v: v.cast(model[self.scenario.treatment_variables[v.name].z3])
                     for v in self.treatment_variables
@@ -97,9 +114,13 @@ class AbstractCausalTestCase:
 
             for v in self.scenario.inputs():
                 if row[v.name] != v.cast(model[v.z3]):
-                    constraints = "\n  ".join([str(c) for c in self.scenario.constraints if v.name in str(c)])
-                    logger.warn(f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n" +
-                                f"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}")
+                    constraints = "\n  ".join(
+                        [str(c) for c in self.scenario.constraints if v.name in str(c)]
+                    )
+                    logger.warn(
+                        f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n"
+                        + f"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}"
+                    )
 
             concrete_tests.append(concrete_test)
             # Control run
@@ -108,12 +129,17 @@ class AbstractCausalTestCase:
                 for v in self.scenario.variables.values()
                 if v.name in run_columns
             }
-            control_run['bin'] = stratum
+            control_run["bin"] = stratum
             runs.append(control_run)
             # Treatment run
             if rct:
                 treatment_run = {k: v for k, v in control_run.items()}
-                treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
-                treatment_run['bin'] = stratum
+                treatment_run.update(
+                    {
+                        k.name: v
+                        for k, v in concrete_test.treatment_input_configuration.items()
+                    }
+                )
+                treatment_run["bin"] = stratum
                 runs.append(treatment_run)
-        return concrete_tests, pd.DataFrame(runs, columns=run_columns+["bin"])
+        return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
