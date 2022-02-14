@@ -34,6 +34,7 @@ class Estimator(ABC):
         self.df = df
         self.effect_modifiers = effect_modifiers
         self.modelling_assumptions = []
+        logger.debug("Effect Modifiers", self.effect_modifiers)
 
     @abstractmethod
     def add_modelling_assumptions(self):
@@ -144,8 +145,7 @@ class LinearRegressionEstimator(Estimator):
         necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
-        print("Reduced_df")
-        print(reduced_df)
+        logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
         reduced_df['Intercept'] = 1
@@ -189,6 +189,7 @@ class CausalForestEstimator(Estimator):
         reduced_df = reduced_df[~missing_rows]
 
         # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
+        # TODO: Is it right to ignore the adjustment set if we have effect modifiers?
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:

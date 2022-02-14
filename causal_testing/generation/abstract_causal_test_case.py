@@ -5,6 +5,7 @@ from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 import z3
 import pandas as pd
 import lhsmdu
+import sys
 
 import logging
 logger = logging.getLogger(__name__)
@@ -67,7 +68,7 @@ class AbstractCausalTestCase:
         concrete_tests = []
         runs = []
         run_columns = sorted([v.name for v in self.scenario.inputs()])
-        for _, row in samples.iterrows():
+        for bin, row in samples.iterrows():
             optimizer = z3.Optimize()
             for i, c in enumerate(self.scenario.constraints):
                 optimizer.add(c)
@@ -83,25 +84,39 @@ class AbstractCausalTestCase:
                 )
             model = optimizer.model()
 
-            for v in self.scenario.inputs():
-                if row[v.name] != v.cast(model[v.z3]):
-                    logger.warn(f"Value of variable {v} is {v.cast(model[v.z3])} rather than {row[v.name]}")
 
             concrete_test = CausalTestCase(
                 control_input_configuration={v: v.cast(model[v.z3]) for v in self.treatment_variables},
-                expected_causal_effect=self.expected_causal_effect,
-                outcome_variables=self.outcome_variables,
                 treatment_input_configuration={
                     v: v.cast(model[self.scenario.treatment_variables[v.name].z3])
                     for v in self.treatment_variables
                 },
+                expected_causal_effect=self.expected_causal_effect,
+                outcome_variables=self.outcome_variables,
             )
+
+            for v in self.scenario.inputs():
+                if row[v.name] != v.cast(model[v.z3]):
+                    constraints = "\n  ".join([str(c) for c in self.scenario.constraints if v.name in str(c)])
+                    logger.warn(f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n  {constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}")
+
             concrete_tests.append(concrete_test)
-            runs.append(
-                {
-                    v.name: v.cast(model[v.z3])
-                    for v in self.scenario.variables.values()
-                    if v.name in run_columns
-                }
-            )
-        return concrete_tests, pd.DataFrame(runs, columns=run_columns)
+            # Control run
+            control_run = {
+                v.name: v.cast(model[v.z3])
+                for v in self.scenario.variables.values()
+                if v.name in run_columns
+            }
+            control_run['bin'] = bin
+            runs.append(control_run)
+            # Treatment run
+            treatment_run = {k: v for k, v in control_run.items()}
+            treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
+            # treatment_run = {
+            #     v.name: v.cast(model[self.scenario.treatment_variables[v.name].z3]) if v in self.treatment_variables else v.cast(model[v.z3])
+            #     for v in self.scenario.variables.values()
+            #     if v.name in run_columns
+            # }
+            treatment_run['bin'] = bin
+            runs.append(treatment_run)
+        return concrete_tests, pd.DataFrame(runs, columns=run_columns+["bin"])
