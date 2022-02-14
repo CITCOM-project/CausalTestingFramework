@@ -53,7 +53,9 @@ class TestAbstractTestCase(unittest.TestCase):
             outcome_variables={self.Y},
             effect_modifiers=None,
         )
-        assert str(abstract) == "When we apply intervention {X1' > X1}, the effect on {Output: Y::int} should be Positive", f"Unexpected string {str(abstract)}"
+        assert str(abstract) == \
+        "When we apply intervention {X1' > X1}, the effect on {Output: Y::int} should be Positive", \
+        f"Unexpected string {str(abstract)}"
 
     def test_datapath(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.X4})

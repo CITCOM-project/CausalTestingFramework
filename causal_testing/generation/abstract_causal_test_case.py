@@ -46,7 +46,7 @@ class AbstractCausalTestCase:
         return (sanitise('-'.join([str(c) for c in self.intervention_constraints]))
         + f"_{'-'.join([c.name for c in self.outcome_variables])}_{str(self.expected_causal_effect)}"+".csv")
 
-    def generate_concrete_tests(self, sample_size: int, rct: bool = False) -> ([CausalTestCase], pd.DataFrame):
+    def generate_concrete_tests(self, sample_size: int, rct: bool = False, seed: int = 0) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
 
         :param sample_size: The number of test cases to generate.
@@ -54,6 +54,7 @@ class AbstractCausalTestCase:
         :rtype: ([CausalTestCase], pd.DataFrame)
         """
         # Generate the Latin Hypercube samples and put into a dataframe
+        lhsmdu.setRandomSeed(seed)
         samples = pd.DataFrame(
             lhsmdu.sample(len(self.scenario.inputs()), sample_size).T,
             columns=[v.name for v in self.scenario.inputs()],
