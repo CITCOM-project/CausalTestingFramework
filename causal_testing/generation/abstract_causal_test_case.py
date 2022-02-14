@@ -5,7 +5,6 @@ from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 import z3
 import pandas as pd
 import lhsmdu
-import sys
 
 import logging
 logger = logging.getLogger(__name__)
@@ -44,7 +43,8 @@ class AbstractCausalTestCase:
     def datapath(self):
         def sanitise(string):
             return "".join([x for x in string if x.isalnum()])
-        return sanitise('-'.join([str(c) for c in self.intervention_constraints]))+f"_{'-'.join([c.name for c in self.outcome_variables])}_{self.expected_causal_effect}"+".csv"
+        return sanitise('-'.join([str(c) for c in self.intervention_constraints]))
+        +f"_{'-'.join([c.name for c in self.outcome_variables])}_{self.expected_causal_effect}"+".csv"
 
     def generate_concrete_tests(self, sample_size: int, rct: bool = False) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
@@ -68,7 +68,7 @@ class AbstractCausalTestCase:
         concrete_tests = []
         runs = []
         run_columns = sorted([v.name for v in self.scenario.inputs()])
-        for bin, row in samples.iterrows():
+        for stratum, row in samples.iterrows():
             optimizer = z3.Optimize()
             for i, c in enumerate(self.scenario.constraints):
                 optimizer.add(c)
@@ -98,7 +98,8 @@ class AbstractCausalTestCase:
             for v in self.scenario.inputs():
                 if row[v.name] != v.cast(model[v.z3]):
                     constraints = "\n  ".join([str(c) for c in self.scenario.constraints if v.name in str(c)])
-                    logger.warn(f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n  {constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}")
+                    logger.warn(f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n"
+                    +"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}")
 
             concrete_tests.append(concrete_test)
             # Control run
@@ -107,17 +108,12 @@ class AbstractCausalTestCase:
                 for v in self.scenario.variables.values()
                 if v.name in run_columns
             }
-            control_run['bin'] = bin
+            control_run['bin'] = stratum
             runs.append(control_run)
             # Treatment run
             if rct:
                 treatment_run = {k: v for k, v in control_run.items()}
                 treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
-                # treatment_run = {
-                #     v.name: v.cast(model[self.scenario.treatment_variables[v.name].z3]) if v in self.treatment_variables else v.cast(model[v.z3])
-                #     for v in self.scenario.variables.values()
-                #     if v.name in run_columns
-                # }
-                treatment_run['bin'] = bin
+                treatment_run['bin'] = stratum
                 runs.append(treatment_run)
         return concrete_tests, pd.DataFrame(runs, columns=run_columns+["bin"])

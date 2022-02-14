@@ -71,7 +71,8 @@ class CausalTestEngine:
             scenario_execution_data_df = observational_data_collector.collect_data(**kwargs)
         else:
             logger.debug("EXPERIMENTAL DATA")
-            experimental_data_collector = ExperimentalDataCollector(self.causal_test_case.control_input_configuration,
+            experimental_data_collector = ExperimentalDataCollector(self.scenario,
+                                                                    self.causal_test_case.control_input_configuration,
                                                                     self.causal_test_case.treatment_input_configuration,
                                                                     n_repeats=n_repeats)
             scenario_execution_data_df = experimental_data_collector.collect_data()
@@ -112,10 +113,13 @@ class CausalTestEngine:
         logger.info(f"outcomes: {outcomes}")
         logger.info(f"minimal_adjustment_set: {minimal_adjustment_set}")
 
-        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in self.causal_test_case.control_input_configuration}
+        minimal_adjustment_set = \
+            minimal_adjustment_set - {v.name for v in self.causal_test_case.control_input_configuration}
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in self.causal_test_case.outcome_variables}
-        assert all([v.name not in minimal_adjustment_set for v in self.causal_test_case.control_input_configuration]), "Treatment vars in adjustment set"
-        assert all([v.name not in minimal_adjustment_set for v in self.causal_test_case.outcome_variables]), "Outcome vars in adjustment set"
+        assert all([v.name not in minimal_adjustment_set for v in self.causal_test_case.control_input_configuration]),\
+         "Treatment vars in adjustment set"
+        assert all([v.name not in minimal_adjustment_set for v in self.causal_test_case.outcome_variables]),\
+         "Outcome vars in adjustment set"
 
         variables_for_positivity = list(minimal_adjustment_set) + treatments + outcomes
         if self._check_positivity_violation(variables_for_positivity):

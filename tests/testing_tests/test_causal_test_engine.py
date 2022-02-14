@@ -60,7 +60,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
         # 5. Create causal test engine
         self.causal_test_engine = CausalTestEngine(self.causal_test_case, self.causal_specification)
-        self.minimal_adjustment_set = self.causal_test_engine.load_data(observational_data_path=self.observational_data_csv_path)
+        self.minimal_adjustment_set =\
+         self.causal_test_engine.load_data(observational_data_path=self.observational_data_csv_path)
 
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
@@ -93,7 +94,6 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
     def test_execute_test_observational_causal_forest_estimator(self):
-        print("self.causal_test_engine.scenario_execution_data_df\n", self.causal_test_engine.scenario_execution_data_df)
         """ Check that executing the causal test case returns the correct results for the dummy data using a causal
         forest estimator. """
         estimation_model = CausalForestEstimator(('A',),

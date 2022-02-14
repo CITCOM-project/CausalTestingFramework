@@ -7,8 +7,6 @@ from causal_testing.specification.variable import Input, Output
 from scipy.stats import uniform, rv_discrete
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.testing.causal_test_outcome import Positive
-from scipy import stats
-import numpy as np
 
 class TestAbstractTestCase(unittest.TestCase):
     """

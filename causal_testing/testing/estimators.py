@@ -36,7 +36,7 @@ class Estimator(ABC):
         self.df = df
         self.effect_modifiers = effect_modifiers
         self.modelling_assumptions = []
-        logger.debug("Effect Modifiers", self.effect_modifiers)
+        logger.debug(f"Effect Modifiers: {self.effect_modifiers}")
 
     @abstractmethod
     def add_modelling_assumptions(self):
