@@ -90,3 +90,7 @@ class NoEffect(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         return res.ci_low() < 0 < res.ci_high()
+
+
+    def __str__(self):
+        return "Unchanged"

@@ -38,13 +38,13 @@ class AbstractCausalTestCase:
 
     def __str__(self):
         return (f"When we apply intervention {self.intervention_constraints}, "
-        + f"the {self.outcome_variables} should {self.expected_causal_effect}")
+        + f"the effect on {self.outcome_variables} should be {str(self.expected_causal_effect)}")
 
     def datapath(self):
         def sanitise(string):
             return "".join([x for x in string if x.isalnum()])
         return (sanitise('-'.join([str(c) for c in self.intervention_constraints]))
-        + f"_{'-'.join([c.name for c in self.outcome_variables])}_{self.expected_causal_effect}"+".csv")
+        + f"_{'-'.join([c.name for c in self.outcome_variables])}_{str(self.expected_causal_effect)}"+".csv")
 
     def generate_concrete_tests(self, sample_size: int, rct: bool = False) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.

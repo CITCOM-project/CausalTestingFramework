@@ -29,7 +29,8 @@ class CausalTestEngine:
         had the anticipated causal effect. This should assign a pass/fail value to the CausalTestResult.
     """
 
-    def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification, data_collector: DataCollector):
+    def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification,
+                 data_collector: DataCollector):
         self.causal_test_case = causal_test_case
         if self.causal_test_case.intervention is not None:
             self.treatment_variables = list(self.causal_test_case.intervention.treatment_variables)
