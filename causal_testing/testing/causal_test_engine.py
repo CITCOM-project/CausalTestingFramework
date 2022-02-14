@@ -1,11 +1,11 @@
 import pandas as pd
-import logging
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector, ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestResult
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.estimators import Estimator
 
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -66,9 +66,11 @@ class CausalTestEngine:
         """
 
         if observational_data_path:
+            logger.debug("OBSERVATIONAL DATA")
             observational_data_collector = ObservationalDataCollector(self.scenario, observational_data_path)
             scenario_execution_data_df = observational_data_collector.collect_data(**kwargs)
         else:
+            logger.debug("EXPERIMENTAL DATA")
             experimental_data_collector = ExperimentalDataCollector(self.causal_test_case.control_input_configuration,
                                                                     self.causal_test_case.treatment_input_configuration,
                                                                     n_repeats=n_repeats)

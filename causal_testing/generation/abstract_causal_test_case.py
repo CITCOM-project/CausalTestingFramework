@@ -46,7 +46,7 @@ class AbstractCausalTestCase:
             return "".join([x for x in string if x.isalnum()])
         return sanitise('-'.join([str(c) for c in self.intervention_constraints]))+f"_{'-'.join([c.name for c in self.outcome_variables])}_{self.expected_causal_effect}"+".csv"
 
-    def generate_concrete_tests(self, sample_size: int, ) -> ([CausalTestCase], pd.DataFrame):
+    def generate_concrete_tests(self, sample_size: int, rct: bool = False) -> ([CausalTestCase], pd.DataFrame):
         """Generates a list of `num` concrete test cases.
 
         :param sample_size: The number of test cases to generate.
@@ -110,13 +110,14 @@ class AbstractCausalTestCase:
             control_run['bin'] = bin
             runs.append(control_run)
             # Treatment run
-            treatment_run = {k: v for k, v in control_run.items()}
-            treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
-            # treatment_run = {
-            #     v.name: v.cast(model[self.scenario.treatment_variables[v.name].z3]) if v in self.treatment_variables else v.cast(model[v.z3])
-            #     for v in self.scenario.variables.values()
-            #     if v.name in run_columns
-            # }
-            treatment_run['bin'] = bin
-            runs.append(treatment_run)
+            if rct:
+                treatment_run = {k: v for k, v in control_run.items()}
+                treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
+                # treatment_run = {
+                #     v.name: v.cast(model[self.scenario.treatment_variables[v.name].z3]) if v in self.treatment_variables else v.cast(model[v.z3])
+                #     for v in self.scenario.variables.values()
+                #     if v.name in run_columns
+                # }
+                treatment_run['bin'] = bin
+                runs.append(treatment_run)
         return concrete_tests, pd.DataFrame(runs, columns=run_columns+["bin"])
