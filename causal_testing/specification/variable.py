@@ -2,15 +2,26 @@ from __future__ import annotations
 from pandas import DataFrame
 from typing import Callable, TypeVar
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Int, String, Real, BoolRef, RatNumRef
+from z3 import Int, String, Real, BoolRef, RatNumRef, Bool, EnumSort, Const
 from abc import ABC, abstractmethod
 import lhsmdu
+from enum import Enum
 
 # Declare type variable
 # Is there a better way? I'd really like to do Variable[T](ExprRef)
 T = TypeVar("T")
 
-z3_types = {int: Int, str: String, float: Real}
+def z3_types(datatype):
+    types = {int: Int, str: String, float: Real, bool: Bool}
+    if datatype in types:
+        return types[datatype]
+    elif issubclass(datatype, Enum):
+        dtype, members = EnumSort(datatype.__name__, tuple([x.name for x in datatype]))
+        return lambda x: Const(x, dtype)
+    elif hasattr(datatype, "to_z3"):
+        return datatype.to_z3()
+    raise ValueError(f"Cannot convert type {datatype} to Z3."+
+    " Please use a native type, an Enum, or implement a conversion manually.")
 
 
 def _coerce(val: any) -> any:
@@ -47,7 +58,7 @@ class Variable(ABC):
     def __init__(self, name: str, datatype: T, distribution: rv_generic = None):
         self.name = name
         self.datatype = datatype
-        self.z3 = z3_types[datatype](name)
+        self.z3 = z3_types(datatype)(name)
         self.distribution = distribution
 
     def __repr__(self):
@@ -141,6 +152,18 @@ class Variable(ABC):
         if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
             return self.datatype(val)
         return self.datatype(str(val))
+
+
+    def z3_val(self, z3_var, val: any) -> T:
+        native_val = self.cast(val)
+        if isinstance(native_val, Enum):
+            values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
+            values = [v for v in values if str(v) == str(val)]
+            assert len(values) == 1, f"Expected {values} to be length 1"
+            return values[0]
+        else:
+            return native_val
+
 
     def sample(self, n_samples: int) -> [T]:
         """Generate a Latin Hypercube Sample of size n_samples according to the

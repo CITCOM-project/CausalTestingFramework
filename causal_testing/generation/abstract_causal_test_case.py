@@ -65,6 +65,8 @@ class AbstractCausalTestCase:
         """Generates a list of `num` concrete test cases.
 
         :param sample_size: The number of test cases to generate.
+        :param rct: Whether we're running an RCT, i.e. whether to add the treatment run to the concrete runs.
+        :param seed: Random seed for reproducability.
         :return: A list of causal test cases and a dataframe representing the required model run configurations.
         :rtype: ([CausalTestCase], pd.DataFrame)
         """
