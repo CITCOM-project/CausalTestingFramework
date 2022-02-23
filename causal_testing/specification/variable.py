@@ -128,6 +128,15 @@ class Variable(ABC):
         """
         return self.z3.__add__(_coerce(other))
 
+    def __truediv__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__truediv__(_coerce(other))
+
     def __dif__(self, other: any) -> BoolRef:
         """Create the Z3 expression `other * self`.
 
