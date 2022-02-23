@@ -72,10 +72,10 @@ class TestVariable(unittest.TestCase):
 
     def test_typestring(self):
         class Var(Variable):
+            """
+            The simplest class which will elicit the correct error.
+            """
             def copy(self, name: str = None):
-                """
-                The simplest class which will elicit the correct error.
-                """
                 pass
         var = Var("v", int)
         self.assertEqual(var.typestring(), "Var")
