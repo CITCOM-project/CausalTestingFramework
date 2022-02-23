@@ -69,6 +69,9 @@ class ExactValue(CausalTestOutcome):
         return res.ate == self.value
 
 
+    def __str__(self):
+        return f"ExactValue: {self.value}"
+
 class Positive(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be positive."""
 

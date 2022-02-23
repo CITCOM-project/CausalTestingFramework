@@ -71,8 +71,9 @@ class CausalTestCase:
 
     def __str__(self):
         if self.intervention is not None:
-            return (f"Applying {self.intervention} to {self.control_input_configuration} should cause the following "
-                    f"changes to {self.outcome_variables}: {self.expected_causal_effect}.")
+            control_input_configuration = {k.name: v for k, v in self.control_input_configuration.items()}
+            return (f"Applying {self.intervention} to {control_input_configuration} should cause the following "
+                    f"changes to {[v.name for v in self.outcome_variables]}: {self.expected_causal_effect}.")
         else:
             treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
             control_config = {k.name: v for k, v in self.control_input_configuration.items()}
