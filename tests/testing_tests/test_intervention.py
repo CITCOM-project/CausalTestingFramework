@@ -1,17 +1,9 @@
 import unittest
 import os
-import pandas as pd
-import numpy as np
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.specification.causal_specification import CausalSpecification, Scenario
-from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.intervention import Intervention
-from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_engine import CausalTestEngine
-from causal_testing.testing.causal_test_outcome import ExactValue
-from causal_testing.testing.estimators import CausalForestEstimator, LinearRegressionEstimator
 
 class TestCausalTestEngineObservational(unittest.TestCase):
     """ Test the CausalTestEngine workflow using observational data.

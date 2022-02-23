@@ -1,10 +1,8 @@
 import unittest
-import os
-import networkx as nx
 from enum import Enum
 import z3
 
-from causal_testing.specification.variable import z3_types, Variable, Input, Output, Meta
+from causal_testing.specification.variable import z3_types, Variable, Output, Meta
 
 
 class TestVariable(unittest.TestCase):
@@ -35,6 +33,9 @@ class TestVariable(unittest.TestCase):
 
     def test_z3_types_custom(self):
         class Color():
+            """
+            Example enum class color.
+            """
             RED = 1
             GREEN = 2
             BLUE = 3
@@ -59,13 +60,19 @@ class TestVariable(unittest.TestCase):
     def test_z3_types_invalid(self):
         with self.assertRaises(ValueError):
             class Err():
+                """
+                The simplest class which will elicit the correct error.
+                """
                 pass
             z3_types(Err)
 
 
     def test_typestring(self):
         class Var(Variable):
-            def copy(self):
+            def copy(self, name: str = None):
+                """
+                The simplest class which will elicit the correct error.
+                """
                 pass
         var = Var("v", int)
         self.assertEqual(var.typestring(), "Var")
