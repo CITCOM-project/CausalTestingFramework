@@ -2,7 +2,7 @@ import unittest
 from enum import Enum
 import z3
 
-from causal_testing.specification.variable import z3_types, Variable, Output, Meta
+from causal_testing.specification.variable import z3_types, Variable, Input
 
 
 class TestVariable(unittest.TestCase):
@@ -16,6 +16,9 @@ class TestVariable(unittest.TestCase):
 
     def test_z3_types_enum(self):
         class Color(Enum):
+            """
+            Example enum class color.
+            """
             RED = 1
             GREEN = 2
             BLUE = 3

@@ -4,6 +4,8 @@ from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_
 from causal_testing.specification.causal_specification import CausalSpecification, Scenario
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.intervention import Intervention
+from causal_testing.specification.variable import Input
+
 
 class TestCausalTestEngineObservational(unittest.TestCase):
     """ Test the CausalTestEngine workflow using observational data.
