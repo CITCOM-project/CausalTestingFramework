@@ -1,7 +1,7 @@
+from typing import Mapping, Set, Iterable
 from z3 import ExprRef, substitute
 from .variable import Variable, Input, Output, Meta
 from tabulate import tabulate
-from typing import Mapping, Set, Iterable
 
 class Scenario:
     """A scenario defines the setting by listing the endogenous variables, their
