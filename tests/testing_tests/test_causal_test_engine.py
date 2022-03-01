@@ -65,7 +65,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.data_collector
         )
         self.minimal_adjustment_set =\
-            self.causal_test_engine.load_data(observational_data_path=self.observational_data_csv_path)
+            self.causal_test_engine.load_data()
 
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1

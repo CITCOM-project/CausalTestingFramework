@@ -135,7 +135,7 @@ class AbstractCausalTestCase:
             runs.append(control_run)
             # Treatment run
             if rct:
-                treatment_run = control_run.copy
+                treatment_run = control_run.copy()
                 treatment_run.update(
                     {
                         k.name: v
