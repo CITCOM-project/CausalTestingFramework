@@ -54,10 +54,11 @@ coverage.xml
 *.pot
 
 # Sphinx documentation
-docs/_build/
+docs/build/
 
-# vscode
+# v/docs/build/scode
 .vscode/
 
 # temporary files
 temp/
+
