@@ -1,11 +1,11 @@
 from __future__ import annotations
+from enum import Enum
 from pandas import DataFrame
 from typing import Callable, TypeVar
 from scipy.stats._distn_infrastructure import rv_generic
 from z3 import Int, String, Real, BoolRef, RatNumRef, Bool, EnumSort, Const
 from abc import ABC, abstractmethod
 import lhsmdu
-from enum import Enum
 
 # Declare type variable
 # Is there a better way? I'd really like to do Variable[T](ExprRef)
@@ -15,10 +15,10 @@ def z3_types(datatype):
     types = {int: Int, str: String, float: Real, bool: Bool}
     if datatype in types:
         return types[datatype]
-    elif issubclass(datatype, Enum):
+    if issubclass(datatype, Enum):
         dtype, _ = EnumSort(datatype.__name__, tuple([x.name for x in datatype]))
         return lambda x: Const(x, dtype)
-    elif hasattr(datatype, "to_z3"):
+    if hasattr(datatype, "to_z3"):
         return datatype.to_z3()
     raise ValueError(f"Cannot convert type {datatype} to Z3."+
     " Please use a native type, an Enum, or implement a conversion manually.")
@@ -170,8 +170,7 @@ class Variable(ABC):
             values = [v for v in values if str(v) == str(val)]
             assert len(values) == 1, f"Expected {values} to be length 1"
             return values[0]
-        else:
-            return native_val
+        return native_val
 
 
     def sample(self, n_samples: int) -> [T]:

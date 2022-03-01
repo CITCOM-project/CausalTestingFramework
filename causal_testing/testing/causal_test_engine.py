@@ -44,7 +44,7 @@ class CausalTestEngine:
         self.data_collector = data_collector
         self.scenario_execution_data_df = pd.DataFrame()
 
-    def load_data(self, observational_data_path: str = None, n_repeats: int = 1, **kwargs):
+    def load_data(self, **kwargs):
         """ Load execution data corresponding to the causal test case into a pandas dataframe and return the minimal
         adjustment set.
 
@@ -59,8 +59,6 @@ class CausalTestEngine:
         After the data is loaded, both are treated in the same way and, provided the identifiability and modelling
         assumptions hold, can be used to estimate the causal effect for the causal test case.
 
-        :param observational_data_path: An optional path to a csv containing observational data.
-        :param n_repeats: An optional int which specifies the number of times to run a causal test case in the
         experimental case.
         :return self: Update the causal test case's execution data dataframe.
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal

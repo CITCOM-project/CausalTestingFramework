@@ -44,7 +44,7 @@ class TestVariable(unittest.TestCase):
             BLUE = 3
 
             @classmethod
-            def to_z3(self):
+            def to_z3(cls):
                 dtype, _ = z3.EnumSort("Color", ("RED", "GREEN", "BLUE"))
                 return lambda x: z3.Const(x, dtype)
 
@@ -66,7 +66,6 @@ class TestVariable(unittest.TestCase):
                 """
                 The simplest class which will elicit the correct error.
                 """
-                pass
             z3_types(Err)
 
 

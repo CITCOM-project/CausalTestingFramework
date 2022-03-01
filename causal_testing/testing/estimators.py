@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from econml.dml import CausalForestDML
@@ -5,7 +6,6 @@ from sklearn.ensemble import GradientBoostingRegressor
 import statsmodels.api as sm
 import pandas as pd
 import numpy as np
-import logging
 logger = logging.getLogger(__name__)
 
 

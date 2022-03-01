@@ -119,7 +119,7 @@ class AbstractCausalTestCase:
                     constraints = "\n  ".join(
                         [str(c) for c in self.scenario.constraints if v.name in str(c)]
                     )
-                    logger.warn(
+                    logger.warning(
                         f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n"
                         + f"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}"
                     )
@@ -135,7 +135,7 @@ class AbstractCausalTestCase:
             runs.append(control_run)
             # Treatment run
             if rct:
-                treatment_run = {k: v for k, v in control_run.items()}
+                treatment_run = control_run.copy
                 treatment_run.update(
                     {
                         k.name: v
