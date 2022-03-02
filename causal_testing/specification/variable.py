@@ -16,7 +16,7 @@ def z3_types(datatype):
     if datatype in types:
         return types[datatype]
     if issubclass(datatype, Enum):
-        dtype, _ = EnumSort(datatype.__name__, tuple([x.name for x in datatype]))
+        dtype, _ = EnumSort(datatype.__name__, [x.name for x in datatype])
         return lambda x: Const(x, dtype)
     if hasattr(datatype, "to_z3"):
         return datatype.to_z3()

@@ -97,16 +97,16 @@ class CausalTestEngine:
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
 
-        logger.info(f"treatments: {treatments}")
-        logger.info(f"outcomes: {outcomes}")
-        logger.info(f"minimal_adjustment_set: {minimal_adjustment_set}")
+        logger.info(f"treatments: %s", treatments)
+        logger.info(f"outcomes: %s", outcomes)
+        logger.info(f"minimal_adjustment_set: %s", minimal_adjustment_set)
 
         minimal_adjustment_set = \
             minimal_adjustment_set - {v.name for v in self.causal_test_case.control_input_configuration}
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in self.causal_test_case.outcome_variables}
-        assert all([v.name not in minimal_adjustment_set for v in self.causal_test_case.control_input_configuration]),\
+        assert all((v.name not in minimal_adjustment_set for v in self.causal_test_case.control_input_configuration)),\
          "Treatment vars in adjustment set"
-        assert all([v.name not in minimal_adjustment_set for v in self.causal_test_case.outcome_variables]),\
+        assert all((v.name not in minimal_adjustment_set for v in self.causal_test_case.outcome_variables)),\
          "Outcome vars in adjustment set"
 
         variables_for_positivity = list(minimal_adjustment_set) + treatments + outcomes
