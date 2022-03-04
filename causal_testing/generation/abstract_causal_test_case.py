@@ -89,9 +89,9 @@ class AbstractCausalTestCase:
         for stratum, row in samples.iterrows():
             optimizer = z3.Optimize()
             for i, c in enumerate(self.scenario.constraints):
-                optimizer.add(c)
+                optimizer.assert_and_track(c, str(c))
             for i, c in enumerate(self.intervention_constraints):
-                optimizer.add(c)
+                optimizer.assert_and_track(c, str(c))
 
             optimizer.add_soft([v.z3 == row[v.name] for v in self.scenario.inputs()])
             if optimizer.check() == z3.unsat:

@@ -154,6 +154,7 @@ class Variable(ABC):
         :return: The supplied value as an instance of T.
         :rtype: T
         """
+        assert val is not None, f"Invalid value None for variable {self}"
         if isinstance(val, RatNumRef) and self.datatype == float:
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
