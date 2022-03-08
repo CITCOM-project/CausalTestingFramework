@@ -57,7 +57,7 @@ class AbstractCausalTestCase:
 
         return (
             sanitise("-".join([str(c) for c in self.intervention_constraints]))
-            + '-'.join([f"{v.name}_{e}" for v, e in self.expected_causal_effect.items()])
+            + "_"+'-'.join([f"{v.name}_{e}" for v, e in self.expected_causal_effect.items()])
             + ".csv"
         )
 

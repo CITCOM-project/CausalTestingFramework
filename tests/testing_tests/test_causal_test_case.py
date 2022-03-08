@@ -60,7 +60,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
     def test_str(self):
         self.assertEqual(str(self.causal_test_case),
-        "Applying {A -> 1} to {'A': 0} should cause the following changes to ['C']: ExactValue: 4.")
+        "Applying {A -> 1} to {'A': 0} should cause the following changes to ['C']: ExactValue: 4±0.2.")
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

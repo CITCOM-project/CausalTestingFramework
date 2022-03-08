@@ -34,8 +34,7 @@ class TestAbstractTestCase(unittest.TestCase):
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
             treatment_variables={self.X1},
-            expected_causal_effect=Positive,
-            outcome_variables={self.Y},
+            expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
         concrete_tests, runs = abstract.generate_concrete_tests(2)
@@ -49,12 +48,11 @@ class TestAbstractTestCase(unittest.TestCase):
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
             treatment_variables={self.X1},
-            expected_causal_effect=Positive(),
-            outcome_variables={self.Y},
+            expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
         assert str(abstract) == \
-        "When we apply intervention {X1' > X1}, the effect on {Output: Y::int} should be Positive", \
+        "When we apply intervention {X1' > X1}, the effect on Output: Y::int should be Positive", \
         f"Unexpected string {str(abstract)}"
 
     def test_datapath(self):
@@ -64,8 +62,7 @@ class TestAbstractTestCase(unittest.TestCase):
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
             treatment_variables={self.X1},
-            expected_causal_effect=Positive(),
-            outcome_variables={self.Y},
+            expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
         assert abstract.datapath() == "X1X1_Y_Positive.csv", f"Unexpected datapath {abstract.datapath()}"
@@ -77,8 +74,7 @@ class TestAbstractTestCase(unittest.TestCase):
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
             treatment_variables={self.X1},
-            expected_causal_effect=Positive,
-            outcome_variables={self.Y},
+            expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
         concrete_tests, runs = abstract.generate_concrete_tests(2)
@@ -92,8 +88,7 @@ class TestAbstractTestCase(unittest.TestCase):
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
             treatment_variables={self.X1},
-            expected_causal_effect=Positive,
-            outcome_variables={self.Y},
+            expected_causal_effect={self.Y: Positive()},
             effect_modifiers={self.X2},
         )
         concrete_tests, runs = abstract.generate_concrete_tests(2)
@@ -107,8 +102,7 @@ class TestAbstractTestCase(unittest.TestCase):
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
             treatment_variables={self.X1},
-            expected_causal_effect=Positive,
-            outcome_variables={self.Y},
+            expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
         concrete_tests, runs = abstract.generate_concrete_tests(2, rct=True)
