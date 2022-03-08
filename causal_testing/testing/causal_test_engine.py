@@ -66,6 +66,7 @@ class CausalTestEngine:
         """
 
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
+
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
                 [v.name for v in self.treatment_variables],
                 [v.name for v in self.causal_test_case.outcome_variables]
@@ -117,13 +118,26 @@ class CausalTestEngine:
 
         # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
         if estimate_type == 'cate':
+            logger.debug("calculating cate")
             if not hasattr(estimator, 'estimate_cates'):
                 raise NotImplementedError(f'{estimator.__class__} has no CATE method.')
             else:
                 cates_df = estimator.estimate_cates()
                 # TODO: Work out how to handle CATE test results (just return the results df for now)
                 return cates_df
-        else:
+        elif estimate_type == "risk_ratio":
+            logger.debug("calculating risk_ratio")
+            risk_ratio, confidence_intervals = estimator.estimate_risk_ratio()
+            causal_test_result = CausalTestResult(
+                treatment=estimator.treatment,
+                outcome=estimator.outcome,
+                treatment_value=estimator.treatment_values,
+                control_value=estimator.control_values,
+                adjustment_set=estimator.adjustment_set,
+                ate=risk_ratio,
+                confidence_intervals=confidence_intervals)
+        elif estimate_type == "ate":
+            logger.debug("calculating ate")
             ate, confidence_intervals = estimator.estimate_ate()
             causal_test_result = CausalTestResult(
                 treatment=estimator.treatment,
@@ -135,6 +149,8 @@ class CausalTestEngine:
                 confidence_intervals=confidence_intervals)
             # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
             # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
+        else:
+            raise ValueError(f"Invalid estimate type {estimate_type}, expected 'ate', 'cate', or 'risk_ratio'")
         return causal_test_result
 
     # TODO (MF) I think that the test oracle procedure should go in here.

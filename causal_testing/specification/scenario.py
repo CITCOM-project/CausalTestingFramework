@@ -33,7 +33,7 @@ class Scenario:
         else:
             self.variables = dict()
         if constraints is not None:
-            self.constraints = constraints
+            self.constraints = set(constraints)
         else:
             self.constraints = set()
 

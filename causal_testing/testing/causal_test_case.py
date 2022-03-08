@@ -17,7 +17,7 @@ class CausalTestCase:
 
     def __init__(self, control_input_configuration: {Variable: any}, expected_causal_effect: CausalTestOutcome,
                  outcome_variables: {Variable}, intervention: Intervention = None,
-                 treatment_input_configuration: {Variable: any} = None):
+                 treatment_input_configuration: {Variable: any} = None, estimate_type: str="ate"):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
         create two distinct input configurations: a control input configuration and a treatment input configuration.
@@ -46,6 +46,7 @@ class CausalTestCase:
         self.intervention = intervention
         self.outcome_variables = outcome_variables
         self.treatment_input_configuration = treatment_input_configuration
+        self.estimate_type = estimate_type
         if intervention:
             self.treatment_input_configuration = intervention.apply(
                 self.control_input_configuration

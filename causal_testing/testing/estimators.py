@@ -91,6 +91,9 @@ class LinearRegressionEstimator(Estimator):
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += f'Relationship between {self.treatment} and {self.outcome} varies quadratically'\
                                       f'with {term_to_square}.'
+        if not hasattr(self, "square_terms"):
+            self.square_terms = []
+        self.square_terms.append(term_to_square)
 
     def add_product_term_to_df(self, term_a: str, term_b: str):
         """ Add a product term to the linear regression model and df.
@@ -136,6 +139,27 @@ class LinearRegressionEstimator(Estimator):
         ate = t_test_results.effect[0]
         confidence_intervals = list(t_test_results.conf_int().flatten())
         return ate, confidence_intervals
+
+    def estimate_risk_ratio(self) -> (float, [float, float], float):
+        """ Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
+        by changing the treatment variable from the control value to the treatment value.
+
+        :return: The average treatment effect and the 95% Wald confidence intervals.
+        """
+        model = self._run_linear_regression()
+
+        x = pd.DataFrame()
+        x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x['Intercept'] = 1
+        for t in self.square_terms:
+            x[t+'^2'] = x[t] ** 2
+
+        y = model.predict(x)
+        treatment_outcome = y.iloc[0]
+        control_outcome = y.iloc[1]
+
+        return treatment_outcome/control_outcome, None
+
 
     def _run_linear_regression(self) -> RegressionResultsWrapper:
         """ Run linear regression of the treatment and adjustment set against the outcome and return the model.

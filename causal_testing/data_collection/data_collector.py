@@ -136,5 +136,7 @@ class ObservationalDataCollector(DataCollector):
         """
 
         execution_data_df = pd.read_csv(self.csv_path, **kwargs)
+        for meta in self.scenario.metas():
+            meta.populate(execution_data_df)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
         return scenario_execution_data_df

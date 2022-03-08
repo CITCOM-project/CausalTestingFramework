@@ -23,20 +23,22 @@ class AbstractCausalTestCase:
         scenario: Scenario,
         intervention_constraints: {z3.ExprRef},
         treatment_variables: {Variable},
-        expected_causal_effect: CausalTestOutcome,
-        outcome_variables: {Variable},
+        expected_causal_effect: {Variable: CausalTestOutcome},
         effect_modifiers: {Variable} = None,
+        estimate_type:str="ate"
     ):
         assert treatment_variables.issubset(scenario.variables.values()), (
             "Treatment variables must be a subset of variables."
-            + " Instead got:\ntreatment_variables={treatment_variables}\nvariables={variables}"
+            + f" Instead got:\ntreatment_variables={treatment_variables}\nvariables={scenario.variables}"
         )
+
+        assert len(expected_causal_effect) == 1, "We currently only support tests with one causal outcome"
 
         self.scenario = scenario
         self.intervention_constraints = intervention_constraints
         self.treatment_variables = treatment_variables
         self.expected_causal_effect = expected_causal_effect
-        self.outcome_variables = outcome_variables
+        self.estimate_type=estimate_type
 
         if effect_modifiers is not None:
             self.effect_modifiers = effect_modifiers
@@ -44,9 +46,9 @@ class AbstractCausalTestCase:
             self.effect_modifiers = {}
 
     def __str__(self):
+        outcome_string = " and ".join([f"the effect on {var} should be {str(effect)}" for var, effect in self.expected_causal_effect.items()])
         return (
-            f"When we apply intervention {self.intervention_constraints}, "
-            + f"the effect on {self.outcome_variables} should be {str(self.expected_causal_effect)}"
+            f"When we apply intervention {self.intervention_constraints}, {outcome_string}"
         )
 
     def datapath(self):
@@ -55,7 +57,7 @@ class AbstractCausalTestCase:
 
         return (
             sanitise("-".join([str(c) for c in self.intervention_constraints]))
-            + f"_{'-'.join([c.name for c in self.outcome_variables])}_{str(self.expected_causal_effect)}"
+            + '-'.join([f"{v.name}_{e}" for v, e in self.expected_causal_effect.items()])
             + ".csv"
         )
 
@@ -109,8 +111,9 @@ class AbstractCausalTestCase:
                     v: v.cast(model[self.scenario.treatment_variables[v.name].z3])
                     for v in self.treatment_variables
                 },
-                expected_causal_effect=self.expected_causal_effect,
-                outcome_variables=self.outcome_variables,
+                expected_causal_effect=list(self.expected_causal_effect.values())[0],
+                outcome_variables=list(self.expected_causal_effect.keys()),
+                estimate_type=self.estimate_type
             )
 
             for v in self.scenario.inputs():

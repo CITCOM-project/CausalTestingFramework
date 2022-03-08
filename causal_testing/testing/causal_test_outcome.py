@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Union
+import numpy as np
 
 
 class CausalTestResult:
@@ -62,15 +63,20 @@ class CausalTestOutcome(ABC):
 
 class ExactValue(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
-    def __init__(self, value: float):
+    def __init__(self, value: float, tolerance: float = None):
         self.value = value
+        if tolerance is None:
+            self.tolerance = value * 0.05
+        else:
+            self.tolerance = tolerance
 
     def apply(self, res: CausalTestResult) -> bool:
-        return res.ate == self.value
+        return np.isclose(res.ate, self.value, atol=self.tolerance)
 
 
     def __str__(self):
-        return f"ExactValue: {self.value}"
+        return f"ExactValue: {self.value}±{self.tolerance}"
+
 
 class Positive(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be positive."""
