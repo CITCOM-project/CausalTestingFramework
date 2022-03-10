@@ -164,5 +164,5 @@ class TestCausalForestEstimator(unittest.TestCase):
                       'active_1', 'active_2', 'wt71', 'smokeintensity', 'smokeyrs'}
         causal_forest = CausalForestEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',), smoking_intensity_5_and_40_df,
                                               {'smokeintensity'})
-        cates_df = causal_forest.estimate_cates()
+        cates_df, _ = causal_forest.estimate_cates()
         self.assertGreater(cates_df['cate'].mean(), 0)

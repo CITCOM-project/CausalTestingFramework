@@ -150,7 +150,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                  self.causal_test_engine.scenario_execution_data_df,
                                                  effect_modifiers={'M'})
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, estimate_type='cate')
-
+        causal_test_result = causal_test_result.ate
         # Check that each effect modifier's strata has a greater ATE than the last (ascending order)
         causal_test_result_m1 = causal_test_result.loc[causal_test_result['M'] == 1]
         causal_test_result_m2 = causal_test_result.loc[causal_test_result['M'] == 2]

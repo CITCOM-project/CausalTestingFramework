@@ -316,4 +316,4 @@ class CausalForestEstimator(Estimator):
         effect_modifier_df.reset_index(drop=True, inplace=True)
         results_df[list(self.effect_modifiers)] = effect_modifier_df
         results_df.sort_values(by=list(self.effect_modifiers), inplace=True)
-        return results_df
+        return results_df, None
