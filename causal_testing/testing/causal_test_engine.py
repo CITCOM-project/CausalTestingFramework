@@ -122,9 +122,17 @@ class CausalTestEngine:
             if not hasattr(estimator, 'estimate_cates'):
                 raise NotImplementedError(f'{estimator.__class__} has no CATE method.')
             else:
-                cates_df = estimator.estimate_cates()
+                cates_df, confidence_intervals = estimator.estimate_cates()
                 # TODO: Work out how to handle CATE test results (just return the results df for now)
-                return cates_df
+                causal_test_result = CausalTestResult(
+                    treatment=estimator.treatment,
+                    outcome=estimator.outcome,
+                    treatment_value=estimator.treatment_values,
+                    control_value=estimator.control_values,
+                    adjustment_set=estimator.adjustment_set,
+                    ate=cates_df,
+                    effect_modifier_configuration=self.causal_test_case.effect_modifier_configuration,
+                    confidence_intervals=confidence_intervals)
         elif estimate_type == "risk_ratio":
             logger.debug("calculating risk_ratio")
             risk_ratio, confidence_intervals = estimator.estimate_risk_ratio()
@@ -135,6 +143,7 @@ class CausalTestEngine:
                 control_value=estimator.control_values,
                 adjustment_set=estimator.adjustment_set,
                 ate=risk_ratio,
+                effect_modifier_configuration=self.causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals)
         elif estimate_type == "ate":
             logger.debug("calculating ate")
@@ -146,6 +155,7 @@ class CausalTestEngine:
                 control_value=estimator.control_values,
                 adjustment_set=estimator.adjustment_set,
                 ate=ate,
+                effect_modifier_configuration=self.causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals)
             # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
             # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)

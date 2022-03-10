@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Union
 import numpy as np
+from causal_testing.specification.variable import Variable
 
 
 class CausalTestResult:
@@ -10,7 +11,7 @@ class CausalTestResult:
 
     def __init__(self, treatment: tuple, outcome: tuple, treatment_value: Union[int, float, str],
                  control_value: Union[int, float, str], adjustment_set: float, ate: float,
-                 confidence_intervals: [float, float] = None):
+                 confidence_intervals: [float, float] = None, effect_modifier_configuration: {Variable: any} = None):
         self.treatment = treatment
         self.outcome = outcome
         self.treatment_value = treatment_value
@@ -18,9 +19,14 @@ class CausalTestResult:
         if adjustment_set:
             self.adjustment_set = adjustment_set
         else:
-            self.adjustment_set = '{}'
+            self.adjustment_set = set()
         self.ate = ate
         self.confidence_intervals = confidence_intervals
+
+        if effect_modifier_configuration is not None:
+            self.effect_modifier_configuration = effect_modifier_configuration
+        else:
+            self.effect_modifier_configuration = dict()
 
     def __str__(self):
         base_str = f"Causal Test Result\n==============\n" \
@@ -83,6 +89,7 @@ class Positive(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         # TODO: confidence intervals?
+        print(res.ate)
         return res.ate > 0
 
 

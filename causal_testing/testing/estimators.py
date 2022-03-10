@@ -6,6 +6,8 @@ from sklearn.ensemble import GradientBoostingRegressor
 import statsmodels.api as sm
 import pandas as pd
 import numpy as np
+from causal_testing.specification.variable import Variable
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +29,7 @@ class Estimator(ABC):
     """
 
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: set = None):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: {Variable: any} = None):
         self.treatment = treatment
         self.treatment_values = treatment_values
         self.control_values = control_values
@@ -109,6 +111,9 @@ class LinearRegressionEstimator(Estimator):
         self.df[new_term] = self.df[term_a] * self.df[term_b]
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += f'{term_a} and {term_b} vary linearly with each other.'
+        if not hasattr(self, "product_terms"):
+            self.product_terms = []
+        self.product_terms.append((term_a, term_b))
 
     def estimate_unit_ate(self) -> float:
         """ Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
@@ -151,14 +156,46 @@ class LinearRegressionEstimator(Estimator):
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
         x['Intercept'] = 1
-        for t in self.square_terms:
-            x[t+'^2'] = x[t] ** 2
+        if hasattr(self, "square_terms"):
+            for t in self.square_terms:
+                x[t+'^2'] = x[t] ** 2
+        if hasattr(self, "product_terms"):
+            for a, b in self.product_terms:
+                x[f"{a}*{b}"] = x[a] * x[b]
 
         y = model.predict(x)
         treatment_outcome = y.iloc[0]
         control_outcome = y.iloc[1]
 
         return treatment_outcome/control_outcome, None
+
+    def estimate_cates(self) -> (float, [float, float], float):
+        """ Estimate the conditional average treatment effect of the treatment on the outcome. That is, the change
+        in outcome caused by changing the treatment variable from the control value to the treatment value.
+
+        :return: The conditional average treatment effect and the 95% Wald confidence intervals.
+        """
+        assert self.effect_modifiers, f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
+        x = pd.DataFrame()
+        x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x['Intercept'] = 1
+        for k, v in self.effect_modifiers.items():
+            self.adjustment_set.add(k.name)
+            x[k.name] = v
+        if hasattr(self, "square_terms"):
+            for t in self.square_terms:
+                x[t+'^2'] = x[t] ** 2
+        if hasattr(self, "product_terms"):
+            for a, b in self.product_terms:
+                x[f"{a}*{b}"] = x[a] * x[b]
+
+        model = self._run_linear_regression()
+        print(model.summary())
+        y = model.predict(x)
+        treatment_outcome = y.iloc[0]
+        control_outcome = y.iloc[1]
+
+        return treatment_outcome - control_outcome, None
 
 
     def _run_linear_regression(self) -> RegressionResultsWrapper:

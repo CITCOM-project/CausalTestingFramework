@@ -113,7 +113,10 @@ class AbstractCausalTestCase:
                 },
                 expected_causal_effect=list(self.expected_causal_effect.values())[0],
                 outcome_variables=list(self.expected_causal_effect.keys()),
-                estimate_type=self.estimate_type
+                estimate_type=self.estimate_type,
+                effect_modifier_configuration = {
+                    v: v.cast(model[v.z3]) for v in self.effect_modifiers
+                }
             )
 
             for v in self.scenario.inputs():
