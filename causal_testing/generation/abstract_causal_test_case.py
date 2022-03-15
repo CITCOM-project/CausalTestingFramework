@@ -79,29 +79,30 @@ class AbstractCausalTestCase:
 
         concrete_tests = []
         runs = []
-        run_columns = sorted([v.name for v in self.scenario.inputs()])
+        run_columns = sorted([v.name for v in self.scenario.variables.values() if v.distribution])
+
 
         # Generate the Latin Hypercube samples and put into a dataframe
         # lhsmdu.setRandomSeed(seed+i)
         samples = pd.DataFrame(
-            lhsmdu.sample(len(self.scenario.inputs()), sample_size, randomSeed=seed).T,
-            columns=[v.name for v in self.scenario.inputs()],
+            lhsmdu.sample(len(run_columns), sample_size, randomSeed=seed).T,
+            columns=run_columns,
         )
         # Project the samples to the variables' distributions
-        for var in self.scenario.inputs():
-            # TODO: This only works for Inputs. We need to do it for Metas too...
+        for name in run_columns:
+            var = self.scenario.variables[name]
             samples[var.name] = lhsmdu.inverseTransformSample(
                 var.distribution, samples[var.name]
             )
 
-        for stratum, row in samples.iterrows():
+        for index, row in samples.iterrows():
             optimizer = z3.Optimize()
             for i, c in enumerate(self.scenario.constraints):
                 optimizer.assert_and_track(c, str(c))
             for i, c in enumerate(self.intervention_constraints):
                 optimizer.assert_and_track(c, str(c))
 
-            optimizer.add_soft([v.z3 == row[v.name] for v in self.scenario.inputs()])
+            optimizer.add_soft([self.scenario.variables[v].z3 == row[v] for v in run_columns])
             if optimizer.check() == z3.unsat:
                 logger.warning(
                     "Satisfiability of test case was unsat.\n"
@@ -142,7 +143,7 @@ class AbstractCausalTestCase:
                 for v in self.scenario.variables.values()
                 if v.name in run_columns
             }
-            control_run["bin"] = stratum
+            control_run["bin"] = index
             runs.append(control_run)
             # Treatment run
             if rct:
@@ -153,7 +154,7 @@ class AbstractCausalTestCase:
                         for k, v in concrete_test.treatment_input_configuration.items()
                     }
                 )
-                treatment_run["bin"] = stratum
+                treatment_run["bin"] = index
                 runs.append(treatment_run)
 
             control_configs = pd.DataFrame([test.control_input_configuration for test in concrete_tests])
@@ -190,22 +191,29 @@ class AbstractCausalTestCase:
         concrete_tests = []
         runs = pd.DataFrame()
         ks_stats = []
-        run_columns = sorted([v.name for v in self.scenario.inputs()])
 
         for i in range(hard_max):
             concrete_tests_, runs_ = self._generate_concrete_tests(sample_size, rct, seed+i)
             concrete_tests += concrete_tests_
             runs = pd.concat([runs, runs_])
+            assert concrete_tests_ not in concrete_tests, "Duplicate entries unlikely unless something went wrong"
+
 
             control_configs = pd.DataFrame([test.control_input_configuration for test in concrete_tests])
+            ks_stats = {var: stats.kstest(control_configs[var], var.distribution.cdf).statistic for var in control_configs.columns}
+            # Putting treatment and control values in messes it up because the two are not independent...
+            # This is potentially problematic as constraints might mean we don't get good coverage if we use control values alone
+            # We might then need to carefully craft our _control value_ generating distributions so that we can get good coverage
+            # without the generated treatment values violating any constraints.
+
             # treatment_configs = pd.DataFrame([test.treatment_input_configuration for test in concrete_tests])
             # both_configs = pd.concat([control_configs, treatment_configs])
+            # ks_stats = {var: stats.kstest(both_configs[var], var.distribution.cdf).statistic for var in both_configs.columns}
             effect_modifier_configs = pd.DataFrame([test.effect_modifier_configuration for test in concrete_tests])
-            ks_stats = {var: stats.kstest(control_configs[var], var.distribution.cdf).statistic for var in control_configs.columns}
             ks_stats.update({var: stats.kstest(effect_modifier_configs[var], var.distribution.cdf).statistic for var in effect_modifier_configs.columns})
             if target_ks_score and all([stat <= target_ks_score for stat in ks_stats.values()]):
-                return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
+                break
 
-        if target_ks_score is not None:
+        if target_ks_score is not None and not all([stat <= target_ks_score for stat in ks_stats.values()]):
             logger.error(f"Hard max of {hard_max} reached but could not achieve target ks_score of {target_ks_score}. Got {ks_stats}.")
-        return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
+        return concrete_tests, runs

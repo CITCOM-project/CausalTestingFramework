@@ -148,7 +148,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                  self.minimal_adjustment_set,
                                                  ('C',),
                                                  self.causal_test_engine.scenario_execution_data_df,
-                                                 effect_modifiers={'M'})
+                                                 effect_modifiers={Input('M', int): None})
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, estimate_type='cate')
         causal_test_result = causal_test_result.ate
         # Check that each effect modifier's strata has a greater ATE than the last (ascending order)

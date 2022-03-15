@@ -36,7 +36,7 @@ class Estimator(ABC):
         self.adjustment_set = adjustment_set
         self.outcome = outcome
         self.df = df
-        self.effect_modifiers = effect_modifiers
+        self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()} if effect_modifiers else dict()
         self.modelling_assumptions = []
         logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
@@ -180,8 +180,8 @@ class LinearRegressionEstimator(Estimator):
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
         x['Intercept'] = 1
         for k, v in self.effect_modifiers.items():
-            self.adjustment_set.add(k.name)
-            x[k.name] = v
+            self.adjustment_set.add(k)
+            x[k] = v
         if hasattr(self, "square_terms"):
             for t in self.square_terms:
                 x[t+'^2'] = x[t] ** 2
@@ -264,7 +264,7 @@ class CausalForestEstimator(Estimator):
         # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
         model = CausalForestDML(model_y=GradientBoostingRegressor(),
                                 model_t=GradientBoostingRegressor(),
-                                )
+                               )
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals

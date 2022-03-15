@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
+from causal_testing.specification.variable import Input
 
 
 def plot_results_df(df):
@@ -151,7 +152,7 @@ class TestCausalForestEstimator(unittest.TestCase):
         covariates = {'sex', 'race', 'age', 'edu_2', 'edu_3', 'edu_4', 'edu_5', 'exercise_1', 'exercise_2',
                       'active_1', 'active_2', 'wt71', 'smokeintensity', 'smokeyrs'}
         causal_forest = CausalForestEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',), df,
-                                              {'smokeintensity'})
+                                              {Input('smokeintensity', int): 40})
         ate, _ = causal_forest.estimate_ate()
         self.assertGreater(round(ate, 1), 2.5)
         self.assertLess(round(ate, 1), 4.5)
@@ -163,6 +164,6 @@ class TestCausalForestEstimator(unittest.TestCase):
         covariates = {'sex', 'race', 'age', 'edu_2', 'edu_3', 'edu_4', 'edu_5', 'exercise_1', 'exercise_2',
                       'active_1', 'active_2', 'wt71', 'smokeintensity', 'smokeyrs'}
         causal_forest = CausalForestEstimator(('qsmk',), 1, 0, covariates, ('wt82_71',), smoking_intensity_5_and_40_df,
-                                              {'smokeintensity'})
+                                              {Input('smokeintensity', int): 40})
         cates_df, _ = causal_forest.estimate_cates()
         self.assertGreater(cates_df['cate'].mean(), 0)
