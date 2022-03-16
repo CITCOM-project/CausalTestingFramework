@@ -43,10 +43,14 @@ class CausalTestResult:
 
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""
+        if not self.confidence_intervals:
+            return None
         return min(self.confidence_intervals)
 
     def ci_high(self):
         """Return the higher bracket of the confidence intervals."""
+        if not self.confidence_intervals:
+            return None
         return max(self.confidence_intervals)
 
     def summary(self):

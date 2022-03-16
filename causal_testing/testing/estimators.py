@@ -70,6 +70,11 @@ class LinearRegressionEstimator(Estimator):
     """ A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
+    def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: {Variable: any} = None, product_terms: [(Variable, Variable)] = []):
+                 super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
+                 for (term_a, term_b) in product_terms:
+                     self.add_product_term_to_df(term_a, term_b)
 
     def add_modelling_assumptions(self):
         """

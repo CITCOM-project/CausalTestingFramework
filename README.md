@@ -42,14 +42,14 @@ The causal testing framework is made up of three main components: Specification,
   - `Output` variables are outputs from the system.
   - `Meta` variables are not directly observable but are relevant to system testing, e.g. a model may take a `location` parameter and expand this out into `average_age` and `household_size` variables "under the hood". These parameters can be made explicit by instantiating them as metavariables.
 
-To instantiate a scenario, simply provide a set of variables and a(n optional) set of constraints, e.g.
+To instantiate a scenario, simply provide a set of variables and an optional set of constraints, e.g.
 ```
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 
 x = Input("x", int)  # Define an input with name "x" of type int
 y = Output("y", float)  # Define an output with name "y" of type float
-z = Output("y", int)  # Define a meta with name "z" of type int
+z = Meta("y", int)  # Define a meta with name "z" of type int
 
 modelling_scenario = Scenario({x, y, z}, {x > z, z < 3})  # Define a scenario with the three variables and two constraints
 ```
@@ -71,7 +71,7 @@ causal_test_case = CausalTestCase(
 
 Before we can run our test case, we first need data. There are two ways to acquire this: 1. run the model with the specific input configurations we're interested in, 2. use data from previous model runs. For a small number of specific tests where accuracy is critical, the first approach will yield the best results. To do this, you need to instantiate the `ExperimentalDataCollector` class. Further details on this coming soon.
 
-Where there are many test cases use pre-existing data is likely to be faster. If the program's behaviour can be estimated statistically, the results should still be reliable as long as there is enough data for the estimator to work as intended. This will vary depending on the program and the estimator. To use this method, simply instantiate the `ObservationalDataCollector` class with the modelling scenario and a path to the CSV file containing the runtime data, e.g.
+Where there are many test cases using pre-existing data is likely to be faster. If the program's behaviour can be estimated statistically, the results should still be reliable as long as there is enough data for the estimator to work as intended. This will vary depending on the program and the estimator. To use this method, simply instantiate the `ObservationalDataCollector` class with the modelling scenario and a path to the CSV file containing the runtime data, e.g.
 ```
 data_csv_path = 'results/data.csv'
 data_collector = ObservationalDataCollector(modelling_scenario, data_csv_path)

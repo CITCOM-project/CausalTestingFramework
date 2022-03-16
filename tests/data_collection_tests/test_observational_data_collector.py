@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import Scenario
-from causal_testing.specification.variable import Input, Output
+from causal_testing.specification.variable import Input, Output, Meta
 from scipy.stats import uniform, rv_discrete
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 
@@ -42,6 +42,15 @@ class TestObservationalDataCollector(unittest.TestCase):
         df = observational_data_collector.collect_data(index_col=0)
         expected = self.observational_df.loc[[2, 3]]
         assert df.equals(expected), f"{df}\nwas not equal to\n{expected}"
+
+    def test_meta_population(self):
+        def populate_m(data):
+            data['M'] = data['X1'] * 2
+        meta = Meta("M", int, populate_m)
+        scenario = Scenario({self.X1, meta})
+        observational_data_collector = ObservationalDataCollector(scenario, self.observational_df_path)
+        data = observational_data_collector.collect_data()
+        assert all([m == 2*x1 for x1, m in zip(data['X1'], data['M'])])
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
