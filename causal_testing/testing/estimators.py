@@ -161,12 +161,13 @@ class LinearRegressionEstimator(Estimator):
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
         x['Intercept'] = 1
-        if hasattr(self, "square_terms"):
-            for t in self.square_terms:
-                x[t+'^2'] = x[t] ** 2
-        if hasattr(self, "product_terms"):
-            for a, b in self.product_terms:
-                x[f"{a}*{b}"] = x[a] * x[b]
+        for t in self.square_terms:
+            x[t+'^2'] = x[t] ** 2
+        for a, b in self.product_terms:
+            x[f"{a}*{b}"] = x[a] * x[b]
+
+        print(x)
+        print(model.summary())
 
         y = model.predict(x)
         treatment_outcome = y.iloc[0]
@@ -218,8 +219,11 @@ class LinearRegressionEstimator(Estimator):
         # 2. Add intercept
         reduced_df['Intercept'] = 1
 
+
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
-        treatment_and_adjustments_cols = reduced_df[list(self.treatment) + list(self.adjustment_set) + ['Intercept']]
+        cols = list(self.treatment)
+        cols += [x for x in self.adjustment_set if x not in cols]
+        treatment_and_adjustments_cols = reduced_df[cols + ['Intercept']]
         outcome_col = reduced_df[list(self.outcome)]
         regression = sm.OLS(outcome_col, treatment_and_adjustments_cols)
         model = regression.fit()

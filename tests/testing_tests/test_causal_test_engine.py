@@ -121,6 +121,31 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
         self.assertEqual(int(causal_test_result.ate), 4)
 
+    def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
+        """ Check that executing the causal test case returns the correct results for dummy data using a linear
+        regression estimator. """
+        estimation_model = LinearRegressionEstimator(('D',),
+                                                     self.treatment_value,
+                                                     self.control_value,
+                                                     self.minimal_adjustment_set,
+                                                     ('A',),
+                                                     self.causal_test_engine.scenario_execution_data_df)
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model, estimate_type="risk_ratio")
+        self.assertEqual(int(causal_test_result.ate), 0)
+
+
+    def test_invalid_estimate_type(self):
+        """ Check that executing the causal test case returns the correct results for dummy data using a linear
+        regression estimator. """
+        estimation_model = LinearRegressionEstimator(('D',),
+                                                     self.treatment_value,
+                                                     self.control_value,
+                                                     self.minimal_adjustment_set,
+                                                     ('A',),
+                                                     self.causal_test_engine.scenario_execution_data_df)
+        with self.assertRaises(ValueError):
+            self.causal_test_engine.execute_test(estimation_model, estimate_type="invalid")
+
     def test_execute_test_observational_linear_regression_estimator_squared_term(self):
         """ Check that executing the causal test case returns the correct results for dummy data with a squared term
         using a linear regression estimator. C ~ 4*(A+2) + D + D^2"""

@@ -14,6 +14,7 @@ class TestVariable(unittest.TestCase):
     def setUp(self) -> None:
         pass
 
+
     def test_z3_types_enum(self):
         class Color(Enum):
             """
@@ -32,6 +33,21 @@ class TestVariable(unittest.TestCase):
         # This isn't very good, but I think it's the best we can do since even
         # z3_types(Color)("color") != z3_types(Color)("color")
         self.assertEqual(list(map(str, expected_values)), list(map(str, z3_color_values)))
+
+
+    def test_z3_value_enum(self):
+        class Color(Enum):
+            """
+            Example enum class color.
+            """
+            RED = "RED"
+            GREEN = "GREEN"
+            BLUE = "BLUE"
+        dtype, members = z3.EnumSort("color", ("RED", "GREEN", "BLUE"))
+        z3_color = z3.Const("color", dtype)
+        color = Input("color", Color)
+
+        assert color.z3_val(z3_color, "RED") == members[0]
 
 
     def test_z3_types_custom(self):
