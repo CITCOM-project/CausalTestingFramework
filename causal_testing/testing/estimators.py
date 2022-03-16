@@ -75,6 +75,8 @@ class LinearRegressionEstimator(Estimator):
                  super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
                  for (term_a, term_b) in product_terms:
                      self.add_product_term_to_df(term_a, term_b)
+                 self.square_terms = []
+                 self.product_terms = []
 
     def add_modelling_assumptions(self):
         """
@@ -98,8 +100,6 @@ class LinearRegressionEstimator(Estimator):
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += f'Relationship between {self.treatment} and {self.outcome} varies quadratically'\
                                       f'with {term_to_square}.'
-        if not hasattr(self, "square_terms"):
-            self.square_terms = []
         self.square_terms.append(term_to_square)
 
     def add_product_term_to_df(self, term_a: str, term_b: str):
@@ -116,8 +116,6 @@ class LinearRegressionEstimator(Estimator):
         self.df[new_term] = self.df[term_a] * self.df[term_b]
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += f'{term_a} and {term_b} vary linearly with each other.'
-        if not hasattr(self, "product_terms"):
-            self.product_terms = []
         self.product_terms.append((term_a, term_b))
 
     def estimate_unit_ate(self) -> float:

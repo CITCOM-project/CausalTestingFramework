@@ -1,11 +1,12 @@
-from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Variable
-from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from scipy import stats
 import z3
 import pandas as pd
 import lhsmdu
+
+from causal_testing.specification.scenario import Scenario
+from causal_testing.specification.variable import Variable
+from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 
 import logging
 
@@ -157,11 +158,6 @@ class AbstractCausalTestCase:
                 treatment_run["bin"] = index
                 runs.append(treatment_run)
 
-            control_configs = pd.DataFrame([test.control_input_configuration for test in concrete_tests])
-            # treatment_configs = pd.DataFrame([test.treatment_input_configuration for test in concrete_tests])
-            # both_configs = pd.concat([control_configs, treatment_configs])
-            effect_modifier_configs = pd.DataFrame([test.effect_modifier_configuration for test in concrete_tests])
-
         return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
 
 
@@ -211,9 +207,9 @@ class AbstractCausalTestCase:
             # ks_stats = {var: stats.kstest(both_configs[var], var.distribution.cdf).statistic for var in both_configs.columns}
             effect_modifier_configs = pd.DataFrame([test.effect_modifier_configuration for test in concrete_tests])
             ks_stats.update({var: stats.kstest(effect_modifier_configs[var], var.distribution.cdf).statistic for var in effect_modifier_configs.columns})
-            if target_ks_score and all([stat <= target_ks_score for stat in ks_stats.values()]):
+            if target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
                 break
 
-        if target_ks_score is not None and not all([stat <= target_ks_score for stat in ks_stats.values()]):
-            logger.error(f"Hard max of {hard_max} reached but could not achieve target ks_score of {target_ks_score}. Got {ks_stats}.")
+        if target_ks_score is not None and not all((stat <= target_ks_score for stat in ks_stats.values())):
+            logger.error("Hard max of %s reached but could not achieve target ks_score of %s. Got %s.", hard_max, target_ks_score, ks_stats)
         return concrete_tests, runs
