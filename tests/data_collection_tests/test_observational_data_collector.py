@@ -50,7 +50,7 @@ class TestObservationalDataCollector(unittest.TestCase):
         scenario = Scenario({self.X1, meta})
         observational_data_collector = ObservationalDataCollector(scenario, self.observational_df_path)
         data = observational_data_collector.collect_data()
-        assert all([m == 2*x1 for x1, m in zip(data['X1'], data['M'])])
+        assert all((m == 2*x1 for x1, m in zip(data['X1'], data['M'])))
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

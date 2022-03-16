@@ -122,7 +122,7 @@ class TestAbstractTestCase(unittest.TestCase):
         )
         HARD_MAX = 10
         concrete_tests, runs = abstract.generate_concrete_tests(4, rct=True, target_ks_score=0.1, hard_max=HARD_MAX)
-        assert all([x > 2 for x in runs['X1']])
+        assert all((x > 2 for x in runs['X1']))
         assert len(concrete_tests = HARD_MAX)
 
 
