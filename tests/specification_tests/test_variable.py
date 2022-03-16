@@ -47,7 +47,7 @@ class TestVariable(unittest.TestCase):
         z3_color = z3.Const("color", dtype)
         color = Input("color", Color)
 
-        assert color.z3_val(z3_color, "RED") == members[0]
+        self.assertEqual(color.z3_val(z3_color, "RED"), members[0])
 
 
     def test_z3_types_custom(self):

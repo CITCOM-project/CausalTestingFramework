@@ -74,9 +74,9 @@ class LinearRegressionEstimator(Estimator):
                  outcome: tuple, df: pd.DataFrame = None, effect_modifiers: {Variable: any} = None, product_terms: [(Variable, Variable)] = None):
         super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
         if product_terms is None:
-         product_terms = []
+            product_terms = []
         for (term_a, term_b) in product_terms:
-         self.add_product_term_to_df(term_a, term_b)
+            self.add_product_term_to_df(term_a, term_b)
         self.square_terms = []
         self.product_terms = []
 
