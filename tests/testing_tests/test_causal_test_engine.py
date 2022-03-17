@@ -32,7 +32,9 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
         # 2. Create Scenario and Causal Specification
         A = Input("A", float)
+        self.A = A
         C = Output("C", float)
+        self.C = C
         D = Output("D", float)
         self.scenario = Scenario({A, C, D})
         self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.causal_dag)
@@ -70,6 +72,20 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
         self.control_value = 0
+
+    def test_control_treatment_configs(self):
+        test_case = CausalTestCase(
+                    control_input_configuration={self.A: 0},
+                    treatment_input_configuration={self.A: 1},
+                    expected_causal_effect=self.expected_causal_effect,
+                    outcome_variables={self.C}
+                    )
+        causal_test_engine = CausalTestEngine(
+            self.causal_test_case,
+            self.causal_specification,
+            self.data_collector
+        )
+        self.assertEqual(causal_test_engine.treatment_variables, [self.A])
 
     def test_check_no_positivity_violation(self):
         """ Check that no positivity violation is identified when there is no positivity violation. """
