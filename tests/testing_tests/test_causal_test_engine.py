@@ -87,7 +87,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         )
         self.assertEqual(causal_test_engine.treatment_variables, [self.A])
 
-    def test_positivity_violation(self):
+    def test_positivity_violation_throws_exception(self):
         causal_test_engine = CausalTestEngine(
             self.causal_test_case,
             self.causal_specification,

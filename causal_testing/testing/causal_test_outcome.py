@@ -10,7 +10,7 @@ class CausalTestResult:
         confidence intervals. """
 
     def __init__(self, treatment: tuple, outcome: tuple, treatment_value: Union[int, float, str],
-                 control_value: Union[int, float, str], adjustment_set: float, ate: float,
+                 control_value: Union[int, float, str], adjustment_set: set, ate: float,
                  confidence_intervals: [float, float] = None, effect_modifier_configuration: {Variable: any} = None):
         self.treatment = treatment
         self.outcome = outcome
@@ -93,7 +93,6 @@ class Positive(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         # TODO: confidence intervals?
-        print(res.ate)
         return res.ate > 0
 
 
