@@ -1,8 +1,9 @@
 from __future__ import annotations
+from enum import Enum
 from pandas import DataFrame
 from typing import Callable, TypeVar
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Int, String, Real, BoolRef, RatNumRef
+from z3 import Int, String, Real, BoolRef, RatNumRef, Bool, EnumSort, Const
 from abc import ABC, abstractmethod
 import lhsmdu
 
@@ -10,7 +11,17 @@ import lhsmdu
 # Is there a better way? I'd really like to do Variable[T](ExprRef)
 T = TypeVar("T")
 
-z3_types = {int: Int, str: String, float: Real}
+def z3_types(datatype):
+    types = {int: Int, str: String, float: Real, bool: Bool}
+    if datatype in types:
+        return types[datatype]
+    if issubclass(datatype, Enum):
+        dtype, _ = EnumSort(datatype.__name__, [x.name for x in datatype])
+        return lambda x: Const(x, dtype)
+    if hasattr(datatype, "to_z3"):
+        return datatype.to_z3()
+    raise ValueError(f"Cannot convert type {datatype} to Z3."+
+    " Please use a native type, an Enum, or implement a conversion manually.")
 
 
 def _coerce(val: any) -> any:
@@ -47,11 +58,11 @@ class Variable(ABC):
     def __init__(self, name: str, datatype: T, distribution: rv_generic = None):
         self.name = name
         self.datatype = datatype
-        self.z3 = z3_types[datatype](name)
+        self.z3 = z3_types(datatype)(name)
         self.distribution = distribution
 
     def __repr__(self):
-        return f"{self.typestring()}: {self.name}::{self.datatype}"
+        return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
 
     # TODO: We're going to need to implement all the supported Z3 operations like this
     def __ge__(self, other: any) -> BoolRef:
@@ -88,8 +99,43 @@ class Variable(ABC):
         :return: The Z3 expression `other >= self`.
         :rtype: BoolRef
         """
-        print(self, other)
         return self.z3.__lt__(_coerce(other))
+
+    def __mul__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__mul__(_coerce(other))
+
+    def __sub__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__sub__(_coerce(other))
+
+    def __add__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__add__(_coerce(other))
+
+    def __truediv__(self, other: any) -> BoolRef:
+        """Create the Z3 expression `other * self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `other >= self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__truediv__(_coerce(other))
 
     def cast(self, val: any) -> T:
         """Cast the supplied value to the datatype T of the variable.
@@ -98,6 +144,7 @@ class Variable(ABC):
         :return: The supplied value as an instance of T.
         :rtype: T
         """
+        assert val is not None, f"Invalid value None for variable {self}"
         if isinstance(val, RatNumRef) and self.datatype == float:
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
@@ -105,6 +152,17 @@ class Variable(ABC):
         if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
             return self.datatype(val)
         return self.datatype(str(val))
+
+
+    def z3_val(self, z3_var, val: any) -> T:
+        native_val = self.cast(val)
+        if isinstance(native_val, Enum):
+            values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
+            values = [v for v in values if str(v) == str(val)]
+            assert len(values) == 1, f"Expected {values} to be length 1"
+            return values[0]
+        return native_val
+
 
     def sample(self, n_samples: int) -> [T]:
         """Generate a Latin Hypercube Sample of size n_samples according to the
@@ -121,7 +179,6 @@ class Variable(ABC):
         lhs = lhsmdu.sample(1, n_samples).tolist()[0]
         return lhsmdu.inverseTransformSample(self.distribution, lhs).tolist()
 
-    @abstractmethod
     def typestring(self) -> str:
         """Return the type of the Variable, e.g. INPUT, or OUTPUT. Note that
         this is NOT the datatype (int, str, etc.).
@@ -130,7 +187,7 @@ class Variable(ABC):
         :rtype: str
 
         """
-        raise NotImplementedError("Method `typestring` must be instantiated.")
+        return type(self).__name__
 
     @abstractmethod
     def copy(self, name: str = None) -> Variable:
@@ -148,9 +205,6 @@ class Variable(ABC):
 class Input(Variable):
     """An extension of the Variable class representing inputs."""
 
-    def typestring(self) -> str:
-        return "INPUT"
-
     def copy(self, name=None) -> Input:
         if name:
             return Input(name, self.datatype, self.distribution)
@@ -159,9 +213,6 @@ class Input(Variable):
 
 class Output(Variable):
     """An extension of the Variable class representing outputs."""
-
-    def typestring(self) -> str:
-        return "OUTPUT"
 
     def copy(self, name=None) -> Output:
         if name:
@@ -187,9 +238,6 @@ class Meta(Variable):
     def __init__(self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]):
         super().__init__(name, datatype)
         self.populate = populate
-
-    def typestring(self) -> str:
-        return "META"
 
     def copy(self, name=None) -> Meta:
         if name:

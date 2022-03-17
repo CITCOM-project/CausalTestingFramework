@@ -1,11 +1,11 @@
 import pandas as pd
-import logging
 from causal_testing.data_collection.data_collector import DataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestResult
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.estimators import Estimator
 
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -32,12 +32,19 @@ class CausalTestEngine:
     def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification,
                  data_collector: DataCollector):
         self.causal_test_case = causal_test_case
-        self.casual_dag = causal_specification.causal_dag
-        self.scenario = causal_specification.scenario
+        if self.causal_test_case.intervention is not None:
+            self.treatment_variables = list(self.causal_test_case.intervention.treatment_variables)
+        else:
+            # This covers the case where a causal test case is specified in terms of a control/treatment run pair
+            # rather than a control run and an intervention.
+            # It might be better, though, to do this with an intervention which just returns the literal treatment run
+            self.treatment_variables = list(self.causal_test_case.control_input_configuration)
+
+        self.casual_dag, self.scenario = causal_specification.causal_dag, causal_specification.scenario
         self.data_collector = data_collector
         self.scenario_execution_data_df = pd.DataFrame()
 
-    def load_data(self, n_repeats: int = 1, **kwargs):
+    def load_data(self, **kwargs):
         """ Load execution data corresponding to the causal test case into a pandas dataframe and return the minimal
         adjustment set.
 
@@ -52,16 +59,17 @@ class CausalTestEngine:
         After the data is loaded, both are treated in the same way and, provided the identifiability and modelling
         assumptions hold, can be used to estimate the causal effect for the causal test case.
 
-        :param n_repeats: An optional int which specifies the number of times to run a causal test case in the
         experimental case.
         :return self: Update the causal test case's execution data dataframe.
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
+
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
+
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
-                self.causal_test_case.get_treatment_variables(),
-                self.causal_test_case.get_outcome_variables()
+                [v.name for v in self.treatment_variables],
+                [v.name for v in self.causal_test_case.outcome_variables]
             )
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
@@ -85,19 +93,75 @@ class CausalTestEngine:
         """
         if self.scenario_execution_data_df.empty:
             raise Exception('No data has been loaded. Please call load_data prior to executing a causal test case.')
-        estimator.df = self.scenario_execution_data_df
+        treatments = [v.name for v in self.treatment_variables]
+        print("treatment_variables", self.treatment_variables)
+        outcomes = [v.name for v in self.causal_test_case.outcome_variables]
+        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
+
+        logger.info("treatments: %s", treatments)
+        logger.info("outcomes: %s", outcomes)
+        logger.info("minimal_adjustment_set: %s", minimal_adjustment_set)
+
+        minimal_adjustment_set = \
+            minimal_adjustment_set - {v.name for v in self.causal_test_case.control_input_configuration}
+        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in self.causal_test_case.outcome_variables}
+        assert all((v.name not in minimal_adjustment_set for v in self.causal_test_case.control_input_configuration)),\
+         "Treatment vars in adjustment set"
+        assert all((v.name not in minimal_adjustment_set for v in self.causal_test_case.outcome_variables)),\
+         "Outcome vars in adjustment set"
+
+        variables_for_positivity = list(minimal_adjustment_set) + treatments + outcomes
+        if self._check_positivity_violation(variables_for_positivity):
+            # TODO: We should allow users to continue because positivity can be overcome with parametric models
+            # TODO: When we implement causal contracts, we should also note the positivity violation there
+            raise Exception('POSITIVITY VIOLATION -- Cannot proceed.')
+
+        # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
         if estimate_type == 'cate':
+            logger.debug("calculating cate")
             if not hasattr(estimator, 'estimate_cates'):
                 raise NotImplementedError(f'{estimator.__class__} has no CATE method.')
             else:
-                cates_df = estimator.estimate_cates()
-                return cates_df
-        else:
+                cates_df, confidence_intervals = estimator.estimate_cates()
+                # TODO: Work out how to handle CATE test results (just return the results df for now)
+                causal_test_result = CausalTestResult(
+                    treatment=estimator.treatment,
+                    outcome=estimator.outcome,
+                    treatment_value=estimator.treatment_values,
+                    control_value=estimator.control_values,
+                    adjustment_set=estimator.adjustment_set,
+                    ate=cates_df,
+                    effect_modifier_configuration=self.causal_test_case.effect_modifier_configuration,
+                    confidence_intervals=confidence_intervals)
+        elif estimate_type == "risk_ratio":
+            logger.debug("calculating risk_ratio")
+            risk_ratio, confidence_intervals = estimator.estimate_risk_ratio()
+            causal_test_result = CausalTestResult(
+                treatment=estimator.treatment,
+                outcome=estimator.outcome,
+                treatment_value=estimator.treatment_values,
+                control_value=estimator.control_values,
+                adjustment_set=estimator.adjustment_set,
+                ate=risk_ratio,
+                effect_modifier_configuration=self.causal_test_case.effect_modifier_configuration,
+                confidence_intervals=confidence_intervals)
+        elif estimate_type == "ate":
+            logger.debug("calculating ate")
             ate, confidence_intervals = estimator.estimate_ate()
-            causal_test_result = CausalTestResult(estimator.treatment, estimator.outcome, estimator.treatment_values,
-                                                  estimator.control_values, estimator.adjustment_set, ate,
-                                                  confidence_intervals)
+            causal_test_result = CausalTestResult(
+                treatment=estimator.treatment,
+                outcome=estimator.outcome,
+                treatment_value=estimator.treatment_values,
+                control_value=estimator.control_values,
+                adjustment_set=estimator.adjustment_set,
+                ate=ate,
+                effect_modifier_configuration=self.causal_test_case.effect_modifier_configuration,
+                confidence_intervals=confidence_intervals)
+            # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
             # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
+        else:
+            raise ValueError(f"Invalid estimate type {estimate_type}, expected 'ate', 'cate', or 'risk_ratio'")
         return causal_test_result
 
     # TODO (MF) I think that the test oracle procedure should go in here.
@@ -115,6 +179,8 @@ class CausalTestEngine:
         :return: True if positivity is violated, False otherwise.
         """
         # TODO: Improve positivity checks to look for stratum-specific violations, not just missing variables in df
+        print("variables_list", variables_list)
+        print("columns", self.scenario_execution_data_df.columns)
         if not set(variables_list).issubset(self.scenario_execution_data_df.columns):
             missing_variables = set(variables_list) - set(self.scenario_execution_data_df.columns)
             logger.warning(f'Positivity violation: missing data for variables {missing_variables}.\n'

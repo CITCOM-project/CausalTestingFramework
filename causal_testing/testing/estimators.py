@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from econml.dml import CausalForestDML
@@ -5,6 +6,9 @@ from sklearn.ensemble import GradientBoostingRegressor
 import statsmodels.api as sm
 import pandas as pd
 import numpy as np
+from causal_testing.specification.variable import Variable
+
+logger = logging.getLogger(__name__)
 
 
 class Estimator(ABC):
@@ -25,15 +29,16 @@ class Estimator(ABC):
     """
 
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: set = None):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: {Variable: any} = None):
         self.treatment = treatment
         self.treatment_values = treatment_values
         self.control_values = control_values
         self.adjustment_set = adjustment_set
         self.outcome = outcome
         self.df = df
-        self.effect_modifiers = effect_modifiers
+        self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()} if effect_modifiers else dict()
         self.modelling_assumptions = []
+        logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
     @abstractmethod
     def add_modelling_assumptions(self):
@@ -65,6 +70,15 @@ class LinearRegressionEstimator(Estimator):
     """ A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
+    def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: {Variable: any} = None, product_terms: [(Variable, Variable)] = None):
+        super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
+        if product_terms is None:
+            product_terms = []
+        for (term_a, term_b) in product_terms:
+            self.add_product_term_to_df(term_a, term_b)
+        self.square_terms = []
+        self.product_terms = []
 
     def add_modelling_assumptions(self):
         """
@@ -88,6 +102,7 @@ class LinearRegressionEstimator(Estimator):
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += f'Relationship between {self.treatment} and {self.outcome} varies quadratically'\
                                       f'with {term_to_square}.'
+        self.square_terms.append(term_to_square)
 
     def add_product_term_to_df(self, term_a: str, term_b: str):
         """ Add a product term to the linear regression model and df.
@@ -103,6 +118,7 @@ class LinearRegressionEstimator(Estimator):
         self.df[new_term] = self.df[term_a] * self.df[term_b]
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += f'{term_a} and {term_b} vary linearly with each other.'
+        self.product_terms.append((term_a, term_b))
 
     def estimate_unit_ate(self) -> float:
         """ Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
@@ -134,6 +150,60 @@ class LinearRegressionEstimator(Estimator):
         confidence_intervals = list(t_test_results.conf_int().flatten())
         return ate, confidence_intervals
 
+    def estimate_risk_ratio(self) -> (float, [float, float], float):
+        """ Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
+        by changing the treatment variable from the control value to the treatment value.
+
+        :return: The average treatment effect and the 95% Wald confidence intervals.
+        """
+        model = self._run_linear_regression()
+
+        x = pd.DataFrame()
+        x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x['Intercept'] = 1
+        for t in self.square_terms:
+            x[t+'^2'] = x[t] ** 2
+        for a, b in self.product_terms:
+            x[f"{a}*{b}"] = x[a] * x[b]
+
+        print(x)
+        print(model.summary())
+
+        y = model.predict(x)
+        treatment_outcome = y.iloc[0]
+        control_outcome = y.iloc[1]
+
+        return treatment_outcome/control_outcome, None
+
+    def estimate_cates(self) -> (float, [float, float], float):
+        """ Estimate the conditional average treatment effect of the treatment on the outcome. That is, the change
+        in outcome caused by changing the treatment variable from the control value to the treatment value.
+
+        :return: The conditional average treatment effect and the 95% Wald confidence intervals.
+        """
+        assert self.effect_modifiers, f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
+        x = pd.DataFrame()
+        x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x['Intercept'] = 1
+        for k, v in self.effect_modifiers.items():
+            self.adjustment_set.add(k)
+            x[k] = v
+        if hasattr(self, "square_terms"):
+            for t in self.square_terms:
+                x[t+'^2'] = x[t] ** 2
+        if hasattr(self, "product_terms"):
+            for a, b in self.product_terms:
+                x[f"{a}*{b}"] = x[a] * x[b]
+
+        model = self._run_linear_regression()
+        print(model.summary())
+        y = model.predict(x)
+        treatment_outcome = y.iloc[0]
+        control_outcome = y.iloc[1]
+
+        return treatment_outcome - control_outcome, None
+
+
     def _run_linear_regression(self) -> RegressionResultsWrapper:
         """ Run linear regression of the treatment and adjustment set against the outcome and return the model.
 
@@ -144,12 +214,16 @@ class LinearRegressionEstimator(Estimator):
         necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
+        logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
         reduced_df['Intercept'] = 1
 
+
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
-        treatment_and_adjustments_cols = reduced_df[list(self.treatment) + list(self.adjustment_set) + ['Intercept']]
+        cols = list(self.treatment)
+        cols += [x for x in self.adjustment_set if x not in cols]
+        treatment_and_adjustments_cols = reduced_df[cols + ['Intercept']]
         outcome_col = reduced_df[list(self.outcome)]
         regression = sm.OLS(outcome_col, treatment_and_adjustments_cols)
         model = regression.fit()
@@ -187,6 +261,7 @@ class CausalForestEstimator(Estimator):
         reduced_df = reduced_df[~missing_rows]
 
         # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
+        # TODO: Is it right to ignore the adjustment set if we have effect modifiers?
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
@@ -198,7 +273,7 @@ class CausalForestEstimator(Estimator):
         # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
         model = CausalForestDML(model_y=GradientBoostingRegressor(),
                                 model_t=GradientBoostingRegressor(),
-                                )
+                               )
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
@@ -250,4 +325,4 @@ class CausalForestEstimator(Estimator):
         effect_modifier_df.reset_index(drop=True, inplace=True)
         results_df[list(self.effect_modifiers)] = effect_modifier_df
         results_df.sort_values(by=list(self.effect_modifiers), inplace=True)
-        return results_df
+        return results_df, None

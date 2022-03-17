@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Union
+import numpy as np
+from causal_testing.specification.variable import Variable
 
 
 class CausalTestResult:
@@ -8,8 +10,8 @@ class CausalTestResult:
         confidence intervals. """
 
     def __init__(self, treatment: tuple, outcome: tuple, treatment_value: Union[int, float, str],
-                 control_value: Union[int, float, str], adjustment_set: float, ate: float,
-                 confidence_intervals: [float, float] = None):
+                 control_value: Union[int, float, str], adjustment_set: set, ate: float,
+                 confidence_intervals: [float, float] = None, effect_modifier_configuration: {Variable: any} = None):
         self.treatment = treatment
         self.outcome = outcome
         self.treatment_value = treatment_value
@@ -17,9 +19,14 @@ class CausalTestResult:
         if adjustment_set:
             self.adjustment_set = adjustment_set
         else:
-            self.adjustment_set = '{}'
+            self.adjustment_set = set()
         self.ate = ate
         self.confidence_intervals = confidence_intervals
+
+        if effect_modifier_configuration is not None:
+            self.effect_modifier_configuration = effect_modifier_configuration
+        else:
+            self.effect_modifier_configuration = dict()
 
     def __str__(self):
         base_str = f"Causal Test Result\n==============\n" \
@@ -36,10 +43,14 @@ class CausalTestResult:
 
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""
+        if not self.confidence_intervals:
+            return None
         return min(self.confidence_intervals)
 
     def ci_high(self):
         """Return the higher bracket of the confidence intervals."""
+        if not self.confidence_intervals:
+            return None
         return max(self.confidence_intervals)
 
     def summary(self):
@@ -62,11 +73,19 @@ class CausalTestOutcome(ABC):
 
 class ExactValue(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
-    def __init__(self, value: float):
+    def __init__(self, value: float, tolerance: float = None):
         self.value = value
+        if tolerance is None:
+            self.tolerance = value * 0.05
+        else:
+            self.tolerance = tolerance
 
     def apply(self, res: CausalTestResult) -> bool:
-        return res.ate == self.value
+        return np.isclose(res.ate, self.value, atol=self.tolerance)
+
+
+    def __str__(self):
+        return f"ExactValue: {self.value}±{self.tolerance}"
 
 
 class Positive(CausalTestOutcome):
@@ -90,3 +109,7 @@ class NoEffect(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         return res.ci_low() < 0 < res.ci_high()
+
+
+    def __str__(self):
+        return "Unchanged"
