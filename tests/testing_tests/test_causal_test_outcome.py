@@ -2,6 +2,8 @@ import unittest
 from causal_testing.testing.causal_test_outcome import CausalTestResult, ExactValue
 
 class TestCausalTestOutcome(unittest.TestCase):
+    """ Test the TestCausalTestOutcome basic methods.
+    """
 
     def test_empty_adjustment_set(self):
         ctr = CausalTestResult(treatment="A", outcome="A", treatment_value=1,
