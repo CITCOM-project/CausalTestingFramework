@@ -139,7 +139,7 @@ class TestAbstractTestCase(unittest.TestCase):
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
-        concrete_tests, runs = abstract.generate_concrete_tests(4, rct=True, target_ks_score=0.1, hard_max=1000)
+        concrete_tests, _ = abstract.generate_concrete_tests(4, rct=True, target_ks_score=0.1, hard_max=1000)
         assert len(concrete_tests) < 1000
 
 

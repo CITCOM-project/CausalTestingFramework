@@ -102,7 +102,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                      ('C',),
                                                      self.causal_test_engine.scenario_execution_data_df)
         with self.assertRaises(Exception):
-            causal_test_result = causal_test_engine.execute_test(estimation_model)
+            causal_test_engine.execute_test(estimation_model)
 
     def test_check_no_positivity_violation(self):
         """ Check that no positivity violation is identified when there is no positivity violation. """
