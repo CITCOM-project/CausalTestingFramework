@@ -81,11 +81,28 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                     outcome_variables={self.C}
                     )
         causal_test_engine = CausalTestEngine(
-            self.causal_test_case,
+            test_case,
             self.causal_specification,
             self.data_collector
         )
         self.assertEqual(causal_test_engine.treatment_variables, [self.A])
+
+    def test_positivity_violation(self):
+        causal_test_engine = CausalTestEngine(
+            self.causal_test_case,
+            self.causal_specification,
+            self.data_collector
+        )
+        causal_test_engine.load_data()
+        causal_test_engine.scenario_execution_data_df.drop("A", axis=1, inplace=True)
+        estimation_model = LinearRegressionEstimator(('A',),
+                                                     self.treatment_value,
+                                                     self.control_value,
+                                                     self.minimal_adjustment_set,
+                                                     ('C',),
+                                                     self.causal_test_engine.scenario_execution_data_df)
+        with self.assertRaises(Exception):
+            causal_test_result = causal_test_engine.execute_test(estimation_model)
 
     def test_check_no_positivity_violation(self):
         """ Check that no positivity violation is identified when there is no positivity violation. """
