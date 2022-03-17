@@ -120,24 +120,12 @@ class TestAbstractTestCase(unittest.TestCase):
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
+        NUM_STRATA = 4
         HARD_MAX = 10
-        concrete_tests, runs = abstract.generate_concrete_tests(4, rct=True, target_ks_score=0.1, hard_max=HARD_MAX)
+        with self.assertWarns(Warning):
+            concrete_tests, runs = abstract.generate_concrete_tests(NUM_STRATA, rct=True, target_ks_score=0.1, hard_max=HARD_MAX)
         assert all((x > 2 for x in runs['X1']))
-        assert len(concrete_tests = HARD_MAX)
-
-
-    def test_infeasible_constraints(self):
-        scenario = Scenario({self.X1, self.X2, self.X3, self.X4})
-        scenario.setup_treatment_variables()
-        abstract = AbstractCausalTestCase(
-            scenario=scenario,
-            intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
-            expected_causal_effect={self.Y: Positive()},
-            effect_modifiers=None,
-        )
-        concrete_tests, runs = abstract.generate_concrete_tests(4, rct=True, target_ks_score=0.1, hard_max=1000)
-        assert len(concrete_tests) < 1000
+        assert len(concrete_tests) == NUM_STRATA * HARD_MAX
 
 
     def tearDown(self) -> None:

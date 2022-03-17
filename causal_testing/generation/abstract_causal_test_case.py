@@ -98,9 +98,9 @@ class AbstractCausalTestCase:
 
         for index, row in samples.iterrows():
             optimizer = z3.Optimize()
-            for i, c in enumerate(self.scenario.constraints):
+            for c in self.scenario.constraints:
                 optimizer.assert_and_track(c, str(c))
-            for i, c in enumerate(self.intervention_constraints):
+            for c in self.intervention_constraints:
                 optimizer.assert_and_track(c, str(c))
 
             optimizer.add_soft([self.scenario.variables[v].z3 == row[v] for v in run_columns])
