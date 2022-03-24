@@ -138,7 +138,6 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
-
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(0, index=['control', 'treated'], columns=model.params.index)
         individuals.loc['control', list(self.treatment)] = self.control_values
@@ -304,7 +303,11 @@ class CausalForestEstimator(Estimator):
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
             raise Exception('CATE requires the user to define a set of effect modifiers.')
-        confounders_df = reduced_df[list(self.adjustment_set)]
+
+        if self.adjustment_set:
+            confounders_df = reduced_df[list(self.adjustment_set)]
+        else:
+            confounders_df = None
         treatment_df = reduced_df[list(self.treatment)]
         outcome_df = reduced_df[list(self.outcome)]
 
