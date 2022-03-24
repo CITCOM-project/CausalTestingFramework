@@ -7,7 +7,7 @@ import statsmodels.api as sm
 import pandas as pd
 import numpy as np
 from causal_testing.specification.variable import Variable
-
+from typing import Any
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +29,7 @@ class Estimator(ABC):
     """
 
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: {Variable: any} = None):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: set[Variable: Any] = None):
         self.treatment = treatment
         self.treatment_values = treatment_values
         self.control_values = control_values
@@ -57,7 +57,7 @@ class Estimator(ABC):
         """
         pass
 
-    def compute_confidence_intervals(self) -> [float, float]:
+    def compute_confidence_intervals(self) -> list[float, float]:
         """
         Estimate the 95% Wald confidence intervals for the effect of changing the treatment from control values to
         treatment values on the outcome.
@@ -71,7 +71,7 @@ class LinearRegressionEstimator(Estimator):
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: {Variable: any} = None, product_terms: [(Variable, Variable)] = None):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: set[Variable: Any] = None, product_terms: list[tuple[Variable, Variable]] = None):
         super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
         if product_terms is None:
             product_terms = []
@@ -131,7 +131,7 @@ class LinearRegressionEstimator(Estimator):
         [ci_low, ci_high] = self._get_confidence_intervals(model)
         return unit_effect*self.treatment_values - unit_effect*self.control_values, [ci_low, ci_high]
 
-    def estimate_ate(self) -> (float, [float, float], float):
+    def estimate_ate(self) -> tuple[float, list[float, float], float]:
         """ Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -149,7 +149,7 @@ class LinearRegressionEstimator(Estimator):
         confidence_intervals = list(t_test_results.conf_int().flatten())
         return ate, confidence_intervals
 
-    def estimate_risk_ratio(self) -> (float, [float, float], float):
+    def estimate_risk_ratio(self) -> tuple[float, list[float, float]]:
         """ Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -174,7 +174,7 @@ class LinearRegressionEstimator(Estimator):
 
         return treatment_outcome/control_outcome, None
 
-    def estimate_cates(self) -> (float, [float, float], float):
+    def estimate_cates(self) -> tuple[float, list[float, float]]:
         """ Estimate the conditional average treatment effect of the treatment on the outcome. That is, the change
         in outcome caused by changing the treatment variable from the control value to the treatment value.
 

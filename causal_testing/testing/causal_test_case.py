@@ -1,7 +1,7 @@
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.specification.variable import Variable
-
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,10 +15,10 @@ class CausalTestCase:
     in Y.
     """
 
-    def __init__(self, control_input_configuration: {Variable: any}, expected_causal_effect: CausalTestOutcome,
-                 outcome_variables: {Variable}, intervention: Intervention = None,
-                 treatment_input_configuration: {Variable: any} = None, estimate_type: str="ate",
-                 effect_modifier_configuration: {Variable: any}=None):
+    def __init__(self, control_input_configuration: set[Variable: Any], expected_causal_effect: CausalTestOutcome,
+                 outcome_variables: set[Variable], intervention: Intervention = None,
+                 treatment_input_configuration: set[Variable: Any] = None, estimate_type: str = "ate",
+                 effect_modifier_configuration: set[Variable: Any] = None):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
         create two distinct input configurations: a control input configuration and a treatment input configuration.
