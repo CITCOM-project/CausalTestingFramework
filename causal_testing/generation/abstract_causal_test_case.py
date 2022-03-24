@@ -23,11 +23,11 @@ class AbstractCausalTestCase:
     def __init__(
         self,
         scenario: Scenario,
-        intervention_constraints: {z3.ExprRef},
-        treatment_variables: {Variable},
-        expected_causal_effect: {Variable: CausalTestOutcome},
-        effect_modifiers: {Variable} = None,
-        estimate_type:str="ate"
+        intervention_constraints: set[z3.ExprRef],
+        treatment_variables: set[Variable],
+        expected_causal_effect: set[Variable: CausalTestOutcome],
+        effect_modifiers: set[Variable] = None,
+        estimate_type: str = "ate"
     ):
         assert treatment_variables.issubset(scenario.variables.values()), (
             "Treatment variables must be a subset of variables."
@@ -66,7 +66,7 @@ class AbstractCausalTestCase:
 
     def _generate_concrete_tests(
         self, sample_size: int, rct: bool = False, seed: int = 0
-    ) -> ([CausalTestCase], pd.DataFrame):
+    ) -> tuple[list[CausalTestCase], pd.DataFrame]:
         """Generates a list of `num` concrete test cases.
 
         :param sample_size: The number of strata to use for Latin hypercube sampling. Where no target_ks_score is
@@ -163,7 +163,7 @@ class AbstractCausalTestCase:
 
     def generate_concrete_tests(
         self, sample_size: int, target_ks_score: float = None, rct: bool = False, seed: int = 0, hard_max: int = 1000
-    ) -> ([CausalTestCase], pd.DataFrame):
+    ) -> tuple[list[CausalTestCase], pd.DataFrame]:
         """Generates a list of `num` concrete test cases.
 
         :param sample_size: The number of strata to use for Latin hypercube sampling. Where no target_ks_score is
