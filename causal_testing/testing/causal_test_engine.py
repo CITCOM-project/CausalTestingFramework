@@ -93,6 +93,8 @@ class CausalTestEngine:
         """
         if self.scenario_execution_data_df.empty:
             raise Exception('No data has been loaded. Please call load_data prior to executing a causal test case.')
+        if estimator.df is None:
+            estimator.df = self.scenario_execution_data_df
         treatments = [v.name for v in self.treatment_variables]
         print("treatment_variables", self.treatment_variables)
         outcomes = [v.name for v in self.causal_test_case.outcome_variables]

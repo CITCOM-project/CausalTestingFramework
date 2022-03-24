@@ -36,7 +36,14 @@ class Estimator(ABC):
         self.adjustment_set = adjustment_set
         self.outcome = outcome
         self.df = df
-        self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()} if effect_modifiers else dict()
+        if effect_modifiers is None:
+            self.effect_modifiers = dict()
+        elif isinstance(effect_modifiers, set) or isinstance(effect_modifiers, list):
+            self.effect_modifiers = {k.name for k in effect_modifiers}
+        elif isinstance(effect_modifiers, dict):
+            self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()}
+        else:
+            raise ValueError(f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable")
         self.modelling_assumptions = []
         logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
