@@ -219,7 +219,7 @@ class CausalDAG(nx.DiGraph):
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
 
-    def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set(str)]:
+    def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
         """ Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes.
 
