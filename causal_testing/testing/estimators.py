@@ -1,3 +1,4 @@
+from typing import Any
 import logging
 from abc import ABC, abstractmethod
 from statsmodels.regression.linear_model import RegressionResultsWrapper
@@ -7,7 +8,7 @@ import statsmodels.api as sm
 import pandas as pd
 import numpy as np
 from causal_testing.specification.variable import Variable
-from typing import Any
+
 logger = logging.getLogger(__name__)
 
 

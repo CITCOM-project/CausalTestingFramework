@@ -1,10 +1,9 @@
-from __future__ import annotations
+from collections.abc import Callable
 from enum import Enum
 from pandas import DataFrame
 from typing import TypeVar, Any
-from collections.abc import Callable
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Int, String, Real, BoolRef, RatNumRef, Bool, EnumSort, Const, ExprRef
+from z3 import Int, String, Real, BoolRef, RatNumRef, Bool, EnumSort, Const
 from abc import ABC, abstractmethod
 import lhsmdu
 
