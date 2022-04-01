@@ -96,7 +96,6 @@ class CausalTestEngine:
         if estimator.df is None:
             estimator.df = self.scenario_execution_data_df
         treatments = [v.name for v in self.treatment_variables]
-        print("treatment_variables", self.treatment_variables)
         outcomes = [v.name for v in self.causal_test_case.outcome_variables]
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
@@ -181,8 +180,6 @@ class CausalTestEngine:
         :return: True if positivity is violated, False otherwise.
         """
         # TODO: Improve positivity checks to look for stratum-specific violations, not just missing variables in df
-        print("variables_list", variables_list)
-        print("columns", self.scenario_execution_data_df.columns)
         if not set(variables_list).issubset(self.scenario_execution_data_df.columns):
             missing_variables = set(variables_list) - set(self.scenario_execution_data_df.columns)
             logger.warning(f'Positivity violation: missing data for variables {missing_variables}.\n'
