@@ -25,7 +25,7 @@ class AbstractCausalTestCase:
         scenario: Scenario,
         intervention_constraints: set[z3.ExprRef],
         treatment_variables: set[Variable],
-        expected_causal_effect: set[Variable: CausalTestOutcome],
+        expected_causal_effect: dict[Variable: CausalTestOutcome],
         effect_modifiers: set[Variable] = None,
         estimate_type: str = "ate"
     ):
