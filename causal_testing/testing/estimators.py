@@ -30,7 +30,7 @@ class Estimator(ABC):
     """
 
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: set[Variable: Any] = None):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: dict[Variable: Any] = None):
         self.treatment = treatment
         self.treatment_values = treatment_values
         self.control_values = control_values
@@ -72,7 +72,7 @@ class LinearRegressionEstimator(Estimator):
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: set[Variable: Any] = None, product_terms: list[tuple[Variable, Variable]] = None):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: dict[Variable: Any] = None, product_terms: list[tuple[Variable, Variable]] = None):
         super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
         if product_terms is None:
             product_terms = []
