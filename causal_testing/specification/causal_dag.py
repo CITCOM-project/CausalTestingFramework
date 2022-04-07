@@ -2,16 +2,18 @@ import networkx as nx
 import logging
 from itertools import combinations
 from random import sample
-from typing import Union
+from typing import Union, TypeVar
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
+CausalDAG = TypeVar("CausalDAG")
+
 logger = logging.getLogger(__name__)
 from .scenario import Scenario
 from .variable import Output
 
 
 def list_all_min_sep(graph: nx.Graph, treatment_node: Node, outcome_node: Node,
-    treatment_node_set: {Node}, outcome_node_set: {Node}):
+                     treatment_node_set: set[Node], outcome_node_set: set[Node]):
     """ A backtracking algorithm for listing all minimal treatment-outcome separators in an undirected graph.
 
     Reference: (Space-optimal, backtracking algorithms to list the minimal vertex separators of a graph, Ken Takata,
@@ -84,7 +86,7 @@ def list_all_min_sep(graph: nx.Graph, treatment_node: Node, outcome_node: Node,
             yield treatment_node_set_neighbours
 
 
-def close_separator(graph: nx.Graph, treatment_node: Node, outcome_node: Node, treatment_node_set: {Node}) -> {Node}:
+def close_separator(graph: nx.Graph, treatment_node: Node, outcome_node: Node, treatment_node_set: set[Node]) -> set[Node]:
     """ Compute the close separator for a set of treatments in an undirected graph.
 
     A close separator (relative to a set of variables X) is a separator whose vertices are adjacent to those in X.
@@ -155,7 +157,7 @@ class CausalDAG(nx.DiGraph):
         """
         return not list(nx.simple_cycles(self.graph))
 
-    def get_proper_backdoor_graph(self, treatments: [str], outcomes: [str]) -> "CausalDAG":
+    def get_proper_backdoor_graph(self, treatments: list[str], outcomes: list[str]) -> CausalDAG:
         """ Convert the causal DAG to a proper back-door graph.
 
         A proper back-door graph of a causal DAG is obtained by
@@ -185,7 +187,7 @@ class CausalDAG(nx.DiGraph):
         proper_backdoor_graph.graph.remove_edges_from(edges_to_remove)
         return proper_backdoor_graph
 
-    def get_ancestor_graph(self, treatments: [str], outcomes: [str]) -> "CausalDAG":
+    def get_ancestor_graph(self, treatments: list[str], outcomes: list[str]) -> CausalDAG:
         """ Given a list of treament variables and a list of outcome variables, transform a CausalDAG into an ancestor
         graph.
 
@@ -217,7 +219,7 @@ class CausalDAG(nx.DiGraph):
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
 
-    def enumerate_minimal_adjustment_sets(self, treatments: [str], outcomes: [str]) -> [{str}]:
+    def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
         """ Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes.
 
@@ -286,7 +288,7 @@ class CausalDAG(nx.DiGraph):
         )
         return minimum_adjustment_sets
 
-    def adjustment_set_is_minimal(self, treatments: [str], outcomes: [str], adjustment_set: {str}) -> bool:
+    def adjustment_set_is_minimal(self, treatments: list[str], outcomes: list[str], adjustment_set: set[str]) -> bool:
         """ Given a list of treatments X, a list of outcomes Y, and an adjustment set Z, determine whether Z is the
         smallest possible adjustment set.
 
@@ -326,8 +328,8 @@ class CausalDAG(nx.DiGraph):
 
         return True
 
-    def constructive_backdoor_criterion(self, proper_backdoor_graph: "CausalDAG", treatments: [str],
-        outcomes: [str], covariates: [str]) -> bool:
+    def constructive_backdoor_criterion(self, proper_backdoor_graph: CausalDAG, treatments: list[str],
+        outcomes: list[str], covariates: list[str]) -> bool:
         """ A variation of Pearl's back-door criterion applied to a proper backdoor graph which enables more efficient
         computation of minimal adjustment sets for the effect of a set of treatments on a set of outcomes.
 
@@ -380,7 +382,7 @@ class CausalDAG(nx.DiGraph):
 
         return True
 
-    def proper_causal_pathway(self, treatments: [str], outcomes: [str]) -> [str]:
+    def proper_causal_pathway(self, treatments: list[str], outcomes: list[str]) -> list[str]:
         """ Given a list of treatments and outcomes, compute the proper causal pathways between them.
 
         PCP(X, Y) = {DeX^(X) - X} intersect AnX_(Y)}, where:
@@ -413,7 +415,7 @@ class CausalDAG(nx.DiGraph):
         )
         return nodes_on_proper_causal_paths
 
-    def get_backdoor_graph(self, treatments: [str]) -> "CausalDAG":
+    def get_backdoor_graph(self, treatments: list[str]) -> CausalDAG:
         """ A back-door graph is a graph for the list of treatments is a Causal DAG in which all edges leaving the
         treatment nodes are deleted.
 

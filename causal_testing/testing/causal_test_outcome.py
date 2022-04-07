@@ -11,7 +11,7 @@ class CausalTestResult:
 
     def __init__(self, treatment: tuple, outcome: tuple, treatment_value: Union[int, float, str],
                  control_value: Union[int, float, str], adjustment_set: set, ate: float,
-                 confidence_intervals: [float, float] = None, effect_modifier_configuration: {Variable: any} = None):
+                 confidence_intervals: [float, float] = None, effect_modifier_configuration: set[Variable: any] = None):
         self.treatment = treatment
         self.outcome = outcome
         self.treatment_value = treatment_value

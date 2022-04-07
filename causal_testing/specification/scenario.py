@@ -1,8 +1,7 @@
-from typing import Mapping, Set, Iterable
+from collections.abc import Mapping, Iterable
 from z3 import ExprRef, substitute
 from .variable import Variable, Input, Output, Meta
 from tabulate import tabulate
-
 class Scenario:
     """A scenario defines the setting by listing the endogenous variables, their
     datatypes, distributions, and any constraints over them. This is a common
@@ -21,12 +20,12 @@ class Scenario:
     """
 
     variables: Mapping[str, Variable]
-    constraints: Set[ExprRef]
+    constraints: set[ExprRef]
 
     def __init__(
         self,
         variables: Iterable[Variable]= None,
-        constraints: Set[ExprRef] = None
+        constraints: set[ExprRef] = None
     ):
         if variables is not None:
             self.variables = {v.name: v for v in variables}
@@ -116,7 +115,7 @@ class Scenario:
         }
         self.constraints = self.constraints.union(treatment_constraints)
 
-    def variables_of_type(self, t: type) -> {Variable}:
+    def variables_of_type(self, t: type) -> set[Variable]:
         """Get the set of scenario variables of a particular type, e.g. Inputs.
 
         :param type t: The type of variable to return, where t extends Variable.
@@ -125,7 +124,7 @@ class Scenario:
         """
         return {v for v in self.variables.values() if isinstance(v, t)}
 
-    def inputs(self) -> {Input}:
+    def inputs(self) -> set[Input]:
         """Get the set of scenario inputs.
 
         :return: The scenario inputs.
@@ -133,7 +132,7 @@ class Scenario:
         """
         return self.variables_of_type(Input)
 
-    def outputs(self) -> {Output}:
+    def outputs(self) -> set[Output]:
         """Get the set of scenario outputs.
 
         :return: The scenario outputs.
@@ -141,7 +140,7 @@ class Scenario:
         """
         return self.variables_of_type(Output)
 
-    def metas(self) -> {Meta}:
+    def metas(self) -> set[Meta]:
         """Get the set of scenario metavariables.
 
         :return: The scenario metavariables.
