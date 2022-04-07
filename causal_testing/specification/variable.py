@@ -11,6 +11,9 @@ import lhsmdu
 # Is there a better way? I'd really like to do Variable[T](ExprRef)
 T = TypeVar("T")
 Variable = TypeVar("Variable")
+Input = TypeVar("Input")
+Output = TypeVar("Output")
+Meta = TypeVar("Meta")
 
 def z3_types(datatype):
     types = {int: Int, str: String, float: Real, bool: Bool}
