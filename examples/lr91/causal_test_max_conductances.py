@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,16 +7,16 @@ from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_outcome import Positive, Negative
+from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from matplotlib.pyplot import rcParams
-OBSERVATIONAL_DATA_PATH = "./data/results.csv"
+OBSERVATIONAL_DATA_PATH = "./data/normalised_results.csv"
 
 rc_fonts = {
     "font.size": 8,
-    "figure.figsize": (10, 6),
+    "figure.figsize": (6, 4),
     "text.usetex": True,
     "font.family": "serif",
     "text.latex.preamble": r"\usepackage{libertine}",
@@ -87,44 +86,75 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     return causal_test_result.ate, causal_test_result.confidence_intervals
 
 
-def plot_ates_with_cis(treatment, xs, ates, cis):
+def plot_ates_with_cis(results_dict, xs, save=True):
     """
     Plot the average treatment effects for a given treatment against a list of x-values with confidence intervals.
 
-    :param treatment: Treatment variable.
+    :param results_dict: A dictionary containing results for sensitivity analysis of each input parameter.
     :param xs: Values to be plotted on the x-axis.
-    :param ates: Average treatment effect (y-axis).
-    :param cis: 95% Confidence Intervals.
     """
-    cis_low = [ci[0] for ci in cis]
-    cis_high = [ci[1] for ci in cis]
-    plt.fill_between(xs, cis_low, cis_high, alpha=.5, color='navy')
-    plt.ylabel(r"ATE (Change in $APD_{90}$)")
-    plt.xlabel(r"Multiplicative change to " + treatment + "'s mean value")
-    plt.plot(xs, ates, color='lime')
+    fig, axes = plt.subplots()
+    for treatment, results in results_dict.items():
+        ates = results['ate']
+        cis = results['cis']
+        before_underscore, after_underscore = treatment.split('_')
+        after_underscore_braces = f"{{{after_underscore}}}"
+        latex_compatible_treatment_str = rf"${before_underscore}_{after_underscore_braces}$"
+        cis_low = [ci[0] for ci in cis]
+        cis_high = [ci[1] for ci in cis]
+
+        axes.fill_between(xs, cis_low, cis_high, alpha=.3, label=latex_compatible_treatment_str)
+        axes.plot(xs, ates, color='black', linewidth=.5)
+        axes.plot(xs, [0] * len(xs), color='black', alpha=.5, linestyle='--', linewidth=.5)
+    axes.set_ylabel(r"ATE: Change in $APD_{90} (ms)$")
+    axes.set_xlabel(r"Multiplicative change to treatment's mean value")
+    axes.set_ylim(-80, 80)
+    axes.set_xlim(0, 2)
+    box = axes.get_position()
+    axes.set_position([box.x0, box.y0 + box.height * 0.3,
+                       box.width, box.height * 0.7])
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), fancybox=True, ncol=6, title='Input Parameters')
+    plt.tight_layout()
+    if save:
+        plt.savefig(f"APD90_sensitivity.pdf", format="pdf")
     plt.show()
 
 
+def normalise_data(df, columns=None):
+    """ Normalise the data in the dataframe into the range [0, 1]. """
+    if columns:
+        df[columns] = (df[columns] - df[columns].min())/(df[columns].max() - df[columns].min())
+        return df
+    else:
+        return (df - df.min())/(df.max() - df.min())
+
+
 if __name__ == '__main__':
-    # These variables should have a negative effect on APD90
-    g_k = Input('G_K', float)
-    g_b = Input('G_b', float)
-    g_k1 = Input('G_K1', float)
-    # effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_k, 0.28200, 0.28200*1.1, Negative)
-    # effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_b, 0.60470, 0.60470*1.1, Negative)
-    # effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_k1, 0.03921, 0.03921*1.1, Negative)
+    df = pd.read_csv("data/results.csv")
+    conductance_means = {'G_K': (.5, Positive),
+                         'G_b': (.5, Positive),
+                         'G_K1': (.5, Positive),
+                         'G_si': (.5, Negative),
+                         'G_Na': (.5, NoEffect),
+                         'G_Kp': (.5, NoEffect)}
+    normalised_df = normalise_data(df, columns=list(conductance_means.keys()))
+    normalised_df.to_csv("data/normalised_results.csv")
 
-    # This variable should have a positive effect on APD90
-    g_si = Input('G_si', float)
-    g_si_multipliers = np.linspace(0, 2, 20)
-    average_treatment_effects = []
-    confidence_intervals = []
-    for g_si_multiplier in g_si_multipliers:
-        ate, cis = effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_si, 0.09000, 0.09000 * g_si_multiplier, Positive)
-        average_treatment_effects.append(ate)
-        confidence_intervals.append(cis)
-    plot_ates_with_cis(r"$G_{si}$", g_si_multipliers, average_treatment_effects, confidence_intervals)
-
-
-
-
+    multipliers = np.linspace(0, 2, 20)
+    results_dict = {'G_K': {},
+                    'G_b': {},
+                    'G_K1': {},
+                    'G_si': {},
+                    'G_Na': {},
+                    'G_Kp': {}}
+    for conductance_param, mean_and_oracle in conductance_means.items():
+        average_treatment_effects = []
+        confidence_intervals = []
+        for multiplier in multipliers:
+            mean, oracle = mean_and_oracle
+            conductance_input = Input(conductance_param, float)
+            ate, cis = effects_on_APD90(OBSERVATIONAL_DATA_PATH, conductance_input, mean, mean * multiplier, oracle)
+            average_treatment_effects.append(ate)
+            confidence_intervals.append(cis)
+        results_dict[conductance_param] = {"ate": average_treatment_effects, "cis": confidence_intervals}
+    plot_ates_with_cis(results_dict, multipliers)
