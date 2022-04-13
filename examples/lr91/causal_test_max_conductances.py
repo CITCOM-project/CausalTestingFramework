@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import matplotlib as mpl
+import matplotlib.pyplot as plt
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
@@ -13,7 +13,7 @@ from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from matplotlib.pyplot import rcParams
-OBSERVATIONAL_DATA_PATH = "./data/observational_data.csv"
+OBSERVATIONAL_DATA_PATH = "./data/results.csv"
 
 rc_fonts = {
     "font.size": 8,
@@ -80,9 +80,29 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
 
     linear_regression_estimator = LinearRegressionEstimator((treatment_var.name,), treatment_val, control_val,
                                                             minimal_adjustment_set,
-                                                            ('APD90',))
+                                                            ('APD90',),
+                                                           )
     causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, 'ate')
     print(causal_test_result)
+    return causal_test_result.ate, causal_test_result.confidence_intervals
+
+
+def plot_ates_with_cis(treatment, xs, ates, cis):
+    """
+    Plot the average treatment effects for a given treatment against a list of x-values with confidence intervals.
+
+    :param treatment: Treatment variable.
+    :param xs: Values to be plotted on the x-axis.
+    :param ates: Average treatment effect (y-axis).
+    :param cis: 95% Confidence Intervals.
+    """
+    cis_low = [ci[0] for ci in cis]
+    cis_high = [ci[1] for ci in cis]
+    plt.fill_between(xs, cis_low, cis_high, alpha=.5, color='navy')
+    plt.ylabel(r"ATE (Change in $APD_{90}$)")
+    plt.xlabel(r"Multiplicative change to " + treatment + "'s mean value")
+    plt.plot(xs, ates, color='lime')
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -90,13 +110,21 @@ if __name__ == '__main__':
     g_k = Input('G_K', float)
     g_b = Input('G_b', float)
     g_k1 = Input('G_K1', float)
-    effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_k, 0.28200, 0.28200*1.1, Negative)
-    effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_b, 0.60470, 0.60470*1.1, Negative)
-    effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_k1, 0.03921, 0.03921*1.1, Negative)
+    # effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_k, 0.28200, 0.28200*1.1, Negative)
+    # effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_b, 0.60470, 0.60470*1.1, Negative)
+    # effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_k1, 0.03921, 0.03921*1.1, Negative)
 
     # This variable should have a positive effect on APD90
     g_si = Input('G_si', float)
-    effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_si, 0.09000, 0.09000*1.1, Positive)
+    g_si_multipliers = np.linspace(0, 2, 20)
+    average_treatment_effects = []
+    confidence_intervals = []
+    for g_si_multiplier in g_si_multipliers:
+        ate, cis = effects_on_APD90(OBSERVATIONAL_DATA_PATH, g_si, 0.09000, 0.09000 * g_si_multiplier, Positive)
+        average_treatment_effects.append(ate)
+        confidence_intervals.append(cis)
+    plot_ates_with_cis(r"$G_{si}$", g_si_multipliers, average_treatment_effects, confidence_intervals)
+
 
 
 
