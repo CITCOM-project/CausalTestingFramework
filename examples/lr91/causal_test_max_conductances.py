@@ -105,16 +105,15 @@ def plot_ates_with_cis(results_dict, xs, save=True):
 
         axes.fill_between(xs, cis_low, cis_high, alpha=.3, label=latex_compatible_treatment_str)
         axes.plot(xs, ates, color='black', linewidth=.5)
-        axes.plot(xs, [0] * len(xs), color='black', alpha=.5, linestyle='--', linewidth=.5)
+        axes.plot(xs, [0] * len(xs), color='red', alpha=.5, linestyle='--', linewidth=.5)
     axes.set_ylabel(r"ATE: Change in $APD_{90} (ms)$")
-    axes.set_xlabel(r"Multiplicative change to treatment's mean value")
-    axes.set_ylim(-80, 80)
-    axes.set_xlim(0, 2)
+    axes.set_xlabel(r"Treatment value")
+    axes.set_ylim(-150, 150)
+    axes.set_xlim(min(xs), max(xs))
     box = axes.get_position()
     axes.set_position([box.x0, box.y0 + box.height * 0.3,
                        box.width, box.height * 0.7])
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), fancybox=True, ncol=6, title='Input Parameters')
-    plt.tight_layout()
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, ncol=6, title='Input Parameters')
     if save:
         plt.savefig(f"APD90_sensitivity.pdf", format="pdf")
     plt.show()
@@ -140,7 +139,7 @@ if __name__ == '__main__':
     normalised_df = normalise_data(df, columns=list(conductance_means.keys()))
     normalised_df.to_csv("data/normalised_results.csv")
 
-    multipliers = np.linspace(0, 2, 20)
+    treatment_values = np.linspace(0, 1, 20)
     results_dict = {'G_K': {},
                     'G_b': {},
                     'G_K1': {},
@@ -150,11 +149,11 @@ if __name__ == '__main__':
     for conductance_param, mean_and_oracle in conductance_means.items():
         average_treatment_effects = []
         confidence_intervals = []
-        for multiplier in multipliers:
+        for treatment_value in treatment_values:
             mean, oracle = mean_and_oracle
             conductance_input = Input(conductance_param, float)
-            ate, cis = effects_on_APD90(OBSERVATIONAL_DATA_PATH, conductance_input, mean, mean * multiplier, oracle)
+            ate, cis = effects_on_APD90(OBSERVATIONAL_DATA_PATH, conductance_input, 0, treatment_value, oracle)
             average_treatment_effects.append(ate)
             confidence_intervals.append(cis)
         results_dict[conductance_param] = {"ate": average_treatment_effects, "cis": confidence_intervals}
-    plot_ates_with_cis(results_dict, multipliers)
+    plot_ates_with_cis(results_dict, treatment_values)
