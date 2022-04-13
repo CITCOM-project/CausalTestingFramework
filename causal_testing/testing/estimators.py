@@ -37,7 +37,14 @@ class Estimator(ABC):
         self.adjustment_set = adjustment_set
         self.outcome = outcome
         self.df = df
-        self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()} if effect_modifiers else dict()
+        if effect_modifiers is None:
+            self.effect_modifiers = dict()
+        elif isinstance(effect_modifiers, set) or isinstance(effect_modifiers, list):
+            self.effect_modifiers = {k.name for k in effect_modifiers}
+        elif isinstance(effect_modifiers, dict):
+            self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()}
+        else:
+            raise ValueError(f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable")
         self.modelling_assumptions = []
         logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
@@ -140,9 +147,14 @@ class LinearRegressionEstimator(Estimator):
         """
         model = self._run_linear_regression()
         # Create an empty individual for the control and treated
-        individuals = pd.DataFrame(0, index=['control', 'treated'], columns=model.params.index)
+        individuals = pd.DataFrame(1, index=['control', 'treated'], columns=model.params.index)
         individuals.loc['control', list(self.treatment)] = self.control_values
         individuals.loc['treated', list(self.treatment)] = self.treatment_values
+        # This is a temporary hack
+        for t in self.square_terms:
+            individuals[t+'^2'] = individuals[t] ** 2
+        for a, b in self.product_terms:
+            individuals[f"{a}*{b}"] = individuals[a] * individuals[b]
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc['treated'] - individuals.loc['control'])
