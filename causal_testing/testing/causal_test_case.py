@@ -1,7 +1,9 @@
 from typing import Any
+
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.specification.variable import Variable
+
 import logging
 
 logger = logging.getLogger(__name__)

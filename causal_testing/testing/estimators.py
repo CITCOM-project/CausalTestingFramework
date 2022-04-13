@@ -1,6 +1,6 @@
-from typing import Any
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from econml.dml import CausalForestDML
 from sklearn.ensemble import GradientBoostingRegressor

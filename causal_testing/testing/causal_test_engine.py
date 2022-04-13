@@ -59,7 +59,6 @@ class CausalTestEngine:
         After the data is loaded, both are treated in the same way and, provided the identifiability and modelling
         assumptions hold, can be used to estimate the causal effect for the causal test case.
 
-        experimental case.
         :return self: Update the causal test case's execution data dataframe.
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.

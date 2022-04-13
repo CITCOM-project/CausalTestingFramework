@@ -34,7 +34,7 @@ def _coerce(val: Any) -> Any:
 
     :param any val: A value, possibly a Variable.
     :return: Either a Z3 ExprRef representing the variable or the original value.
-    :rtype: any
+    :rtype: Any
 
     """
     if isinstance(val, Variable):
