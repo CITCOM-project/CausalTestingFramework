@@ -108,8 +108,7 @@ class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
     def apply(self, res: CausalTestResult) -> bool:
-        return res.ci_low() < 0 < res.ci_high()
-
+        return (res.ci_low() < 0 < res.ci_high()) or (abs(res.ate) < 1e-10)
 
     def __str__(self):
         return "Unchanged"
