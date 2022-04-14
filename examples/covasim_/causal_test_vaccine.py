@@ -15,7 +15,8 @@ from causal_testing.testing.estimators import LinearRegressionEstimator
 
 
 def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 30, verbose: bool = False):
-    """ Compute the ATE of introducing a vaccine on cum_infections and n_vaccines_given.
+    """ Run the causal test case for the effect of changing vaccine to prioritise elderly. This uses the experimental
+        data collector.
 
     :param runs_per_test_per_config: Number of times to run each input configuration (control and treatment) per test.
                                      Hence, the total number of runs per test will be twice this value.
@@ -80,10 +81,12 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
         # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
         minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
 
+        # 9. Build statistical model
         linear_regression_estimator = LinearRegressionEstimator((vaccine.name,), 1, 0,
                                                                 minimal_adjustment_set,
                                                                 (outcome_variable.name,))
 
+        # Execute test and save results
         causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, 'ate')
         if verbose:
             print(f"Causation:\n{causal_test_result}")
@@ -95,14 +98,29 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
 
 
 class CovasimVaccineDataCollector(ExperimentalDataCollector):
+    """ A custom experimental data collector for the vaccination Covasim case study.
+
+    This experimental data collector runs covasim with a normal Pfizer vaccine and then again with the same vaccine but
+    this time prioritising the elderly for vaccination.
+    """
 
     def collect_data(self, **kwargs) -> pd.DataFrame:
+        """ Run the model twice, once with the control input configuration (standard vaccine) and once with the
+            treatment input configuration (elderly-prioritised vaccine).
+        :return: A dataframe containing both the control and treatment execution data.
+        """
         control_results_df = self.run_system_with_input_configuration(self.control_input_configuration)
         treatment_results_df = self.run_system_with_input_configuration(self.treatment_input_configuration)
         results_df = pd.concat([control_results_df, treatment_results_df], ignore_index=True)
         return results_df
 
     def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:
+        """ Run the system with a given input configuration.
+
+        :param input_configuration: A nested dictionary containing Covasim parameters, desired number of repeats, and
+        a bool to determine whether elderly should be prioritised for vaccination.
+        :return: A dataframe containing results for this input configuration.
+        """
         results_df = self.simulate_vaccine(input_configuration['covasim_parameters_dict'],
                                            self.n_repeats,
                                            input_configuration['target_elderly'])
