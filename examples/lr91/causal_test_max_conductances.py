@@ -13,15 +13,16 @@ from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from matplotlib.pyplot import rcParams
 
-# Make figures publication quality
-rc_fonts = {
-    "font.size": 8,
-    "figure.figsize": (5, 4),
-    "text.usetex": True,
-    "font.family": "serif",
-    "text.latex.preamble": r"\usepackage{libertine}",
-}
-rcParams.update(rc_fonts)
+# Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
+
+# rc_fonts = {
+#     "font.size": 8,
+#     "figure.figsize": (5, 4),
+#     "text.usetex": True,
+#     "font.family": "serif",
+#     "text.latex.preamble": r"\usepackage{libertine}",
+# }
+# rcParams.update(rc_fonts)
 OBSERVATIONAL_DATA_PATH = "./data/normalised_results.csv"
 
 
