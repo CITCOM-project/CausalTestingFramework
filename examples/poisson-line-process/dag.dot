@@ -1,0 +1,14 @@
+digraph poisson_line_process {
+  rankdir=LR;
+  width -> num_lines_abs;
+  width -> num_shapes_abs;
+  width -> num_lines_unit;
+  width -> num_shapes_unit;
+  height -> num_lines_abs;
+  height -> num_shapes_abs;
+  height -> num_lines_unit;
+  height -> num_shapes_unit;
+  num_lines_abs -> num_lines_unit;
+  num_shapes_abs -> num_shapes_unit;
+  intensity -> num_lines_abs;
+  num_lines_abs -> num_shapes_abs ;}
