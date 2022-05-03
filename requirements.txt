@@ -4,7 +4,6 @@ setuptools~=58.5.3
 networkx~=2.6.3
 pygraphviz~=1.7
 pytest~=6.2.5
-dowhy~=0.6
 statsmodels~=0.13.1
 matplotlib~=3.5.0
 econml~=0.12.0
