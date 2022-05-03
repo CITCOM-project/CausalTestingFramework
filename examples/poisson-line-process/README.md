@@ -8,4 +8,4 @@ To run this case study:
 2. Change directory to `causal_testing/examples/poisson-line-process`.
 3. Run the command `python causal_test_poisson.py`
 
-This should print a series of causal test results and produce two CSV files. `intensity_num_shapes_results_random_1000.csv` corresponds to table 1, and `width_num_shapes_results_random_1000.csv` relates to our findings reguarding the relationship of width and `P_u`.
+This should print a series of causal test results and produce two CSV files. `intensity_num_shapes_results_random_1000.csv` corresponds to table 1, and `width_num_shapes_results_random_1000.csv` relates to our findings regarding the relationship of width and `P_u`.
