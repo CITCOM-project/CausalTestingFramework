@@ -13,18 +13,19 @@ from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from matplotlib.pyplot import rcParams
 
-# Make all graphs publication quality
-plt.rcParams["figure.figsize"] = (8, 8)
-rc_fonts = {
-    "font.size": 8,
-    "figure.figsize": (10, 6),
-    "text.usetex": True,
-    "font.family": "serif",
-    "text.latex.preamble": r"\usepackage{libertine}",
-}
-rcParams.update(rc_fonts)
+# Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
 
-OBSERVATIONAL_DATA_PATH = "./data/10k_observational_data.csv"
+# plt.rcParams["figure.figsize"] = (8, 8)
+# rc_fonts = {
+#     "font.size": 8,
+#     "figure.figsize": (10, 6),
+#     "text.usetex": True,
+#     "font.family": "serif",
+#     "text.latex.preamble": r"\usepackage{libertine}",
+# }
+# rcParams.update(rc_fonts)
+
+OBSERVATIONAL_DATA_PATH = "data/10k_observational_data.csv"
 
 
 def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfactuals: bool = False,
@@ -121,13 +122,13 @@ def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: b
 
     # Split df into two age ranges
     younger_population_df = past_execution_df.loc[past_execution_df['avg_age'] <= mid_age]
-    younger_population_df.to_csv("./data/bessemer/younger_population.csv")
+    younger_population_df.to_csv("./data/younger_population.csv")
     older_population_df = past_execution_df.loc[past_execution_df['avg_age'] > mid_age]
-    older_population_df.to_csv("./data/bessemer/older_population.csv")
+    older_population_df.to_csv("./data/older_population.csv")
 
     # Repeat analysis on age-specific strata
-    separated_observational_data_paths = ["./data/bessemer/younger_population.csv",
-                                          "./data/bessemer/older_population.csv"]
+    separated_observational_data_paths = ["./data/younger_population.csv",
+                                          "./data/older_population.csv"]
 
     for col, separated_observational_data_path in enumerate(separated_observational_data_paths):
         age_data_results_dict = doubling_beta_CATE_on_csv(separated_observational_data_path, simulate_counterfactual,
@@ -146,13 +147,13 @@ def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: b
 
         # Save dfs to csv
         low_contacts_df = age_stratified_df.loc[age_stratified_df['contacts'] <= mid_contacts]
-        low_contacts_df.to_csv(f"./data/bessemer/low_contacts_avg_age_{age_stratified_df_avg_age}.csv")
+        low_contacts_df.to_csv(f"./data/low_contacts_avg_age_{age_stratified_df_avg_age}.csv")
         high_contacts_df = age_stratified_df.loc[age_stratified_df['contacts'] > mid_contacts]
-        high_contacts_df.to_csv(f"./data/bessemer/high_contacts_avg_age_{age_stratified_df_avg_age}.csv")
+        high_contacts_df.to_csv(f"./data/high_contacts_avg_age_{age_stratified_df_avg_age}.csv")
 
-        contact_observational_data_paths = [f"./data/bessemer/low_contacts_avg_age_"
+        contact_observational_data_paths = [f"./data/low_contacts_avg_age_"
                                             f"{age_stratified_df_avg_age}.csv",
-                                            f"./data/bessemer/high_contacts_avg_age_"
+                                            f"./data/high_contacts_avg_age_"
                                             f"{age_stratified_df_avg_age}.csv"]
 
         # Compute the CATE for each age-contact group
@@ -181,7 +182,7 @@ def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: b
 
 def identification(observational_data_path):
     # 1. Read in the Causal DAG
-    causal_dag = CausalDAG('./dag.dot')
+    causal_dag = CausalDAG('dag.dot')
 
     # 2. Create variables
     pop_size = Input('pop_size', int)
