@@ -152,6 +152,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                      ('C',),
                                                      self.causal_test_engine.scenario_execution_data_df)
         causal_test_result = self.causal_test_engine.execute_test(estimation_model)
+        print(causal_test_result)
         self.assertEqual(int(causal_test_result.ate), 4)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
