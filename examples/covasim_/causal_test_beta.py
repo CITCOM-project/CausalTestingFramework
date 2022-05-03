@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import glob
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
@@ -11,10 +10,10 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_engine import CausalTestEngine
-from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
+from causal_testing.testing.estimators import LinearRegressionEstimator
 from matplotlib.pyplot import rcParams
 
-# Make the plots all fancy
+# Make all graphs publication quality
 plt.rcParams["figure.figsize"] = (8, 8)
 rc_fonts = {
     "font.size": 8,
@@ -28,25 +27,15 @@ rcParams.update(rc_fonts)
 OBSERVATIONAL_DATA_PATH = "./data/10k_observational_data.csv"
 
 
-def concatenate_csvs_in_directory(directory_path, output_path):
-    """ Concatenate all csvs in a given directory, assuming all csvs share the same header. This will stack the csvs
-    vertically and will not reset the index.
-    """
-    dfs = []
-    for csv_name in glob.glob(directory_path):
-        dfs.append(pd.read_csv(csv_name, index_col=0))
-    full_df = pd.concat(dfs, ignore_index=True)
-    full_df.to_csv(output_path)
-
-
-def CATE_on_csv(observational_data_path: str, simulate_counterfactuals: bool = False, verbose: bool = False):
+def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfactuals: bool = False,
+                              verbose: bool = False):
     """ Compute the CATE of increasing beta from 0.016 to 0.032 on cum_infections using the dataframe
     loaded from the specified path. Additionally simulate the counterfactuals by repeating the analysis
     after removing rows with beta==0.032.
 
     :param observational_data_path: Path to csv containing observational data for analysis.
-    :param simulate_counterfactuals: Whether or not to repeat analysis with counterfactuals.
-    :param verbose: Whether or not to print verbose details (causal test results).
+    :param simulate_counterfactuals: Whether to repeat analysis with counterfactuals.
+    :param verbose: Whether to print verbose details (causal test results).
     :return results_dict: A nested dictionary containing results (ate and confidence intervals)
                           for association, causation, and counterfactual (if completed).
     """
@@ -86,7 +75,7 @@ def CATE_on_csv(observational_data_path: str, simulate_counterfactuals: bool = F
         print(f"Association:\n{association_test_result}")
         print(f"Causation:\n{causal_test_result}")
 
-    # Repeat causal inference after deleting all rows with treatment value
+    # Repeat causal inference after deleting all rows with treatment value to obtain counterfactual inferences
     if simulate_counterfactuals:
         counterfactual_past_execution_df = past_execution_df[past_execution_df['beta'] != 0.032]
         counterfactual_linear_regression_estimator = LinearRegressionEstimator(('beta',), 0.032, 0.016,
@@ -104,14 +93,14 @@ def CATE_on_csv(observational_data_path: str, simulate_counterfactuals: bool = F
     return results_dict
 
 
-def manual_CATE(observational_data_path: str, simulate_counterfactual: bool = False, verbose: bool = False):
+def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: bool = False, verbose: bool = False):
     """ Compute the CATE for the effect of doubling beta across simulations with different age demographics.
     To compute the CATE, this method splits the observational data into high and low age data and computes the
     ATE using this data and a linear regression model.
 
-    Since this method already adjusts for age, adding age as
-    an adjustment to the LR model will have no impact. However, adding contacts as an adjustment should reduce
-    bias and reveal the average causal effect of doubling beta in simulations of a particular age demographic. """
+    Since this method already adjusts for age, adding age as an adjustment to the LR model will have no impact.
+    However, adding contacts as an adjustment should reduce bias and reveal the average causal effect of doubling beta
+    in simulations of a particular age demographic. """
 
     # Create separate subplots for each more specific causal question
     all_fig, all_axes = plt.subplots(1, 1, figsize=(4, 3), squeeze=False)
@@ -121,8 +110,8 @@ def manual_CATE(observational_data_path: str, simulate_counterfactual: bool = Fa
     # Apply CT to get the ATE over all executions
     if verbose:
         print("Running causal tests for all data...")
-    all_data_results_dict = CATE_on_csv(observational_data_path, simulate_counterfactual, verbose=False)
-    plot_manual_CATE_result(all_data_results_dict, "All Data", all_fig, all_axes, row=0, col=0)
+    all_data_results_dict = doubling_beta_CATE_on_csv(observational_data_path, simulate_counterfactual, verbose=False)
+    plot_doubling_beta_CATEs(all_data_results_dict, "All Data", all_fig, all_axes, row=0, col=0)
 
     # Split data into age-specific strata
     past_execution_df = pd.read_csv(observational_data_path)
@@ -141,13 +130,14 @@ def manual_CATE(observational_data_path: str, simulate_counterfactual: bool = Fa
                                           "./data/bessemer/older_population.csv"]
 
     for col, separated_observational_data_path in enumerate(separated_observational_data_paths):
-        age_data_results_dict = CATE_on_csv(separated_observational_data_path, simulate_counterfactual, verbose=False)
+        age_data_results_dict = doubling_beta_CATE_on_csv(separated_observational_data_path, simulate_counterfactual,
+                                                          verbose=False)
         age_stratified_df = pd.read_csv(separated_observational_data_path)
         age_stratified_df_avg_age = round(age_stratified_df["avg_age"].mean(), 1)
         if verbose:
             print(f"Running causal tests for data with average age of {age_stratified_df_avg_age}")
-        plot_manual_CATE_result(age_data_results_dict, f"Age={age_stratified_df_avg_age}", age_fig, age_axes, row=0,
-                                col=col)
+        plot_doubling_beta_CATEs(age_data_results_dict, f"Age={age_stratified_df_avg_age}", age_fig, age_axes, row=0,
+                                 col=col)
 
         # Split df into contact-specific strata
         min_contacts = np.floor(age_stratified_df['contacts'].min())
@@ -167,16 +157,17 @@ def manual_CATE(observational_data_path: str, simulate_counterfactual: bool = Fa
 
         # Compute the CATE for each age-contact group
         for row, age_contact_data_path in enumerate(contact_observational_data_paths):
-            age_contact_data_results_dict = CATE_on_csv(age_contact_data_path, simulate_counterfactual, verbose=False)
+            age_contact_data_results_dict = doubling_beta_CATE_on_csv(age_contact_data_path, simulate_counterfactual,
+                                                                      verbose=False)
             age_contact_stratified_df = pd.read_csv(age_contact_data_path)
             age_contact_stratified_df_avg_contacts = round(age_contact_stratified_df["contacts"].mean(), 1)
             if verbose:
                 print(f"Running causal tests for data with average age of {age_stratified_df_avg_age} and "
                       f"{age_contact_stratified_df_avg_contacts} average household contacts.")
-            plot_manual_CATE_result(age_contact_data_results_dict,
-                                    f"Age={age_stratified_df_avg_age} "
-                                    f"Contacts={age_contact_stratified_df_avg_contacts}",
-                                    age_contact_fig, age_contact_axes, row=row, col=col)
+            plot_doubling_beta_CATEs(age_contact_data_results_dict,
+                                     f"Age={age_stratified_df_avg_age} "
+                                     f"Contacts={age_contact_stratified_df_avg_contacts}",
+                                     age_contact_fig, age_contact_axes, row=row, col=col)
 
     # Save plots
     if simulate_counterfactual:
@@ -230,32 +221,7 @@ def identification(observational_data_path):
     return minimal_adjustment_set, causal_test_engine
 
 
-def causal_forest_CATE(observational_data_path):
-    _, causal_test_engine = identification(observational_data_path)
-    causal_forest_estimator = CausalForestEstimator(
-        treatment=('beta',),
-        treatment_values=0.032,
-        control_values=0.016,
-        adjustment_set={'avg_age', 'contacts'},
-        outcome=('cum_infections',),
-        effect_modifiers={causal_test_engine.scenario.variables['avg_age']})
-    causal_forest_estimator_no_adjustment = CausalForestEstimator(
-        treatment=('beta',),
-        treatment_values=0.032,
-        control_values=0.016,
-        adjustment_set=set(),
-        outcome=('cum_infections',),
-        effect_modifiers={causal_test_engine.scenario.variables['avg_age']})
-
-    # 10. Execute the test case and compare the results
-    causal_test_result = causal_test_engine.execute_test(causal_forest_estimator, 'cate')
-    association_test_result = causal_test_engine.execute_test(causal_forest_estimator_no_adjustment, 'cate')
-    observational_data = pd.read_csv(observational_data_path)
-    plot_causal_forest_result(causal_test_result, observational_data, "Causal Forest Adjusted for Age and Contacts.")
-    plot_causal_forest_result(association_test_result, observational_data, "Causal Forest Without Adjustment.")
-
-
-def plot_manual_CATE_result(results_dict, title, figure=None, axes=None, row=None, col=None):
+def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=None, col=None):
     # Get the CATE as a percentage for association and causation
     ate = results_dict['causation']['ate']
     association_ate = results_dict['association']['ate']
@@ -283,10 +249,10 @@ def plot_manual_CATE_result(results_dict, title, figure=None, axes=None, row=Non
     ys = [association_percentage_ate, percentage_ate]
     yerrs = [percentage_association_errs, percentage_causal_errs]
     xticks = ['Association', 'Causation']
-    print(f"Causal ATE: {percentage_ate} {percentage_causal_ate_cis}")
-    print(f"Causal executions: {len(causation_df)}")
     print(f"Association ATE: {association_percentage_ate} {percentage_association_ate_cis}")
     print(f"Association executions: {len(association_df)}")
+    print(f"Causal ATE: {percentage_ate} {percentage_causal_ate_cis}")
+    print(f"Causal executions: {len(causation_df)}")
     if 'counterfactual' in results_dict.keys():
         cf_ate = results_dict['counterfactual']['ate']
         cf_df = results_dict['counterfactual']['df']
@@ -309,33 +275,5 @@ def plot_manual_CATE_result(results_dict, title, figure=None, axes=None, row=Non
     figure.supylabel(r"\% Change in Cumulative Infections (ATE)", fontsize=10)
 
 
-def plot_causal_forest_result(causal_forest_test_result, previous_data_df, title=None, filter_data_by_variant=False):
-    sorted_causal_forest_test_result = causal_forest_test_result.ate.sort_index()
-    no_avg_age_causal_forest_test_result = sorted_causal_forest_test_result.drop(columns='avg_age')
-    observational_df_with_results = previous_data_df.join(no_avg_age_causal_forest_test_result)
-    observational_df_with_results['percentage_increase'] = \
-        (observational_df_with_results['cate'] / observational_df_with_results['cum_infections']) * 100
-    fig, ax = plt.subplots()
-    if filter_data_by_variant:
-        observational_df_with_results = observational_df_with_results.loc[observational_df_with_results['variants']
-                                                                          == 'beta']
-    for location in observational_df_with_results.location.unique():
-        location_variant_df = observational_df_with_results.loc[observational_df_with_results['location'] == location]
-        xs = location_variant_df['avg_age']
-        ys = location_variant_df['percentage_increase']
-        ax.scatter(xs, ys, s=1, alpha=.3, label=location)
-        ax.set_ylabel("% change in cumulative infections")
-        ax.set_xlabel("Average age")
-        ax.set_title(title)
-    ax.set_ylim(0, 40)
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), fancybox=True, ncol=4)
-    plt.show()
-
-
 if __name__ == "__main__":
-    # concatenate_csvs_in_directory("./data/bessemer/custom_variants/thursday_31st_march/2k_executions/2k_data/*.csv",
-    #                               "./data/10k_observational_data.csv")
-    manual_CATE(OBSERVATIONAL_DATA_PATH, True, True)
-    # causal_forest_CATE(OBSERVATIONAL_DATA_PATH)
+    doubling_beta_CATEs(OBSERVATIONAL_DATA_PATH, True, True)
