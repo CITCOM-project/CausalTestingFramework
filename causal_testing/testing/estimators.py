@@ -194,6 +194,7 @@ class LinearRegressionEstimator(Estimator):
 
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x['Intercept'] = self.intercept
         for k, v in self.effect_modifiers.items():
             x[k] = v
         for t in self.square_terms:
@@ -202,7 +203,6 @@ class LinearRegressionEstimator(Estimator):
             x['1/'+t] = 1 / x[t]
         for a, b in self.product_terms:
             x[f"{a}*{b}"] = x[a] * x[b]
-        x['Intercept'] = self.intercept
         x = x[model.params.index]
 
         y = model.get_prediction(x).summary_frame()
@@ -216,7 +216,6 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         control_outcome, treatment_outcome = self.estimate_control_treatment()
-        print(pd.DataFrame([control_outcome, treatment_outcome]))
         ci_low = treatment_outcome['mean_ci_lower'] / control_outcome['mean_ci_upper']
         ci_high = treatment_outcome['mean_ci_upper'] / control_outcome['mean_ci_lower']
 
@@ -232,7 +231,6 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         control_outcome, treatment_outcome = self.estimate_control_treatment()
-        print(pd.DataFrame([control_outcome, treatment_outcome]))
         ci_low = treatment_outcome['mean_ci_lower'] - control_outcome['mean_ci_upper']
         ci_high = treatment_outcome['mean_ci_upper'] - control_outcome['mean_ci_lower']
 
@@ -247,6 +245,7 @@ class LinearRegressionEstimator(Estimator):
         assert self.effect_modifiers, f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x['Intercept'] = self.intercept
         for k, v in self.effect_modifiers.items():
             self.adjustment_set.add(k)
             x[k] = v
@@ -256,7 +255,6 @@ class LinearRegressionEstimator(Estimator):
         if hasattr(self, "product_terms"):
             for a, b in self.product_terms:
                 x[f"{a}*{b}"] = x[a] * x[b]
-        x['Intercept'] = self.intercept
 
         model = self._run_linear_regression()
         print(model.summary())
