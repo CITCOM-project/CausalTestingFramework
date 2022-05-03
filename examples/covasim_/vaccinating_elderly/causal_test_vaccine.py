@@ -25,7 +25,7 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
     """
 
     # 1. Read in the Causal DAG
-    causal_dag = CausalDAG('./vaccine_dag.dot')
+    causal_dag = CausalDAG('dag.dot')
 
     # 2. Create variables
     pop_size = Input('pop_size', int)
