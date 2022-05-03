@@ -90,23 +90,17 @@ class ExperimentalDataCollector(DataCollector):
         self.treatment_input_configuration = treatment_input_configuration
         self.n_repeats = n_repeats
 
-    @abstractmethod
     def collect_data(self, **kwargs) -> pd.DataFrame:
-        """Populate the dataframe with execution data.
+        """Run the system-under-test with control and treatment input configurations to obtain experimental data in
+        which the causal effect of interest is isolated by design.
 
         :return: A pandas dataframe containing execution data for the system-under-test in both control and treatment
         executions.
         """
-        # Check runtime configs to make sure they don't violate constraints
-        control_df = self.run_system_with_input_configuration(
-            self.filter_valid_data(self.control_input_configuration, check_pos=False)
-        )
-        treatment_df = self.run_system_with_input_configuration(
-            self.filter_valid_data(self.treatment_input_configuration, check_pos=False)
-        )
-
-        # Need to check final output too just in case we have constraints on output variables
-        return self.filter_valid_data(pd.concat([control_df, treatment_df], keys=["control", "treatment"]))
+        control_results_df = self.run_system_with_input_configuration(self.control_input_configuration)
+        treatment_results_df = self.run_system_with_input_configuration(self.treatment_input_configuration)
+        results_df = pd.concat([control_results_df, treatment_results_df], ignore_index=True)
+        return results_df
 
     @abstractmethod
     def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:

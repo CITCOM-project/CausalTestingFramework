@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import covasim as cv
+import covasim as cv  # Version used in our study is 3.07
 import random
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
@@ -21,8 +21,9 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
     :param runs_per_test_per_config: Number of times to run each input configuration (control and treatment) per test.
                                      Hence, the total number of runs per test will be twice this value.
     :param verbose: Whether to print verbose details (causal test results).
-    :return ate, cis: ATE and 95% Confidence Intervals
+    :return results_dict: A dictionary containing ATE, 95% CIs, and Test Pass/Fail
     """
+
     # 1. Read in the Causal DAG
     causal_dag = CausalDAG('./vaccine_dag.dot')
 
@@ -69,7 +70,6 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
                     'max_doses': {}
                     }
     for outcome_variable, expected_effect in expected_outcome_effects.items():
-        print(expected_effect)
         causal_test_case = CausalTestCase(control_input_configuration={vaccine: 0},
                                           expected_causal_effect=expected_effect,
                                           outcome_variables={outcome_variable},
@@ -86,7 +86,7 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
                                                                 minimal_adjustment_set,
                                                                 (outcome_variable.name,))
 
-        # Execute test and save results
+        # 10. Execute test and save results in dict
         causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, 'ate')
         if verbose:
             print(f"Causation:\n{causal_test_result}")
@@ -98,21 +98,11 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
 
 
 class CovasimVaccineDataCollector(ExperimentalDataCollector):
-    """ A custom experimental data collector for the vaccination Covasim case study.
+    """A custom experimental data collector for the elderly vaccination Covasim case study.
 
     This experimental data collector runs covasim with a normal Pfizer vaccine and then again with the same vaccine but
     this time prioritising the elderly for vaccination.
     """
-
-    def collect_data(self, **kwargs) -> pd.DataFrame:
-        """ Run the model twice, once with the control input configuration (standard vaccine) and once with the
-            treatment input configuration (elderly-prioritised vaccine).
-        :return: A dataframe containing both the control and treatment execution data.
-        """
-        control_results_df = self.run_system_with_input_configuration(self.control_input_configuration)
-        treatment_results_df = self.run_system_with_input_configuration(self.treatment_input_configuration)
-        results_df = pd.concat([control_results_df, treatment_results_df], ignore_index=True)
-        return results_df
 
     def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:
         """ Run the system with a given input configuration.
@@ -184,6 +174,7 @@ class CovasimVaccineDataCollector(ExperimentalDataCollector):
             random.seed()
             rand_seed = random.randint(0, 10000)
             pars_dict['rand_seed'] = rand_seed
+            print(f"Rand Seed: {rand_seed}")
             sim = cv.Sim(pars=pars_dict)
             m_sim = cv.MultiSim(sim)
             m_sim.run(n_runs=1, verbose=verbose, n_cpus=1)
@@ -229,5 +220,5 @@ class CovasimVaccineDataCollector(ExperimentalDataCollector):
 
 
 if __name__ == "__main__":
-    test_results = experimental_causal_test_vaccinate_elderly(runs_per_test_per_config=10, verbose=True)
+    test_results = experimental_causal_test_vaccinate_elderly(runs_per_test_per_config=30, verbose=True)
     print(test_results)
