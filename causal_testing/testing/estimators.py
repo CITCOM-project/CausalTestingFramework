@@ -167,7 +167,6 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
-        print(model.summary())
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=['control', 'treated'], columns=model.params.index)
         individuals.loc['control', list(self.treatment)] = self.control_values
@@ -257,7 +256,6 @@ class LinearRegressionEstimator(Estimator):
                 x[f"{a}*{b}"] = x[a] * x[b]
 
         model = self._run_linear_regression()
-        print(model.summary())
         y = model.predict(x)
         treatment_outcome = y.iloc[0]
         control_outcome = y.iloc[1]
@@ -338,7 +336,6 @@ class CausalForestEstimator(Estimator):
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
-        print(dir(model))
         ate = model.ate(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
         ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
         ci_low, ci_high = ate_interval[0], ate_interval[1]
