@@ -160,6 +160,20 @@ class CausalTestEngine:
                 confidence_intervals=confidence_intervals)
             # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
             # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
+        elif estimate_type == "ate_calculated":
+            logger.debug("calculating ate")
+            ate, confidence_intervals = estimator.estimate_ate_calculated()
+            causal_test_result = CausalTestResult(
+                treatment=estimator.treatment,
+                outcome=estimator.outcome,
+                treatment_value=estimator.treatment_values,
+                control_value=estimator.control_values,
+                adjustment_set=estimator.adjustment_set,
+                ate=ate,
+                effect_modifier_configuration=self.causal_test_case.effect_modifier_configuration,
+                confidence_intervals=confidence_intervals)
+            # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
+            # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         else:
             raise ValueError(f"Invalid estimate type {estimate_type}, expected 'ate', 'cate', or 'risk_ratio'")
         return causal_test_result

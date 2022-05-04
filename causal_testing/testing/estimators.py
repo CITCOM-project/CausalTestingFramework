@@ -79,14 +79,20 @@ class LinearRegressionEstimator(Estimator):
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: dict[Variable: Any] = None, product_terms: list[tuple[Variable, Variable]] = None):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: dict[Variable: Any] = None, product_terms: list[tuple[Variable, Variable]] = None, intercept: int = 1):
         super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
+
         if product_terms is None:
             product_terms = []
         for (term_a, term_b) in product_terms:
             self.add_product_term_to_df(term_a, term_b)
+        for term in self.effect_modifiers:
+            self.adjustment_set.add(term)
+
+        self.product_terms = product_terms
         self.square_terms = []
-        self.product_terms = []
+        self.inverse_terms = []
+        self.intercept = intercept
 
     def add_modelling_assumptions(self):
         """
@@ -111,6 +117,21 @@ class LinearRegressionEstimator(Estimator):
         self.modelling_assumptions += f'Relationship between {self.treatment} and {self.outcome} varies quadratically'\
                                       f'with {term_to_square}.'
         self.square_terms.append(term_to_square)
+
+    def add_inverse_term_to_df(self, term_to_invert: str):
+        """ Add an inverse term to the linear regression model and df.
+
+        This enables the user to capture curvilinear relationships with a linear regression model, not just straight
+        lines, while automatically adding the modelling assumption imposed by the addition of this term.
+
+        :param term_to_square: The term (column in data and variable in DAG) which is to be squared.
+        """
+        new_term = "1/"+str(term_to_invert)
+        self.df[new_term] = 1/self.df[term_to_invert]
+        self.adjustment_set.add(new_term)
+        self.modelling_assumptions += f'Relationship between {self.treatment} and {self.outcome} varies inversely'\
+                                      f'with {term_to_invert}.'
+        self.inverse_terms.append(term_to_invert)
 
     def add_product_term_to_df(self, term_a: str, term_b: str):
         """ Add a product term to the linear regression model and df.
@@ -146,6 +167,7 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
+        print(model.summary())
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=['control', 'treated'], columns=model.params.index)
         individuals.loc['control', list(self.treatment)] = self.control_values
@@ -162,30 +184,57 @@ class LinearRegressionEstimator(Estimator):
         confidence_intervals = list(t_test_results.conf_int().flatten())
         return ate, confidence_intervals
 
-    def estimate_risk_ratio(self) -> tuple[float, list[float, float]]:
-        """ Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
-        by changing the treatment variable from the control value to the treatment value.
+    def estimate_control_treatment(self) -> tuple[pd.Series, pd.Series]:
+        """ Estimate the outcomes under control and treatment.
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
+        self.model = model
 
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
-        x['Intercept'] = 1
+        x['Intercept'] = self.intercept
+        for k, v in self.effect_modifiers.items():
+            x[k] = v
         for t in self.square_terms:
             x[t+'^2'] = x[t] ** 2
+        for t in self.inverse_terms:
+            x['1/'+t] = 1 / x[t]
         for a, b in self.product_terms:
             x[f"{a}*{b}"] = x[a] * x[b]
+        x = x[model.params.index]
 
-        print(x)
-        print(model.summary())
+        y = model.get_prediction(x).summary_frame()
+        return y.iloc[1], y.iloc[0]
 
-        y = model.predict(x)
-        treatment_outcome = y.iloc[0]
-        control_outcome = y.iloc[1]
 
-        return treatment_outcome/control_outcome, None
+    def estimate_risk_ratio(self) -> tuple[float, list[float, float]]:
+        """ Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
+        by changing the treatment variable from the control value to the treatment value.
+
+        :return: The average treatment effect and the 95% Wald confidence intervals.
+        """
+        control_outcome, treatment_outcome = self.estimate_control_treatment()
+        ci_low = treatment_outcome['mean_ci_lower'] / control_outcome['mean_ci_upper']
+        ci_high = treatment_outcome['mean_ci_upper'] / control_outcome['mean_ci_lower']
+
+        return (treatment_outcome['mean']/control_outcome['mean']), [ci_low, ci_high]
+
+
+    def estimate_ate_calculated(self) -> tuple[float, list[float, float]]:
+        """ Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
+        by changing the treatment variable from the control value to the treatment value. Here, we actually
+        calculate the expected outcomes under control and treatment and take one away from the other. This
+        allows for custom terms to be put in such as squares, inverses, products, etc.
+
+        :return: The average treatment effect and the 95% Wald confidence intervals.
+        """
+        control_outcome, treatment_outcome = self.estimate_control_treatment()
+        ci_low = treatment_outcome['mean_ci_lower'] - control_outcome['mean_ci_upper']
+        ci_high = treatment_outcome['mean_ci_upper'] - control_outcome['mean_ci_lower']
+
+        return (treatment_outcome['mean']-control_outcome['mean']), [ci_low, ci_high]
 
     def estimate_cates(self) -> tuple[float, list[float, float]]:
         """ Estimate the conditional average treatment effect of the treatment on the outcome. That is, the change
@@ -196,7 +245,7 @@ class LinearRegressionEstimator(Estimator):
         assert self.effect_modifiers, f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
-        x['Intercept'] = 1
+        x['Intercept'] = self.intercept
         for k, v in self.effect_modifiers.items():
             self.adjustment_set.add(k)
             x[k] = v
@@ -226,11 +275,11 @@ class LinearRegressionEstimator(Estimator):
         necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
+        reduced_df = reduced_df.sort_values(list(self.treatment))
         logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
-        reduced_df['Intercept'] = 1
-
+        reduced_df['Intercept'] = self.intercept
 
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
         cols = list(self.treatment)
@@ -289,6 +338,7 @@ class CausalForestEstimator(Estimator):
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
+        print(dir(model))
         ate = model.ate(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
         ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
         ci_low, ci_high = ate_interval[0], ate_interval[1]

@@ -41,6 +41,21 @@ class CausalTestResult:
             confidence_str += f"Confidence intervals: {self.confidence_intervals}\n"
         return base_str + confidence_str
 
+    def to_dict(self):
+        base_dict = {
+                       "treatment": self.treatment[0],
+                       "control_value": self.control_value,
+                       "treatment_value": self.treatment_value,
+                       "outcome": self.outcome[0],
+                       "adjustment_set": self.adjustment_set,
+                       "ate": self.ate
+                   }
+        if self.confidence_intervals:
+            base_dict["ci_low"] = min(self.confidence_intervals)
+            base_dict["ci_high"] = max(self.confidence_intervals)
+        return base_dict
+
+
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""
         if not self.confidence_intervals:
