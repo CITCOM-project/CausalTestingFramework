@@ -9,9 +9,10 @@ import argparse
 import scipy
 import json
 import pandas as pd
+import os
 from fitter import Fitter, get_common_distributions
 from pathlib import Path
-import causal_test_setup as cts
+from json_frontend.examples.poisson import causal_test_setup as cts
 
 
 def get_args() -> argparse.Namespace:
@@ -23,6 +24,8 @@ def get_args() -> argparse.Namespace:
         description="A script for parsing json config files for the Causal Testing Framework")
     parser.add_argument("-f", help="if included, the script will stop if a test fails",
                         action="store_true")
+    parser.add_argument("--directory_path", help="path to the json file containing the causal tests",
+                        default="causal_tests.json", type=Path)
     parser.add_argument("--json_path", help="path to the json file containing the causal tests",
                         default="causal_tests.json", type=Path)
     parser.add_argument("--data_path", help="path to the data csv file containing the runtime data of the scenario",
@@ -51,7 +54,7 @@ def populate_metas(metas: list[Meta], outputs: list[Output], data: pd.DataFrame)
         print(var.name, f"{dist}({params})")
 
 
-def json_parse(json_path, data_path) -> tuple[list, list, list, dict, pd.DataFrame]:
+def json_parse(json_path: Path, data_path: Path) -> tuple[list, list, list, dict, pd.DataFrame]:
     """Parse a JSON input file into inputs, outputs, metas and a test plan
 
     :param json_path: path to JSON input file to be parsed
@@ -134,13 +137,27 @@ def execute_test_case(causal_test_case, estimator, modelling_scenario, data_path
     return failed
 
 
+def default_path_names(directory_path):
+    """
+
+    """
+    json_path = directory_path.joinpath("causal_tests.json")
+    dag_path = directory_path.joinpath("dag.dot")
+    data_path = directory_path.joinpath("data.csv")
+    return json_path, dag_path, data_path
+
+
 def main():
 
     args = get_args()
-    json_path = args.json_path
-    dag_path = args.dag_path
-    data_path = args.data_path
+    if args.directory_path:
+        json_path, dag_path, data_path = default_path_names(args.directory_path)
+    else:
+        json_path = args.json_path
+        dag_path = args.dag_path
+        data_path = args.data_path
     f_flag = args.f
+
     inputs, outputs, metas, test_plan, data = json_parse(json_path, data_path)
     populate_metas(metas, outputs, data)
 
