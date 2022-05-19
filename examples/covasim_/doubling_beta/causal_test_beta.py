@@ -8,7 +8,6 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
-from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from matplotlib.pyplot import rcParams
@@ -207,8 +206,8 @@ def identification(observational_data_path):
     # 5. Create a causal test case
     causal_test_case = CausalTestCase(control_input_configuration={beta: 0.016},
                                       expected_causal_effect=Positive,
-                                      outcome_variables={cum_infections},
-                                      intervention=Intervention((beta,), (0.032,), ), )
+                                      treatment_input_configuration={beta: 0.032},
+                                      outcome_variables={cum_infections})
 
     # 6. Create a data collector
     data_collector = ObservationalDataCollector(scenario, observational_data_path)

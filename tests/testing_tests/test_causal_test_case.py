@@ -4,7 +4,6 @@ from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_
 from causal_testing.specification.causal_specification import CausalSpecification, Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue
 
@@ -33,34 +32,29 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.causal_dag)
 
         # 3. Create an intervention and causal test case
-        self.intervention = Intervention((A,), (1,))
         self.expected_causal_effect = ExactValue(4)
         self.causal_test_case = CausalTestCase(
             control_input_configuration={A: 0},
             expected_causal_effect=self.expected_causal_effect,
-            intervention=self.intervention,
+            treatment_input_configuration={A: 1},
             outcome_variables={C})
-
 
     def test_get_treatment_variables(self):
         self.assertEqual(self.causal_test_case.get_treatment_variables(), ["A"])
 
-
     def test_get_outcome_variables(self):
         self.assertEqual(self.causal_test_case.get_outcome_variables(), ["C"])
-
 
     def test_get_treatment_values(self):
         self.assertEqual(self.causal_test_case.get_treatment_values(), [1])
 
-
     def test_get_control_values(self):
         self.assertEqual(self.causal_test_case.get_control_values(), [0])
 
-
     def test_str(self):
         self.assertEqual(str(self.causal_test_case),
-        "Applying {A -> 1} to {'A': 0} should cause the following changes to ['C']: ExactValue: 4±0.2.")
+                         "Running {'A': 1} instead of {'A': 0} should cause the following changes to"
+                         " {Output: C::float}: ExactValue: 4±0.2.")
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
