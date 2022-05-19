@@ -7,11 +7,11 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
-from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.causal_test_outcome import ExactValue
 from causal_testing.testing.estimators import CausalForestEstimator, LinearRegressionEstimator
+
 
 class TestCausalTestEngineObservational(unittest.TestCase):
     """ Test the CausalTestEngine workflow using observational data.
@@ -39,13 +39,12 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.scenario = Scenario({A, C, D})
         self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.causal_dag)
 
-        # 3. Create an intervention and causal test case
-        self.intervention = Intervention((A,), (1,))
+        # 3. Create a causal test case
         self.expected_causal_effect = ExactValue(4)
         self.causal_test_case = CausalTestCase(
             control_input_configuration={A: 0},
             expected_causal_effect=self.expected_causal_effect,
-            intervention=self.intervention,
+            treatment_input_configuration={A: 1},
             outcome_variables={C})
 
         # 4. Create dummy test data and write to csv

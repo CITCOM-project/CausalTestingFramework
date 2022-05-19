@@ -72,8 +72,8 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
     for outcome_variable, expected_effect in expected_outcome_effects.items():
         causal_test_case = CausalTestCase(control_input_configuration={vaccine: 0},
                                           expected_causal_effect=expected_effect,
-                                          outcome_variables={outcome_variable},
-                                          intervention=Intervention((vaccine,), (1,), ), )
+                                          treatment_input_configuration={vaccine: 1},
+                                          outcome_variables={outcome_variable})
 
         # 7. Create an instance of the causal test engine
         causal_test_engine = CausalTestEngine(causal_test_case, causal_specification, data_collector)
