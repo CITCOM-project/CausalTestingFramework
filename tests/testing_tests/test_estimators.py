@@ -27,7 +27,7 @@ def load_nhefs_df():
     """ Get the NHEFS data from chapter 12 and put into a dataframe. NHEFS = National Health and Nutrition Examination
     Survey Data I Epidemiological Follow-up Study."""
 
-    nhefs_df = pd.read_csv("../data/nhefs.csv")
+    nhefs_df = pd.read_csv("tests/data/nhefs.csv")
     nhefs_df['one'] = 1
     nhefs_df['zero'] = 0
     edu_dummies = pd.get_dummies(nhefs_df.education, prefix='edu')
