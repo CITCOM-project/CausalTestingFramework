@@ -136,7 +136,7 @@ def execute_test_case(causal_test_case, estimator, modelling_scenario, data_path
     return failed
 
 
-def default_path_names(directory_path: Path) -> tuple(Path, Path, Path):
+def default_path_names(directory_path: Path) -> tuple[Path, Path, Path]:
     """
     Takes a path of the directory containing all scenario specific files and creates individual paths for each file
     :param directory_path: pathlib.Path pointing towards directory containing all scenario specific user code and files
