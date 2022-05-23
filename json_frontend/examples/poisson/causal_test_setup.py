@@ -1,8 +1,7 @@
-import abc
 import scipy
 import numpy as np
 import pandas as pd
-from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator, CausalForestEstimator
+from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
 from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Negative, NoEffect, CausalTestOutcome, \
     CausalTestResult
 
@@ -104,6 +103,4 @@ estimators = {
     "WidthHeightEstimator": WidthHeightEstimator,
     "CausalForestEstimator": CausalForestEstimator,
     "LinearRegressionEstimator": LinearRegressionEstimator,
-
 }
-

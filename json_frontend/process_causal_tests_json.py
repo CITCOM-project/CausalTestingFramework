@@ -1,10 +1,11 @@
-import argparse
 from fitter import Fitter, get_common_distributions
-import json
 from json_frontend.examples.poisson import causal_test_setup as cts
 from pathlib import Path
+import json
+import argparse
 import pandas as pd
 import scipy
+
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_dag import CausalDAG
@@ -12,7 +13,6 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_engine import CausalTestEngine
-
 
 def get_args() -> argparse.Namespace:
     """ Command-line arguments
