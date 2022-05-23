@@ -1,3 +1,10 @@
+import argparse
+from fitter import Fitter, get_common_distributions
+import json
+from json_frontend.examples.poisson import causal_test_setup as cts
+from pathlib import Path
+import pandas as pd
+import scipy
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_dag import CausalDAG
@@ -5,14 +12,6 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_engine import CausalTestEngine
-import argparse
-import scipy
-import json
-import pandas as pd
-import os
-from fitter import Fitter, get_common_distributions
-from pathlib import Path
-from json_frontend.examples.poisson import causal_test_setup as cts
 
 
 def get_args() -> argparse.Namespace:
@@ -137,9 +136,14 @@ def execute_test_case(causal_test_case, estimator, modelling_scenario, data_path
     return failed
 
 
-def default_path_names(directory_path):
+def default_path_names(directory_path: Path) -> tuple(Path, Path, Path):
     """
-
+    Takes a path of the directory containing all scenario specific files and creates individual paths for each file
+    :param directory_path: pathlib.Path pointing towards directory containing all scenario specific user code and files
+    :returns:
+        - json_path -  path to causal_tests.json
+        - dag_path -  path to dag.dot
+        - data_path - path to scenario data, expected in data.csv
     """
     json_path = directory_path.joinpath("causal_tests.json")
     dag_path = directory_path.joinpath("dag.dot")
@@ -189,7 +193,7 @@ def main():
             estimate_type=test['estimate_type']
         )
 
-        concrete_tests, runs = abstract_test.generate_concrete_tests(5, 0.05)
+        concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
         print(abstract_test)
         print([(v.name, v.distribution) for v in abstract_test.treatment_variables])
         print(len(concrete_tests))

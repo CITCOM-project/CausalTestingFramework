@@ -1,12 +1,16 @@
-from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator, CausalForestEstimator
-from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Negative, NoEffect, CausalTestOutcome, \
-    CausalTestResult
+import abc
 import scipy
 import numpy as np
 import pandas as pd
+from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator, CausalForestEstimator
+from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Negative, NoEffect, CausalTestOutcome, \
+    CausalTestResult
 
 
 class WidthHeightEstimator(LinearRegressionEstimator):
+    """
+    Extension of LinearRegressionEstimator class to include scenario specific user code
+    """
     def add_modelling_assumptions(self):
         """
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
@@ -67,8 +71,7 @@ class PoissonWidthHeight(CausalTestOutcome):
     def __str__(self):
         if self.i2c is None:
             return f"PoissonWidthHeight±{self.tolerance}"
-        else:
-            return f"PoissonWidthHeight:{self.i2c}±{self.tolerance}"
+        return f"PoissonWidthHeight:{self.i2c}±{self.tolerance}"
 
 
 def populate_width_height(data):
@@ -103,3 +106,4 @@ estimators = {
     "LinearRegressionEstimator": LinearRegressionEstimator,
 
 }
+
