@@ -104,7 +104,7 @@ def execute_test_case(causal_test_case, estimator, modelling_scenario, data_path
     causal_test_engine = CausalTestEngine(causal_test_case, causal_specification, data_collector)
     minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
     treatment_vars = list(causal_test_case.treatment_input_configuration)
-    minimal_adjustment_set = minimal_adjustment_set - set([v.name for v in treatment_vars])
+    minimal_adjustment_set = minimal_adjustment_set - {v.name for v in treatment_vars}
     # @andrewc19, why can we only have atomic control/treatment values?
     # I think it'd be good to pass it in as two dicts instead of vars, control, treatment lists
     estimation_model = estimator((list(treatment_vars)[0].name,),
