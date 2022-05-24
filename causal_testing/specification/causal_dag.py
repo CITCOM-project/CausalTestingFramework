@@ -238,7 +238,7 @@ class CausalDAG(nx.DiGraph):
         	self.graph.remove_edge(v1,v2)
         return gback
 
-    def direct_affect_adjustment_sets(self, treatments:list[str], outcomes:list[str], must:set[str]=set(), must_not:set[str]=set()) -> list[set[str]]:
+    def direct_effect_adjustment_sets(self, treatments:list[str], outcomes:list[str], must:set[str]=set(), must_not:set[str]=set()) -> list[set[str]]:
         """
         Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes for DIRECT causal effect.

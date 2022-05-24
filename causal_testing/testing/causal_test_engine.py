@@ -67,7 +67,7 @@ class CausalTestEngine:
                     [v.name for v in self.causal_test_case.outcome_variables]
                 )
         elif self.effect == "direct":
-            minimal_adjustment_sets = self.casual_dag.direct_affect_adjustment_sets(
+            minimal_adjustment_sets = self.casual_dag.direct_effect_adjustment_sets(
                     [v.name for v in self.treatment_variables],
                     [v.name for v in self.causal_test_case.outcome_variables]
                 )
