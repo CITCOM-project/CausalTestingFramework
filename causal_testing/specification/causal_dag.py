@@ -218,7 +218,7 @@ class CausalDAG(nx.DiGraph):
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
 
-    def get_indirect_graph(self, treatments:list[str], outcomes:list[str]): CausalDAG:
+    def get_indirect_graph(self, treatments:list[str], outcomes:list[str]) -> CausalDAG:
         """
         This is the counterpart of the back-door graph for direct effects. We remove only edges pointing from X to Y.
         It is a Python implementation of the indirectGraph function from Dagitty.
@@ -228,17 +228,17 @@ class CausalDAG(nx.DiGraph):
         :return: The indirect graph with edges pointing from X to Y removed.
         :rtype: CausalDAG
         """
-    	gback = self.copy()
-    	ee = []
-    	for s in treatments:
-    		for t in outcomes:
-    			if (s, t) in gback:
-    				ee.append((s, t))
-    	for v1, v2 in ee:
-    		self.graph.remove_edge(v1,v2,e.directed)
-    	return gback
+        gback = self.copy()
+        ee = []
+        for s in treatments:
+        	for t in outcomes:
+        		if (s, t) in gback:
+        			ee.append((s, t))
+        for v1, v2 in ee:
+        	self.graph.remove_edge(v1,v2)
+        return gback
 
-    def direct_affect_adjustment_sets(self, treatments:list[str], outcomes:list[str], must:set[str]=set(), must_not:set[str]=set()):list[set[str]]:
+    def direct_affect_adjustment_sets(self, treatments:list[str], outcomes:list[str], must:set[str]=set(), must_not:set[str]=set()) -> list[set[str]]:
         """
         Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes for DIRECT causal effect.
@@ -258,8 +258,6 @@ class CausalDAG(nx.DiGraph):
         """
         def Union(t):
             return set([item for sublist in t for item in sublist])
-
-        de_y = Union([nx.descendants(self.graph, y) for y in Union([nx.descendants(self.graph, x) for x in treatments]).intersection(outcomes)])
 
         indirect_graph = self.get_indirect_graph(treatments, outcomes)
         ancestor_graph = indirect_graph.get_ancestor_graph(treatments, outcomes)
