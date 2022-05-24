@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 from .scenario import Scenario
 from .variable import Output
 
-
 def list_all_min_sep(graph: nx.Graph, treatment_node: Node, outcome_node: Node,
                      treatment_node_set: set[Node], outcome_node_set: set[Node]):
     """ A backtracking algorithm for listing all minimal treatment-outcome separators in an undirected graph.
@@ -218,6 +217,40 @@ class CausalDAG(nx.DiGraph):
         variables_to_remove = set(self.graph.nodes).difference(variables_to_keep)
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
+
+    def get_indirect_graph(self, treatments, outcomes):
+    	gback = self.copy()
+    	ee = []
+    	for s in treatments:
+    		for t in outcomes:
+    			if (s, t) in gback:
+    				ee.append((s, t))
+    	for v1, v2 in ee:
+    		self.graph.remove_edge(v1,v2,e.directed)
+    	return gback
+
+    def list_msas_direct_effect(self, treatments, outcomes, must=set(), must_not=set()):
+        def Union(t):
+            return set([item for sublist in t for item in sublist])
+
+        de_y = Union([nx.descendants(self.graph, y) for y in Union([nx.descendants(self.graph, x) for x in treatments]).intersection(outcomes)])
+
+        latent_nodes = de_y
+        indirect_graph = self.get_indirect_graph(treatments, outcomes)
+        ancestor_graph = indirect_graph.get_ancestor_graph(treatments, outcomes)
+        gam =  nx.moral_graph(ancestor_graph.graph)
+
+        adjusted_nodes =  adjusted_nodes.union(must)
+        latent_nodes = latent_nodes.union(latent_nodes.union(must_not))
+
+        edges_to_add = [("TREATMENT", treatment) for treatment in treatments]
+        edges_to_add += [("OUTCOME", outcome) for outcome in outcomes]
+        gam.add_edges_from(edges_to_add)
+
+        min_seps = list(list_all_min_sep(gam, "TREATMENT", "OUTCOME", set(treatments), set(outcomes)))
+        min_seps.remove(set(outcomes))
+        return min_seps
+
 
     def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
         """ Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments

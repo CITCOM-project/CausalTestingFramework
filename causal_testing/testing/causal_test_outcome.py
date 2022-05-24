@@ -118,6 +118,14 @@ class Negative(CausalTestOutcome):
         # TODO: confidence intervals?
         return res.ate < 0
 
+class SomeEffect(CausalTestOutcome):
+    """An extension of TestOutcome representing that the expected causal effect should not be zero."""
+
+    def apply(self, res: CausalTestResult) -> bool:
+        return (0 < res.ci_low() < res.ci_high()) or (res.ci_low() < res.ci_high() < 0)
+
+    def __str__(self):
+        return "Changed"
 
 class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""

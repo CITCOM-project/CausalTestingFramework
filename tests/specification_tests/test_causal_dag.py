@@ -64,6 +64,32 @@ class TestCyclicCausalDAG(unittest.TestCase):
         remove_temp_dir_if_existent()
 
 
+class TestDAGDirectEffectIdentification(unittest.TestCase):
+    """
+    Test the Causal DAG identification algorithms and supporting algorithms.
+    """
+
+    def setUp(self) -> None:
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = (
+            """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
+        )
+        f = open(self.dag_dot_path, "w")
+        f.write(dag_dot)
+        f.close()
+
+    def test_list_msas_direct_effect(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        adjustment_sets = causal_dag.list_msas_direct_effect(["X1"], ["Y"])
+        self.assertEqual(list(adjustment_sets), [{"D1", "Z"}, {"X2", "Z"}])
+
+    def test_list_msas_direct_effect_no_adjustment(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        adjustment_sets = causal_dag.list_msas_direct_effect(["X2"], ["D1"])
+        self.assertEqual(list(adjustment_sets), [])
+
+
 class TestDAGIdentification(unittest.TestCase):
     """
     Test the Causal DAG identification algorithms and supporting algorithms.
