@@ -79,14 +79,14 @@ class TestDAGDirectEffectIdentification(unittest.TestCase):
         f.write(dag_dot)
         f.close()
 
-    def test_list_msas_direct_effect(self):
+    def test_direct_affect_adjustment_sets(self):
         causal_dag = CausalDAG(self.dag_dot_path)
-        adjustment_sets = causal_dag.list_msas_direct_effect(["X1"], ["Y"])
+        adjustment_sets = causal_dag.direct_affect_adjustment_sets(["X1"], ["Y"])
         self.assertEqual(list(adjustment_sets), [{"D1", "Z"}, {"X2", "Z"}])
 
-    def test_list_msas_direct_effect_no_adjustment(self):
+    def test_direct_affect_adjustment_sets_no_adjustment(self):
         causal_dag = CausalDAG(self.dag_dot_path)
-        adjustment_sets = causal_dag.list_msas_direct_effect(["X2"], ["D1"])
+        adjustment_sets = causal_dag.direct_affect_adjustment_sets(["X2"], ["D1"])
         self.assertEqual(list(adjustment_sets), [])
 
 

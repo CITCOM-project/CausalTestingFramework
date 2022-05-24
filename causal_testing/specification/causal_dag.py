@@ -229,19 +229,15 @@ class CausalDAG(nx.DiGraph):
     		self.graph.remove_edge(v1,v2,e.directed)
     	return gback
 
-    def list_msas_direct_effect(self, treatments, outcomes, must=set(), must_not=set()):
+    def direct_affect_adjustment_sets(self, treatments, outcomes, must=set(), must_not=set()):
         def Union(t):
             return set([item for sublist in t for item in sublist])
 
         de_y = Union([nx.descendants(self.graph, y) for y in Union([nx.descendants(self.graph, x) for x in treatments]).intersection(outcomes)])
 
-        latent_nodes = de_y
         indirect_graph = self.get_indirect_graph(treatments, outcomes)
         ancestor_graph = indirect_graph.get_ancestor_graph(treatments, outcomes)
         gam =  nx.moral_graph(ancestor_graph.graph)
-
-        adjusted_nodes =  adjusted_nodes.union(must)
-        latent_nodes = latent_nodes.union(latent_nodes.union(must_not))
 
         edges_to_add = [("TREATMENT", treatment) for treatment in treatments]
         edges_to_add += [("OUTCOME", outcome) for outcome in outcomes]
