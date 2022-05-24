@@ -256,9 +256,6 @@ class CausalDAG(nx.DiGraph):
         :return: A list of possible adjustment sets.
         :rtype: list[set[str]]
         """
-        def Union(t):
-            return set([item for sublist in t for item in sublist])
-
         indirect_graph = self.get_indirect_graph(treatments, outcomes)
         ancestor_graph = indirect_graph.get_ancestor_graph(treatments, outcomes)
         gam =  nx.moral_graph(ancestor_graph.graph)
@@ -268,7 +265,7 @@ class CausalDAG(nx.DiGraph):
         gam.add_edges_from(edges_to_add)
 
         min_seps = list(list_all_min_sep(gam, "TREATMENT", "OUTCOME", set(treatments), set(outcomes)))
-        min_seps.remove(set(outcomes))
+        # min_seps.remove(set(outcomes))
         return min_seps
 
 
