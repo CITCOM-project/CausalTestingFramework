@@ -1,11 +1,12 @@
-from fitter import Fitter, get_common_distributions
-from json_frontend.examples.poisson import causal_test_setup as cts
 from pathlib import Path
-import json
+
 import argparse
+import json
 import pandas as pd
 import scipy
+from fitter import Fitter, get_common_distributions
 
+from json_frontend.examples.poisson import causal_test_setup as cts
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_dag import CausalDAG
