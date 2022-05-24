@@ -218,7 +218,16 @@ class CausalDAG(nx.DiGraph):
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
 
-    def get_indirect_graph(self, treatments, outcomes):
+    def get_indirect_graph(self, treatments:list[str], outcomes:list[str]): CausalDAG:
+        """
+        This is the counterpart of the back-door graph for direct effects. We remove only edges pointing from X to Y.
+        It is a Python implementation of the indirectGraph function from Dagitty.
+
+        :param list[str] treatments: List of treatment names.
+        :param list[str] outcomes: List of outcome names.
+        :return: The indirect graph with edges pointing from X to Y removed.
+        :rtype: CausalDAG
+        """
     	gback = self.copy()
     	ee = []
     	for s in treatments:
@@ -229,7 +238,24 @@ class CausalDAG(nx.DiGraph):
     		self.graph.remove_edge(v1,v2,e.directed)
     	return gback
 
-    def direct_affect_adjustment_sets(self, treatments, outcomes, must=set(), must_not=set()):
+    def direct_affect_adjustment_sets(self, treatments:list[str], outcomes:list[str], must:set[str]=set(), must_not:set[str]=set()):list[set[str]]:
+        """
+        Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
+        and outcomes for DIRECT causal effect.
+
+        This is an Python implementation of the listMsasTotalEffect function from Dagitty using Algorithms presented in
+        Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in
+        Separators and adjustment sets in causal graphs: Complete criteria and an algorithmic framework, Zander et al.,
+        2019. These works use the algorithm presented by Takata et al. in their work entitled: Space-optimal,
+        backtracking algorithms to list the minimal vertex separators of a graph, 2013.
+
+        :param list[str] treatments: List of treatment names.
+        :param list[str] outcomes: List of outcome names.
+        :param set[str] must: Set of variable names which must be in the adjustment set.
+        :param set[str] must_not: Set of variable names which must NOT be in the adjustment set.
+        :return: A list of possible adjustment sets.
+        :rtype: list[set[str]]
+        """
         def Union(t):
             return set([item for sublist in t for item in sublist])
 
