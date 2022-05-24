@@ -32,14 +32,7 @@ class CausalTestEngine:
     def __init__(self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification,
                  data_collector: DataCollector):
         self.causal_test_case = causal_test_case
-        if self.causal_test_case.intervention is not None:
-            self.treatment_variables = list(self.causal_test_case.intervention.treatment_variables)
-        else:
-            # This covers the case where a causal test case is specified in terms of a control/treatment run pair
-            # rather than a control run and an intervention.
-            # It might be better, though, to do this with an intervention which just returns the literal treatment run
-            self.treatment_variables = list(self.causal_test_case.control_input_configuration)
-
+        self.treatment_variables = list(self.causal_test_case.control_input_configuration)
         self.casual_dag, self.scenario = causal_specification.causal_dag, causal_specification.scenario
         self.data_collector = data_collector
         self.scenario_execution_data_df = pd.DataFrame()

@@ -8,7 +8,6 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect
-from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from matplotlib.pyplot import rcParams
@@ -114,8 +113,8 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     # 6. Create a causal test case
     causal_test_case = CausalTestCase(control_input_configuration={treatment_var: control_val},
                                       expected_causal_effect=expected_causal_effect,
-                                      outcome_variables={apd90},
-                                      intervention=Intervention((treatment_var,), (treatment_val,), ), )
+                                      treatment_input_configuration={treatment_var: treatment_val},
+                                      outcome_variables={apd90})
 
     # 7. Create a data collector
     data_collector = ObservationalDataCollector(scenario, observational_data_path)

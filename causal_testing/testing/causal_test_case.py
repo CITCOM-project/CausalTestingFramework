@@ -1,6 +1,5 @@
 from typing import Any
 
-from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.specification.variable import Variable
 
@@ -18,9 +17,8 @@ class CausalTestCase:
     """
 
     def __init__(self, control_input_configuration: dict[Variable: Any], expected_causal_effect: CausalTestOutcome,
-                 outcome_variables: dict[Variable], intervention: Intervention = None,
-                 treatment_input_configuration: dict[Variable: Any] = None, estimate_type: str = "ate",
-                 effect_modifier_configuration: dict[Variable: Any] = None):
+                 outcome_variables: dict[Variable], treatment_input_configuration: dict[Variable: Any] = None,
+                 estimate_type: str = "ate", effect_modifier_configuration: dict[Variable: Any] = None):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
         create two distinct input configurations: a control input configuration and a treatment input configuration.
@@ -29,24 +27,11 @@ class CausalTestCase:
 
         :param control_input_configuration: The input configuration representing the control values of the treatment
         variables.
-        :param intervention: The function which transforms the control configuration to the treatment configuration.
-        Defaults to None.
         :param treatment_input_configuration: The input configuration representing the treatment values of the treatment
         variables. That is, the input configuration *after* applying the intervention.
         """
-        assert (
-                intervention is None or treatment_input_configuration is None
-        ), 'Cannot define both treatment configuration and intervention.'
-        assert (
-                intervention is not None or treatment_input_configuration is not None
-        ), 'Must define either a treatment configuration or intervention.'
-        if intervention is not None:
-            assert isinstance(intervention, Intervention), \
-                f'Intervention must be an instance of class Intervention not {type(intervention)}.'
-
         self.control_input_configuration = control_input_configuration
         self.expected_causal_effect = expected_causal_effect
-        self.intervention = intervention
         self.outcome_variables = outcome_variables
         self.treatment_input_configuration = treatment_input_configuration
         self.estimate_type = estimate_type
@@ -54,10 +39,6 @@ class CausalTestCase:
             self.effect_modifier_configuration = effect_modifier_configuration
         else:
             self.effect_modifier_configuration = dict()
-        if intervention:
-            self.treatment_input_configuration = intervention.apply(
-                self.control_input_configuration
-            )
         assert self.control_input_configuration.keys() == self.treatment_input_configuration.keys(),\
                "Control and treatment input configurations must have the same keys."
 
@@ -78,12 +59,7 @@ class CausalTestCase:
         return list(self.treatment_input_configuration.values())
 
     def __str__(self):
-        if self.intervention is not None:
-            control_input_configuration = {k.name: v for k, v in self.control_input_configuration.items()}
-            return (f"Applying {self.intervention} to {control_input_configuration} should cause the following "
-                    f"changes to {[v.name for v in self.outcome_variables]}: {self.expected_causal_effect}.")
-        else:
-            treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
-            control_config = {k.name: v for k, v in self.control_input_configuration.items()}
-            return (f"Running {treatment_config} instead of {control_config} should cause the following "
-                    f"changes to {self.outcome_variables}: {self.expected_causal_effect}.")
+        treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
+        control_config = {k.name: v for k, v in self.control_input_configuration.items()}
+        return (f"Running {treatment_config} instead of {control_config} should cause the following "
+                f"changes to {self.outcome_variables}: {self.expected_causal_effect}.")
