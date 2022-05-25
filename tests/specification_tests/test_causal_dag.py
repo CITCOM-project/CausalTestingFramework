@@ -87,7 +87,7 @@ class TestDAGDirectEffectIdentification(unittest.TestCase):
     def test_direct_effect_adjustment_sets_no_adjustment(self):
         causal_dag = CausalDAG(self.dag_dot_path)
         adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X2"], ["D1"])
-        self.assertEqual(list(adjustment_sets), [{"D1"}])
+        self.assertEqual(list(adjustment_sets), [set()])
 
 
 class TestDAGIdentification(unittest.TestCase):
@@ -104,6 +104,15 @@ class TestDAGIdentification(unittest.TestCase):
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
         f.close()
+
+    def test_get_indirect_graph(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        indirect_graph = causal_dag.get_indirect_graph(["D1"], ["Y"])
+        original_edges = list(causal_dag.graph.edges)
+        original_edges.remove(("D1", "Y"))
+        self.assertEqual(list(indirect_graph.graph.edges), original_edges)
+        self.assertEqual(indirect_graph.graph.nodes, causal_dag.graph.nodes)
+
 
     def test_proper_backdoor_graph(self):
         """Test whether converting a Causal DAG to a proper back-door graph works correctly."""

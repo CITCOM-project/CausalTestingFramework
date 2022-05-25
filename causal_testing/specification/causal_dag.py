@@ -232,10 +232,10 @@ class CausalDAG(nx.DiGraph):
         ee = []
         for s in treatments:
         	for t in outcomes:
-        		if (s, t) in gback:
+        		if (s, t) in gback.graph.edges:
         			ee.append((s, t))
         for v1, v2 in ee:
-        	self.graph.remove_edge(v1,v2)
+        	gback.graph.remove_edge(v1,v2)
         return gback
 
     def direct_effect_adjustment_sets(self, treatments:list[str], outcomes:list[str], must:set[str]=set(), must_not:set[str]=set()) -> list[set[str]]:
