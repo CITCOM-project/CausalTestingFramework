@@ -231,14 +231,14 @@ class CausalDAG(nx.DiGraph):
         gback = self.copy()
         ee = []
         for s in treatments:
-        	for t in outcomes:
-        		if (s, t) in gback.graph.edges:
-        			ee.append((s, t))
+            for t in outcomes:
+                if (s, t) in gback.graph.edges:
+                    ee.append((s, t))
         for v1, v2 in ee:
-        	gback.graph.remove_edge(v1,v2)
+            gback.graph.remove_edge(v1,v2)
         return gback
 
-    def direct_effect_adjustment_sets(self, treatments:list[str], outcomes:list[str], must:set[str]=set(), must_not:set[str]=set()) -> list[set[str]]:
+    def direct_effect_adjustment_sets(self, treatments:list[str], outcomes:list[str]) -> list[set[str]]:
         """
         Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes for DIRECT causal effect.
@@ -251,11 +251,10 @@ class CausalDAG(nx.DiGraph):
 
         :param list[str] treatments: List of treatment names.
         :param list[str] outcomes: List of outcome names.
-        :param set[str] must: Set of variable names which must be in the adjustment set.
-        :param set[str] must_not: Set of variable names which must NOT be in the adjustment set.
         :return: A list of possible adjustment sets.
         :rtype: list[set[str]]
         """
+
         indirect_graph = self.get_indirect_graph(treatments, outcomes)
         ancestor_graph = indirect_graph.get_ancestor_graph(treatments, outcomes)
         gam =  nx.moral_graph(ancestor_graph.graph)
