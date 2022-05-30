@@ -145,12 +145,17 @@ class TestCausalTestEngineObservational(unittest.TestCase):
     def test_invalid_causal_effect(self):
         """ Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator. """
+        causal_test_case = CausalTestCase(
+            control_input_configuration={self.A: 0},
+            expected_causal_effect=self.expected_causal_effect,
+            treatment_input_configuration={self.A: 1},
+            outcome_variables={self.C},
+            effect="error")
         # 5. Create causal test engine
         causal_test_engine = CausalTestEngine(
-            self.causal_test_case,
+            causal_test_case,
             self.causal_specification,
-            self.data_collector,
-            effect="error"
+            self.data_collector
         )
         with self.assertRaises(Exception):
             causal_test_engine.load_data()
@@ -172,12 +177,18 @@ class TestCausalTestEngineObservational(unittest.TestCase):
     def test_execute_test_observational_linear_regression_estimator_direct_effect(self):
         """ Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator. """
+        causal_test_case = CausalTestCase(
+            control_input_configuration={self.A: 0},
+            expected_causal_effect=self.expected_causal_effect,
+            treatment_input_configuration={self.A: 1},
+            outcome_variables={self.C},
+            effect="direct")
+
         # 5. Create causal test engine
         causal_test_engine = CausalTestEngine(
-            self.causal_test_case,
+            causal_test_case,
             self.causal_specification,
-            self.data_collector,
-            effect="direct"
+            self.data_collector
         )
         self.minimal_adjustment_set = causal_test_engine.load_data()
 
