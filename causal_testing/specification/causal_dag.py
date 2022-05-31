@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 from .scenario import Scenario
 from .variable import Output
 
-
 def list_all_min_sep(graph: nx.Graph, treatment_node: Node, outcome_node: Node,
                      treatment_node_set: set[Node], outcome_node_set: set[Node]):
     """ A backtracking algorithm for listing all minimal treatment-outcome separators in an undirected graph.
@@ -218,6 +217,56 @@ class CausalDAG(nx.DiGraph):
         variables_to_remove = set(self.graph.nodes).difference(variables_to_keep)
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
+
+    def get_indirect_graph(self, treatments:list[str], outcomes:list[str]) -> CausalDAG:
+        """
+        This is the counterpart of the back-door graph for direct effects. We remove only edges pointing from X to Y.
+        It is a Python implementation of the indirectGraph function from Dagitty.
+
+        :param list[str] treatments: List of treatment names.
+        :param list[str] outcomes: List of outcome names.
+        :return: The indirect graph with edges pointing from X to Y removed.
+        :rtype: CausalDAG
+        """
+        gback = self.copy()
+        ee = []
+        for s in treatments:
+            for t in outcomes:
+                if (s, t) in gback.graph.edges:
+                    ee.append((s, t))
+        for v1, v2 in ee:
+            gback.graph.remove_edge(v1,v2)
+        return gback
+
+    def direct_effect_adjustment_sets(self, treatments:list[str], outcomes:list[str]) -> list[set[str]]:
+        """
+        Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
+        and outcomes for DIRECT causal effect.
+
+        This is an Python implementation of the listMsasTotalEffect function from Dagitty using Algorithms presented in
+        Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in
+        Separators and adjustment sets in causal graphs: Complete criteria and an algorithmic framework, Zander et al.,
+        2019. These works use the algorithm presented by Takata et al. in their work entitled: Space-optimal,
+        backtracking algorithms to list the minimal vertex separators of a graph, 2013.
+
+        :param list[str] treatments: List of treatment names.
+        :param list[str] outcomes: List of outcome names.
+        :return: A list of possible adjustment sets.
+        :rtype: list[set[str]]
+        """
+
+        indirect_graph = self.get_indirect_graph(treatments, outcomes)
+        ancestor_graph = indirect_graph.get_ancestor_graph(treatments, outcomes)
+        gam =  nx.moral_graph(ancestor_graph.graph)
+
+        edges_to_add = [("TREATMENT", treatment) for treatment in treatments]
+        edges_to_add += [("OUTCOME", outcome) for outcome in outcomes]
+        gam.add_edges_from(edges_to_add)
+
+        min_seps = list(list_all_min_sep(gam, "TREATMENT", "OUTCOME", set(treatments), set(outcomes)))
+        # min_seps.remove(set(outcomes))
+        return min_seps
+
 
     def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
         """ Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments

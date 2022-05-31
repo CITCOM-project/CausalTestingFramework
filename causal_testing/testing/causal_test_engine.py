@@ -59,10 +59,20 @@ class CausalTestEngine:
 
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
 
-        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
-                [v.name for v in self.treatment_variables],
-                [v.name for v in self.causal_test_case.outcome_variables]
-            )
+        minimal_adjustment_sets = []
+        if self.causal_test_case.effect == "total":
+            minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
+                    [v.name for v in self.treatment_variables],
+                    [v.name for v in self.causal_test_case.outcome_variables]
+                )
+        elif self.causal_test_case.effect == "direct":
+            minimal_adjustment_sets = self.casual_dag.direct_effect_adjustment_sets(
+                    [v.name for v in self.treatment_variables],
+                    [v.name for v in self.causal_test_case.outcome_variables]
+                )
+        else:
+            raise ValueError("Causal effect should be 'total' or 'direct'")
+
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
 

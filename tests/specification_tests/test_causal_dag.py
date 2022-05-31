@@ -64,6 +64,32 @@ class TestCyclicCausalDAG(unittest.TestCase):
         remove_temp_dir_if_existent()
 
 
+class TestDAGDirectEffectIdentification(unittest.TestCase):
+    """
+    Test the Causal DAG identification algorithms and supporting algorithms.
+    """
+
+    def setUp(self) -> None:
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = (
+            """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
+        )
+        f = open(self.dag_dot_path, "w")
+        f.write(dag_dot)
+        f.close()
+
+    def test_direct_effect_adjustment_sets(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X1"], ["Y"])
+        self.assertEqual(list(adjustment_sets), [{"Y"}, {"D1", "Z"}, {"X2", "Z"}])
+
+    def test_direct_effect_adjustment_sets_no_adjustment(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X2"], ["D1"])
+        self.assertEqual(list(adjustment_sets), [set()])
+
+
 class TestDAGIdentification(unittest.TestCase):
     """
     Test the Causal DAG identification algorithms and supporting algorithms.
@@ -78,6 +104,15 @@ class TestDAGIdentification(unittest.TestCase):
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
         f.close()
+
+    def test_get_indirect_graph(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        indirect_graph = causal_dag.get_indirect_graph(["D1"], ["Y"])
+        original_edges = list(causal_dag.graph.edges)
+        original_edges.remove(("D1", "Y"))
+        self.assertEqual(list(indirect_graph.graph.edges), original_edges)
+        self.assertEqual(indirect_graph.graph.nodes, causal_dag.graph.nodes)
+
 
     def test_proper_backdoor_graph(self):
         """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
