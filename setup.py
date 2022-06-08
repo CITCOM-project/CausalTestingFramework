@@ -14,7 +14,8 @@ requirements = [
     "z3-solver~=4.8.13.0",
     "lhsmdu",
     "tabulate",
-    "scipy~=1.7.2"
+    "scipy~=1.7.2",
+    "fitter~=1.4"
 ]
 
 setup(
@@ -22,4 +23,9 @@ setup(
     version="0.0.1",
     install_requires=requirements,
     packages=find_packages(),
+    entry_points={
+        'console_scripts': [
+            'run_json = causal_testing.json_frontend:main'
+        ]
+    }
 )

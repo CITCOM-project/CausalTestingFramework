@@ -207,6 +207,3 @@ def main():
 
     print(f"{failures}/{executed_tests} failed")
 
-
-if __name__ == '__main__':
-    main()
