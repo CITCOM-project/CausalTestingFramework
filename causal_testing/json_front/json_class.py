@@ -3,8 +3,9 @@ from pathlib import Path
 import json
 import pandas as pd
 import scipy
+from abc import ABC
 from fitter import Fitter, get_common_distributions
-
+from os.path import isdir
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_dag import CausalDAG
@@ -12,8 +13,9 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_engine import CausalTestEngine
+from causal_testing.testing.estimators import Estimator
 
-class FrontEnd(ABC):
+class JsonUtility(ABC):
     def __init__(self):
         self.json_path = None
         self.dag_path = None
@@ -26,6 +28,9 @@ class FrontEnd(ABC):
         self.modelling_scenario = None
         self.causal_specification = None
 
+    @property
+    def estimation_model(self):
+        return
     def set_paths(self, directory_path: Path):
         """
             Takes a path of the directory containing all scenario specific files and creates individual paths for each file
@@ -52,8 +57,8 @@ class FrontEnd(ABC):
         self.inputs = [Input(i['name'], type_dict[i['type']], distributions[i['distribution']]) for i in
                        self.test_plan['inputs']]
         self.outputs = [Output(i['name'], type_dict[i['type']]) for i in self.test_plan['outputs']]
-        self.metas = [Meta(i['name'], type_dict[i['type']], populates(i['populate'])) for i in
-                      self.test_plan['metas']] if "metas" in self.test_plan else []
+        self.metas = [Meta(i['name'], type_dict[i['type']], populates[i['populate']]) for i in
+                      self.test_plan['metas']] if "metas" in self.test_plan else list()
 
         self.data = pd.read_csv(self.data_path)
 
@@ -106,16 +111,15 @@ class FrontEnd(ABC):
 
         print(f"{failures}/{executed_tests} failed")
 
-    @staticmethod
-    def execute_test_case(causal_test_case, estimator, modelling_scenario, data_path: Path, causal_specification,
-                          f_flag: bool) -> bool():
+    def execute_test_case(self, causal_test_case, Estimator, modelling_scenario, data_path: Path, causal_specification,
+                          f_flag: bool) -> bool:
         failed = False
         data_collector = ObservationalDataCollector(modelling_scenario, data_path)
         causal_test_engine = CausalTestEngine(causal_test_case, causal_specification, data_collector)
         minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
         treatment_vars = list(causal_test_case.treatment_input_configuration)
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in treatment_vars}
-        estimation_model = estimator((list(treatment_vars)[0].name,),
+        estimation_model = Estimator((list(treatment_vars)[0].name,),
                                      [causal_test_case.treatment_input_configuration[v] for v in treatment_vars][0],
                                      [causal_test_case.control_input_configuration[v] for v in treatment_vars][0],
                                      minimal_adjustment_set,
@@ -123,11 +127,9 @@ class FrontEnd(ABC):
                                      causal_test_engine.scenario_execution_data_df,
                                      effect_modifiers=causal_test_case.effect_modifier_configuration
                                      )
-        if "intensity" in [v.name for v in treatment_vars] and hasattr(estimation_model, "add_squared_term_to_df"):
-            estimation_model.add_squared_term_to_df("intensity")
-        if isinstance(estimation_model, Estimator):
-            estimation_model.add_product_term_to_df("width", "intensity")
-            estimation_model.add_product_term_to_df("height", "intensity")
+
+        self.add_modelling_assumptions(estimation_model)
+
         causal_test_result = causal_test_engine.execute_test(estimation_model,
                                                              estimate_type=causal_test_case.estimate_type)
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
@@ -150,3 +152,7 @@ class FrontEnd(ABC):
         self.modelling_scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(scenario=self.modelling_scenario,
                                                         causal_dag=CausalDAG(self.dag_path))
+
+    def add_modelling_assumptions(self, estimation_model: Estimator):
+        pass
+
