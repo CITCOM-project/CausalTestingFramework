@@ -13,6 +13,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_engine import CausalTestEngine
+from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.estimators import Estimator
 
 
@@ -80,7 +81,13 @@ class JsonUtility(ABC):
             print(var.name, f"{dist}({params})")
 
     def execute_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
+        """ Runs and evaluates each test case specified in the JSON input
 
+        :param effects: Dictionary mapping effect class instances to string representations.
+        :param mutates: Dictionary mapping mutation functions to string representations.
+        :param estimators: Dictionary mapping estimator classes to string representations.
+        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        """
         executed_tests = 0
         failures = 0
         for test in self.test_plan['tests']:
@@ -114,7 +121,13 @@ class JsonUtility(ABC):
 
         print(f"{failures}/{executed_tests} failed")
 
-    def _execute_test_case(self, causal_test_case, f_flag: bool) -> bool:
+    def _execute_test_case(self, causal_test_case: CausalTestCase, f_flag: bool) -> bool:
+        """ Executes a singular test case, prints the results and returns the test case result
+        :param causal_test_case: The concrete test case to be executed
+        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        :return: A boolean that if True indicates the causal test case passed and if false indicates the test case failed.
+        :rtype: bool
+        """
         failed = False
 
         causal_test_engine, estimation_model = self._setup_test(causal_test_case)
@@ -136,7 +149,13 @@ class JsonUtility(ABC):
             print(f"    FAILED - expected {causal_test_case.expected_causal_effect}, got {causal_test_result.ate}")
         return failed
 
-    def _setup_test(self, causal_test_case):
+    def _setup_test(self, causal_test_case: CausalTestCase) -> tuple[CausalTestEngine, Estimator]:
+        """ Create the necessary inputs for a single test case
+        :param causal_test_case: The concrete test case to be executed
+        :returns:
+                - causal_test_engine - Test Engine instance for the test being run
+                - estimation_model - Estimator instance for the test being run
+        """
         data_collector = ObservationalDataCollector(self.modelling_scenario, self.data_path)
         causal_test_engine = CausalTestEngine(causal_test_case, self.causal_specification, data_collector)
         minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
@@ -156,10 +175,14 @@ class JsonUtility(ABC):
         return causal_test_engine, estimation_model
 
     def setup_scenario(self):
+        """ Create the modelling scenario and causal specification from the user inputs
+        """
         self.modelling_scenario = Scenario(self.inputs + self.outputs + self.metas, None)
         self.modelling_scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(scenario=self.modelling_scenario,
                                                         causal_dag=CausalDAG(self.dag_path))
 
     def add_modelling_assumptions(self, estimation_model: Estimator):
+        """ Optional abstract method where user functionality can be written to determine what assumptions are required for specific test cases
+        """
         pass
