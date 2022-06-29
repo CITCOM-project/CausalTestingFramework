@@ -32,7 +32,6 @@ class JsonUtility(ABC):
     def estimation_model(self):
         return
 
-    def
     def set_paths(self, directory_path: Path):
         """
             Takes a path of the directory containing all scenario specific files and creates individual paths for each file
@@ -113,27 +112,13 @@ class JsonUtility(ABC):
 
         print(f"{failures}/{executed_tests} failed")
 
-    def execute_test_case(self, causal_test_case, Estimator, modelling_scenario, data_path: Path, causal_specification,
-                          f_flag: bool) -> bool:
+    def execute_test_case(self, causal_test_case, f_flag: bool) -> bool:
         failed = False
-        data_collector = ObservationalDataCollector(modelling_scenario, data_path)
-        causal_test_engine = CausalTestEngine(causal_test_case, causal_specification, data_collector)
-        minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
-        treatment_vars = list(causal_test_case.treatment_input_configuration)
-        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in treatment_vars}
-        estimation_model = Estimator((list(treatment_vars)[0].name,),
-                                     [causal_test_case.treatment_input_configuration[v] for v in treatment_vars][0],
-                                     [causal_test_case.control_input_configuration[v] for v in treatment_vars][0],
-                                     minimal_adjustment_set,
-                                     (list(causal_test_case.outcome_variables)[0].name,),
-                                     causal_test_engine.scenario_execution_data_df,
-                                     effect_modifiers=causal_test_case.effect_modifier_configuration
-                                     )
 
-        self.add_modelling_assumptions(estimation_model)
-
+        causal_test_engine, estimation_model = self.setup_test(causal_test_case)
         causal_test_result = causal_test_engine.execute_test(estimation_model,
                                                              estimate_type=causal_test_case.estimate_type)
+
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
         result_string = str()
@@ -148,6 +133,25 @@ class JsonUtility(ABC):
             failed = True
             print(f"    FAILED - expected {causal_test_case.expected_causal_effect}, got {causal_test_result.ate}")
         return failed
+
+    def setup_test(self, causal_test_case):
+        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data_path)
+        causal_test_engine = CausalTestEngine(causal_test_case, self.causal_specification, data_collector)
+        minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
+        treatment_vars = list(causal_test_case.treatment_input_configuration)
+        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in treatment_vars}
+        estimation_model = Estimator((list(treatment_vars)[0].name,),
+                                     [causal_test_case.treatment_input_configuration[v] for v in treatment_vars][0],
+                                     [causal_test_case.control_input_configuration[v] for v in treatment_vars][0],
+                                     minimal_adjustment_set,
+                                     (list(causal_test_case.outcome_variables)[0].name,),
+                                     causal_test_engine.scenario_execution_data_df,
+                                     effect_modifiers=causal_test_case.effect_modifier_configuration
+                                     )
+
+        self.add_modelling_assumptions(estimation_model)
+
+        return causal_test_engine, estimation_model
 
     def setup_scenario(self):
         self.modelling_scenario = Scenario(self.inputs + self.outputs + self.metas, None)
