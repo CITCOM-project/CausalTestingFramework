@@ -132,9 +132,9 @@ estimators = {
 
 
 class MyJsonUtility(JsonUtility):
+    """Extension of JsonUtility class to add modelling assumptions to the estimator instance"""
 
     def add_modelling_assumptions(self, estimator: LinearRegressionEstimator):
-
         if "intensity" in [v for v in estimator.treatment[0]] and hasattr(estimator, "add_squared_term_to_df"):
             estimator.add_squared_term_to_df("intensity")
         if isinstance(estimator, WidthHeightEstimator):
@@ -143,9 +143,9 @@ class MyJsonUtility(JsonUtility):
 
 if __name__ == "__main__":
     args = get_args()
+
     json_utility = MyJsonUtility()
     json_utility.set_paths(args.directory_path)
-
     json_utility.json_parse(distributions, populates)
     json_utility.populate_metas()
     json_utility.setup_scenario()
