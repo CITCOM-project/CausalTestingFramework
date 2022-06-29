@@ -1,7 +1,7 @@
+import argparse
 import numpy as np
 import pandas as pd
 import scipy
-import argparse
 from pathlib import Path
 
 from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator

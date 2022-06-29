@@ -5,7 +5,7 @@ import pandas as pd
 import scipy
 from abc import ABC
 from fitter import Fitter, get_common_distributions
-from os.path import isdir
+
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_dag import CausalDAG
@@ -31,6 +31,8 @@ class JsonUtility(ABC):
     @property
     def estimation_model(self):
         return
+
+    def
     def set_paths(self, directory_path: Path):
         """
             Takes a path of the directory containing all scenario specific files and creates individual paths for each file
