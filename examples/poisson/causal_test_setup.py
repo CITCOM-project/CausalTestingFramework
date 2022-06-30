@@ -1,8 +1,9 @@
+from pathlib import Path
+
 import argparse
 import numpy as np
 import pandas as pd
 import scipy
-from pathlib import Path
 
 from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
 from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Negative, NoEffect, CausalTestOutcome, \
