@@ -1,10 +1,11 @@
 from pathlib import Path
 
-import json
-import pandas as pd
-import scipy
 from abc import ABC
 from fitter import Fitter, get_common_distributions
+import pandas as pd
+
+import json
+import scipy
 
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
@@ -18,6 +19,22 @@ from causal_testing.testing.estimators import Estimator
 
 
 class JsonUtility(ABC):
+    """
+    The JsonUtility Class provides the functionality to use structured JSON to setup and run causal tests on the
+    CausalTestingFramework.
+
+    :attr {Path} json_path: Path to the JSON input file.
+    :attr {Path} dag_path: Path to the dag.dot file containing the Causal DAG.
+    :attr {Path} data_path: Path to the csv data file.
+    :attr {Input} inputs: Causal variables representing inputs.
+    :attr {Output} outputs: Causal variables representing outputs.
+    :attr {Meta} metas: Causal variables representing metavariables.
+    :attr {pd.DataFrame}: Pandas DataFrame containing runtime data.
+    :attr {dict} test_plan: Dictionary containing the key value pairs from the loaded json test plan.
+    :attr {Scenario} modelling_scenario:
+    :attr {CausalSpecification} causal_specification:
+    """
+
     def __init__(self):
         self.json_path = None
         self.dag_path = None
@@ -113,15 +130,13 @@ class JsonUtility(ABC):
             print(len(concrete_tests))
             for concrete_test in concrete_tests:
                 executed_tests += 1
-                failed = self._execute_test_case(concrete_test, estimators[test['estimator']], self.modelling_scenario,
-                                                 self.data_path,
-                                                 self.causal_specification, f_flag)
+                failed = self._execute_test_case(concrete_test, estimators[test['estimator']], f_flag)
                 if failed:
                     failures += 1
 
         print(f"{failures}/{executed_tests} failed")
 
-    def _execute_test_case(self, causal_test_case: CausalTestCase, f_flag: bool) -> bool:
+    def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
         """ Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
@@ -130,7 +145,7 @@ class JsonUtility(ABC):
         """
         failed = False
 
-        causal_test_engine, estimation_model = self._setup_test(causal_test_case)
+        causal_test_engine, estimation_model = self._setup_test(causal_test_case, estimator)
         causal_test_result = causal_test_engine.execute_test(estimation_model,
                                                              estimate_type=causal_test_case.estimate_type)
 
@@ -149,7 +164,7 @@ class JsonUtility(ABC):
             print(f"    FAILED - expected {causal_test_case.expected_causal_effect}, got {causal_test_result.ate}")
         return failed
 
-    def _setup_test(self, causal_test_case: CausalTestCase) -> tuple[CausalTestEngine, Estimator]:
+    def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
         """ Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :returns:
@@ -161,7 +176,7 @@ class JsonUtility(ABC):
         minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
         treatment_vars = list(causal_test_case.treatment_input_configuration)
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in treatment_vars}
-        estimation_model = Estimator((list(treatment_vars)[0].name,),
+        estimation_model = estimator((list(treatment_vars)[0].name,),
                                      [causal_test_case.treatment_input_configuration[v] for v in treatment_vars][0],
                                      [causal_test_case.control_input_configuration[v] for v in treatment_vars][0],
                                      minimal_adjustment_set,
@@ -185,4 +200,4 @@ class JsonUtility(ABC):
     def add_modelling_assumptions(self, estimation_model: Estimator):
         """ Optional abstract method where user functionality can be written to determine what assumptions are required for specific test cases
         """
-        pass
+        return
