@@ -1,10 +1,9 @@
 from pathlib import Path
 
 from abc import ABC
+import json
 from fitter import Fitter, get_common_distributions
 import pandas as pd
-
-import json
 import scipy
 
 from causal_testing.specification.variable import Input, Output, Meta

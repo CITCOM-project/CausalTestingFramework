@@ -9,6 +9,7 @@ from causal_testing.testing.estimators import LinearRegressionEstimator, CausalF
 from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Negative, NoEffect, CausalTestOutcome, \
     CausalTestResult
 from causal_testing.json_front.json_class import JsonUtility
+from causal_testing.testing.estimators import Estimator
 
 
 class WidthHeightEstimator(LinearRegressionEstimator):
@@ -153,13 +154,13 @@ estimators = {
 class MyJsonUtility(JsonUtility):
     """Extension of JsonUtility class to add modelling assumptions to the estimator instance"""
 
-    def add_modelling_assumptions(self, estimator: LinearRegressionEstimator):
+    def add_modelling_assumptions(self, estimation_model: Estimator):
         # Add squared intensity term as a modelling assumption if intensity is the treatment of the test
-        if "intensity" in estimator.treatment[0]:
-            estimator.add_squared_term_to_df("intensity")
-        if isinstance(estimator, WidthHeightEstimator):
-            estimator.add_product_term_to_df("width", "intensity")
-            estimator.add_product_term_to_df("height", "intensity")
+        if "intensity" in estimation_model.treatment[0]:
+            estimation_model.add_squared_term_to_df("intensity")
+        if isinstance(estimation_model, WidthHeightEstimator):
+            estimation_model.add_product_term_to_df("width", "intensity")
+            estimation_model.add_product_term_to_df("height", "intensity")
 
 
 if __name__ == "__main__":
