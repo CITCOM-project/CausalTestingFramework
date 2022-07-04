@@ -1,19 +1,4 @@
 {
-  "inputs": [
-    {"name": "width", "type": "float", "distribution": "uniform"},
-    {"name": "height", "type": "float", "distribution": "uniform"},
-    {"name": "intensity", "type": "float", "distribution": "uniform"}
-  ],
-  "outputs": [
-    {"name": "num_lines_abs", "type": "float"},
-    {"name": "num_shapes_abs", "type": "float"}
-  ],
-  "metas": [
-    {"name": "num_lines_unit", "type": "float", "populate": "populate_num_lines_unit"},
-    {"name": "num_shapes_unit", "type": "float", "populate": "populate_num_shapes_unit"},
-    {"name": "width_plus_height", "type": "float", "populate": "populate_width_height"}
-  ],
-  "constraints": ["width > 0", "height > 0", "intensity > 0"],
   "tests": [
     {
       "name": "width__num_lines_abs",

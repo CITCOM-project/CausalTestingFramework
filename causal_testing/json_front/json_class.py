@@ -64,38 +64,29 @@ class JsonUtility(ABC):
         self.dag_path = directory_path.joinpath("dag.dot")
         self.data_path = directory_path.joinpath("data.csv")
 
-    def json_parse(self, distributions, populates):
-        """Parse a JSON input file into inputs, outputs, metas and a test plan
-            :param distributions: dictionary of user defined scipy distributions
-            :param populates: dictionary of user defined populate functions
+    def set_variables(self, inputs: dict, outputs: dict, metas: dict, distributions: dict, populates: dict):
+        """ Populate the Causal Variables
+            :param inputs:
+            :param outputs:
+            :param metas:
+            :param distributions:
+            :param populates:
         """
-        with open(self.json_path) as f:
-            self.test_plan = json.load(f)
+        self.inputs = [Input(i['name'], i['type'], distributions[i['distribution']]) for i in
+                       inputs]
+        self.outputs = [Output(i['name'], i['type']) for i in outputs]
+        self.metas = [Meta(i['name'], i['type'], populates[i['populate']]) for i in
+                      metas] if metas else list()
 
-        type_dict = {"float": float, "str": str, "int": int}
-
-        self.inputs = [Input(i['name'], type_dict[i['type']], distributions[i['distribution']]) for i in
-                       self.test_plan['inputs']]
-        self.outputs = [Output(i['name'], type_dict[i['type']]) for i in self.test_plan['outputs']]
-        self.metas = [Meta(i['name'], type_dict[i['type']], populates[i['populate']]) for i in
-                      self.test_plan['metas']] if "metas" in self.test_plan else list()
-
-        self.data = pd.read_csv(self.data_path)
-
-    def populate_metas(self):
+    def setup(self):
+        """ Function to populate all the necessary parts of the json_class needed to execute tests
         """
-        Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
-        """
-
-        for meta in self.metas:
-            meta.populate(self.data)
-
-        for var in self.metas + self.outputs:
-            f = Fitter(self.data[var.name], distributions=get_common_distributions())
-            f.fit()
-            (dist, params) = list(f.get_best(method="sumsquare_error").items())[0]
-            var.distribution = getattr(scipy.stats, dist)(**params)
-            print(var.name, f"{dist}({params})")
+        self.modelling_scenario = Scenario(self.inputs + self.outputs + self.metas, None)
+        self.modelling_scenario.setup_treatment_variables()
+        self.causal_specification = CausalSpecification(scenario=self.modelling_scenario,
+                                                        causal_dag=CausalDAG(self.dag_path))
+        self._json_parse()
+        self._populate_metas()
 
     def execute_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
         """ Runs and evaluates each test case specified in the JSON input
@@ -135,6 +126,31 @@ class JsonUtility(ABC):
                     failures += 1
 
         print(f"{failures}/{executed_tests} failed")
+
+    def _json_parse(self):
+        """Parse a JSON input file into inputs, outputs, metas and a test plan
+            :param distributions: dictionary of user defined scipy distributions
+            :param populates: dictionary of user defined populate functions
+        """
+        with open(self.json_path) as f:
+            self.test_plan = json.load(f)
+
+        self.data = pd.read_csv(self.data_path)
+
+    def _populate_metas(self):
+        """
+        Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
+        """
+
+        for meta in self.metas:
+            meta.populate(self.data)
+
+        for var in self.metas + self.outputs:
+            f = Fitter(self.data[var.name], distributions=get_common_distributions())
+            f.fit()
+            (dist, params) = list(f.get_best(method="sumsquare_error").items())[0]
+            var.distribution = getattr(scipy.stats, dist)(**params)
+            print(var.name, f"{dist}({params})")
 
     def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
         """ Executes a singular test case, prints the results and returns the test case result
@@ -189,15 +205,9 @@ class JsonUtility(ABC):
 
         return causal_test_engine, estimation_model
 
-    def setup_scenario(self):
-        """ Create the modelling scenario and causal specification from the user inputs
-        """
-        self.modelling_scenario = Scenario(self.inputs + self.outputs + self.metas, None)
-        self.modelling_scenario.setup_treatment_variables()
-        self.causal_specification = CausalSpecification(scenario=self.modelling_scenario,
-                                                        causal_dag=CausalDAG(self.dag_path))
-
     def add_modelling_assumptions(self, estimation_model: Estimator):
-        """ Optional abstract method where user functionality can be written to determine what assumptions are required for specific test cases
+        """ Optional abstract method where user functionality can be written to determine what assumptions are required
+        for specific test cases
+        :param estimation_model: estimator model instance for the current running test.
         """
         return

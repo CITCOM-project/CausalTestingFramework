@@ -107,6 +107,24 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+inputs = [
+    {"name": "width", "type": float, "distribution": "uniform"},
+    {"name": "height", "type": float, "distribution": "uniform"},
+    {"name": "intensity", "type": float, "distribution": "uniform"}
+]
+outputs = [
+    {"name": "num_lines_abs", "type": float},
+    {"name": "num_shapes_abs", "type": float}
+
+]
+metas = [
+    {"name": "num_lines_unit", "type": float, "populate": "populate_num_lines_unit"},
+    {"name": "num_shapes_unit", "type": float, "populate": "populate_num_shapes_unit"},
+    {"name": "width_plus_height", "type": float, "populate": "populate_width_height"}
+]
+
+constraints = ["width > 0", "height > 0", "intensity > 0"]
+
 populates = {
     "populate_width_height": populate_width_height,
     "populate_num_lines_unit": populate_num_lines_unit,
@@ -142,19 +160,23 @@ class MyJsonUtility(JsonUtility):
             estimator.add_product_term_to_df("width", "intensity")
             estimator.add_product_term_to_df("height", "intensity")
 
+
 if __name__ == "__main__":
     args = get_args()
 
     json_utility = MyJsonUtility()
+    print("HERHERHERHEREHRHER")
+    print(args.directory_path)
     json_utility.set_paths(args.directory_path)
-    json_utility.json_parse(distributions, populates)
-    json_utility.populate_metas()
-    json_utility.setup_scenario()
+    json_utility.set_variables(inputs, outputs, metas, distributions, populates)
+    json_utility.setup()
 
     mutates = {
-        "Increase": lambda x: json_utility.modelling_scenario.treatment_variables[x].z3 > json_utility.modelling_scenario.variables[x].z3,
-        "ChangeByFactor(2)": lambda x: json_utility.modelling_scenario.treatment_variables[x].z3 == json_utility.modelling_scenario.variables[
-            x].z3 * 2
+        "Increase": lambda x: json_utility.modelling_scenario.treatment_variables[x].z3 >
+                              json_utility.modelling_scenario.variables[x].z3,
+        "ChangeByFactor(2)": lambda x: json_utility.modelling_scenario.treatment_variables[x].z3 ==
+                                       json_utility.modelling_scenario.variables[
+                                           x].z3 * 2
     }
 
     json_utility.execute_tests(effects, mutates, estimators, args.f)
