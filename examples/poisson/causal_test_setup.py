@@ -165,8 +165,6 @@ if __name__ == "__main__":
     args = get_args()
 
     json_utility = MyJsonUtility()
-    print("HERHERHERHEREHRHER")
-    print(args.directory_path)
     json_utility.set_paths(args.directory_path)
     json_utility.set_variables(inputs, outputs, metas, distributions, populates)
     json_utility.setup()
