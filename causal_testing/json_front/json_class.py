@@ -47,11 +47,7 @@ class JsonUtility(ABC):
         self.modelling_scenario = None
         self.causal_specification = None
 
-    @property
-    def estimation_model(self):
-        return
-
-    def set_paths(self, directory_path: Path):
+    def set_path(self, directory_path: Path):
         """
             Takes a path of the directory containing all scenario specific files and creates individual paths for each file
             :param directory_path: pathlib.Path pointing towards directory containing all scenario specific user code and files

@@ -154,7 +154,8 @@ class MyJsonUtility(JsonUtility):
     """Extension of JsonUtility class to add modelling assumptions to the estimator instance"""
 
     def add_modelling_assumptions(self, estimator: LinearRegressionEstimator):
-        if "intensity" in [v for v in estimator.treatment[0]] and hasattr(estimator, "add_squared_term_to_df"):
+        # Add squared intensity term as a modelling assumption if intensity is the treatment of the test
+        if "intensity" in estimator.treatment[0]:
             estimator.add_squared_term_to_df("intensity")
         if isinstance(estimator, WidthHeightEstimator):
             estimator.add_product_term_to_df("width", "intensity")
@@ -164,10 +165,12 @@ class MyJsonUtility(JsonUtility):
 if __name__ == "__main__":
     args = get_args()
 
-    json_utility = MyJsonUtility()
-    json_utility.set_paths(args.directory_path)
+    json_utility = MyJsonUtility()  # Create an instance of the extended JsonUtility class
+    json_utility.set_path(args.directory_path) # Set the path to the data.csv, dag.dot and causal_tests.json file
+
+    # Load the Causal Variables into the JsonUtility class ready to be used in the tests
     json_utility.set_variables(inputs, outputs, metas, distributions, populates)
-    json_utility.setup()
+    json_utility.setup()  # Sets up all the necessary parts of the json_class needed to execute tests
 
     mutates = {
         "Increase": lambda x: json_utility.modelling_scenario.treatment_variables[x].z3 >
