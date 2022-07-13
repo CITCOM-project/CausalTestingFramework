@@ -10,7 +10,8 @@ from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Neg
     CausalTestResult
 from causal_testing.json_front.json_class import JsonUtility
 from causal_testing.testing.estimators import Estimator
-
+from causal_testing.specification.scenario import Scenario
+from causal_testing.specification.variable import Input, Output, Meta
 
 class WidthHeightEstimator(LinearRegressionEstimator):
     """
@@ -113,11 +114,12 @@ inputs = [
     {"name": "height", "type": float, "distribution": "uniform"},
     {"name": "intensity", "type": float, "distribution": "uniform"}
 ]
+
 outputs = [
     {"name": "num_lines_abs", "type": float},
     {"name": "num_shapes_abs", "type": float}
-
 ]
+
 metas = [
     {"name": "num_lines_unit", "type": float, "populate": "populate_num_lines_unit"},
     {"name": "num_shapes_unit", "type": float, "populate": "populate_num_shapes_unit"},
@@ -151,6 +153,24 @@ estimators = {
 }
 
 
+# Create input structure required to create a modelling scenario
+modelling_inputs = [Input(i['name'], i['type'], distributions[i['distribution']]) for i in inputs] +\
+                   [Output(i['name'], i['type']) for i in outputs] +\
+                   [Meta(i['name'], i['type'], populates[i['populate']]) for i in metas] if metas else list()
+
+# Create modelling scenario to access z3 variable mirrors
+modelling_scenario = Scenario(modelling_inputs, None)
+modelling_scenario.setup_treatment_variables()
+
+mutates = {
+    "Increase": lambda x: modelling_scenario.treatment_variables[x].z3 >
+                          modelling_scenario.variables[x].z3,
+    "ChangeByFactor(2)": lambda x: modelling_scenario.treatment_variables[x].z3 ==
+                                   modelling_scenario.variables[
+                                       x].z3 * 2
+}
+
+
 class MyJsonUtility(JsonUtility):
     """Extension of JsonUtility class to add modelling assumptions to the estimator instance"""
 
@@ -167,18 +187,10 @@ if __name__ == "__main__":
     args = get_args()
 
     json_utility = MyJsonUtility()  # Create an instance of the extended JsonUtility class
-    json_utility.set_path(args.directory_path) # Set the path to the data.csv, dag.dot and causal_tests.json file
+    json_utility.set_path(args.directory_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
     json_utility.set_variables(inputs, outputs, metas, distributions, populates)
     json_utility.setup()  # Sets up all the necessary parts of the json_class needed to execute tests
-
-    mutates = {
-        "Increase": lambda x: json_utility.modelling_scenario.treatment_variables[x].z3 >
-                              json_utility.modelling_scenario.variables[x].z3,
-        "ChangeByFactor(2)": lambda x: json_utility.modelling_scenario.treatment_variables[x].z3 ==
-                                       json_utility.modelling_scenario.variables[
-                                           x].z3 * 2
-    }
 
     json_utility.execute_tests(effects, mutates, estimators, args.f)
