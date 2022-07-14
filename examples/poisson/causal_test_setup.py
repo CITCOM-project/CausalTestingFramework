@@ -92,7 +92,7 @@ def populate_num_lines_unit(data):
 
 def populate_num_shapes_unit(data):
     area = data['width'] * data['height']
-    data['num_shapes_unit'] = data['num_lines_abs'] / area
+    data['num_shapes_unit'] = data['num_shapes_abs'] / area
 
 
 def get_args() -> argparse.Namespace:
@@ -178,6 +178,7 @@ class MyJsonUtility(JsonUtility):
         # Add squared intensity term as a modelling assumption if intensity is the treatment of the test
         if "intensity" in estimation_model.treatment[0]:
             estimation_model.add_squared_term_to_df("intensity")
+            estimation_model.intercept = 0
         if isinstance(estimation_model, WidthHeightEstimator):
             estimation_model.add_product_term_to_df("width", "intensity")
             estimation_model.add_product_term_to_df("height", "intensity")
