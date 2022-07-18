@@ -25,8 +25,8 @@ Each test requires:
 7. Skip: boolean that if set true the test won't be executed and will be skipped
 
 To run the JSON frontend example from the root directory of the project, use 
-`python examples\poisson\causal_test_setup.py --directory_path="examples/poisson"`
+`python examples/poisson/causal_test_setup.py --directory_path="examples/poisson"`
 
 A failure flag `-f` can be specified to stop the framework running if a test is failed
-`python examples\poisson\causal_test_setup.py -f --directory_path="examples/poisson"`
+`python examples/poisson/causal_test_setup.py -f --directory_path="examples/poisson"`
 
