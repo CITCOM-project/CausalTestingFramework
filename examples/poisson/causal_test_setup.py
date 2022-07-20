@@ -13,6 +13,11 @@ from causal_testing.testing.estimators import Estimator
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output, Meta
 
+data_path = "data.csv"
+dag_path = "dag.dot"
+json_path = "causal_tests.json"
+
+
 class WidthHeightEstimator(LinearRegressionEstimator):
     """
     Extension of LinearRegressionEstimator class to include scenario specific user code
@@ -104,8 +109,6 @@ def get_args() -> argparse.Namespace:
         description="A script for parsing json config files for the Causal Testing Framework")
     parser.add_argument("-f", help="if included, the script will stop if a test fails",
                         action="store_true")
-    parser.add_argument("--directory_path", help="path to the json file containing the causal tests",
-                        default="causal_tests.json", type=Path)
     return parser.parse_args()
 
 
@@ -188,7 +191,7 @@ if __name__ == "__main__":
     args = get_args()
 
     json_utility = MyJsonUtility()  # Create an instance of the extended JsonUtility class
-    json_utility.set_path(args.directory_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
+    json_utility.set_path(json_path, dag_path, data_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
     json_utility.set_variables(inputs, outputs, metas, distributions, populates)

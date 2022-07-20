@@ -46,18 +46,20 @@ class JsonUtility(ABC):
         self.modelling_scenario = None
         self.causal_specification = None
 
-    def set_path(self, directory_path: Path):
+    def set_path(self, json_path: str, dag_path: str, data_path: str):
         """
             Takes a path of the directory containing all scenario specific files and creates individual paths for each file
-            :param directory_path: pathlib.Path pointing towards directory containing all scenario specific user code and files
+            :param json_path: string path representation to .json file containing test specifications
+            :param dag_path: string path representation to the .dot file containing the Causal DAG
+            :param data_path: string path representation to the data file
             :returns:
-                - json_path -  path to causal_tests.json
-                - dag_path -  path to dag.dot
-                - data_path - path to scenario data, expected in data.csv
+                - json_path -
+                - dag_path -
+                - data_path -
             """
-        self.json_path = directory_path.joinpath("causal_tests.json")
-        self.dag_path = directory_path.joinpath("dag.dot")
-        self.data_path = directory_path.joinpath("data.csv")
+        self.json_path = Path(json_path)
+        self.dag_path = Path(dag_path)
+        self.data_path = Path(data_path)
 
     def set_variables(self, inputs: dict, outputs: dict, metas: dict, distributions: dict, populates: dict):
         """ Populate the Causal Variables
