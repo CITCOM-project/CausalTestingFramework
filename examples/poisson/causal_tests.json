@@ -1,0 +1,237 @@
+{
+  "tests": [
+    {
+      "name": "width__num_lines_abs",
+      "mutations": {"width": "Increase"},
+      "estimator": "WidthHeightEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "height"],
+      "expectedEffect": {"num_lines_abs": "PoissonWidthHeight"},
+      "skip": true
+    },
+    {
+      "name": "width__num_shapes_abs",
+      "mutations": {"width": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "height"],
+      "expectedEffect": {"num_shapes_abs": "Positive"},
+      "skip": true
+    },
+    {
+      "name": "width__num_lines_unit",
+      "mutations": {"width": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "height"],
+      "expectedEffect": {"num_lines_unit": "Negative"},
+      "skip": true
+    },
+    {
+      "name": "width__num_shapes_unit",
+      "mutations": {"width": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "height"],
+      "expectedEffect": {"num_shapes_unit": "Negative"},
+      "skip": true
+    },
+    {
+      "name": "width__height",
+      "mutations": {"width": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"height": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "width__intensity",
+      "mutations": {"width": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"intensity": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "num_lines_abs__num_shapes_abs",
+      "mutations": {"num_lines_abs": "Increase"},
+      "estimator": "CausalForestEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "width"],
+      "expectedEffect": {"num_shapes_abs": "Positive"},
+      "skip": true
+    },
+    {
+      "name": "num_lines_abs__num_lines_unit",
+      "mutations": {"num_lines_abs": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"num_lines_unit": "Positive"},
+      "skip": true
+    },
+    {
+      "name": "num_lines_abs__num_shapes_unit",
+      "mutations": {"num_lines_abs": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"num_shapes_unit": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "num_shapes_abs__num_lines_unit",
+      "mutations": {"num_shapes_abs": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"num_lines_unit": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "num_shapes_abs__num_shapes_unit",
+      "mutations": {"num_shapes_abs": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"num_shapes_unit": "Positive"},
+      "skip": true
+    },
+    {
+      "name": "num_lines_unit__num_shapes_abs",
+      "mutations": {"num_lines_unit": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"num_shapes_abs": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "num_lines_unit__num_shapes_unit",
+      "mutations": {"num_lines_unit": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"num_shapes_unit": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "num_shapes_unit__num_lines_unit",
+      "mutations": {"num_shapes_unit": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"num_lines_unit": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "height__width",
+      "mutations": {"height": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"width": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "height__num_lines_abs",
+      "mutations": {"height": "Increase"},
+      "estimator": "WidthHeightEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "width"],
+      "expectedEffect": {"num_lines_abs": "PoissonWidthHeight"},
+      "skip": true
+    },
+    {
+      "name": "height__num_shapes_abs",
+      "mutations": {"height": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "width"],
+      "expectedEffect": {"num_shapes_abs": "Positive"},
+      "skip": true
+    },
+    {
+      "name": "height__num_lines_unit",
+      "mutations": {"height": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "width"],
+      "expectedEffect": {"num_lines_unit": "Negative"},
+      "skip": true
+    },
+    {
+      "name": "height__num_shapes_unit",
+      "mutations": {"height": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["intensity", "width"],
+      "expectedEffect": {"num_shapes_unit": "Negative"},
+      "skip": true
+    },
+    {
+      "name": "height__intensity",
+      "mutations": {"height": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"intensity": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "intensity__width",
+      "mutations": {"intensity": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"width": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "intensity__num_lines_abs",
+      "mutations": {"intensity": "Increase"},
+      "estimator": "WidthHeightEstimator",
+      "effect_modifiers": ["height", "width"],
+      "estimate_type": "ate",
+      "expectedEffect": {"num_lines_abs": "PoissonIntensity"},
+      "skip": true
+    },
+    {
+      "name": "intensity__num_shapes_abs",
+      "mutations": {"intensity": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["height", "width"],
+      "expectedEffect": {"num_shapes_abs": "Positive"},
+      "skip": true
+    },
+    {
+      "name": "intensity__num_lines_unit",
+      "mutations": {"intensity": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": ["height", "width"],
+      "expectedEffect": {"num_lines_unit": "NoEffect"},
+      "skip": true
+    },
+    {
+      "name": "intensity__num_shapes_unit",
+      "mutations": {"intensity": "ChangeByFactor(2)"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "risk_ratio",
+      "expectedEffect": {"num_shapes_unit": "ExactValue4_05"},
+      "skip": false
+    },
+    {
+      "name": "intensity__height",
+      "mutations": {"intensity": "Increase"},
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "ate",
+      "effect_modifiers": [],
+      "expectedEffect": {"height": "NoEffect"},
+      "skip": true
+    }
+  ]
+}

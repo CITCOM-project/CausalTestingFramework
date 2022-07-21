@@ -55,7 +55,6 @@ class CausalTestResult:
             base_dict["ci_high"] = max(self.confidence_intervals)
         return base_dict
 
-
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""
         if not self.confidence_intervals:
