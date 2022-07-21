@@ -32,6 +32,9 @@ Here are some explanations for the causal inference terminology used above.
 To use the causal testing framework, simply clone the repository, `cd` into the root directory, and run `pip install -e .`. For the pygraphviz dependency, you will need graphviz installed and accessible on the `PATH`. On Linux systems, this can be done with `sudo apt install graphviz libgraphviz-dev`. You will also need the `gcc` and `g++` libraries, which can be installed with `sudo apt install gcc g++`. Install instructions for other operating systems coming soon.
 
 # Usage
+
+There are currently two methods of using the Causal Testing Framework, through the [JSON Front End](https://causal-testing-framework.readthedocs.io/en/latest/json_front_end.html) or directly as described below.
+
 The causal testing framework is made up of three main components: Specification, Testing, and Data Collection. The first step is to specify the (part of the) system under test as a modelling `Scenario`. Modelling scenarios specify the observable variables and any constraints which exist between them. We currently support three types of variable:
   - `Input` variables are input parameters to the system.
   - `Output` variables are outputs from the system.
