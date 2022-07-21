@@ -6,13 +6,15 @@ whilst retaining the flexibility of the Causal Testing Framework (CTF).
 An example is provided in `examples/poisson` which will be walked through in this README to better understand
 the framework
 
-`examples/poisson/causal_test_setup.py` contains python code written by the user to implement scenario specific features
+`examples/poisson/run_causal_tests.py` contains python code written by the user to implement scenario specific features
 such as:
 1. Custom Estimators
 2. Causal Variable specification
 3. Causal test case outcomes
 4. Meta constraint functions
 5. Mapping JSON distributions, effects, and estimators to python objects
+
+Use case specific information is also declared here such as the paths to the relevant files needed for the tests.
 
 `examples/poisson/causal_tests.json` is the JSON file that allows for the easy specification of multiple causal tests.
 Each test requires:
@@ -25,8 +27,8 @@ Each test requires:
 7. Skip: boolean that if set true the test won't be executed and will be skipped
 
 To run the JSON frontend example from the root directory of the project, use 
-`python examples/poisson/causal_test_setup.py --directory_path="examples/poisson"`
+`python examples/poisson/run_causal_tests.py"`
 
 A failure flag `-f` can be specified to stop the framework running if a test is failed
-`python examples/poisson/causal_test_setup.py -f --directory_path="examples/poisson"`
+`python examples/poisson/run_causal_tests.py -f"`
 
