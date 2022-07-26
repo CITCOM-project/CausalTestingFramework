@@ -216,5 +216,5 @@ class JsonUtility(ABC):
     @staticmethod
     def setup_logger(log_path: Path):
         logger = logging.getLogger(__name__)
-        fh = logging.FileHandler(log_path + "logs.txt")
+        fh = logging.FileHandler(log_path + "json_frontend.log")
         logger.addHandler(fh)
