@@ -1,3 +1,4 @@
+import argparse
 import logging
 from pathlib import Path
 
@@ -214,7 +215,21 @@ class JsonUtility(ABC):
         return
 
     @staticmethod
-    def setup_logger(log_path: Path):
-        logger = logging.getLogger(__name__)
-        fh = logging.FileHandler(log_path + "json_frontend.log")
-        logger.addHandler(fh)
+    def setup_logger(log_path: str):
+        setup_log = logging.getLogger(__name__)
+        fh = logging.FileHandler(Path(log_path) / "json_frontend.log")
+        setup_log.addHandler(fh)
+
+    @staticmethod
+    def get_args() -> argparse.Namespace:
+        """ Command-line arguments
+
+        :return: parsed command line arguments
+        """
+        parser = argparse.ArgumentParser(
+            description="A script for parsing json config files for the Causal Testing Framework")
+        parser.add_argument(
+            "-f", help="if included, the script will stop if a test fails", action="store_true")
+        parser.add_argument(
+            "--log_path", help="Specify a directory to change the location of the log file", default=".")
+        return parser.parse_args()

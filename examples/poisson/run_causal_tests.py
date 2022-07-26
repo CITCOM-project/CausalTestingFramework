@@ -1,4 +1,4 @@
-import argparse
+
 import numpy as np
 import pandas as pd
 import scipy
@@ -98,20 +98,6 @@ def populate_num_shapes_unit(data):
     data['num_shapes_unit'] = data['num_shapes_abs'] / area
 
 
-def get_args() -> argparse.Namespace:
-    """ Command-line arguments
-
-    :return: parsed command line arguments
-    """
-    parser = argparse.ArgumentParser(
-        description="A script for parsing json config files for the Causal Testing Framework")
-    parser.add_argument(
-        "-f", help="if included, the script will stop if a test fails", action="store_true")
-    parser.add_argument(
-        "--log_path", help="Specify a directory to change the location of the log file", default="./")
-    return parser.parse_args()
-
-
 def logger_setup():
     logger = logging.getLogger(__name__)
     fh = logging.FileHandler()
@@ -194,7 +180,7 @@ class MyJsonUtility(JsonUtility):
 
 
 if __name__ == "__main__":
-    args = get_args()
+    args = MyJsonUtility.get_args()
 
     json_utility = MyJsonUtility(args.log_path)  # Create an instance of the extended JsonUtility class
     json_utility.set_path(json_path, dag_path, data_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
