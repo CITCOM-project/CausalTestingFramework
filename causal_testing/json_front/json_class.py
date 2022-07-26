@@ -1,3 +1,5 @@
+import argparse
+import logging
 from pathlib import Path
 
 from abc import ABC
@@ -16,6 +18,7 @@ from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.estimators import Estimator
 
+logger = logging.getLogger(__name__)
 
 class JsonUtility(ABC):
     """
@@ -34,7 +37,7 @@ class JsonUtility(ABC):
     :attr {CausalSpecification} causal_specification:
     """
 
-    def __init__(self):
+    def __init__(self, log_path):
         self.json_path = None
         self.dag_path = None
         self.data_path = None
@@ -45,6 +48,7 @@ class JsonUtility(ABC):
         self.test_plan = None
         self.modelling_scenario = None
         self.causal_specification = None
+        self.setup_logger(log_path)
 
     def set_path(self, json_path: str, dag_path: str, data_path: str):
         """
@@ -113,16 +117,16 @@ class JsonUtility(ABC):
             )
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-            print(abstract_test)
-            print([(v.name, v.distribution) for v in abstract_test.treatment_variables])
-            print(len(concrete_tests))
+            logger.info(abstract_test)
+            logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
+            logger.info(len(concrete_tests))
             for concrete_test in concrete_tests:
                 executed_tests += 1
                 failed = self._execute_test_case(concrete_test, estimators[test['estimator']], f_flag)
                 if failed:
                     failures += 1
 
-        print(f"{failures}/{executed_tests} failed")
+        logger.info(f"{failures}/{executed_tests} failed")
 
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan
@@ -147,7 +151,7 @@ class JsonUtility(ABC):
             f.fit()
             (dist, params) = list(f.get_best(method="sumsquare_error").items())[0]
             var.distribution = getattr(scipy.stats, dist)(**params)
-            print(var.name, f"{dist}({params})")
+            logger.info(var.name + f"{dist}({params})")
 
     def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
         """ Executes a singular test case, prints the results and returns the test case result
@@ -174,7 +178,8 @@ class JsonUtility(ABC):
                                 f"got {result_string}"
         if not test_passes:
             failed = True
-            print(f"    FAILED - expected {causal_test_case.expected_causal_effect}, got {causal_test_result.ate}")
+            logger.warning(
+                f"    FAILED - expected {causal_test_case.expected_causal_effect}, got {causal_test_result.ate}")
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
@@ -208,3 +213,23 @@ class JsonUtility(ABC):
         :param estimation_model: estimator model instance for the current running test.
         """
         return
+
+    @staticmethod
+    def setup_logger(log_path: str):
+        setup_log = logging.getLogger(__name__)
+        fh = logging.FileHandler(Path(log_path) / "json_frontend.log")
+        setup_log.addHandler(fh)
+
+    @staticmethod
+    def get_args() -> argparse.Namespace:
+        """ Command-line arguments
+
+        :return: parsed command line arguments
+        """
+        parser = argparse.ArgumentParser(
+            description="A script for parsing json config files for the Causal Testing Framework")
+        parser.add_argument(
+            "-f", help="if included, the script will stop if a test fails", action="store_true")
+        parser.add_argument(
+            "--log_path", help="Specify a directory to change the location of the log file", default=".")
+        return parser.parse_args()

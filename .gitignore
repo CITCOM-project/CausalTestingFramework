@@ -62,3 +62,5 @@ docs/build/
 # temporary files
 temp/
 
+# log files
+*.log
