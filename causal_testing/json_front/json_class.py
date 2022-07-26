@@ -19,7 +19,6 @@ from causal_testing.testing.estimators import Estimator
 
 logger = logging.getLogger(__name__)
 
-
 class JsonUtility(ABC):
     """
     The JsonUtility Class provides the functionality to use structured JSON to setup and run causal tests on the
@@ -37,7 +36,7 @@ class JsonUtility(ABC):
     :attr {CausalSpecification} causal_specification:
     """
 
-    def __init__(self):
+    def __init__(self, log_path):
         self.json_path = None
         self.dag_path = None
         self.data_path = None
@@ -48,6 +47,7 @@ class JsonUtility(ABC):
         self.test_plan = None
         self.modelling_scenario = None
         self.causal_specification = None
+        self.setup_logger(log_path)
 
     def set_path(self, json_path: str, dag_path: str, data_path: str):
         """
@@ -212,3 +212,9 @@ class JsonUtility(ABC):
         :param estimation_model: estimator model instance for the current running test.
         """
         return
+
+    @staticmethod
+    def setup_logger(log_path: Path):
+        logger = logging.getLogger(__name__)
+        fh = logging.FileHandler(log_path + "logs.txt")
+        logger.addHandler(fh)
