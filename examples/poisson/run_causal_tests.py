@@ -1,4 +1,4 @@
-
+import logging
 import numpy as np
 import pandas as pd
 import scipy
@@ -10,10 +10,6 @@ from causal_testing.json_front.json_class import JsonUtility
 from causal_testing.testing.estimators import Estimator
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output, Meta
-import logging
-data_path = "data.csv"
-dag_path = "dag.dot"
-json_path = "causal_tests.json"
 
 
 class WidthHeightEstimator(LinearRegressionEstimator):
@@ -147,10 +143,9 @@ estimators = {
     "LinearRegressionEstimator": LinearRegressionEstimator,
 }
 
-
 # Create input structure required to create a modelling scenario
-modelling_inputs = [Input(i['name'], i['type'], distributions[i['distribution']]) for i in inputs] +\
-                   [Output(i['name'], i['type']) for i in outputs] +\
+modelling_inputs = [Input(i['name'], i['type'], distributions[i['distribution']]) for i in inputs] + \
+                   [Output(i['name'], i['type']) for i in outputs] + \
                    [Meta(i['name'], i['type'], populates[i['populate']]) for i in metas] if metas else list()
 
 # Create modelling scenario to access z3 variable mirrors
@@ -181,9 +176,9 @@ class MyJsonUtility(JsonUtility):
 
 if __name__ == "__main__":
     args = MyJsonUtility.get_args()
-
     json_utility = MyJsonUtility(args.log_path)  # Create an instance of the extended JsonUtility class
-    json_utility.set_path(json_path, dag_path, data_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
+    json_utility.set_path(args.json_path, args.dag_path,
+                          args.data_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
     json_utility.set_variables(inputs, outputs, metas, distributions, populates)

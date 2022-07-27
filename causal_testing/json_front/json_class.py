@@ -232,4 +232,13 @@ class JsonUtility(ABC):
             "-f", help="if included, the script will stop if a test fails", action="store_true")
         parser.add_argument(
             "--log_path", help="Specify a directory to change the location of the log file", default=".")
+        parser.add_argument(
+            "--data_path", help="Specify path to file containing runtime data", required=True
+        )
+        parser.add_argument(
+            "--dag_path", help="Specify path to file containing the DAG, normally a .dot file", required=True
+        )
+        parser.add_argument(
+            "--json_path", help="Specify path to file containing JSON tests, normally a .json file", required=True
+        )
         return parser.parse_args()
