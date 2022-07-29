@@ -83,11 +83,10 @@ class LogisticRegressionEstimator(Estimator):
                  outcome: tuple, df: pd.DataFrame = None, effect_modifiers: dict[Variable: Any] = None, intercept: int = 1):
         super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
 
-        if product_terms is None:
-            product_terms = []
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
 
+        self.product_terms = []
         self.square_terms = []
         self.inverse_terms = []
         self.intercept = intercept
