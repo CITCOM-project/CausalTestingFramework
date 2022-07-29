@@ -63,6 +63,9 @@ def load_chapter_11_df():
 
 
 class TestLogisticRegressionEstimator(unittest.TestCase):
+    """ Test the logistic regression estimator against the scarf example from
+    https://investigate.ai/regression/logistic-regression/.
+    """
     @classmethod
     def setUpClass(cls) -> None:
         cls.scarf_df = pd.DataFrame([
@@ -82,21 +85,18 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
     def test_ate(self):
         df = self.scarf_df
         logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
-        model = logistic_regression_estimator._run_logistic_regression()
         ate = logistic_regression_estimator.estimate_ate()
         self.assertEqual(round(ate, 4), -0.1987)
 
     def test_risk_ratio(self):
         df = self.scarf_df
         logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
-        model = logistic_regression_estimator._run_logistic_regression()
         rr = logistic_regression_estimator.estimate_risk_ratio()
         self.assertEqual(round(rr, 4), 0.7664)
 
     def test_odds_ratio(self):
         df = self.scarf_df
         logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
-        model = logistic_regression_estimator._run_logistic_regression()
         odds = logistic_regression_estimator.estimate_unit_odds_ratio()
         self.assertEqual(round(odds, 4), 0.8948)
 

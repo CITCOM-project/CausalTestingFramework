@@ -80,17 +80,14 @@ class LogisticRegressionEstimator(Estimator):
     for estimating categorical outcomes.
     """
     def __init__(self, treatment: tuple, treatment_values: float, control_values: float, adjustment_set: set,
-                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: dict[Variable: Any] = None, product_terms: list[tuple[Variable, Variable]] = None, intercept: int = 1):
+                 outcome: tuple, df: pd.DataFrame = None, effect_modifiers: dict[Variable: Any] = None, intercept: int = 1):
         super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
 
         if product_terms is None:
             product_terms = []
-        for (term_a, term_b) in product_terms:
-            self.add_product_term_to_df(term_a, term_b)
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
 
-        self.product_terms = product_terms
         self.square_terms = []
         self.inverse_terms = []
         self.intercept = intercept
