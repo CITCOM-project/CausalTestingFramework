@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
+from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator, LogisticRegressionEstimator
 from causal_testing.specification.variable import Input
 
 
@@ -61,6 +61,44 @@ def load_chapter_11_df():
     chapter_11_df = pd.DataFrame({'treatments': treatments, 'outcomes': outcomes, 'constant': np.ones(16)})
     return chapter_11_df
 
+
+class TestLogisticRegressionEstimator(unittest.TestCase):
+    """ Test the logistic regression estimator against the scarf example from
+    https://investigate.ai/regression/logistic-regression/.
+    """
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.scarf_df = pd.DataFrame([
+            { 'length_in': 55, 'completed': 1 },
+            { 'length_in': 55, 'completed': 1 },
+            { 'length_in': 55, 'completed': 1 },
+            { 'length_in': 60, 'completed': 1 },
+            { 'length_in': 60, 'completed': 0 },
+            { 'length_in': 70, 'completed': 1 },
+            { 'length_in': 70, 'completed': 0 },
+            { 'length_in': 82, 'completed': 1 },
+            { 'length_in': 82, 'completed': 0 },
+            { 'length_in': 82, 'completed': 0 },
+            { 'length_in': 82, 'completed': 0 },
+        ])
+
+    def test_ate(self):
+        df = self.scarf_df
+        logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
+        ate = logistic_regression_estimator.estimate_ate()
+        self.assertEqual(round(ate, 4), -0.1987)
+
+    def test_risk_ratio(self):
+        df = self.scarf_df
+        logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
+        rr = logistic_regression_estimator.estimate_risk_ratio()
+        self.assertEqual(round(rr, 4), 0.7664)
+
+    def test_odds_ratio(self):
+        df = self.scarf_df
+        logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
+        odds = logistic_regression_estimator.estimate_unit_odds_ratio()
+        self.assertEqual(round(odds, 4), 0.8948)
 
 class TestLinearRegressionEstimator(unittest.TestCase):
     """ Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].
