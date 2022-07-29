@@ -84,21 +84,21 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
         model = logistic_regression_estimator._run_logistic_regression()
         ate = logistic_regression_estimator.estimate_ate()
-        self.assertEqual(ate, -0.19871116745717898)
+        self.assertEqual(round(ate, 4), -0.1987)
 
     def test_risk_ratio(self):
         df = self.scarf_df
         logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
         model = logistic_regression_estimator._run_logistic_regression()
         rr = logistic_regression_estimator.estimate_risk_ratio()
-        self.assertEqual(rr, 0.7663668692369453)
+        self.assertEqual(round(rr, 4), 0.7663)
 
     def test_odds_ratio(self):
         df = self.scarf_df
         logistic_regression_estimator = LogisticRegressionEstimator(('length_in',), 65, 55, set(), ('completed',), df)
         model = logistic_regression_estimator._run_logistic_regression()
         odds = logistic_regression_estimator.estimate_unit_odds_ratio()
-        self.assertEqual(odds, 0.8947858947847944)
+        self.assertEqual(round(odds, 4), 0.8947)
 
 class TestLinearRegressionEstimator(unittest.TestCase):
     """ Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].
