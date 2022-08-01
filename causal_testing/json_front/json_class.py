@@ -127,7 +127,7 @@ class JsonUtility(ABC):
                 if failed:
                     failures += 1
 
-        logger.info(f"{failures}/{executed_tests} failed")
+        logger.info("{%d}/{%d} failed", failures, executed_tests)
 
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan
@@ -180,7 +180,7 @@ class JsonUtility(ABC):
         if not test_passes:
             failed = True
             logger.warning(
-                f"    FAILED - expected {causal_test_case.expected_causal_effect}, got {causal_test_result.ate}")
+                "   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, causal_test_result.ate)
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:

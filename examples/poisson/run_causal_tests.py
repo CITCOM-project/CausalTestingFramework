@@ -93,13 +93,6 @@ def populate_num_shapes_unit(data):
     area = data['width'] * data['height']
     data['num_shapes_unit'] = data['num_shapes_abs'] / area
 
-
-def logger_setup():
-    logger = logging.getLogger(__name__)
-    fh = logging.FileHandler()
-    logger.addHandler(fh)
-
-
 inputs = [
     {"name": "width", "type": float, "distribution": "uniform"},
     {"name": "height", "type": float, "distribution": "uniform"},
