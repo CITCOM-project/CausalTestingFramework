@@ -218,7 +218,7 @@ class JsonUtility(ABC):
     @staticmethod
     def setup_logger(log_path: str):
         setup_log = logging.getLogger(__name__)
-        fh = logging.FileHandler(Path(log_path) / "json_frontend.log")
+        fh = logging.FileHandler(Path(log_path))
         setup_log.addHandler(fh)
 
     @staticmethod
@@ -232,7 +232,8 @@ class JsonUtility(ABC):
         parser.add_argument(
             "-f", help="if included, the script will stop if a test fails", action="store_true")
         parser.add_argument(
-            "--log_path", help="Specify a directory to change the location of the log file", default=".")
+            "--log_path", help="Specify a directory to change the location of the log file",
+            default="./json_frontend.log")
         parser.add_argument(
             "--data_path", help="Specify path to file containing runtime data", required=True
         )
