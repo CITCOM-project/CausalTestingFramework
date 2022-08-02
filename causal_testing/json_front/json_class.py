@@ -66,18 +66,16 @@ class JsonUtility(ABC):
         self.dag_path = Path(dag_path)
         self.data_path = Path(data_path)
 
-    def set_variables(self, inputs: dict, outputs: dict, metas: dict, distributions: dict, populates: dict):
+    def set_variables(self, inputs: dict, outputs: dict, metas: dict):
         """ Populate the Causal Variables
             :param inputs:
             :param outputs:
             :param metas:
-            :param distributions:
-            :param populates:
         """
         self.inputs = [Input(i['name'], i['type'], i['distribution']) for i in
                        inputs]
         self.outputs = [Output(i['name'], i['type']) for i in outputs]
-        self.metas = [Meta(i['name'], i['type'], [i['populate']]) for i in
+        self.metas = [Meta(i['name'], i['type'], i['populate']) for i in
                       metas] if metas else list()
 
     def setup(self):

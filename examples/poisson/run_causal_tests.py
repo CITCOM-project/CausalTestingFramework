@@ -164,7 +164,7 @@ if __name__ == "__main__":
                           args.data_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
-    json_utility.set_variables(inputs, outputs, metas, distributions, populates)
+    json_utility.set_variables(inputs, outputs, metas)
     json_utility.setup()  # Sets up all the necessary parts of the json_class needed to execute tests
 
     json_utility.execute_tests(effects, mutates, estimators, args.f)
