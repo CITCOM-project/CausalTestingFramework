@@ -20,6 +20,7 @@ from causal_testing.testing.estimators import Estimator
 
 logger = logging.getLogger(__name__)
 
+
 class JsonUtility(ABC):
     """
     The JsonUtility Class provides the functionality to use structured JSON to setup and run causal tests on the
@@ -73,10 +74,10 @@ class JsonUtility(ABC):
             :param distributions:
             :param populates:
         """
-        self.inputs = [Input(i['name'], i['type'], distributions[i['distribution']]) for i in
+        self.inputs = [Input(i['name'], i['type'], i['distribution']) for i in
                        inputs]
         self.outputs = [Output(i['name'], i['type']) for i in outputs]
-        self.metas = [Meta(i['name'], i['type'], populates[i['populate']]) for i in
+        self.metas = [Meta(i['name'], i['type'], [i['populate']]) for i in
                       metas] if metas else list()
 
     def setup(self):
@@ -131,8 +132,6 @@ class JsonUtility(ABC):
 
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan
-            :param distributions: dictionary of user defined scipy distributions
-            :param populates: dictionary of user defined populate functions
         """
         with open(self.json_path) as f:
             self.test_plan = json.load(f)

@@ -92,10 +92,11 @@ def populate_num_shapes_unit(data):
     area = data['width'] * data['height']
     data['num_shapes_unit'] = data['num_shapes_abs'] / area
 
+
 inputs = [
-    {"name": "width", "type": float, "distribution": "uniform"},
-    {"name": "height", "type": float, "distribution": "uniform"},
-    {"name": "intensity", "type": float, "distribution": "uniform"}
+    {"name": "width", "type": float, "distribution": scipy.stats.uniform(0, 10)},
+    {"name": "height", "type": float, "distribution": scipy.stats.uniform(0, 10)},
+    {"name": "intensity", "type": float, "distribution": scipy.stats.uniform(0, 10)}
 ]
 
 outputs = [
@@ -104,22 +105,12 @@ outputs = [
 ]
 
 metas = [
-    {"name": "num_lines_unit", "type": float, "populate": "populate_num_lines_unit"},
-    {"name": "num_shapes_unit", "type": float, "populate": "populate_num_shapes_unit"},
-    {"name": "width_plus_height", "type": float, "populate": "populate_width_height"}
+    {"name": "num_lines_unit", "type": float, "populate": populate_num_lines_unit},
+    {"name": "num_shapes_unit", "type": float, "populate": populate_num_shapes_unit},
+    {"name": "width_plus_height", "type": float, "populate": populate_width_height}
 ]
 
 constraints = ["width > 0", "height > 0", "intensity > 0"]
-
-populates = {
-    "populate_width_height": populate_width_height,
-    "populate_num_lines_unit": populate_num_lines_unit,
-    "populate_num_shapes_unit": populate_num_shapes_unit
-}
-
-distributions = {
-    "uniform": scipy.stats.uniform(0, 10)
-}
 
 effects = {
     "PoissonWidthHeight": PoissonWidthHeight(),
@@ -136,9 +127,9 @@ estimators = {
 }
 
 # Create input structure required to create a modelling scenario
-modelling_inputs = [Input(i['name'], i['type'], distributions[i['distribution']]) for i in inputs] + \
+modelling_inputs = [Input(i['name'], i['type'], i['distribution']) for i in inputs] + \
                    [Output(i['name'], i['type']) for i in outputs] + \
-                   [Meta(i['name'], i['type'], populates[i['populate']]) for i in metas] if metas else list()
+                   [Meta(i['name'], i['type'], [i['populate']]) for i in metas] if metas else list()
 
 # Create modelling scenario to access z3 variable mirrors
 modelling_scenario = Scenario(modelling_inputs, None)
