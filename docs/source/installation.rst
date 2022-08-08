@@ -23,3 +23,11 @@ Install from source
     git clone https://github.com/CITCOM-project/CausalTestingFramework
     cd CausalTestingFramework
     pip install -e .
+
+Use 
+
+.. code-block:: console
+
+    pip install -e .[dev]
+
+to also install developer tools.
