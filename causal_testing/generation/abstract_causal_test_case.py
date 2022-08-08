@@ -25,9 +25,9 @@ class AbstractCausalTestCase:
         scenario: Scenario,
         intervention_constraints: set[z3.ExprRef],
         treatment_variables: set[Variable],
-        expected_causal_effect: dict[Variable: CausalTestOutcome],
+        expected_causal_effect: dict[Variable:CausalTestOutcome],
         effect_modifiers: set[Variable] = None,
-        estimate_type: str = "ate"
+        estimate_type: str = "ate",
     ):
         assert treatment_variables.issubset(scenario.variables.values()), (
             "Treatment variables must be a subset of variables."
@@ -40,7 +40,7 @@ class AbstractCausalTestCase:
         self.intervention_constraints = intervention_constraints
         self.treatment_variables = treatment_variables
         self.expected_causal_effect = expected_causal_effect
-        self.estimate_type=estimate_type
+        self.estimate_type = estimate_type
 
         if effect_modifiers is not None:
             self.effect_modifiers = effect_modifiers
@@ -48,10 +48,10 @@ class AbstractCausalTestCase:
             self.effect_modifiers = {}
 
     def __str__(self):
-        outcome_string = " and ".join([f"the effect on {var} should be {str(effect)}" for var, effect in self.expected_causal_effect.items()])
-        return (
-            f"When we apply intervention {self.intervention_constraints}, {outcome_string}"
+        outcome_string = " and ".join(
+            [f"the effect on {var} should be {str(effect)}" for var, effect in self.expected_causal_effect.items()]
         )
+        return f"When we apply intervention {self.intervention_constraints}, {outcome_string}"
 
     def datapath(self):
         def sanitise(string):
@@ -59,10 +59,10 @@ class AbstractCausalTestCase:
 
         return (
             sanitise("-".join([str(c) for c in self.intervention_constraints]))
-            + "_"+'-'.join([f"{v.name}_{e}" for v, e in self.expected_causal_effect.items()])
+            + "_"
+            + "-".join([f"{v.name}_{e}" for v, e in self.expected_causal_effect.items()])
             + ".csv"
         )
-
 
     def _generate_concrete_tests(
         self, sample_size: int, rct: bool = False, seed: int = 0
@@ -82,7 +82,6 @@ class AbstractCausalTestCase:
         runs = []
         run_columns = sorted([v.name for v in self.scenario.variables.values() if v.distribution])
 
-
         # Generate the Latin Hypercube samples and put into a dataframe
         # lhsmdu.setRandomSeed(seed+i)
         samples = pd.DataFrame(
@@ -92,9 +91,7 @@ class AbstractCausalTestCase:
         # Project the samples to the variables' distributions
         for name in run_columns:
             var = self.scenario.variables[name]
-            samples[var.name] = lhsmdu.inverseTransformSample(
-                var.distribution, samples[var.name]
-            )
+            samples[var.name] = lhsmdu.inverseTransformSample(var.distribution, samples[var.name])
 
         for index, row in samples.iterrows():
             optimizer = z3.Optimize()
@@ -112,26 +109,19 @@ class AbstractCausalTestCase:
             model = optimizer.model()
 
             concrete_test = CausalTestCase(
-                control_input_configuration={
-                    v: v.cast(model[v.z3]) for v in self.treatment_variables
-                },
+                control_input_configuration={v: v.cast(model[v.z3]) for v in self.treatment_variables},
                 treatment_input_configuration={
-                    v: v.cast(model[self.scenario.treatment_variables[v.name].z3])
-                    for v in self.treatment_variables
+                    v: v.cast(model[self.scenario.treatment_variables[v.name].z3]) for v in self.treatment_variables
                 },
                 expected_causal_effect=list(self.expected_causal_effect.values())[0],
                 outcome_variables=list(self.expected_causal_effect.keys()),
                 estimate_type=self.estimate_type,
-                effect_modifier_configuration = {
-                    v: v.cast(model[v.z3]) for v in self.effect_modifiers
-                }
+                effect_modifier_configuration={v: v.cast(model[v.z3]) for v in self.effect_modifiers},
             )
 
             for v in self.scenario.inputs():
                 if row[v.name] != v.cast(model[v.z3]):
-                    constraints = "\n  ".join(
-                        [str(c) for c in self.scenario.constraints if v.name in str(c)]
-                    )
+                    constraints = "\n  ".join([str(c) for c in self.scenario.constraints if v.name in str(c)])
                     logger.warning(
                         f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n"
                         + f"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}"
@@ -140,26 +130,18 @@ class AbstractCausalTestCase:
             concrete_tests.append(concrete_test)
             # Control run
             control_run = {
-                v.name: v.cast(model[v.z3])
-                for v in self.scenario.variables.values()
-                if v.name in run_columns
+                v.name: v.cast(model[v.z3]) for v in self.scenario.variables.values() if v.name in run_columns
             }
             control_run["bin"] = index
             runs.append(control_run)
             # Treatment run
             if rct:
                 treatment_run = control_run.copy()
-                treatment_run.update(
-                    {
-                        k.name: v
-                        for k, v in concrete_test.treatment_input_configuration.items()
-                    }
-                )
+                treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
                 treatment_run["bin"] = index
                 runs.append(treatment_run)
 
         return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
-
 
     def generate_concrete_tests(
         self, sample_size: int, target_ks_score: float = None, rct: bool = False, seed: int = 0, hard_max: int = 1000
@@ -189,14 +171,16 @@ class AbstractCausalTestCase:
         ks_stats = []
 
         for i in range(hard_max):
-            concrete_tests_, runs_ = self._generate_concrete_tests(sample_size, rct, seed+i)
+            concrete_tests_, runs_ = self._generate_concrete_tests(sample_size, rct, seed + i)
             concrete_tests += concrete_tests_
             runs = pd.concat([runs, runs_])
             assert concrete_tests_ not in concrete_tests, "Duplicate entries unlikely unless something went wrong"
 
-
             control_configs = pd.DataFrame([test.control_input_configuration for test in concrete_tests])
-            ks_stats = {var: stats.kstest(control_configs[var], var.distribution.cdf).statistic for var in control_configs.columns}
+            ks_stats = {
+                var: stats.kstest(control_configs[var], var.distribution.cdf).statistic
+                for var in control_configs.columns
+            }
             # Putting treatment and control values in messes it up because the two are not independent...
             # This is potentially problematic as constraints might mean we don't get good coverage if we use control values alone
             # We might then need to carefully craft our _control value_ generating distributions so that we can get good coverage
@@ -206,10 +190,20 @@ class AbstractCausalTestCase:
             # both_configs = pd.concat([control_configs, treatment_configs])
             # ks_stats = {var: stats.kstest(both_configs[var], var.distribution.cdf).statistic for var in both_configs.columns}
             effect_modifier_configs = pd.DataFrame([test.effect_modifier_configuration for test in concrete_tests])
-            ks_stats.update({var: stats.kstest(effect_modifier_configs[var], var.distribution.cdf).statistic for var in effect_modifier_configs.columns})
+            ks_stats.update(
+                {
+                    var: stats.kstest(effect_modifier_configs[var], var.distribution.cdf).statistic
+                    for var in effect_modifier_configs.columns
+                }
+            )
             if target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
                 break
 
         if target_ks_score is not None and not all((stat <= target_ks_score for stat in ks_stats.values())):
-            logger.error("Hard max of %s reached but could not achieve target ks_score of %s. Got %s.", hard_max, target_ks_score, ks_stats)
+            logger.error(
+                "Hard max of %s reached but could not achieve target ks_score of %s. Got %s.",
+                hard_max,
+                target_ks_score,
+                ks_stats,
+            )
         return concrete_tests, runs

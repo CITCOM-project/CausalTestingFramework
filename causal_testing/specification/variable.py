@@ -15,6 +15,7 @@ Input = TypeVar("Input")
 Output = TypeVar("Output")
 Meta = TypeVar("Meta")
 
+
 def z3_types(datatype):
     types = {int: Int, str: String, float: Real, bool: Bool}
     if datatype in types:
@@ -24,8 +25,10 @@ def z3_types(datatype):
         return lambda x: Const(x, dtype)
     if hasattr(datatype, "to_z3"):
         return datatype.to_z3()
-    raise ValueError(f"Cannot convert type {datatype} to Z3."+
-    " Please use a native type, an Enum, or implement a conversion manually.")
+    raise ValueError(
+        f"Cannot convert type {datatype} to Z3."
+        + " Please use a native type, an Enum, or implement a conversion manually."
+    )
 
 
 def _coerce(val: Any) -> Any:
@@ -175,9 +178,7 @@ class Variable(ABC):
         :rtype: List[T]
 
         """
-        assert (
-            self.distribution is not None
-        ), "Sampling requires a distribution to be specified."
+        assert self.distribution is not None, "Sampling requires a distribution to be specified."
         lhs = lhsmdu.sample(1, n_samples).tolist()[0]
         return lhsmdu.inverseTransformSample(self.distribution, lhs).tolist()
 

@@ -2,6 +2,8 @@ from collections.abc import Mapping, Iterable
 from z3 import ExprRef, substitute
 from .variable import Variable, Input, Output, Meta
 from tabulate import tabulate
+
+
 class Scenario:
     """A scenario defines the setting by listing the endogenous variables, their
     datatypes, distributions, and any constraints over them. This is a common
@@ -22,11 +24,7 @@ class Scenario:
     variables: Mapping[str, Variable]
     constraints: set[ExprRef]
 
-    def __init__(
-        self,
-        variables: Iterable[Variable]= None,
-        constraints: set[ExprRef] = None
-    ):
+    def __init__(self, variables: Iterable[Variable] = None, constraints: set[ExprRef] = None):
         if variables is not None:
             self.variables = {v.name: v for v in variables}
         else:
@@ -65,10 +63,7 @@ class Scenario:
         string += indent(
             tabulate(
                 sorted(
-                    [
-                        (v.typestring(), v.name, v.datatype.__name__)
-                        for v in self.variables.values()
-                    ],
+                    [(v.typestring(), v.name, v.datatype.__name__) for v in self.variables.values()],
                 )
             )
         )
@@ -106,13 +101,8 @@ class Scenario:
             self.prime[k] = v_prime.name
             self.unprime[v_prime.name] = k
 
-        substitutions = {
-            (self.variables[n].z3, self.treatment_variables[n].z3)
-            for n in self.variables
-        }
-        treatment_constraints = {
-            substitute(c, *substitutions) for c in self.constraints
-        }
+        substitutions = {(self.variables[n].z3, self.treatment_variables[n].z3) for n in self.variables}
+        treatment_constraints = {substitute(c, *substitutions) for c in self.constraints}
         self.constraints = self.constraints.union(treatment_constraints)
 
     def variables_of_type(self, t: type) -> set[Variable]:
