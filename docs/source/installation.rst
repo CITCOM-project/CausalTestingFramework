@@ -22,4 +22,4 @@ Install from source
 
     git clone https://github.com/CITCOM-project/CausalTestingFramework
     cd CausalTestingFramework
-    conda install -e .
+    pip install -e .
