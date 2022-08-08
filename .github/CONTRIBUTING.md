@@ -41,3 +41,5 @@ we ask contributors to stick to the following guidelines:
 7. Use [variable](https://www.python.org/dev/peps/pep-0008/#variable-annotations) and [function](https://www.python.org/dev/peps/pep-0008/#function-annotations)
    annotations.
 8. All methods should be thoroughly tested with PyTest (see [Testing]() below).
+9. Format code using `black causal_testing`.
+10. Linting code using `pylint causal_testing` is advised.
