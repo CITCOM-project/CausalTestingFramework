@@ -77,7 +77,7 @@ class JsonUtility(ABC):
                        inputs]
         self.outputs = [Output(i['name'], i['type']) for i in outputs]
         self.metas = [Meta(i['name'], i['type'], populates[i['populate']]) for i in
-                      metas] if metas else list()
+                      metas] if metas else []
 
     def setup(self):
         """ Function to populate all the necessary parts of the json_class needed to execute tests
@@ -134,7 +134,7 @@ class JsonUtility(ABC):
             :param distributions: dictionary of user defined scipy distributions
             :param populates: dictionary of user defined populate functions
         """
-        with open(self.json_path) as f:
+        with open(self.json_path, encoding='UTF-8') as f:
             self.test_plan = json.load(f)
 
         self.data = pd.read_csv(self.data_path)
