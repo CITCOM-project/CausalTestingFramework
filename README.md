@@ -29,7 +29,9 @@ Here are some explanations for the causal inference terminology used above.
 - There are many forms of CI techniques with slightly different aims, but in this framework we focus on graphical CI techniques that use directed acyclic graphs to obtain causal estimates. These approaches used a causal DAG to explain the causal relationships that exist in data and, based on the structure of this graph, design statistical experiments capable of estimating the causal effect of a particular intervention or action, such as taking a drug or changing the value of an input variable.
 
 # Installation
-To use the causal testing framework, simply clone the repository, `cd` into the root directory, and run `pip install -e .`. For the pygraphviz dependency, you will need graphviz installed and accessible on the `PATH`. On Linux systems, this can be done with `sudo apt install graphviz libgraphviz-dev`. You will also need the `gcc` and `g++` libraries, which can be installed with `sudo apt install gcc g++`. Install instructions for other operating systems coming soon.
+
+To use the causal testing framework, clone the repository, `cd` into the root directory, and run `pip install -e .`. More detailled installation instructions can be found in the [online documentation](https://causal-testing-framework.readthedocs.io/en/latest/installation.html).
+
 
 # Usage
 

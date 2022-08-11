@@ -9,12 +9,14 @@ If installing on Windows, ensure `Microsoft Visual C++ <https://docs.microsoft.c
 Pygraphviz
 ----------
 
-Pygraphviz requires installation through the conda-forge channel
+Pygraphviz can be installed through the conda-forge channel
 
 .. code-block:: console
 
     conda install -c conda-forge pygraphviz
 
+
+Alternatively, on Linux systems, this can be done with `sudo apt install graphviz libgraphviz-dev`.
 
 Install from source
 -------------------
