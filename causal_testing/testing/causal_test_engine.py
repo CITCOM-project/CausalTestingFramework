@@ -1,11 +1,13 @@
+import logging
+
 import pandas as pd
+
 from causal_testing.data_collection.data_collector import DataCollector
+from causal_testing.specification.causal_specification import \
+    CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestResult
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.estimators import Estimator
-
-import logging
 
 logger = logging.getLogger(__name__)
 

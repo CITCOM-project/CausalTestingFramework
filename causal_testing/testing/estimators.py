@@ -1,12 +1,14 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
-from statsmodels.regression.linear_model import RegressionResultsWrapper
+
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
 from econml.dml import CausalForestDML
 from sklearn.ensemble import GradientBoostingRegressor
-import statsmodels.api as sm
-import pandas as pd
-import numpy as np
+from statsmodels.regression.linear_model import RegressionResultsWrapper
+
 from causal_testing.specification.variable import Variable
 
 logger = logging.getLogger(__name__)

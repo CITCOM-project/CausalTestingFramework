@@ -1,15 +1,17 @@
-import networkx as nx
 import logging
 from itertools import combinations
 from random import sample
-from typing import Union, TypeVar
+from typing import TypeVar, Union
+
+import networkx as nx
+
+from .scenario import Scenario
+from .variable import Output
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 CausalDAG = TypeVar("CausalDAG")
 
 logger = logging.getLogger(__name__)
-from .scenario import Scenario
-from .variable import Output
 
 
 def list_all_min_sep(

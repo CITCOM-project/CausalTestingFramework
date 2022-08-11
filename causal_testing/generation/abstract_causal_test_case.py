@@ -1,14 +1,14 @@
-from scipy import stats
-import z3
-import pandas as pd
+import logging
+
 import lhsmdu
+import pandas as pd
+import z3
+from scipy import stats
 
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
-
-import logging
 
 logger = logging.getLogger(__name__)
 

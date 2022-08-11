@@ -1,9 +1,8 @@
+import logging
 from typing import Any
 
-from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.specification.variable import Variable
-
-import logging
+from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 
 logger = logging.getLogger(__name__)
 
