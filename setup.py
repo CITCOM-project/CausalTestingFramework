@@ -19,6 +19,8 @@ requirements = [
 
 # Additional dependencies for development
 dev_requirements = [
+        "autopep8",
+        "isort",
         "pytest",
         "pylint",
         "black"
