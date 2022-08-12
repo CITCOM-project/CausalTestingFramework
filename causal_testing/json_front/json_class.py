@@ -9,13 +9,10 @@ import pandas as pd
 import scipy
 from fitter import Fitter, get_common_distributions
 
-from causal_testing.data_collection.data_collector import \
-    ObservationalDataCollector
-from causal_testing.generation.abstract_causal_test_case import \
-    AbstractCausalTestCase
+from causal_testing.data_collection.data_collector import ObservationalDataCollector
+from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.causal_specification import \
-    CausalSpecification
+from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -121,7 +118,7 @@ class JsonUtility(ABC):
             )
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-            logger.info("Executing test: %s", test['name'])
+            logger.info("Executing test: %s", test["name"])
             logger.info(abstract_test)
             logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
@@ -138,7 +135,7 @@ class JsonUtility(ABC):
         :param distributions: dictionary of user defined scipy distributions
         :param populates: dictionary of user defined populate functions
         """
-        with open(self.json_path, encoding='UTF-8') as f:
+        with open(self.json_path, encoding="UTF-8") as f:
             self.test_plan = json.load(f)
 
         self.data = pd.read_csv(self.data_path)
@@ -189,7 +186,8 @@ class JsonUtility(ABC):
         if not test_passes:
             failed = True
             logger.warning(
-                "   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, causal_test_result.ate)
+                "   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, causal_test_result.ate
+            )
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
@@ -233,20 +231,20 @@ class JsonUtility(ABC):
 
     @staticmethod
     def get_args() -> argparse.Namespace:
-        """ Command-line arguments
+        """Command-line arguments
 
         :return: parsed command line arguments
         """
         parser = argparse.ArgumentParser(
-            description="A script for parsing json config files for the Causal Testing Framework")
-        parser.add_argument(
-            "-f", help="if included, the script will stop if a test fails", action="store_true")
-        parser.add_argument(
-            "--log_path", help="Specify a directory to change the location of the log file",
-            default="./json_frontend.log")
-        parser.add_argument(
-            "--data_path", help="Specify path to file containing runtime data", required=True
+            description="A script for parsing json config files for the Causal Testing Framework"
         )
+        parser.add_argument("-f", help="if included, the script will stop if a test fails", action="store_true")
+        parser.add_argument(
+            "--log_path",
+            help="Specify a directory to change the location of the log file",
+            default="./json_frontend.log",
+        )
+        parser.add_argument("--data_path", help="Specify path to file containing runtime data", required=True)
         parser.add_argument(
             "--dag_path", help="Specify path to file containing the DAG, normally a .dot file", required=True
         )
