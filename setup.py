@@ -17,10 +17,25 @@ requirements = [
 # Additional dependencies for development
 dev_requirements = ["autopep8", "isort", "pytest", "pylint", "black"]
 
+readme = open("README.md", encoding = "UTF-8").read()
+
 setup(
     name="causal_testing_framework",
     version="0.0.1",
+    description="A framework for causal testing using causal directed acyclic graphs.",
+    long_description=readme,
+    long_description_content_type="text/markdown",
+    author="The CITCOM team",
+    url="https://github.com/CITCOM-project/CausalTestingFramework",
+    project_urls={
+        "Bug Tracker": "https://github.com/CITCOM-project/CausalTestingFramework/issues",
+        "Documentation": "https://causal-testing-framework.readthedocs.io/",
+        "Source": "https://github.com/CITCOM-project/CausalTestingFramework",
+    },
+    python_requires=">=3.9",
     install_requires=requirements,
     extras_require={"dev": dev_requirements},
     packages=find_packages(),
+    license="MIT",
+    keywords="causal inference, verification",
 )
