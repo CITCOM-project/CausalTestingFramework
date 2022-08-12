@@ -41,12 +41,12 @@ class TestJsonClass(unittest.TestCase):
         self.assertEqual(self.json_class.inputs, ctf_input)
 
     def test_set_outputs(self):
-        ctf_input = Output("test_output", float)
-        self.assertEqual(self.json_class.inputs, ctf_input)
+        ctf_output = Output("test_output", float)
+        self.assertEqual(self.json_class.outputs, ctf_output)
 
     def test_set_metas(self):
-        ctf_input = Input("test_meta", float, populate_example)
-        self.assertEqual(self.json_class.inputs, ctf_input)
+        ctf_meta = Input("test_meta", float, populate_example)
+        self.assertEqual(self.json_class.metas, ctf_meta)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
