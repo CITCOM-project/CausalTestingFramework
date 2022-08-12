@@ -26,9 +26,14 @@ Each test requires:
 6. Expected effects
 7. Skip: boolean that if set true the test won't be executed and will be skipped
 
-To run the JSON frontend example from the root directory of the project, use 
+To run the JSON frontend example from the root directory of the project, use: 
 `python examples\poisson\run_causal_tests.py --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json"`
 
-A failure flag `-f` can be specified to stop the framework running if a test is failed
+A failure flag `-f` can be specified to stop the framework running if a test is failed:
 `python examples\poisson\run_causal_tests.py -f --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json"`
 
+There are two main outputs of this frontend, both are controlled by the logging module. Firstly outputs are printed to stdout (terminal).
+Secondly a log file is produced, by default a file called `json_frontend.log` is produced in the directory the script is called from.
+
+The behaviour of where the log file is produced and named can be altered with the --log_path argument:
+`python examples\poisson\run_causal_tests.py -f --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json --log_path="example_directory\logname.log"`
