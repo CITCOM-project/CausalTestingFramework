@@ -226,7 +226,7 @@ class JsonUtility(ABC):
 
     @staticmethod
     def setup_logger(log_path: str):
-        """ Setups up logging instance for the module and adds a FileHandler stream so all stdout prints are also
+        """Setups up logging instance for the module and adds a FileHandler stream so all stdout prints are also
         sent to the logfile
         :param log_path: Path specifying location and name of the logging file to be used
         """
