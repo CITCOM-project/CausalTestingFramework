@@ -31,7 +31,8 @@ author = 'Andrew Clark, Michael Foster, Neil Walkinshaw, Rob Hierons, Bob Turner
 # ones.
 extensions = [
     'autoapi.extension',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'myst_parser'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

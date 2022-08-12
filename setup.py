@@ -18,7 +18,17 @@ requirements = [
 ]
 
 # Additional dependencies for development
-dev_requirements = ["autopep8", "isort", "pytest", "pylint", "black", "sphinx", "sphinx-rtd-theme"]
+dev_requirements = [
+    "autopep8",
+    "isort",
+    "pytest",
+    "pylint",
+    "black",
+    "sphinx-autoapi",
+    "sphinx",
+    "myst_parser",
+    "sphinx-rtd-theme",
+]
 
 setup(
     name="causal_testing_framework",
