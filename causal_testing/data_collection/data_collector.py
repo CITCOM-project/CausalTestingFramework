@@ -1,7 +1,9 @@
-import pandas as pd
-import z3
 import logging
 from abc import ABC, abstractmethod
+
+import pandas as pd
+import z3
+
 from causal_testing.specification.causal_specification import Scenario
 
 logger = logging.getLogger(__name__)
@@ -50,9 +52,7 @@ class DataCollector(ABC):
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
             model = [
                 self.scenario.variables[var].z3
-                == self.scenario.variables[var].z3_val(
-                    self.scenario.variables[var].z3, row[var]
-                )
+                == self.scenario.variables[var].z3_val(self.scenario.variables[var].z3, row[var])
                 for var in self.scenario.variables
             ]
             for c in model:
@@ -72,8 +72,9 @@ class DataCollector(ABC):
         # How many rows did we drop?
         size_diff = len(data) - len(satisfying_data)
         if size_diff > 0:
-            logger.warning(f"Discarded {size_diff}/{len(data)} values due to constraint violations.\n"
-                           f"For example{unsat_core}")
+            logger.warning(
+                f"Discarded {size_diff}/{len(data)} values due to constraint violations.\n" f"For example{unsat_core}"
+            )
         return satisfying_data
 
 
@@ -83,8 +84,13 @@ class ExperimentalDataCollector(DataCollector):
     Users should implement these methods to collect data from their system.
     """
 
-    def __init__(self, scenario: Scenario, control_input_configuration: dict, treatment_input_configuration: dict,
-                 n_repeats: int = 1):
+    def __init__(
+        self,
+        scenario: Scenario,
+        control_input_configuration: dict,
+        treatment_input_configuration: dict,
+        n_repeats: int = 1,
+    ):
         super().__init__(scenario)
         self.control_input_configuration = control_input_configuration
         self.treatment_input_configuration = treatment_input_configuration
