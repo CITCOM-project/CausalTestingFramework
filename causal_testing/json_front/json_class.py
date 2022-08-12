@@ -1,4 +1,7 @@
+import argparse
 import json
+import logging
+
 from abc import ABC
 from pathlib import Path
 
@@ -6,18 +9,17 @@ import pandas as pd
 import scipy
 from fitter import Fitter, get_common_distributions
 
-from causal_testing.data_collection.data_collector import \
-    ObservationalDataCollector
-from causal_testing.generation.abstract_causal_test_case import \
-    AbstractCausalTestCase
+from causal_testing.data_collection.data_collector import ObservationalDataCollector
+from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.causal_specification import \
-    CausalSpecification
+from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
+
+logger = logging.getLogger(__name__)
 
 
 class JsonUtility(ABC):
@@ -37,7 +39,7 @@ class JsonUtility(ABC):
     :attr {CausalSpecification} causal_specification:
     """
 
-    def __init__(self):
+    def __init__(self, log_path):
         self.json_path = None
         self.dag_path = None
         self.data_path = None
@@ -48,6 +50,7 @@ class JsonUtility(ABC):
         self.test_plan = None
         self.modelling_scenario = None
         self.causal_specification = None
+        self.setup_logger(log_path)
 
     def set_path(self, json_path: str, dag_path: str, data_path: str):
         """
@@ -74,7 +77,7 @@ class JsonUtility(ABC):
         """
         self.inputs = [Input(i["name"], i["type"], distributions[i["distribution"]]) for i in inputs]
         self.outputs = [Output(i["name"], i["type"]) for i in outputs]
-        self.metas = [Meta(i["name"], i["type"], populates[i["populate"]]) for i in metas] if metas else list()
+        self.metas = [Meta(i["name"], i["type"], populates[i["populate"]]) for i in metas] if metas else []
 
     def setup(self):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
@@ -115,24 +118,25 @@ class JsonUtility(ABC):
             )
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-            print(abstract_test)
-            print([(v.name, v.distribution) for v in abstract_test.treatment_variables])
-            print(len(concrete_tests))
+            logger.info("Executing test: %s", test["name"])
+            logger.info(abstract_test)
+            logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
+            logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
             for concrete_test in concrete_tests:
                 executed_tests += 1
                 failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
                 if failed:
                     failures += 1
 
-        print(f"{failures}/{executed_tests} failed")
+        logger.info("{%d}/{%d} failed", failures, executed_tests)
 
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan
         :param distributions: dictionary of user defined scipy distributions
         :param populates: dictionary of user defined populate functions
         """
-        with open(self.json_path) as f:
-            self.test_plan = json.load(f)
+        with open(self.json_path, encoding="UTF-8") as file:
+            self.test_plan = json.load(file)
 
         self.data = pd.read_csv(self.data_path)
 
@@ -145,17 +149,18 @@ class JsonUtility(ABC):
             meta.populate(self.data)
 
         for var in self.metas + self.outputs:
-            f = Fitter(self.data[var.name], distributions=get_common_distributions())
-            f.fit()
-            (dist, params) = list(f.get_best(method="sumsquare_error").items())[0]
+            fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
+            fitter.fit()
+            (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
             var.distribution = getattr(scipy.stats, dist)(**params)
-            print(var.name, f"{dist}({params})")
+            logger.info(var.name + f"{dist}({params})")
 
     def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
-        :return: A boolean that if True indicates the causal test case passed and if false indicates the test case failed.
+        :return: A boolean that if True indicates the causal test case passed and if false indicates the test case
+         failed.
         :rtype: bool
         """
         failed = False
@@ -181,7 +186,9 @@ class JsonUtility(ABC):
             )
         if not test_passes:
             failed = True
-            print(f"    FAILED - expected {causal_test_case.expected_causal_effect}, got {causal_test_result.ate}")
+            logger.warning(
+                "   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, causal_test_result.ate
+            )
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
@@ -216,3 +223,37 @@ class JsonUtility(ABC):
         :param estimation_model: estimator model instance for the current running test.
         """
         return
+
+    @staticmethod
+    def setup_logger(log_path: str):
+        """Setups up logging instance for the module and adds a FileHandler stream so all stdout prints are also
+        sent to the logfile
+        :param log_path: Path specifying location and name of the logging file to be used
+        """
+        setup_log = logging.getLogger(__name__)
+        file_handler = logging.FileHandler(Path(log_path))
+        setup_log.addHandler(file_handler)
+
+    @staticmethod
+    def get_args() -> argparse.Namespace:
+        """Command-line arguments
+
+        :return: parsed command line arguments
+        """
+        parser = argparse.ArgumentParser(
+            description="A script for parsing json config files for the Causal Testing Framework"
+        )
+        parser.add_argument("-f", help="if included, the script will stop if a test fails", action="store_true")
+        parser.add_argument(
+            "--log_path",
+            help="Specify a directory to change the location of the log file",
+            default="./json_frontend.log",
+        )
+        parser.add_argument("--data_path", help="Specify path to file containing runtime data", required=True)
+        parser.add_argument(
+            "--dag_path", help="Specify path to file containing the DAG, normally a .dot file", required=True
+        )
+        parser.add_argument(
+            "--json_path", help="Specify path to file containing JSON tests, normally a .json file", required=True
+        )
+        return parser.parse_args()
