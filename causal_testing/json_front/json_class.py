@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+
 from abc import ABC
 from pathlib import Path
 

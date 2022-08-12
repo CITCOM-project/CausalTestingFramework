@@ -6,7 +6,6 @@ requirements = [
     "setuptools~=58.5.3",
     "networkx~=2.6.3",
     "pygraphviz~=1.7",
-    "pytest~=6.2.5",
     "scikit-learn~=1.0.1",
     "matplotlib~=3.5.0",
     "econml~=0.12.0",
@@ -18,9 +17,19 @@ requirements = [
     "fitter~=1.4"
 ]
 
+# Additional dependencies for development
+dev_requirements = [
+        "autopep8",
+        "isort",
+        "pytest",
+        "pylint",
+        "black"
+]
+
 setup(
     name="causal_testing_framework",
     version="0.0.1",
     install_requires=requirements,
+    extras_require={"dev": dev_requirements},
     packages=find_packages()
 )

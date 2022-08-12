@@ -1,9 +1,8 @@
+import logging
 from typing import Any
 
-from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.specification.variable import Variable
-
-import logging
+from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +15,16 @@ class CausalTestCase:
     in Y.
     """
 
-    def __init__(self, control_input_configuration: dict[Variable: Any], expected_causal_effect: CausalTestOutcome,
-                 outcome_variables: dict[Variable], treatment_input_configuration: dict[Variable: Any] = None,
-                 estimate_type: str = "ate", effect_modifier_configuration: dict[Variable: Any] = None, effect: str = "total"):
+    def __init__(
+        self,
+        control_input_configuration: dict[Variable:Any],
+        expected_causal_effect: CausalTestOutcome,
+        outcome_variables: dict[Variable],
+        treatment_input_configuration: dict[Variable:Any] = None,
+        estimate_type: str = "ate",
+        effect_modifier_configuration: dict[Variable:Any] = None,
+        effect: str = "total",
+    ):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
         create two distinct input configurations: a control input configuration and a treatment input configuration.
@@ -40,8 +46,9 @@ class CausalTestCase:
             self.effect_modifier_configuration = effect_modifier_configuration
         else:
             self.effect_modifier_configuration = dict()
-        assert self.control_input_configuration.keys() == self.treatment_input_configuration.keys(),\
-               "Control and treatment input configurations must have the same keys."
+        assert (
+            self.control_input_configuration.keys() == self.treatment_input_configuration.keys()
+        ), "Control and treatment input configurations must have the same keys."
 
     def get_treatment_variables(self):
         """Return a list of the treatment variables (as strings) for this causal test case."""
@@ -62,5 +69,7 @@ class CausalTestCase:
     def __str__(self):
         treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
         control_config = {k.name: v for k, v in self.control_input_configuration.items()}
-        return (f"Running {treatment_config} instead of {control_config} should cause the following "
-                f"changes to {self.outcome_variables}: {self.expected_causal_effect}.")
+        return (
+            f"Running {treatment_config} instead of {control_config} should cause the following "
+            f"changes to {self.outcome_variables}: {self.expected_causal_effect}."
+        )
