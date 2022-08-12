@@ -1,6 +1,9 @@
 import unittest
 from pathlib import Path
 import os
+
+import scipy
+
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility
 from causal_testing.specification.variable import Input, Output, Meta
@@ -22,9 +25,9 @@ class TestJsonClass(unittest.TestCase):
         self.dag_path = os.path.join(temp_dir_path, json_file_name)
         self.data_path = os.path.join(temp_dir_path, json_file_name)
         self.json_class = JsonUtility("logs.log")
-        self.input_dict_list = [{"name": "test_input", "type": float, "distribution": "uniform"}]
+        self.input_dict_list = [{"name": "test_input", "type": float, "distribution": scipy.stats.uniform(0, 1)}]
         self.output_dict_list = [{"name": "test_output", "type": float}]
-        self.meta_dict_list = [{"name": "test_meta", "type": float, "populate": "populate_num_lines_unit"}]
+        self.meta_dict_list = [{"name": "test_meta", "type": float, "populate": populate_example}]
         self.json_class.set_variables(self.input_dict_list, self.output_dict_list, self.meta_dict_list)
 
     def test_setting_paths(self):
@@ -34,9 +37,20 @@ class TestJsonClass(unittest.TestCase):
         self.assertEqual(self.json_class.data_path, Path(self.data_path))
 
     def test_set_inputs(self):
+        ctf_input = Input("test_input", float, scipy.stats.uniform(0, 1))
+        self.assertEqual(self.json_class.inputs, ctf_input)
 
-        pass
+    def test_set_outputs(self):
+        ctf_input = Output("test_output", float)
+        self.assertEqual(self.json_class.inputs, ctf_input)
 
+    def test_set_metas(self):
+        ctf_input = Input("test_meta", float, populate_example)
+        self.assertEqual(self.json_class.inputs, ctf_input)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
+
+
+def populate_example():
+    pass
