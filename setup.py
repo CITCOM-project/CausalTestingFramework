@@ -14,22 +14,16 @@ requirements = [
     "lhsmdu",
     "tabulate",
     "scipy~=1.7.2",
-    "fitter~=1.4"
+    "fitter~=1.4",
 ]
 
 # Additional dependencies for development
-dev_requirements = [
-        "autopep8",
-        "isort",
-        "pytest",
-        "pylint",
-        "black"
-]
+dev_requirements = ["autopep8", "isort", "pytest", "pylint", "black"]
 
 setup(
     name="causal_testing_framework",
     version="0.0.1",
     install_requires=requirements,
     extras_require={"dev": dev_requirements},
-    packages=find_packages()
+    packages=find_packages(),
 )
