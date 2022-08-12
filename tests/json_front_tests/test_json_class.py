@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility
+from causal_testing.specification.variable import Input, Output, Meta
 
 
 class TestJsonClass(unittest.TestCase):
@@ -24,15 +25,17 @@ class TestJsonClass(unittest.TestCase):
         self.input_dict_list = [{"name": "test_input", "type": float, "distribution": "uniform"}]
         self.output_dict_list = [{"name": "test_output", "type": float}]
         self.meta_dict_list = [{"name": "test_meta", "type": float, "populate": "populate_num_lines_unit"}]
+        self.json_class.set_variables(self.input_dict_list, self.output_dict_list, self.meta_dict_list)
 
-    def test_set_paths(self):
+    def test_setting_paths(self):
         self.json_class.set_path(self.json_path, self.dag_path, self.data_path)
         self.assertEqual(self.json_class.json_path, Path(self.json_path))
         self.assertEqual(self.json_class.dag_path, Path(self.dag_path))
         self.assertEqual(self.json_class.data_path, Path(self.data_path))
 
-    def test_set_inputs:
+    def test_set_inputs(self):
 
+        pass
 
 
     def tearDown(self) -> None:
