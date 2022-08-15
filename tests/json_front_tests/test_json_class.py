@@ -1,9 +1,9 @@
 import unittest
 from pathlib import Path
-import os
-import json
 import scipy
 import csv
+import json
+
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility
 from causal_testing.specification.variable import Input, Output, Meta
@@ -26,9 +26,7 @@ class TestJsonClass(unittest.TestCase):
         self.json_path = temp_dir_path / json_file_name
         self.dag_path = temp_dir_path / dag_file_name
         self.data_path = temp_dir_path / data_file_name
-        self.setup_data_file()
-        self.setup_json_file()
-        self.setup_dag_file()
+        setup_files(self.json_path, self.data_path, self.dag_path)
         self.json_class = JsonUtility("logs.log")
         self.example_distribution = scipy.stats.uniform(0, 10)
         self.input_dict_list = [{"name": "test_input", "type": float, "distribution": self.example_distribution}]
@@ -73,42 +71,50 @@ class TestJsonClass(unittest.TestCase):
 
     def test_setup_causal_specification(self):
         self.json_class.setup()
-
         self.assertIsInstance(self.json_class.causal_specification, CausalSpecification)
 
     def test_concrete_tests_generated(self):
-        self.setup_json_file()
-        self.setup_data_file()
-        self.setup_dag_file()
+        pass
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
 
-    def setup_json_file(self):
-        json_test = {
-            "tests": [
-                {"name": "test1", "mutations": {}, "estimator": None, "estimate_type": None, "effect_modifiers": [],
-                 "expectedEffect": {}, "skip": False}]
-        }
-        json_object = json.dumps(json_test)
-        with open(self.json_path, "w") as f:
-            f.write(json_object)
-        f.close()
-
-    def setup_data_file(self):
-        header = ['test_input', 'test_output']
-        data = [1, 2]
-        with open(self.data_path, "w") as f:
-            writer = csv.writer(f)
-            writer.writerow(header)
-            writer.writerow(data)
-
-    def setup_dag_file(self):
-        dag_dot = (
-            "digraph G {A->B}"
-        )
-        with open(self.dag_path, "w") as f:
-            f.write(dag_dot)
 
 def populate_example(*args, **kwargs):
     pass
+
+
+def setup_json_file(json_path):
+    json_test = {
+        "tests": [
+            {"name": "test1", "mutations": {}, "estimator": None, "estimate_type": None, "effect_modifiers": [],
+             "expectedEffect": {}, "skip": False}]
+    }
+    json_object = json.dumps(json_test)
+    with open(json_path, "w") as f:
+        f.write(json_object)
+    f.close()
+
+
+def setup_data_file(data_path):
+    header = ['test_input', 'test_output']
+    data = [1, 2]
+    with open(data_path, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerow(data)
+
+
+def setup_dag_file(dag_path):
+    dag_dot = (
+        "digraph G {A->B}"
+    )
+    with open(dag_path, "w") as f:
+        f.write(dag_dot)
+    f.close()
+
+
+def setup_files(json_path, data_path, dag_path):
+    setup_data_file(data_path)
+    setup_json_file(json_path)
+    setup_dag_file(dag_path)
