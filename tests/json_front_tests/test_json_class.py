@@ -53,9 +53,14 @@ class TestJsonClass(unittest.TestCase):
         self.assertEqual(ctf_meta[0].name, self.json_class.metas[0].name)
         self.assertEqual(ctf_meta[0].datatype, self.json_class.metas[0].datatype)
 
+    def test_argparse(self):
+        args = self.json_class.get_args(["--data_path=data.csv", "--dag_path=dag.dot", "--json_path=tests.json"])
+        self.assertTrue(args.data_path)
+        self.assertTrue(args.dag_path)
+        self.assertTrue(args.json_path)
+
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
-
 
 def populate_example():
     pass

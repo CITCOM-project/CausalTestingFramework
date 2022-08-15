@@ -309,7 +309,6 @@ class LinearRegressionEstimator(Estimator):
 
         return unit_effect * self.treatment_values - unit_effect * self.control_values, [ci_low, ci_high]
 
-
     def estimate_ate(self) -> tuple[float, list[float, float], float]:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
@@ -531,7 +530,6 @@ class CausalForestEstimator(Estimator):
         # Obtain CATES and confidence intervals
         conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values).flatten()
         [ci_low, ci_high] = model.effect_interval(
-
             effect_modifier_df, T0=self.control_values, T1=self.treatment_values, alpha=0.05
         )
 

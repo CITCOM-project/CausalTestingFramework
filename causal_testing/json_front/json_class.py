@@ -67,7 +67,6 @@ class JsonUtility(ABC):
         self.dag_path = Path(dag_path)
         self.data_path = Path(data_path)
 
-
     def set_variables(self, inputs: dict, outputs: dict, metas: dict):
 
         """Populate the Causal Variables
@@ -78,7 +77,6 @@ class JsonUtility(ABC):
         self.inputs = [Input(i["name"], i["type"], i["distribution"]) for i in inputs]
         self.outputs = [Output(i["name"], i["type"]) for i in outputs]
         self.metas = [Meta(i["name"], i["type"], i["populate"]) for i in metas] if metas else []
-
 
     def setup(self):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
@@ -236,7 +234,7 @@ class JsonUtility(ABC):
         setup_log.addHandler(file_handler)
 
     @staticmethod
-    def get_args() -> argparse.Namespace:
+    def get_args(test_args=None) -> argparse.Namespace:
         """Command-line arguments
 
         :return: parsed command line arguments
@@ -259,7 +257,6 @@ class JsonUtility(ABC):
             help="Specify path to file containing runtime data",
             required=True,
         )
-        parser.add_argument("--data_path", help="Specify path to file containing runtime data", required=True)
         parser.add_argument(
             "--dag_path",
             help="Specify path to file containing the DAG, normally a .dot file",
@@ -270,4 +267,4 @@ class JsonUtility(ABC):
             help="Specify path to file containing JSON tests, normally a .json file",
             required=True,
         )
-        return parser.parse_args()
+        return parser.parse_args(test_args)
