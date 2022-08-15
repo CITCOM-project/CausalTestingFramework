@@ -4,6 +4,7 @@ import networkx as nx
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 
+
 class TestCausalDAGIssue90(unittest.TestCase):
 
     """
@@ -13,16 +14,16 @@ class TestCausalDAGIssue90(unittest.TestCase):
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
-        dag_dot = """digraph DAG { rankdir=LR; content -> weight; weight -> S3; country -> S3; country -> distance; content -> S3; plane_transport -> S1; plane_transport -> S2; S1 -> alarm; S2 -> alarm; S3 -> alarm; }"""
+        dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }"""
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
 
     def test_enumerate_minimal_adjustment_sets(self):
         """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
         causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys = ["weight"], ["alarm"]
+        xs, ys = ["X"], ["Y"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual([{"content"}], adjustment_sets)
+        self.assertEqual([{"Z"}], adjustment_sets)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
