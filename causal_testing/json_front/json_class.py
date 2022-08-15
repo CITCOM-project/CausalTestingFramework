@@ -77,7 +77,7 @@ class JsonUtility(ABC):
         self.metas = (
             [Meta(i["name"], i["type"], i["populate"]) for i in metas]
             if metas
-            else list()
+            else []
         )
 
     def setup(self):
