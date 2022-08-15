@@ -12,7 +12,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 
 
 class TestJsonClass(unittest.TestCase):
-    """ Test the CausalTestEngine workflow using observational data.
+    """Test the CausalTestEngine workflow using observational data.
 
     The causal test engine (CTE) is the main workflow for the causal testing framework. The CTE takes a causal test case
     and a causal specification and computes the causal effect of the intervention on the outcome of interest.
@@ -73,9 +73,6 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.setup()
         self.assertIsInstance(self.json_class.causal_specification, CausalSpecification)
 
-    def test_concrete_tests_generated(self):
-        pass
-
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
 
@@ -87,8 +84,16 @@ def populate_example(*args, **kwargs):
 def setup_json_file(json_path):
     json_test = {
         "tests": [
-            {"name": "test1", "mutations": {}, "estimator": None, "estimate_type": None, "effect_modifiers": [],
-             "expectedEffect": {}, "skip": False}]
+            {
+                "name": "test1",
+                "mutations": {},
+                "estimator": None,
+                "estimate_type": None,
+                "effect_modifiers": [],
+                "expectedEffect": {},
+                "skip": False,
+            }
+        ]
     }
     json_object = json.dumps(json_test)
     with open(json_path, "w") as f:
@@ -97,7 +102,7 @@ def setup_json_file(json_path):
 
 
 def setup_data_file(data_path):
-    header = ['test_input', 'test_output']
+    header = ["test_input", "test_output"]
     data = [1, 2]
     with open(data_path, "w") as f:
         writer = csv.writer(f)
@@ -106,9 +111,7 @@ def setup_data_file(data_path):
 
 
 def setup_dag_file(dag_path):
-    dag_dot = (
-        "digraph G {A->B}"
-    )
+    dag_dot = "digraph G {A->B}"
     with open(dag_path, "w") as f:
         f.write(dag_dot)
     f.close()
