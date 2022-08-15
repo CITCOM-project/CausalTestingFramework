@@ -74,17 +74,11 @@ class JsonUtility(ABC):
         """
         self.inputs = [Input(i["name"], i["type"], i["distribution"]) for i in inputs]
         self.outputs = [Output(i["name"], i["type"]) for i in outputs]
-        self.metas = (
-            [Meta(i["name"], i["type"], i["populate"]) for i in metas]
-            if metas
-            else []
-        )
+        self.metas = [Meta(i["name"], i["type"], i["populate"]) for i in metas] if metas else []
 
     def setup(self):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
-        self.modelling_scenario = Scenario(
-            self.inputs + self.outputs + self.metas, None
-        )
+        self.modelling_scenario = Scenario(self.inputs + self.outputs + self.metas, None)
         self.modelling_scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(
             scenario=self.modelling_scenario, causal_dag=CausalDAG(self.dag_path)
@@ -92,9 +86,7 @@ class JsonUtility(ABC):
         self._json_parse()
         self._populate_metas()
 
-    def execute_tests(
-        self, effects: dict, mutates: dict, estimators: dict, f_flag: bool
-    ):
+    def execute_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
         """Runs and evaluates each test case specified in the JSON input
 
         :param effects: Dictionary mapping effect class instances to string representations.
@@ -110,20 +102,13 @@ class JsonUtility(ABC):
 
             abstract_test = AbstractCausalTestCase(
                 scenario=self.modelling_scenario,
-                intervention_constraints=[
-                    mutates[v](k) for k, v in test["mutations"].items()
-                ],
-                treatment_variables={
-                    self.modelling_scenario.variables[v] for v in test["mutations"]
-                },
+                intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
+                treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
                 expected_causal_effect={
                     self.modelling_scenario.variables[variable]: effects[effect]
                     for variable, effect in test["expectedEffect"].items()
                 },
-                effect_modifiers={
-                    self.modelling_scenario.variables[v]
-                    for v in test["effect_modifiers"]
-                }
+                effect_modifiers={self.modelling_scenario.variables[v] for v in test["effect_modifiers"]}
                 if "effect_modifiers" in test
                 else {},
                 estimate_type=test["estimate_type"],
@@ -132,17 +117,11 @@ class JsonUtility(ABC):
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
             logger.info("Executing test: %s", test["name"])
             logger.info(abstract_test)
-            logger.info(
-                [(v.name, v.distribution) for v in abstract_test.treatment_variables]
-            )
-            logger.info(
-                "Number of concrete tests for test case: %s", str(len(concrete_tests))
-            )
+            logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
+            logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
             for concrete_test in concrete_tests:
                 executed_tests += 1
-                failed = self._execute_test_case(
-                    concrete_test, estimators[test["estimator"]], f_flag
-                )
+                failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
                 if failed:
                     failures += 1
 
@@ -170,9 +149,7 @@ class JsonUtility(ABC):
             var.distribution = getattr(scipy.stats, dist)(**params)
             logger.info(var.name + f"{dist}({params})")
 
-    def _execute_test_case(
-        self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool
-    ) -> bool:
+    def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
@@ -181,9 +158,7 @@ class JsonUtility(ABC):
         """
         failed = False
 
-        causal_test_engine, estimation_model = self._setup_test(
-            causal_test_case, estimator
-        )
+        causal_test_engine, estimation_model = self._setup_test(causal_test_case, estimator)
         causal_test_result = causal_test_engine.execute_test(
             estimation_model, estimate_type=causal_test_case.estimate_type
         )
@@ -192,7 +167,9 @@ class JsonUtility(ABC):
 
         result_string = str()
         if causal_test_result.ci_low() and causal_test_result.ci_high():
-            result_string = f"{causal_test_result.ci_low()} < {causal_test_result.ate} <  {causal_test_result.ci_high()}"
+            result_string = (
+                f"{causal_test_result.ci_low()} < {causal_test_result.ate} <  {causal_test_result.ci_high()}"
+            )
         else:
             result_string = causal_test_result.ate
         if f_flag:
@@ -209,34 +186,22 @@ class JsonUtility(ABC):
             )
         return failed
 
-    def _setup_test(
-        self, causal_test_case: CausalTestCase, estimator: Estimator
-    ) -> tuple[CausalTestEngine, Estimator]:
+    def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :returns:
                 - causal_test_engine - Test Engine instance for the test being run
                 - estimation_model - Estimator instance for the test being run
         """
-        data_collector = ObservationalDataCollector(
-            self.modelling_scenario, self.data_path
-        )
-        causal_test_engine = CausalTestEngine(
-            causal_test_case, self.causal_specification, data_collector
-        )
+        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data_path)
+        causal_test_engine = CausalTestEngine(causal_test_case, self.causal_specification, data_collector)
         minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
         treatment_vars = list(causal_test_case.treatment_input_configuration)
-        minimal_adjustment_set = minimal_adjustment_set - {
-            v.name for v in treatment_vars
-        }
+        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in treatment_vars}
         estimation_model = estimator(
             (list(treatment_vars)[0].name,),
-            [causal_test_case.treatment_input_configuration[v] for v in treatment_vars][
-                0
-            ],
-            [causal_test_case.control_input_configuration[v] for v in treatment_vars][
-                0
-            ],
+            [causal_test_case.treatment_input_configuration[v] for v in treatment_vars][0],
+            [causal_test_case.control_input_configuration[v] for v in treatment_vars][0],
             minimal_adjustment_set,
             (list(causal_test_case.outcome_variables)[0].name,),
             causal_test_engine.scenario_execution_data_df,

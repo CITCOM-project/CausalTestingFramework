@@ -48,8 +48,7 @@ class CausalTestCase:
         else:
             self.effect_modifier_configuration = dict()
         assert (
-            self.control_input_configuration.keys()
-            == self.treatment_input_configuration.keys()
+            self.control_input_configuration.keys() == self.treatment_input_configuration.keys()
         ), "Control and treatment input configurations must have the same keys."
 
     def get_treatment_variables(self):
@@ -69,12 +68,8 @@ class CausalTestCase:
         return list(self.treatment_input_configuration.values())
 
     def __str__(self):
-        treatment_config = {
-            k.name: v for k, v in self.treatment_input_configuration.items()
-        }
-        control_config = {
-            k.name: v for k, v in self.control_input_configuration.items()
-        }
+        treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
+        control_config = {k.name: v for k, v in self.control_input_configuration.items()}
         return (
             f"Running {treatment_config} instead of {control_config} should cause the following "
             f"changes to {self.outcome_variables}: {self.expected_causal_effect}."

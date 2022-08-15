@@ -21,9 +21,7 @@ class DataCollector(ABC):
         """
         pass
 
-    def filter_valid_data(
-        self, data: pd.DataFrame, check_pos: bool = True
-    ) -> pd.DataFrame:
+    def filter_valid_data(self, data: pd.DataFrame, check_pos: bool = True) -> pd.DataFrame:
         """Check is execution data is valid for the scenario-under-test.
 
         Data is invalid if it does not meet the constraints specified in the scenario-under-test.
@@ -39,9 +37,7 @@ class DataCollector(ABC):
 
         if check_pos and not scenario_variables.issubset(data.columns):
             missing_variables = scenario_variables - set(data.columns)
-            raise IndexError(
-                f"Positivity violation: missing data for variables {missing_variables}."
-            )
+            raise IndexError(f"Positivity violation: missing data for variables {missing_variables}.")
 
         # For each row, does it satisfy the constraints?
         solver = z3.Solver()
@@ -54,9 +50,7 @@ class DataCollector(ABC):
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
             model = [
                 self.scenario.variables[var].z3
-                == self.scenario.variables[var].z3_val(
-                    self.scenario.variables[var].z3, row[var]
-                )
+                == self.scenario.variables[var].z3_val(self.scenario.variables[var].z3, row[var])
                 for var in self.scenario.variables
             ]
             for c in model:
@@ -77,8 +71,7 @@ class DataCollector(ABC):
         size_diff = len(data) - len(satisfying_data)
         if size_diff > 0:
             logger.warning(
-                f"Discarded {size_diff}/{len(data)} values due to constraint violations.\n"
-                f"For example{unsat_core}"
+                f"Discarded {size_diff}/{len(data)} values due to constraint violations.\n" f"For example{unsat_core}"
             )
         return satisfying_data
 
@@ -108,21 +101,13 @@ class ExperimentalDataCollector(DataCollector):
         :return: A pandas dataframe containing execution data for the system-under-test in both control and treatment
         executions.
         """
-        control_results_df = self.run_system_with_input_configuration(
-            self.control_input_configuration
-        )
-        treatment_results_df = self.run_system_with_input_configuration(
-            self.treatment_input_configuration
-        )
-        results_df = pd.concat(
-            [control_results_df, treatment_results_df], ignore_index=True
-        )
+        control_results_df = self.run_system_with_input_configuration(self.control_input_configuration)
+        treatment_results_df = self.run_system_with_input_configuration(self.treatment_input_configuration)
+        results_df = pd.concat([control_results_df, treatment_results_df], ignore_index=True)
         return results_df
 
     @abstractmethod
-    def run_system_with_input_configuration(
-        self, input_configuration: dict
-    ) -> pd.DataFrame:
+    def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:
         """Run the system with a given input configuration and return the resulting execution data.
 
         :param input_configuration: A dictionary which maps a subset of inputs to values.

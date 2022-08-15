@@ -52,9 +52,7 @@ class Estimator(ABC):
         elif isinstance(effect_modifiers, dict):
             self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()}
         else:
-            raise ValueError(
-                f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable"
-            )
+            raise ValueError(f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable")
         self.modelling_assumptions = []
         logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
@@ -146,8 +144,7 @@ class LinearRegressionEstimator(Estimator):
         self.df[new_term] = self.df[term_to_square] ** 2
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += (
-            f"Relationship between {self.treatment} and {self.outcome} varies quadratically"
-            f"with {term_to_square}."
+            f"Relationship between {self.treatment} and {self.outcome} varies quadratically" f"with {term_to_square}."
         )
         self.square_terms.append(term_to_square)
 
@@ -163,8 +160,7 @@ class LinearRegressionEstimator(Estimator):
         self.df[new_term] = 1 / self.df[term_to_invert]
         self.adjustment_set.add(new_term)
         self.modelling_assumptions += (
-            f"Relationship between {self.treatment} and {self.outcome} varies inversely"
-            f"with {term_to_invert}."
+            f"Relationship between {self.treatment} and {self.outcome} varies inversely" f"with {term_to_invert}."
         )
         self.inverse_terms.append(term_to_invert)
 
@@ -181,9 +177,7 @@ class LinearRegressionEstimator(Estimator):
         new_term = str(term_a) + "*" + str(term_b)
         self.df[new_term] = self.df[term_a] * self.df[term_b]
         self.adjustment_set.add(new_term)
-        self.modelling_assumptions += (
-            f"{term_a} and {term_b} vary linearly with each other."
-        )
+        self.modelling_assumptions += f"{term_a} and {term_b} vary linearly with each other."
         self.product_terms.append((term_a, term_b))
 
     def estimate_unit_ate(self) -> float:
@@ -193,9 +187,7 @@ class LinearRegressionEstimator(Estimator):
         :return: The unit average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
-        unit_effect = model.params[list(self.treatment)].values[
-            0
-        ]  # Unit effect is the coefficient of the treatment
+        unit_effect = model.params[list(self.treatment)].values[0]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model)
         return (
             unit_effect * self.treatment_values - unit_effect * self.control_values,
@@ -210,9 +202,7 @@ class LinearRegressionEstimator(Estimator):
         """
         model = self._run_linear_regression()
         # Create an empty individual for the control and treated
-        individuals = pd.DataFrame(
-            1, index=["control", "treated"], columns=model.params.index
-        )
+        individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
         individuals.loc["control", list(self.treatment)] = self.control_values
         individuals.loc["treated", list(self.treatment)] = self.treatment_values
         # This is a temporary hack
@@ -222,9 +212,7 @@ class LinearRegressionEstimator(Estimator):
             individuals[f"{a}*{b}"] = individuals[a] * individuals[b]
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
-        t_test_results = model.t_test(
-            individuals.loc["treated"] - individuals.loc["control"]
-        )
+        t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
         ate = t_test_results.effect[0]
         confidence_intervals = list(t_test_results.conf_int().flatten())
         return ate, confidence_intervals
@@ -315,9 +303,7 @@ class LinearRegressionEstimator(Estimator):
         """
         # 1. Reduce dataframe to contain only the necessary columns
         reduced_df = self.df.copy()
-        necessary_cols = (
-            list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
-        )
+        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
         reduced_df = reduced_df.sort_values(list(self.treatment))
@@ -356,9 +342,7 @@ class CausalForestEstimator(Estimator):
 
         :return self: Update self.modelling_assumptions
         """
-        self.modelling_assumptions += (
-            "Non-parametric estimator: no restrictions imposed on the data."
-        )
+        self.modelling_assumptions += "Non-parametric estimator: no restrictions imposed on the data."
 
     def estimate_ate(self) -> float:
         """Estimate the average treatment effect.
@@ -367,9 +351,7 @@ class CausalForestEstimator(Estimator):
         """
         # Remove any NA containing rows
         reduced_df = self.df.copy()
-        necessary_cols = (
-            list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
-        )
+        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
@@ -391,12 +373,8 @@ class CausalForestEstimator(Estimator):
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
-        ate = model.ate(
-            effect_modifier_df, T0=self.control_values, T1=self.treatment_values
-        )
-        ate_interval = model.ate_interval(
-            effect_modifier_df, T0=self.control_values, T1=self.treatment_values
-        )
+        ate = model.ate(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
+        ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
         ci_low, ci_high = ate_interval[0], ate_interval[1]
         return ate, [ci_low, ci_high]
 
@@ -413,9 +391,7 @@ class CausalForestEstimator(Estimator):
 
         # Remove any NA containing rows
         reduced_df = self.df.copy()
-        necessary_cols = (
-            list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
-        )
+        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
@@ -423,9 +399,7 @@ class CausalForestEstimator(Estimator):
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
-            raise Exception(
-                "CATE requires the user to define a set of effect modifiers."
-            )
+            raise Exception("CATE requires the user to define a set of effect modifiers.")
 
         if self.adjustment_set:
             confounders_df = reduced_df[list(self.adjustment_set)]
@@ -435,15 +409,11 @@ class CausalForestEstimator(Estimator):
         outcome_df = reduced_df[list(self.outcome)]
 
         # Fit a model to the data
-        model = CausalForestDML(
-            model_y=GradientBoostingRegressor(), model_t=GradientBoostingRegressor()
-        )
+        model = CausalForestDML(model_y=GradientBoostingRegressor(), model_t=GradientBoostingRegressor())
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain CATES and confidence intervals
-        conditional_ates = model.effect(
-            effect_modifier_df, T0=self.control_values, T1=self.treatment_values
-        ).flatten()
+        conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values).flatten()
         [ci_low, ci_high] = model.effect_interval(
             effect_modifier_df,
             T0=self.control_values,
