@@ -25,7 +25,9 @@ class Intervention:
             treatment_input_configuration[treatment] = self.treatment_values[t]
         return treatment_input_configuration
 
-
     def __str__(self):
-        updates = [f"{k.name} -> {v}" for k, v in zip(self.treatment_variables, self.treatment_values)]
-        return "{"+", ".join(updates)+"}"
+        updates = [
+            f"{k.name} -> {v}"
+            for k, v in zip(self.treatment_variables, self.treatment_values)
+        ]
+        return "{" + ", ".join(updates) + "}"

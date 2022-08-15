@@ -15,6 +15,7 @@ Input = TypeVar("Input")
 Output = TypeVar("Output")
 Meta = TypeVar("Meta")
 
+
 def z3_types(datatype):
     types = {int: Int, str: String, float: Real, bool: Bool}
     if datatype in types:
@@ -24,8 +25,10 @@ def z3_types(datatype):
         return lambda x: Const(x, dtype)
     if hasattr(datatype, "to_z3"):
         return datatype.to_z3()
-    raise ValueError(f"Cannot convert type {datatype} to Z3."+
-    " Please use a native type, an Enum, or implement a conversion manually.")
+    raise ValueError(
+        f"Cannot convert type {datatype} to Z3."
+        + " Please use a native type, an Enum, or implement a conversion manually."
+    )
 
 
 def _coerce(val: Any) -> Any:
@@ -151,16 +154,25 @@ class Variable(ABC):
         assert val is not None, f"Invalid value None for variable {self}"
         if isinstance(val, RatNumRef) and self.datatype == float:
             return float(val.numerator().as_long() / val.denominator().as_long())
-        if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
+        if (
+            hasattr(val, "is_string_value")
+            and val.is_string_value()
+            and self.datatype == str
+        ):
             return val.as_string()
-        if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
+        if (isinstance(val, float) or isinstance(val, int)) and (
+            self.datatype == int or self.datatype == float
+        ):
             return self.datatype(val)
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
         native_val = self.cast(val)
         if isinstance(native_val, Enum):
-            values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
+            values = [
+                z3_var.sort().constructor(c)()
+                for c in range(z3_var.sort().num_constructors())
+            ]
             values = [v for v in values if str(v) == str(val)]
             assert len(values) == 1, f"Expected {values} to be length 1"
             return values[0]
@@ -237,7 +249,9 @@ class Meta(Variable):
 
     populate: Callable[[DataFrame], DataFrame]
 
-    def __init__(self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]):
+    def __init__(
+        self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]
+    ):
         super().__init__(name, datatype)
         self.populate = populate
 

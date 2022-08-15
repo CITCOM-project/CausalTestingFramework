@@ -2,6 +2,8 @@ from collections.abc import Mapping, Iterable
 from z3 import ExprRef, substitute
 from .variable import Variable, Input, Output, Meta
 from tabulate import tabulate
+
+
 class Scenario:
     """A scenario defines the setting by listing the endogenous variables, their
     datatypes, distributions, and any constraints over them. This is a common
@@ -23,9 +25,7 @@ class Scenario:
     constraints: set[ExprRef]
 
     def __init__(
-        self,
-        variables: Iterable[Variable]= None,
-        constraints: set[ExprRef] = None
+        self, variables: Iterable[Variable] = None, constraints: set[ExprRef] = None
     ):
         if variables is not None:
             self.variables = {v.name: v for v in variables}
