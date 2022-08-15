@@ -1,7 +1,9 @@
-import pandas as pd
-import z3
 import logging
 from abc import ABC, abstractmethod
+
+import pandas as pd
+import z3
+
 from causal_testing.specification.causal_specification import Scenario
 
 logger = logging.getLogger(__name__)

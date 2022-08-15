@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Union, Any
+from typing import Any, Union
+
 import numpy as np
+
 from causal_testing.specification.variable import Variable
 
 

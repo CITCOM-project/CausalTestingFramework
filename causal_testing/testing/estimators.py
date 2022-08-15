@@ -1,12 +1,14 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
-from statsmodels.regression.linear_model import RegressionResultsWrapper
+
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
 from econml.dml import CausalForestDML
 from sklearn.ensemble import GradientBoostingRegressor
-import statsmodels.api as sm
-import pandas as pd
-import numpy as np
+from statsmodels.regression.linear_model import RegressionResultsWrapper
+
 from causal_testing.specification.variable import Variable
 
 logger = logging.getLogger(__name__)
@@ -82,6 +84,129 @@ class Estimator(ABC):
         pass
 
 
+class LogisticRegressionEstimator(Estimator):
+    """A Logistic Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
+    combination of parameters and functions of the variables (note these functions need not be linear). It is designed
+    for estimating categorical outcomes.
+    """
+
+    def __init__(
+        self,
+        treatment: tuple,
+        treatment_values: float,
+        control_values: float,
+        adjustment_set: set,
+        outcome: tuple,
+        df: pd.DataFrame = None,
+        effect_modifiers: dict[Variable:Any] = None,
+        intercept: int = 1,
+    ):
+        super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
+
+        for term in self.effect_modifiers:
+            self.adjustment_set.add(term)
+
+        self.product_terms = []
+        self.square_terms = []
+        self.inverse_terms = []
+        self.intercept = intercept
+
+    def add_modelling_assumptions(self):
+        """
+        Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
+        must hold if the resulting causal inference is to be considered valid.
+        """
+        self.modelling_assumptions += (
+            "The variables in the data must fit a shape which can be expressed as a linear"
+            "combination of parameters and functions of variables. Note that these functions"
+            "do not need to be linear."
+        )
+        self.modelling_assumptions += "The outcome must be binary."
+        self.modelling_assumptions += "Independently and identically distributed errors."
+
+    def _run_logistic_regression(self) -> RegressionResultsWrapper:
+        """Run logistic regression of the treatment and adjustment set against the outcome and return the model.
+
+        :return: The model after fitting to data.
+        """
+        # 1. Reduce dataframe to contain only the necessary columns
+        reduced_df = self.df.copy()
+        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
+        missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
+        reduced_df = reduced_df[~missing_rows]
+        reduced_df = reduced_df.sort_values(list(self.treatment))
+        logger.debug(reduced_df[necessary_cols])
+
+        # 2. Add intercept
+        reduced_df["Intercept"] = self.intercept
+
+        # 3. Estimate the unit difference in outcome caused by unit difference in treatment
+        cols = list(self.treatment)
+        cols += [x for x in self.adjustment_set if x not in cols]
+        treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
+        outcome_col = reduced_df[list(self.outcome)]
+        regression = sm.Logit(outcome_col, treatment_and_adjustments_cols)
+        model = regression.fit()
+        return model
+
+    def estimate_control_treatment(self) -> tuple[pd.Series, pd.Series]:
+        """Estimate the outcomes under control and treatment.
+
+        :return: The average treatment effect and the 95% Wald confidence intervals.
+        """
+        model = self._run_logistic_regression()
+        self.model = model
+
+        x = pd.DataFrame()
+        x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x["Intercept"] = self.intercept
+        for k, v in self.effect_modifiers.items():
+            x[k] = v
+        for t in self.square_terms:
+            x[t + "^2"] = x[t] ** 2
+        for t in self.inverse_terms:
+            x["1/" + t] = 1 / x[t]
+        for a, b in self.product_terms:
+            x[f"{a}*{b}"] = x[a] * x[b]
+        x = x[model.params.index]
+
+        y = model.predict(x)
+        return y.iloc[1], y.iloc[0]
+
+    def estimate_ate(self) -> float:
+        """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
+        by changing the treatment variable from the control value to the treatment value. Here, we actually
+        calculate the expected outcomes under control and treatment and take one away from the other. This
+        allows for custom terms to be put in such as squares, inverses, products, etc.
+
+        :return: The average treatment effect. Confidence intervals are not yet supported.
+        """
+        control_outcome, treatment_outcome = self.estimate_control_treatment()
+
+        return treatment_outcome - control_outcome
+
+    def estimate_risk_ratio(self) -> float:
+        """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
+        by changing the treatment variable from the control value to the treatment value. Here, we actually
+        calculate the expected outcomes under control and treatment and divide one by the other. This
+        allows for custom terms to be put in such as squares, inverses, products, etc.
+
+        :return: The average treatment effect. Confidence intervals are not yet supported.
+        """
+        control_outcome, treatment_outcome = self.estimate_control_treatment()
+
+        return treatment_outcome / control_outcome
+
+    def estimate_unit_odds_ratio(self) -> float:
+        """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
+        coefficient of the treatment of interest.
+
+        :return: The odds ratio. Confidence intervals are not yet supported.
+        """
+        model = self._run_logistic_regression()
+        return np.exp(model.params[self.treatment[0]])
+
+
 class LinearRegressionEstimator(Estimator):
     """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear).
@@ -99,15 +224,7 @@ class LinearRegressionEstimator(Estimator):
         product_terms: list[tuple[Variable, Variable]] = None,
         intercept: int = 1,
     ):
-        super().__init__(
-            treatment,
-            treatment_values,
-            control_values,
-            adjustment_set,
-            outcome,
-            df,
-            effect_modifiers,
-        )
+        super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
 
         if product_terms is None:
             product_terms = []
@@ -189,10 +306,9 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         unit_effect = model.params[list(self.treatment)].values[0]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model)
-        return (
-            unit_effect * self.treatment_values - unit_effect * self.control_values,
-            [ci_low, ci_high],
-        )
+
+        return unit_effect * self.treatment_values - unit_effect * self.control_values, [ci_low, ci_high]
+
 
     def estimate_ate(self) -> tuple[float, list[float, float], float]:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
@@ -256,7 +372,7 @@ class LinearRegressionEstimator(Estimator):
     def estimate_ate_calculated(self) -> tuple[float, list[float, float]]:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
-        calculate the expected outcomes under control and treatment and take one away from the other. This
+        calculate the expected outcomes under control and treatment and divide one by the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
@@ -415,10 +531,8 @@ class CausalForestEstimator(Estimator):
         # Obtain CATES and confidence intervals
         conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values).flatten()
         [ci_low, ci_high] = model.effect_interval(
-            effect_modifier_df,
-            T0=self.control_values,
-            T1=self.treatment_values,
-            alpha=0.05,
+
+            effect_modifier_df, T0=self.control_values, T1=self.treatment_values, alpha=0.05
         )
 
         # Merge results into a dataframe (CATE, confidence intervals, and effect modifier values)

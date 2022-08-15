@@ -1,7 +1,9 @@
-from collections.abc import Mapping, Iterable
-from z3 import ExprRef, substitute
-from .variable import Variable, Input, Output, Meta
+from collections.abc import Iterable, Mapping
+
 from tabulate import tabulate
+from z3 import ExprRef, substitute
+
+from .variable import Input, Meta, Output, Variable
 
 
 class Scenario:

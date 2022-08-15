@@ -1,15 +1,17 @@
-import networkx as nx
 import logging
 from itertools import combinations
 from random import sample
-from typing import Union, TypeVar
+from typing import TypeVar, Union
+
+import networkx as nx
+
+from .scenario import Scenario
+from .variable import Output
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 CausalDAG = TypeVar("CausalDAG")
 
 logger = logging.getLogger(__name__)
-from .scenario import Scenario
-from .variable import Output
 
 
 def list_all_min_sep(
@@ -87,10 +89,7 @@ def list_all_min_sep(
 
 
 def close_separator(
-    graph: nx.Graph,
-    treatment_node: Node,
-    outcome_node: Node,
-    treatment_node_set: set[Node],
+    graph: nx.Graph, treatment_node: Node, outcome_node: Node, treatment_node_set: set[Node]
 ) -> set[Node]:
     """Compute the close separator for a set of treatments in an undirected graph.
 
@@ -353,11 +352,7 @@ class CausalDAG(nx.DiGraph):
         return True
 
     def constructive_backdoor_criterion(
-        self,
-        proper_backdoor_graph: CausalDAG,
-        treatments: list[str],
-        outcomes: list[str],
-        covariates: list[str],
+        self, proper_backdoor_graph: CausalDAG, treatments: list[str], outcomes: list[str], covariates: list[str]
     ) -> bool:
         """A variation of Pearl's back-door criterion applied to a proper backdoor graph which enables more efficient
         computation of minimal adjustment sets for the effect of a set of treatments on a set of outcomes.

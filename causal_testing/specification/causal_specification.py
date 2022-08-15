@@ -1,10 +1,9 @@
+import logging
 from abc import ABC
+from typing import Union
 
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
-
-from typing import Union
-import logging
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 logger = logging.getLogger(__name__)

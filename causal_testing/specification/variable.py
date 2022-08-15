@@ -1,11 +1,12 @@
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import Enum
-from pandas import DataFrame
-from typing import TypeVar, Any
-from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Int, String, Real, BoolRef, RatNumRef, Bool, EnumSort, Const
-from abc import ABC, abstractmethod
+from typing import Any, TypeVar
+
 import lhsmdu
+from pandas import DataFrame
+from scipy.stats._distn_infrastructure import rv_generic
+from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String
 
 # Declare type variable
 # Is there a better way? I'd really like to do Variable[T](ExprRef)

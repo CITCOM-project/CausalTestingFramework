@@ -1,11 +1,12 @@
+import logging
+
 import pandas as pd
+
 from causal_testing.data_collection.data_collector import DataCollector
+from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestResult
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.estimators import Estimator
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,7 @@ class CausalTestEngine:
     """
 
     def __init__(
-        self,
-        causal_test_case: CausalTestCase,
-        causal_specification: CausalSpecification,
-        data_collector: DataCollector,
+        self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification, data_collector: DataCollector
     ):
         self.causal_test_case = causal_test_case
         self.treatment_variables = list(self.causal_test_case.control_input_configuration)
@@ -70,13 +68,11 @@ class CausalTestEngine:
         minimal_adjustment_sets = []
         if self.causal_test_case.effect == "total":
             minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
-                [v.name for v in self.treatment_variables],
-                [v.name for v in self.causal_test_case.outcome_variables],
+                [v.name for v in self.treatment_variables], [v.name for v in self.causal_test_case.outcome_variables]
             )
         elif self.causal_test_case.effect == "direct":
             minimal_adjustment_sets = self.casual_dag.direct_effect_adjustment_sets(
-                [v.name for v in self.treatment_variables],
-                [v.name for v in self.causal_test_case.outcome_variables],
+                [v.name for v in self.treatment_variables], [v.name for v in self.causal_test_case.outcome_variables]
             )
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
