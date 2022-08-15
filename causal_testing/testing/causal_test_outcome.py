@@ -1,17 +1,27 @@
 from abc import ABC, abstractmethod
-from typing import Union, Any
+from typing import Any, Union
+
 import numpy as np
+
 from causal_testing.specification.variable import Variable
 
 
 class CausalTestResult:
-    """ A container to hold the results of a causal test case. Every causal test case provides a point estimate of
-        the ATE, given a particular treatment, outcome, and adjustment set. Some but not all estimators can provide
-        confidence intervals. """
+    """A container to hold the results of a causal test case. Every causal test case provides a point estimate of
+    the ATE, given a particular treatment, outcome, and adjustment set. Some but not all estimators can provide
+    confidence intervals."""
 
-    def __init__(self, treatment: tuple, outcome: tuple, treatment_value: Union[int, float, str],
-                 control_value: Union[int, float, str], adjustment_set: set, ate: float,
-                 confidence_intervals: [float, float] = None, effect_modifier_configuration: {Variable: Any} = None):
+    def __init__(
+        self,
+        treatment: tuple,
+        outcome: tuple,
+        treatment_value: Union[int, float, str],
+        control_value: Union[int, float, str],
+        adjustment_set: set,
+        ate: float,
+        confidence_intervals: [float, float] = None,
+        effect_modifier_configuration: {Variable: Any} = None,
+    ):
         self.treatment = treatment
         self.outcome = outcome
         self.treatment_value = treatment_value
@@ -29,13 +39,15 @@ class CausalTestResult:
             self.effect_modifier_configuration = dict()
 
     def __str__(self):
-        base_str = f"Causal Test Result\n==============\n" \
-                   f"Treatment: {self.treatment[0]}\n" \
-                   f"Control value: {self.control_value}\n" \
-                   f"Treatment value: {self.treatment_value}\n" \
-                   f"Outcome: {self.outcome[0]}\n" \
-                   f"Adjustment set: {self.adjustment_set}\n" \
-                   f"ATE: {self.ate}\n"
+        base_str = (
+            f"Causal Test Result\n==============\n"
+            f"Treatment: {self.treatment[0]}\n"
+            f"Control value: {self.control_value}\n"
+            f"Treatment value: {self.treatment_value}\n"
+            f"Outcome: {self.outcome[0]}\n"
+            f"Adjustment set: {self.adjustment_set}\n"
+            f"ATE: {self.ate}\n"
+        )
         confidence_str = ""
         if self.confidence_intervals:
             confidence_str += f"Confidence intervals: {self.confidence_intervals}\n"
@@ -43,13 +55,13 @@ class CausalTestResult:
 
     def to_dict(self):
         base_dict = {
-                       "treatment": self.treatment[0],
-                       "control_value": self.control_value,
-                       "treatment_value": self.treatment_value,
-                       "outcome": self.outcome[0],
-                       "adjustment_set": self.adjustment_set,
-                       "ate": self.ate
-                   }
+            "treatment": self.treatment[0],
+            "control_value": self.control_value,
+            "treatment_value": self.treatment_value,
+            "outcome": self.outcome[0],
+            "adjustment_set": self.adjustment_set,
+            "ate": self.ate,
+        }
         if self.confidence_intervals:
             base_dict["ci_low"] = min(self.confidence_intervals)
             base_dict["ci_high"] = max(self.confidence_intervals)
@@ -69,9 +81,11 @@ class CausalTestResult:
 
     def summary(self):
         """Summarise the causal test result as an intuitive sentence."""
-        print(f'The causal effect of changing {self.treatment[0]} = {self.control_value} to '
-              f'{self.treatment[0]}\' = {self.treatment_value} is {self.ate} (95% confidence intervals: '
-              f'{self.confidence_intervals}).')
+        print(
+            f"The causal effect of changing {self.treatment[0]} = {self.control_value} to "
+            f"{self.treatment[0]}' = {self.treatment_value} is {self.ate} (95% confidence intervals: "
+            f"{self.confidence_intervals})."
+        )
 
 
 class CausalTestOutcome(ABC):
@@ -87,6 +101,7 @@ class CausalTestOutcome(ABC):
 
 class ExactValue(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
+
     def __init__(self, value: float, tolerance: float = None):
         self.value = value
         if tolerance is None:
@@ -96,7 +111,6 @@ class ExactValue(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         return np.isclose(res.ate, self.value, atol=self.tolerance)
-
 
     def __str__(self):
         return f"ExactValue: {self.value}±{self.tolerance}"
@@ -117,6 +131,7 @@ class Negative(CausalTestOutcome):
         # TODO: confidence intervals?
         return res.ate < 0
 
+
 class SomeEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should not be zero."""
 
@@ -125,6 +140,7 @@ class SomeEffect(CausalTestOutcome):
 
     def __str__(self):
         return "Changed"
+
 
 class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
