@@ -311,9 +311,11 @@ class CausalDAG(nx.DiGraph):
                 outcome_node_set,
             )
         )
-        valid_minimum_adjustment_sets = [adj for adj in minimum_adjustment_sets
-                                         if self.constructive_backdoor_criterion(proper_backdoor_graph, treatments,
-                                                                                 outcomes, adj)]
+        valid_minimum_adjustment_sets = [
+            adj
+            for adj in minimum_adjustment_sets
+            if self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes, adj)
+        ]
         return valid_minimum_adjustment_sets
 
     def adjustment_set_is_minimal(self, treatments: list[str], outcomes: list[str], adjustment_set: set[str]) -> bool:
