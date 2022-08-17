@@ -119,9 +119,7 @@ class JsonUtility(ABC):
                 continue
 
             abstract_test = self._create_abstract_test_case(
-                test,
-                [mutates[v](k) for k, v in test["mutations"].items()],
-                effects
+                test, [mutates[v](k) for k, v in test["mutations"].items()], effects
             )
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
