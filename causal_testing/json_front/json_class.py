@@ -88,6 +88,22 @@ class JsonUtility(ABC):
         self._json_parse()
         self._populate_metas()
 
+    def _create_abstract_test_case(self, test, mutates, effects):
+        abstract_test = AbstractCausalTestCase(
+            scenario=self.modelling_scenario,
+            intervention_constraints=mutates,
+            treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
+            expected_causal_effect={
+                self.modelling_scenario.variables[variable]: effects[effect]
+                for variable, effect in test["expectedEffect"].items()
+            },
+            effect_modifiers={self.modelling_scenario.variables[v] for v in test["effect_modifiers"]}
+            if "effect_modifiers" in test
+            else {},
+            estimate_type=test["estimate_type"],
+        )
+        return abstract_test
+
     def execute_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
         """Runs and evaluates each test case specified in the JSON input
 
@@ -102,18 +118,10 @@ class JsonUtility(ABC):
             if "skip" in test and test["skip"]:
                 continue
 
-            abstract_test = AbstractCausalTestCase(
-                scenario=self.modelling_scenario,
-                intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-                treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
-                expected_causal_effect={
-                    self.modelling_scenario.variables[variable]: effects[effect]
-                    for variable, effect in test["expectedEffect"].items()
-                },
-                effect_modifiers={self.modelling_scenario.variables[v] for v in test["effect_modifiers"]}
-                if "effect_modifiers" in test
-                else {},
-                estimate_type=test["estimate_type"],
+            abstract_test = self._create_abstract_test_case(
+                test,
+                [mutates[v](k) for k, v in test["mutations"].items()],
+                effects
             )
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
