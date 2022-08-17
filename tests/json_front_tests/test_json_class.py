@@ -4,12 +4,13 @@ import scipy
 import csv
 import json
 
+from causal_testing.testing.causal_test_outcome import NoEffect
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_specification import CausalSpecification
-
+from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 
 class TestJsonClass(unittest.TestCase):
     """Test the CausalTestEngine workflow using observational data.
@@ -72,6 +73,23 @@ class TestJsonClass(unittest.TestCase):
     def test_setup_causal_specification(self):
         self.json_class.setup()
         self.assertIsInstance(self.json_class.causal_specification, CausalSpecification)
+
+    def test_abstract_test_case_generation(self):
+        self.json_class.setup()
+        effects = {"NoEffect": NoEffect()}
+        mutates = None
+        expected_effect = dict({"test_input": "NoEffect"})
+        example_test = {
+                    "name": "test1",
+                    "mutations": {},
+                    "estimator": None,
+                    "estimate_type": None,
+                    "effect_modifiers": [],
+                    "expectedEffect": expected_effect,
+                    "skip": False,
+        }
+        abstract_test_case = self.json_class._create_abstract_test_case(example_test, mutates, effects)
+        self.assertIsInstance(abstract_test_case, AbstractCausalTestCase)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
