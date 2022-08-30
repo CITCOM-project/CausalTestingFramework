@@ -104,7 +104,7 @@ class JsonUtility(ABC):
         )
         return abstract_test
 
-    def execute_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
+    def generate_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
         """Runs and evaluates each test case specified in the JSON input
 
         :param effects: Dictionary mapping effect class instances to string representations.
@@ -112,7 +112,6 @@ class JsonUtility(ABC):
         :param estimators: Dictionary mapping estimator classes to string representations.
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         """
-        executed_tests = 0
         failures = 0
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
@@ -127,13 +126,17 @@ class JsonUtility(ABC):
             logger.info(abstract_test)
             logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
-            for concrete_test in concrete_tests:
-                executed_tests += 1
-                failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
-                if failed:
-                    failures += 1
+            failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
 
-        logger.info("{%d}/{%d} failed", failures, executed_tests)
+        logger.info("{%d}/{%d} failed", failures, str(len(concrete_tests)))
+
+    def _execute_tests(self, concrete_tests, estimators, test, f_flag):
+        failures = 0
+        for concrete_test in concrete_tests:
+            failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
+            if failed:
+                failures += 1
+        return failures
 
     def _json_parse(self):
 

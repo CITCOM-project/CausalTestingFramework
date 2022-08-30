@@ -167,4 +167,4 @@ if __name__ == "__main__":
     json_utility.set_variables(inputs, outputs, metas)
     json_utility.setup()  # Sets up all the necessary parts of the json_class needed to execute tests
 
-    json_utility.execute_tests(effects, mutates, estimators, args.f)
+    json_utility.generate_tests(effects, mutates, estimators, args.f)
