@@ -4,6 +4,7 @@ import scipy
 import csv
 import json
 
+from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.causal_test_outcome import NoEffect
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility
@@ -11,6 +12,7 @@ from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
+
 
 class TestJsonClass(unittest.TestCase):
     """Test the CausalTestEngine workflow using observational data.
@@ -29,7 +31,7 @@ class TestJsonClass(unittest.TestCase):
         self.data_path = temp_dir_path / data_file_name
         setup_files(self.json_path, self.data_path, self.dag_path)
         self.json_class = JsonUtility("logs.log")
-        self.example_distribution = scipy.stats.uniform(0, 10)
+        self.example_distribution = scipy.stats.uniform(1, 10)
         self.input_dict_list = [{"name": "test_input", "type": float, "distribution": self.example_distribution}]
         self.output_dict_list = [{"name": "test_output", "type": float}]
         self.meta_dict_list = [{"name": "test_meta", "type": float, "populate": populate_example}]
@@ -80,16 +82,38 @@ class TestJsonClass(unittest.TestCase):
         mutates = None
         expected_effect = dict({"test_input": "NoEffect"})
         example_test = {
-                    "name": "test1",
-                    "mutations": {},
-                    "estimator": None,
-                    "estimate_type": None,
-                    "effect_modifiers": [],
-                    "expectedEffect": expected_effect,
-                    "skip": False,
+            "name": "test1",
+            "mutations": {},
+            "estimator": None,
+            "estimate_type": None,
+            "effect_modifiers": [],
+            "expectedEffect": expected_effect,
+            "skip": False,
         }
         abstract_test_case = self.json_class._create_abstract_test_case(example_test, mutates, effects)
         self.assertIsInstance(abstract_test_case, AbstractCausalTestCase)
+
+    def test_execute_concrete_test(self):
+        self.json_class.setup()
+        effects = {"NoEffect": NoEffect()}
+        mutates = {
+            "Increase": lambda x: self.json_class.modelling_scenario.treatment_variables[x].z3 >
+                                  self.json_class.modelling_scenario.variables[x].z3
+        }
+        expected_effect = dict({"test_input": "NoEffect"})
+        example_test = {
+            "name": "test1",
+            "mutations": {"test_input": "Increase"},
+            "estimator": "LinearRegressionEstimator",
+            "estimate_type": "ate",
+            "effect_modifiers": [],
+            "expectedEffect": expected_effect,
+            "skip": False,
+        }
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+        abstract_test_case = self.json_class._create_abstract_test_case(example_test, [mutates[v](k) for k, v in example_test["mutations"].items()], effects)
+        concrete_tests = abstract_test_case.generate_concrete_tests(1, 0.5)
+        self.json_class._execute_tests(concrete_tests, estimators, example_test, False)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
