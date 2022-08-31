@@ -91,7 +91,7 @@ class JsonUtility(ABC):
     def _create_abstract_test_case(self, test, mutates, effects):
         abstract_test = AbstractCausalTestCase(
             scenario=self.modelling_scenario,
-            intervention_constraints=mutates,
+            intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
             treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
             expected_causal_effect={
                 self.modelling_scenario.variables[variable]: effects[effect]
@@ -116,9 +116,8 @@ class JsonUtility(ABC):
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
-            mutation = [mutates[v](k) for k, v in test["mutations"].items()]
             abstract_test = self._create_abstract_test_case(
-                test, mutation, effects
+                test, mutates, effects
             )
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)

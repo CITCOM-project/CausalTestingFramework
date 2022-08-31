@@ -111,13 +111,13 @@ class TestJsonClass(unittest.TestCase):
             "skip": False,
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
-        abstract_test_case = self.json_class._create_abstract_test_case(example_test, [mutates[v](k) for k, v in example_test["mutations"].items()], effects)
-        concrete_tests = abstract_test_case.generate_concrete_tests(1, 0.5)
+        abstract_test_case = self.json_class._create_abstract_test_case(example_test, mutates, effects)
+        concrete_tests, dummy = abstract_test_case.generate_concrete_tests(5, 0.5)
         self.json_class._execute_tests(concrete_tests, estimators, example_test, False)
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
-
+        #remove_temp_dir_if_existent()
+        pass
 
 def populate_example(*args, **kwargs):
     pass
@@ -144,16 +144,15 @@ def setup_json_file(json_path):
 
 
 def setup_data_file(data_path):
-    header = ["test_input", "test_output"]
-    data = [1, 2]
-    with open(data_path, "w") as f:
+    header = ["index", "test_input", "test_output"]
+    data = [0, 1, 2]
+    with open(data_path, "w", newline='') as f:
         writer = csv.writer(f)
         writer.writerow(header)
         writer.writerow(data)
-
-
+"""digraph G { A -> B; B -> C; D -> A; D -> C}"""
 def setup_dag_file(dag_path):
-    dag_dot = "digraph G {A->B}"
+    dag_dot = """digraph G { test_input -> temp; temp -> test_output; temp2 -> test_input; temp2 -> test_output}"""
     with open(dag_path, "w") as f:
         f.write(dag_dot)
     f.close()
