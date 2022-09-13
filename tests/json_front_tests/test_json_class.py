@@ -80,7 +80,7 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.setup()
         effects = {"NoEffect": NoEffect()}
         mutates = None
-        expected_effect = dict({"test_input": "NoEffect"})
+        expected_effect = dict({"test_output": "NoEffect"})
         example_test = {
             "name": "test1",
             "mutations": {},
@@ -100,7 +100,7 @@ class TestJsonClass(unittest.TestCase):
             "Increase": lambda x: self.json_class.modelling_scenario.treatment_variables[x].z3 >
                                   self.json_class.modelling_scenario.variables[x].z3
         }
-        expected_effect = dict({"test_input": "NoEffect"})
+        expected_effect = dict({"test_output": "NoEffect"})
         example_test = {
             "name": "test1",
             "mutations": {"test_input": "Increase"},
@@ -152,7 +152,7 @@ def setup_data_file(data_path):
         writer.writerow(data)
 
 def setup_dag_file(dag_path):
-    dag_dot = """digraph G { test_input -> temp; temp -> test_output; temp2 -> test_input; temp2 -> test_output}"""
+    dag_dot = """digraph G { test_input -> B; B -> C; test_output -> test_input; test_output -> C}"""
     with open(dag_path, "w") as f:
         f.write(dag_dot)
     f.close()
