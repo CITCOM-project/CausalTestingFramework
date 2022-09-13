@@ -116,9 +116,7 @@ class JsonUtility(ABC):
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
-            abstract_test = self._create_abstract_test_case(
-                test, mutates, effects
-            )
+            abstract_test = self._create_abstract_test_case(test, mutates, effects)
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
             logger.info("Executing test: %s", test["name"])
