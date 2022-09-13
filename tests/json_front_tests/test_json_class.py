@@ -150,7 +150,7 @@ def setup_data_file(data_path):
         writer = csv.writer(f)
         writer.writerow(header)
         writer.writerow(data)
-"""digraph G { A -> B; B -> C; D -> A; D -> C}"""
+
 def setup_dag_file(dag_path):
     dag_dot = """digraph G { test_input -> temp; temp -> test_output; temp2 -> test_input; temp2 -> test_output}"""
     with open(dag_path, "w") as f:
