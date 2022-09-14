@@ -5,6 +5,30 @@ from causal_testing.specification.causal_dag import CausalDAG, close_separator, 
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 
 
+class TestCausalDAGIssue90(unittest.TestCase):
+
+    """
+    Test the CausalDAG class for the resolution of Issue 90.
+    """
+
+    def setUp(self) -> None:
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }"""
+        with open(self.dag_dot_path, "w") as f:
+            f.write(dag_dot)
+
+    def test_enumerate_minimal_adjustment_sets(self):
+        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys = ["X"], ["Y"]
+        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        self.assertEqual([{"Z"}], adjustment_sets)
+
+    def tearDown(self) -> None:
+        remove_temp_dir_if_existent()
+
+
 class TestCausalDAG(unittest.TestCase):
 
     """

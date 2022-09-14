@@ -160,9 +160,9 @@ class CausalDAG(nx.DiGraph):
     def get_proper_backdoor_graph(self, treatments: list[str], outcomes: list[str]) -> CausalDAG:
         """Convert the causal DAG to a proper back-door graph.
 
-        A proper back-door graph of a causal DAG is obtained by
-        removing the first edge of every proper causal path from treatments to outcomes. A proper causal path from
-        X to Y is a path of directed edges that starts from X and ends in Y.
+        A proper back-door graph of a causal DAG is obtained by removing the first edge of every proper causal path from
+        treatments to outcomes. A proper causal path from X to Y is a path of directed edges that starts from X and ends
+        in Y.
 
         Reference: (Separators and adjustment sets in causal graphs: Complete criteria and an algorithmic framework,
         Zander et al.,  2019, Definition 3, p.15)
@@ -311,7 +311,12 @@ class CausalDAG(nx.DiGraph):
                 outcome_node_set,
             )
         )
-        return minimum_adjustment_sets
+        valid_minimum_adjustment_sets = [
+            adj
+            for adj in minimum_adjustment_sets
+            if self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes, adj)
+        ]
+        return valid_minimum_adjustment_sets
 
     def adjustment_set_is_minimal(self, treatments: list[str], outcomes: list[str], adjustment_set: set[str]) -> bool:
         """Given a list of treatments X, a list of outcomes Y, and an adjustment set Z, determine whether Z is the
@@ -375,22 +380,23 @@ class CausalDAG(nx.DiGraph):
         """
         # Condition (1)
         proper_causal_path_vars = self.proper_causal_pathway(treatments, outcomes)
-        descendents_of_proper_casual_paths = set.union(
-            *[
-                set.union(
-                    nx.descendants(self.graph, proper_causal_path_var),
-                    {proper_causal_path_var},
-                )
-                for proper_causal_path_var in proper_causal_path_vars
-            ]
-        )
-
-        if not set(covariates).issubset(set(self.graph.nodes).difference(descendents_of_proper_casual_paths)):
-            logger.info(
-                f"Failed Condition 1: Z={covariates} **is** a descendent of some variable on a proper causal "
-                f"path between X={treatments} and Y={outcomes}."
+        if proper_causal_path_vars:
+            descendents_of_proper_casual_paths = set.union(
+                *[
+                    set.union(
+                        nx.descendants(self.graph, proper_causal_path_var),
+                        {proper_causal_path_var},
+                    )
+                    for proper_causal_path_var in proper_causal_path_vars
+                ]
             )
-            return False
+
+            if not set(covariates).issubset(set(self.graph.nodes).difference(descendents_of_proper_casual_paths)):
+                logger.info(
+                    f"Failed Condition 1: Z={covariates} **is** a descendent of some variable on a proper causal "
+                    f"path between X={treatments} and Y={outcomes}."
+                )
+                return False
 
         # Condition (2)
         if not nx.d_separated(proper_backdoor_graph.graph, set(treatments), set(outcomes), set(covariates)):
