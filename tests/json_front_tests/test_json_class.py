@@ -95,6 +95,8 @@ class TestJsonClass(unittest.TestCase):
 
     def test_execute_concrete_test(self):
         self.json_class.setup()
+        dag_string = "digraph G { test_input -> B; B -> C; test_output -> test_input; test_output -> C}"
+        setup_dag_file(self.dag_path, dag_string)
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.modelling_scenario.treatment_variables[x].z3 >
@@ -113,7 +115,10 @@ class TestJsonClass(unittest.TestCase):
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
         abstract_test_case = self.json_class._create_abstract_test_case(example_test, mutates, effects)
         concrete_tests, dummy = abstract_test_case.generate_concrete_tests(5, 0.5)
-        self.json_class._execute_tests(concrete_tests, estimators, example_test, False)
+
+        #This scenario produces 5 errors
+        failures = self.json_class._execute_tests(concrete_tests, estimators, example_test, False)
+        self.assertEqual(failures, 5)
 
     def tearDown(self) -> None:
         #remove_temp_dir_if_existent()
@@ -151,14 +156,15 @@ def setup_data_file(data_path):
         writer.writerow(header)
         writer.writerow(data)
 
-def setup_dag_file(dag_path):
-    dag_dot = """digraph G { test_input -> B; B -> C; test_output -> test_input; test_output -> C}"""
+def setup_dag_file(dag_path, dag_string):
+    dag_dot = dag_string
     with open(dag_path, "w") as f:
         f.write(dag_dot)
     f.close()
 
 
 def setup_files(json_path, data_path, dag_path):
+    dag_string = "digraph G { test_input -> B; B -> C; test_output -> test_input; test_output -> C}"
     setup_data_file(data_path)
     setup_json_file(json_path)
-    setup_dag_file(dag_path)
+    setup_dag_file(dag_path, dag_string)
