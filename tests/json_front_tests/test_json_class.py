@@ -116,13 +116,13 @@ class TestJsonClass(unittest.TestCase):
         abstract_test_case = self.json_class._create_abstract_test_case(example_test, mutates, effects)
         concrete_tests, dummy = abstract_test_case.generate_concrete_tests(5, 0.5)
 
-        #This scenario produces 5 errors
+        # This scenario should produce 5 failures
         failures = self.json_class._execute_tests(concrete_tests, estimators, example_test, False)
         self.assertEqual(failures, 5)
 
     def tearDown(self) -> None:
-        #remove_temp_dir_if_existent()
-        pass
+        remove_temp_dir_if_existent()
+
 
 def populate_example(*args, **kwargs):
     pass
