@@ -15,10 +15,10 @@ from causal_testing.generation.abstract_causal_test_case import AbstractCausalTe
 
 
 class TestJsonClass(unittest.TestCase):
-    """Test the CausalTestEngine workflow using observational data.
+    """Test the JSON frontend for the Causal Testing Framework (CTF)
 
-    The causal test engine (CTE) is the main workflow for the causal testing framework. The CTE takes a causal test case
-    and a causal specification and computes the causal effect of the intervention on the outcome of interest.
+    The JSON frontend is an alternative interface for the CTF where tests are specified in JSON format and ingested
+    with the frontend. Tests involve testing that this correctly interfaces with the framework with some dummy data
     """
 
     def setUp(self) -> None:
