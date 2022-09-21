@@ -62,9 +62,9 @@ class TestJsonClass(unittest.TestCase):
 
     def test_argparse(self):
         args = self.json_class.get_args(["--data_path=data.csv", "--dag_path=dag.dot", "--json_path=tests.json"])
-        self.assertTrue(args.data_path)
-        self.assertTrue(args.dag_path)
-        self.assertTrue(args.json_path)
+        self.assertEqual(args.data_path, "data.csv")
+        self.assertEqual(args.dag_path, "dag.dot")
+        self.assertEqual(args.json_path, "tests.json")
 
     def test_setup_modelling_scenario(self):
         self.json_class.setup()
