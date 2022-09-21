@@ -93,33 +93,36 @@ class TestJsonClass(unittest.TestCase):
         abstract_test_case = self.json_class._create_abstract_test_case(example_test, mutates, effects)
         self.assertIsInstance(abstract_test_case, AbstractCausalTestCase)
 
-    def test_execute_concrete_test(self):
+    def test_generate_tests_from_json(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "mutations": {"test_input": "Increase"},
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "ate",
+                    "effect_modifiers": [],
+                    "expectedEffect": {"test_output": "NoEffect"},
+                    "skip": False,
+                }
+            ]
+        }
         self.json_class.setup()
-        dag_string = "digraph G { test_input -> B; B -> C; test_output -> test_input; test_output -> C}"
-        setup_dag_file(self.dag_path, dag_string)
+        self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.modelling_scenario.treatment_variables[x].z3 >
                                   self.json_class.modelling_scenario.variables[x].z3
         }
-        expected_effect = dict({"test_output": "NoEffect"})
-        example_test = {
-            "name": "test1",
-            "mutations": {"test_input": "Increase"},
-            "estimator": "LinearRegressionEstimator",
-            "estimate_type": "ate",
-            "effect_modifiers": [],
-            "expectedEffect": expected_effect,
-            "skip": False,
+        estimators = {
+            "LinearRegressionEstimator": LinearRegressionEstimator
         }
-        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
-        abstract_test_case = self.json_class._create_abstract_test_case(example_test, mutates, effects)
-        concrete_tests, dummy = abstract_test_case.generate_concrete_tests(5, 0.5)
 
-        # This scenario should produce 5 failures
-        failures = self.json_class._execute_tests(concrete_tests, estimators, example_test, False)
-        self.assertEqual(failures, 5)
+        with self.assertLogs() as captured:
+            self.json_class.generate_tests(effects, mutates, estimators, False)
 
+        # Test that the final log message is that all tests have failed, which is expected behaviour for this scenario
+        self.assertEqual(captured.records[-1].getMessage(), "105/105 failed")
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
 
