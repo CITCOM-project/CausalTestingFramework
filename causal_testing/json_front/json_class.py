@@ -125,7 +125,7 @@ class JsonUtility(ABC):
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
             failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
 
-        logger.info("{%d}/{%d} failed", failures, str(len(concrete_tests)))
+        logger.info(f"{failures}/{len(concrete_tests)} failed")
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
