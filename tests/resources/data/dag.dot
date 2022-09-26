@@ -1,0 +1,1 @@
+digraph G { test_input -> B; B -> C; test_output -> test_input; test_output -> C}

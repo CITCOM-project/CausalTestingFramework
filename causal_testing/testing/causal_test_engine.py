@@ -36,7 +36,10 @@ class CausalTestEngine:
     ):
         self.causal_test_case = causal_test_case
         self.treatment_variables = list(self.causal_test_case.control_input_configuration)
-        self.casual_dag, self.scenario = causal_specification.causal_dag, causal_specification.scenario
+        self.casual_dag, self.scenario = (
+            causal_specification.causal_dag,
+            causal_specification.scenario,
+        )
         self.data_collector = data_collector
         self.scenario_execution_data_df = pd.DataFrame()
 

@@ -67,17 +67,16 @@ class JsonUtility(ABC):
         self.dag_path = Path(dag_path)
         self.data_path = Path(data_path)
 
-    def set_variables(self, inputs: dict, outputs: dict, metas: dict, distributions: dict, populates: dict):
+    def set_variables(self, inputs: dict, outputs: dict, metas: dict):
+
         """Populate the Causal Variables
         :param inputs:
         :param outputs:
         :param metas:
-        :param distributions:
-        :param populates:
         """
-        self.inputs = [Input(i["name"], i["type"], distributions[i["distribution"]]) for i in inputs]
+        self.inputs = [Input(i["name"], i["type"], i["distribution"]) for i in inputs]
         self.outputs = [Output(i["name"], i["type"]) for i in outputs]
-        self.metas = [Meta(i["name"], i["type"], populates[i["populate"]]) for i in metas] if metas else []
+        self.metas = [Meta(i["name"], i["type"], i["populate"]) for i in metas] if metas else []
 
     def setup(self):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
@@ -89,7 +88,23 @@ class JsonUtility(ABC):
         self._json_parse()
         self._populate_metas()
 
-    def execute_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
+    def _create_abstract_test_case(self, test, mutates, effects):
+        abstract_test = AbstractCausalTestCase(
+            scenario=self.modelling_scenario,
+            intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
+            treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
+            expected_causal_effect={
+                self.modelling_scenario.variables[variable]: effects[effect]
+                for variable, effect in test["expectedEffect"].items()
+            },
+            effect_modifiers={self.modelling_scenario.variables[v] for v in test["effect_modifiers"]}
+            if "effect_modifiers" in test
+            else {},
+            estimate_type=test["estimate_type"],
+        )
+        return abstract_test
+
+    def generate_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
         """Runs and evaluates each test case specified in the JSON input
 
         :param effects: Dictionary mapping effect class instances to string representations.
@@ -97,46 +112,34 @@ class JsonUtility(ABC):
         :param estimators: Dictionary mapping estimator classes to string representations.
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         """
-        executed_tests = 0
         failures = 0
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
-
-            abstract_test = AbstractCausalTestCase(
-                scenario=self.modelling_scenario,
-                intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-                treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
-                expected_causal_effect={
-                    self.modelling_scenario.variables[variable]: effects[effect]
-                    for variable, effect in test["expectedEffect"].items()
-                },
-                effect_modifiers={self.modelling_scenario.variables[v] for v in test["effect_modifiers"]}
-                if "effect_modifiers" in test
-                else {},
-                estimate_type=test["estimate_type"],
-            )
+            abstract_test = self._create_abstract_test_case(test, mutates, effects)
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
             logger.info("Executing test: %s", test["name"])
             logger.info(abstract_test)
             logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
-            for concrete_test in concrete_tests:
-                executed_tests += 1
-                failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
-                if failed:
-                    failures += 1
+            failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
 
-        logger.info("{%d}/{%d} failed", failures, executed_tests)
+        logger.info(f"{failures}/{len(concrete_tests)} failed")
+
+    def _execute_tests(self, concrete_tests, estimators, test, f_flag):
+        failures = 0
+        for concrete_test in concrete_tests:
+            failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
+            if failed:
+                failures += 1
+        return failures
 
     def _json_parse(self):
-        """Parse a JSON input file into inputs, outputs, metas and a test plan
-        :param distributions: dictionary of user defined scipy distributions
-        :param populates: dictionary of user defined populate functions
-        """
-        with open(self.json_path, encoding="UTF-8") as file:
-            self.test_plan = json.load(file)
+
+        """Parse a JSON input file into inputs, outputs, metas and a test plan"""
+        with open(self.json_path) as f:
+            self.test_plan = json.load(f)
 
         self.data = pd.read_csv(self.data_path)
 
@@ -187,7 +190,9 @@ class JsonUtility(ABC):
         if not test_passes:
             failed = True
             logger.warning(
-                "   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, causal_test_result.ate
+                "   FAILED- expected %s, got %s",
+                causal_test_case.expected_causal_effect,
+                causal_test_result.ate,
             )
         return failed
 
@@ -235,7 +240,7 @@ class JsonUtility(ABC):
         setup_log.addHandler(file_handler)
 
     @staticmethod
-    def get_args() -> argparse.Namespace:
+    def get_args(test_args=None) -> argparse.Namespace:
         """Command-line arguments
 
         :return: parsed command line arguments
@@ -243,17 +248,29 @@ class JsonUtility(ABC):
         parser = argparse.ArgumentParser(
             description="A script for parsing json config files for the Causal Testing Framework"
         )
-        parser.add_argument("-f", help="if included, the script will stop if a test fails", action="store_true")
+        parser.add_argument(
+            "-f",
+            help="if included, the script will stop if a test fails",
+            action="store_true",
+        )
         parser.add_argument(
             "--log_path",
             help="Specify a directory to change the location of the log file",
             default="./json_frontend.log",
         )
-        parser.add_argument("--data_path", help="Specify path to file containing runtime data", required=True)
         parser.add_argument(
-            "--dag_path", help="Specify path to file containing the DAG, normally a .dot file", required=True
+            "--data_path",
+            help="Specify path to file containing runtime data",
+            required=True,
         )
         parser.add_argument(
-            "--json_path", help="Specify path to file containing JSON tests, normally a .json file", required=True
+            "--dag_path",
+            help="Specify path to file containing the DAG, normally a .dot file",
+            required=True,
         )
-        return parser.parse_args()
+        parser.add_argument(
+            "--json_path",
+            help="Specify path to file containing JSON tests, normally a .json file",
+            required=True,
+        )
+        return parser.parse_args(test_args)

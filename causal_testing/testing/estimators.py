@@ -306,6 +306,7 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         unit_effect = model.params[list(self.treatment)].values[0]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model)
+
         return unit_effect * self.treatment_values - unit_effect * self.control_values, [ci_low, ci_high]
 
     def estimate_ate(self) -> tuple[float, list[float, float], float]:
@@ -437,7 +438,10 @@ class LinearRegressionEstimator(Estimator):
 
     def _get_confidence_intervals(self, model):
         confidence_intervals = model.conf_int(alpha=0.05, cols=None)
-        ci_low, ci_high = confidence_intervals[0][list(self.treatment)], confidence_intervals[1][list(self.treatment)]
+        ci_low, ci_high = (
+            confidence_intervals[0][list(self.treatment)],
+            confidence_intervals[1][list(self.treatment)],
+        )
         return [ci_low.values[0], ci_high.values[0]]
 
 

@@ -144,7 +144,12 @@ class AbstractCausalTestCase:
         return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
 
     def generate_concrete_tests(
-        self, sample_size: int, target_ks_score: float = None, rct: bool = False, seed: int = 0, hard_max: int = 1000
+        self,
+        sample_size: int,
+        target_ks_score: float = None,
+        rct: bool = False,
+        seed: int = 0,
+        hard_max: int = 1000,
     ) -> tuple[list[CausalTestCase], pd.DataFrame]:
         """Generates a list of `num` concrete test cases.
 
