@@ -76,23 +76,6 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.setup()
         self.assertIsInstance(self.json_class.causal_specification, CausalSpecification)
 
-    def test_abstract_test_case_generation(self):
-        self.json_class.setup()
-        effects = {"NoEffect": NoEffect()}
-        mutates = None
-        expected_effect = dict({"test_output": "NoEffect"})
-        example_test = {
-            "name": "test1",
-            "mutations": {},
-            "estimator": None,
-            "estimate_type": None,
-            "effect_modifiers": [],
-            "expectedEffect": expected_effect,
-            "skip": False,
-        }
-        abstract_test_case = self.json_class._create_abstract_test_case(example_test, mutates, effects)
-        self.assertIsInstance(abstract_test_case, AbstractCausalTestCase)
-
     def test_generate_tests_from_json(self):
         example_test = {
             "tests": [
