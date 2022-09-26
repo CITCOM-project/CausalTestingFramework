@@ -22,14 +22,13 @@ class TestJsonClass(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        temp_dir_path = Path(create_temp_dir_if_non_existent())
         json_file_name = "tests.json"
         dag_file_name = "dag.dot"
         data_file_name = "data.csv"
-        self.json_path = temp_dir_path / json_file_name
-        self.dag_path = temp_dir_path / dag_file_name
-        self.data_path = temp_dir_path / data_file_name
-        setup_files(self.json_path, self.data_path, self.dag_path)
+        test_data_dir_path = Path("tests/resources/data")
+        self.json_path = test_data_dir_path / json_file_name
+        self.dag_path = test_data_dir_path / dag_file_name
+        self.data_path = test_data_dir_path / data_file_name
         self.json_class = JsonUtility("logs.log")
         self.example_distribution = scipy.stats.uniform(1, 10)
         self.input_dict_list = [{"name": "test_input", "type": float, "distribution": self.example_distribution}]
@@ -108,50 +107,10 @@ class TestJsonClass(unittest.TestCase):
         self.assertIn("failed", captured.records[-1].getMessage())
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
+        pass
+        #remove_temp_dir_if_existent()
 
 
 def populate_example(*args, **kwargs):
     pass
 
-
-def setup_json_file(json_path):
-    json_test = {
-        "tests": [
-            {
-                "name": "test1",
-                "mutations": {},
-                "estimator": None,
-                "estimate_type": None,
-                "effect_modifiers": [],
-                "expectedEffect": {},
-                "skip": False,
-            }
-        ]
-    }
-    json_object = json.dumps(json_test)
-    with open(json_path, "w") as f:
-        f.write(json_object)
-    f.close()
-
-
-def setup_data_file(data_path):
-    header = ["index", "test_input", "test_output"]
-    data = [0, 1, 2]
-    with open(data_path, "w", newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        writer.writerow(data)
-
-def setup_dag_file(dag_path, dag_string):
-    dag_dot = dag_string
-    with open(dag_path, "w") as f:
-        f.write(dag_dot)
-    f.close()
-
-
-def setup_files(json_path, data_path, dag_path):
-    dag_string = "digraph G { test_input -> B; B -> C; test_output -> test_input; test_output -> C}"
-    setup_data_file(data_path)
-    setup_json_file(json_path)
-    setup_dag_file(dag_path, dag_string)
