@@ -210,10 +210,10 @@ class CausalTestEngine:
         if not set(variables_list).issubset(self.scenario_execution_data_df.columns):
             missing_variables = set(variables_list) - set(self.scenario_execution_data_df.columns)
             logger.warning(
-                f"Positivity violation: missing data for variables {missing_variables}.\n"
-                f"Causal inference is only valid if a well-specified parametric model is used.\n"
-                f"Alternatively, consider restricting analysis to executions without the variables:"
-                f" {missing_variables}."
+                "Positivity violation: missing data for variables {missing_variables}.\n"
+                "Causal inference is only valid if a well-specified parametric model is used.\n"
+                "Alternatively, consider restricting analysis to executions without the variables:"
+                " %s.", missing_variables
             )
             return True
         else:
