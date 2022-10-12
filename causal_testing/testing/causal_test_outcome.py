@@ -36,7 +36,7 @@ class CausalTestResult:
         if effect_modifier_configuration is not None:
             self.effect_modifier_configuration = effect_modifier_configuration
         else:
-            self.effect_modifier_configuration = dict()
+            self.effect_modifier_configuration = {}
 
     def __str__(self):
         base_str = (

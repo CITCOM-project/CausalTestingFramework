@@ -48,7 +48,7 @@ class Estimator(ABC):
         self.outcome = outcome
         self.df = df
         if effect_modifiers is None:
-            self.effect_modifiers = dict()
+            self.effect_modifiers = {}
         elif isinstance(effect_modifiers, set) or isinstance(effect_modifiers, list):
             self.effect_modifiers = {k.name for k in effect_modifiers}
         elif isinstance(effect_modifiers, dict):

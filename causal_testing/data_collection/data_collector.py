@@ -45,7 +45,7 @@ class DataCollector(ABC):
         solver = z3.Solver()
         for c in self.scenario.constraints:
             solver.assert_and_track(c, f"background: {c}")
-        sat = list()
+        sat = []
         unsat_core = None
         for _, row in data.iterrows():
             solver.push()
