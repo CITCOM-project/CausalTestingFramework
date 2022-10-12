@@ -213,7 +213,8 @@ class CausalTestEngine:
                 "Positivity violation: missing data for variables {missing_variables}.\n"
                 "Causal inference is only valid if a well-specified parametric model is used.\n"
                 "Alternatively, consider restricting analysis to executions without the variables:"
-                " %s.", missing_variables
+                " %s.",
+                missing_variables,
             )
             return True
         else:

@@ -73,8 +73,10 @@ class DataCollector(ABC):
         size_diff = len(data) - len(satisfying_data)
         if size_diff > 0:
             logger.warning(
-                "Discarded %s/%s values due to constraint violations.\n"
-                "For example%s", size_diff, len(data), unsat_core
+                "Discarded %s/%s values due to constraint violations.\n" "For example%s",
+                size_diff,
+                len(data),
+                unsat_core,
             )
         return satisfying_data
 
