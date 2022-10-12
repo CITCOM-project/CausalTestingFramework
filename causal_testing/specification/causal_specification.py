@@ -13,6 +13,7 @@ class CausalSpecification(ABC):
     """
     Abstract Class for the Causal Specification (combination of Scenario and Causal Dag)
     """
+
     def __init__(self, scenario: Scenario, causal_dag: CausalDAG):
         self.scenario = scenario
         self.causal_dag = causal_dag
