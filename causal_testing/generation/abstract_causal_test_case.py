@@ -103,9 +103,8 @@ class AbstractCausalTestCase:
             optimizer.add_soft([self.scenario.variables[v].z3 == row[v] for v in run_columns])
             if optimizer.check() == z3.unsat:
                 logger.warning(
-                    "Satisfiability of test case was unsat.\n" "Constraints \n %s \n Unsat core %s",
-                    optimizer,
-                    optimizer.unsat_core(),
+                    f"Satisfiability of test case was unsat.\n" f"Constraints \n {optimizer} \n "
+                    f"Unsat core {optimizer.unsat_core()}"
                 )
             model = optimizer.model()
 

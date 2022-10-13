@@ -189,9 +189,7 @@ class JsonUtility(ABC):
         if not test_passes:
             failed = True
             logger.warning(
-                "   FAILED- expected %s, got %s",
-                causal_test_case.expected_causal_effect,
-                causal_test_result.ate,
+                f"   FAILED- expected {causal_test_case.expected_causal_effect}, got {causal_test_result.ate}"
             )
         return failed
 
