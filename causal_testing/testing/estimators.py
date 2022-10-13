@@ -64,7 +64,6 @@ class Estimator(ABC):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        pass
 
     @abstractmethod
     def estimate_ate(self) -> float:
@@ -73,7 +72,6 @@ class Estimator(ABC):
         in the linear regression equation.
         :return: The intercept and coefficient of the linear regression equation
         """
-        pass
 
     def compute_confidence_intervals(self) -> list[float, float]:
         """
@@ -81,7 +79,6 @@ class Estimator(ABC):
         treatment values on the outcome.
         :return: 95% Wald confidence intervals.
         """
-        pass
 
 
 class LogisticRegressionEstimator(Estimator):

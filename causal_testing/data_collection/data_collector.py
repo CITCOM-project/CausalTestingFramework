@@ -21,7 +21,6 @@ class DataCollector(ABC):
         Populate the dataframe with execution data.
         :return df: A pandas dataframe containing execution data for the system-under-test.
         """
-        pass
 
     def filter_valid_data(self, data: pd.DataFrame, check_pos: bool = True) -> pd.DataFrame:
         """Check is execution data is valid for the scenario-under-test.
@@ -119,8 +118,6 @@ class ExperimentalDataCollector(DataCollector):
         :return: A pandas dataframe containing execution data obtained by executing the system-under-test with the
         specified input configuration.
         """
-        pass
-
 
 class ObservationalDataCollector(DataCollector):
     """A data collector that extracts data that is relevant to the specified scenario from a csv of execution data."""
