@@ -152,7 +152,6 @@ disable=raw-checker-failed,
         useless-suppression,
         deprecated-pragma,
         use-symbolic-message-instead,
-        invalid-name
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -235,6 +234,7 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma.
+
 good-names=i,
            j,
            k,
@@ -244,7 +244,7 @@ good-names=i,
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
-good-names-rgxs=
+variable-rgx=^[a-z][a-z0-9]*((_[a-z0-9]+)*)?$
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
