@@ -103,8 +103,9 @@ class AbstractCausalTestCase:
             optimizer.add_soft([self.scenario.variables[v].z3 == row[v] for v in run_columns])
             if optimizer.check() == z3.unsat:
                 logger.warning(
-                    "Satisfiability of test case was unsat.\n"
-                    + f"Constraints\n{optimizer}\nUnsat core {optimizer.unsat_core()}"
+                    "Satisfiability of test case was unsat.\n" "Constraints \n %s \n Unsat core %s",
+                    optimizer,
+                    optimizer.unsat_core(),
                 )
             model = optimizer.model()
 
@@ -187,13 +188,16 @@ class AbstractCausalTestCase:
                 for var in control_configs.columns
             }
             # Putting treatment and control values in messes it up because the two are not independent...
-            # This is potentially problematic as constraints might mean we don't get good coverage if we use control values alone
-            # We might then need to carefully craft our _control value_ generating distributions so that we can get good coverage
+            # This is potentially problematic as constraints might mean we don't get good coverage if we use control
+            # values alone
+            # We might then need to carefully craft our _control value_ generating distributions so that we can get
+            # good coverage
             # without the generated treatment values violating any constraints.
 
             # treatment_configs = pd.DataFrame([test.treatment_input_configuration for test in concrete_tests])
             # both_configs = pd.concat([control_configs, treatment_configs])
-            # ks_stats = {var: stats.kstest(both_configs[var], var.distribution.cdf).statistic for var in both_configs.columns}
+            # ks_stats = {var: stats.kstest(both_configs[var], var.distribution.cdf).statistic for var in
+            # both_configs.columns}
             effect_modifier_configs = pd.DataFrame([test.effect_modifier_configuration for test in concrete_tests])
             ks_stats.update(
                 {

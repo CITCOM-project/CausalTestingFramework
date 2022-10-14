@@ -21,7 +21,6 @@ class DataCollector(ABC):
         Populate the dataframe with execution data.
         :return df: A pandas dataframe containing execution data for the system-under-test.
         """
-        pass
 
     def filter_valid_data(self, data: pd.DataFrame, check_pos: bool = True) -> pd.DataFrame:
         """Check is execution data is valid for the scenario-under-test.
@@ -45,7 +44,7 @@ class DataCollector(ABC):
         solver = z3.Solver()
         for c in self.scenario.constraints:
             solver.assert_and_track(c, f"background: {c}")
-        sat = list()
+        sat = []
         unsat_core = None
         for _, row in data.iterrows():
             solver.push()
@@ -73,7 +72,10 @@ class DataCollector(ABC):
         size_diff = len(data) - len(satisfying_data)
         if size_diff > 0:
             logger.warning(
-                f"Discarded {size_diff}/{len(data)} values due to constraint violations.\n" f"For example{unsat_core}"
+                "Discarded %s/%s values due to constraint violations.\n" "For example%s",
+                size_diff,
+                len(data),
+                unsat_core,
             )
         return satisfying_data
 
@@ -116,8 +118,6 @@ class ExperimentalDataCollector(DataCollector):
         :return: A pandas dataframe containing execution data obtained by executing the system-under-test with the
         specified input configuration.
         """
-        pass
-
 
 class ObservationalDataCollector(DataCollector):
     """A data collector that extracts data that is relevant to the specified scenario from a csv of execution data."""

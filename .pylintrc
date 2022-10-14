@@ -151,7 +151,7 @@ disable=raw-checker-failed,
         suppressed-message,
         useless-suppression,
         deprecated-pragma,
-        use-symbolic-message-instead
+        use-symbolic-message-instead,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -168,7 +168,7 @@ argument-naming-style=snake_case
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style. If left empty, argument names will be checked with the set
 # naming style.
-#argument-rgx=
+argument-rgx=^[a-z][a-z0-9]*((_[a-z0-9]+)*)?$
 
 # Naming style matching correct attribute names.
 attr-naming-style=snake_case
@@ -196,7 +196,7 @@ class-attribute-naming-style=any
 # Regular expression matching correct class attribute names. Overrides class-
 # attribute-naming-style. If left empty, class attribute names will be checked
 # with the set naming style.
-#class-attribute-rgx=
+class-attribute-rgx=^[a-z][a-z0-9]*((_[a-z0-9]+)*)?$
 
 # Naming style matching correct class constant names.
 class-const-naming-style=UPPER_CASE
@@ -234,6 +234,7 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma.
+
 good-names=i,
            j,
            k,
@@ -243,7 +244,7 @@ good-names=i,
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
-good-names-rgxs=
+variable-rgx=^[a-z][a-z0-9]*((_[a-z0-9]+)*)?$
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no

@@ -349,8 +349,10 @@ class CausalDAG(nx.DiGraph):
                 proper_backdoor_graph, treatments, outcomes, smaller_adjustment_set
             ):
                 logger.info(
-                    f"Z={adjustment_set} is not minimal because Z'=Z\\{{'{variable}'}}="
-                    f"{smaller_adjustment_set} is also a valid adjustment set."
+                    "Z=%s is not minimal because Z'=Z\\{{'%s'}}=" "%s is also a valid adjustment set.",
+                    adjustment_set,
+                    variable,
+                    smaller_adjustment_set,
                 )
                 return False
 
@@ -393,16 +395,22 @@ class CausalDAG(nx.DiGraph):
 
             if not set(covariates).issubset(set(self.graph.nodes).difference(descendents_of_proper_casual_paths)):
                 logger.info(
-                    f"Failed Condition 1: Z={covariates} **is** a descendent of some variable on a proper causal "
-                    f"path between X={treatments} and Y={outcomes}."
+                    "Failed Condition 1: Z=%s **is** a descendent of some variable on a proper causal "
+                    "path between X=%s and Y=%s.",
+                    covariates,
+                    treatments,
+                    outcomes,
                 )
                 return False
 
         # Condition (2)
         if not nx.d_separated(proper_backdoor_graph.graph, set(treatments), set(outcomes), set(covariates)):
             logger.info(
-                f"Failed Condition 2: Z={covariates} **does not** d-separate X={treatments} and Y={outcomes} in"
-                f" the proper back-door graph relative to X and Y."
+                "Failed Condition 2: Z=%s **does not** d-separate X=%s and Y=%s in"
+                " the proper back-door graph relative to X and Y.",
+                covariates,
+                treatments,
+                outcomes,
             )
             return False
 
