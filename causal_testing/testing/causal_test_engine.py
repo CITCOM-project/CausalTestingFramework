@@ -40,8 +40,7 @@ class CausalTestEngine:
         self.scenario_execution_data_df = pd.DataFrame()
 
     def load_data(self, **kwargs):
-        """Load execution data corresponding to the causal test case into a pandas dataframe and return the minimal
-        adjustment set.
+        """Load execution data corresponding to the causal test case into a pandas dataframe.
 
         Data can be loaded in two ways:
             (1) Experimentally - the model is executed with the treatment and control input configurations under
@@ -55,13 +54,18 @@ class CausalTestEngine:
         assumptions hold, can be used to estimate the causal effect for the causal test case.
 
         :return self: Update the causal test case's execution data dataframe.
-        :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
-        estimate as opposed to a purely associational estimate.
+
         """
 
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
 
     def identification(self, causal_test_case):
+        """ Identify and return the minimum adjustment set
+
+        :param causal_test_case: Causal test Case to get the minimum adjustment set from
+        :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
+        estimate as opposed to a purely associational estimate.
+        """
         minimal_adjustment_sets = []
         treatment_variables = list(causal_test_case.control_input_configuration)
         if causal_test_case.effect == "total":
@@ -94,6 +98,7 @@ class CausalTestEngine:
         (7) Apply test oracle procedure to assign a pass/fail to the CausalTestResult and return.
 
         :param estimator: A reference to an Estimator class.
+        :param causal_test_case: The CausalTestCase object to be tested
         :param estimate_type: A string which denotes the type of estimate to return, ATE or CATE.
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
