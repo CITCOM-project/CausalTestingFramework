@@ -114,6 +114,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         variables_to_check = list(self.minimal_adjustment_set) + ['A'] + ['C']
         self.assertTrue(self.causal_test_engine._check_positivity_violation(variables_to_check))
 
+    def test_check_minimum_adjustment_set(self):
+        """ Check that the minimum adjustment set is correctly made"""
+        minimum_adjustment_set = self.causal_test_engine.identification(self.causal_test_case)
+        self.assertEqual(minimum_adjustment_set, {'D'})
+
     def test_execute_test_observational_causal_forest_estimator(self):
         """ Check that executing the causal test case returns the correct results for the dummy data using a causal
         forest estimator. """
