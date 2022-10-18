@@ -137,7 +137,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                  self.minimal_adjustment_set,
                                                  ('C',),
                                                  self.causal_test_engine.scenario_execution_data_df)
-        causal_test_result = self.causal_test_engine.execute_test(estimation_model)
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
         self.assertAlmostEqual(causal_test_result.ate, 4, delta=1)
 
 
@@ -156,7 +156,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.data_collector
         )
         with self.assertRaises(Exception):
-            causal_test_engine.load_data()
+            causal_test_engine.identification()
 
 
     def test_execute_test_observational_linear_regression_estimator(self):
@@ -187,7 +187,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_specification,
             self.data_collector
         )
-        self.minimal_adjustment_set = causal_test_engine.load_data()
+        causal_test_engine.load_data()
+        self.minimal_adjustment_set = causal_test_engine.identification(causal_test_case)
 
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
