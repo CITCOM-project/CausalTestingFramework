@@ -34,7 +34,6 @@ class CausalTestEngine:
     def __init__(
         self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification, data_collector: DataCollector
     ):
-        self.causal_test_case = causal_test_case
         self.treatment_variables = list(self.causal_test_case.control_input_configuration)
         self.casual_dag, self.scenario = (
             causal_specification.causal_dag,
@@ -65,12 +64,13 @@ class CausalTestEngine:
 
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
 
+    def identification(self, causal_test_case):
         minimal_adjustment_sets = []
-        if self.causal_test_case.effect == "total":
+        if causal_test_case.effect == "total":
             minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
                 [v.name for v in self.treatment_variables], [v.name for v in self.causal_test_case.outcome_variables]
             )
-        elif self.causal_test_case.effect == "direct":
+        elif causal_test_case.effect == "direct":
             minimal_adjustment_sets = self.casual_dag.direct_effect_adjustment_sets(
                 [v.name for v in self.treatment_variables], [v.name for v in self.causal_test_case.outcome_variables]
             )
