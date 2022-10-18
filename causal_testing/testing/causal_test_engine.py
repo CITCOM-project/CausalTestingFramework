@@ -40,7 +40,7 @@ class CausalTestEngine:
         )
         self.data_collector = data_collector
         self.scenario_execution_data_df = pd.DataFrame()
-        self.treatment_variables = None
+
     def load_data(self, **kwargs):
         """Load execution data corresponding to the causal test case into a pandas dataframe and return the minimal
         adjustment set.
@@ -101,7 +101,8 @@ class CausalTestEngine:
             raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
         if estimator.df is None:
             estimator.df = self.scenario_execution_data_df
-        treatments = [v.name for v in self.treatment_variables]
+        treatment_variables = list(causal_test_case.control_input_configuration)
+        treatments = [v.name for v in treatment_variables]
         outcomes = [v.name for v in causal_test_case.outcome_variables]
         minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
