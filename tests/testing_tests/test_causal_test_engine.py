@@ -72,20 +72,6 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.treatment_value = 1
         self.control_value = 0
 
-    def test_control_treatment_configs(self):
-        test_case = CausalTestCase(
-                    control_input_configuration={self.A: 0},
-                    treatment_input_configuration={self.A: 1},
-                    expected_causal_effect=self.expected_causal_effect,
-                    outcome_variables={self.C}
-                    )
-        causal_test_engine = CausalTestEngine(
-            test_case,
-            self.causal_specification,
-            self.data_collector
-        )
-        self.assertEqual(causal_test_engine.treatment_variables, [self.A])
-
     def test_positivity_violation_throws_exception(self):
         causal_test_engine = CausalTestEngine(
             self.causal_specification,
