@@ -60,7 +60,7 @@ class CausalTestEngine:
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
 
     def identification(self, causal_test_case):
-        """ Identify and return the minimum adjustment set
+        """Identify and return the minimum adjustment set
 
         :param causal_test_case: Causal test Case to get the minimum adjustment set from
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
