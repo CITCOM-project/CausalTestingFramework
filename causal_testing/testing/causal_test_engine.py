@@ -31,9 +31,7 @@ class CausalTestEngine:
         had the anticipated causal effect. This should assign a pass/fail value to the CausalTestResult.
     """
 
-    def __init__(
-        self, causal_specification: CausalSpecification, data_collector: DataCollector
-    ):
+    def __init__(self, causal_specification: CausalSpecification, data_collector: DataCollector):
         self.casual_dag, self.scenario = (
             causal_specification.causal_dag,
             causal_specification.scenario,
@@ -80,7 +78,9 @@ class CausalTestEngine:
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
 
-    def execute_test(self, estimator: Estimator, causal_test_case: CausalTestCase, estimate_type: str = "ate") -> CausalTestResult:
+    def execute_test(
+        self, estimator: Estimator, causal_test_case: CausalTestCase, estimate_type: str = "ate"
+    ) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
 
         Test case execution proceeds with the following steps:
@@ -111,9 +111,7 @@ class CausalTestEngine:
         logger.info("outcomes: %s", outcomes)
         logger.info("minimal_adjustment_set: %s", minimal_adjustment_set)
 
-        minimal_adjustment_set = minimal_adjustment_set - {
-            v.name for v in causal_test_case.control_input_configuration
-        }
+        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.control_input_configuration}
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.outcome_variables}
         assert all(
             (v.name not in minimal_adjustment_set for v in causal_test_case.control_input_configuration)

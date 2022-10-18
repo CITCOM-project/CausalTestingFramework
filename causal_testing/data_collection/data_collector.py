@@ -119,6 +119,7 @@ class ExperimentalDataCollector(DataCollector):
         specified input configuration.
         """
 
+
 class ObservationalDataCollector(DataCollector):
     """A data collector that extracts data that is relevant to the specified scenario from a csv of execution data."""
 
