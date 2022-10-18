@@ -32,9 +32,8 @@ class CausalTestEngine:
     """
 
     def __init__(
-        self, causal_test_case: CausalTestCase, causal_specification: CausalSpecification, data_collector: DataCollector
+        self, causal_specification: CausalSpecification, data_collector: DataCollector
     ):
-        self.treatment_variables = list(self.causal_test_case.control_input_configuration)
         self.casual_dag, self.scenario = (
             causal_specification.causal_dag,
             causal_specification.scenario,
@@ -66,13 +65,14 @@ class CausalTestEngine:
 
     def identification(self, causal_test_case):
         minimal_adjustment_sets = []
+        treatment_variables = list(causal_test_case.control_input_configuration)
         if causal_test_case.effect == "total":
             minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
-                [v.name for v in self.treatment_variables], [v.name for v in self.causal_test_case.outcome_variables]
+                [v.name for v in treatment_variables], [v.name for v in causal_test_case.outcome_variables]
             )
         elif causal_test_case.effect == "direct":
             minimal_adjustment_sets = self.casual_dag.direct_effect_adjustment_sets(
-                [v.name for v in self.treatment_variables], [v.name for v in self.causal_test_case.outcome_variables]
+                [v.name for v in treatment_variables], [v.name for v in causal_test_case.outcome_variables]
             )
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
