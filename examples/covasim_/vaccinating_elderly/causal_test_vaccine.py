@@ -76,10 +76,11 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
                                           outcome_variables={outcome_variable})
 
         # 7. Create an instance of the causal test engine
-        causal_test_engine = CausalTestEngine(causal_test_case, causal_specification, data_collector)
+        causal_test_engine = CausalTestEngine(causal_specification, data_collector)
 
         # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
-        minimal_adjustment_set = causal_test_engine.load_data(index_col=0)
+        causal_test_engine.load_data(index_col=0)
+        minimal_adjustment_set = causal_test_engine.identification(causal_test_case)
 
         # 9. Build statistical model
         linear_regression_estimator = LinearRegressionEstimator((vaccine.name,), 1, 0,
@@ -87,7 +88,7 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
                                                                 (outcome_variable.name,))
 
         # 10. Execute test and save results in dict
-        causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, 'ate')
+        causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
         if verbose:
             print(f"Causation:\n{causal_test_result}")
         results_dict[outcome_variable.name]['ate'] = causal_test_result.ate
