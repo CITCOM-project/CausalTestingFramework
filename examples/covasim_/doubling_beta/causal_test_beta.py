@@ -42,9 +42,9 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
     results_dict = {'association': {},
                     'causation': {}}
 
-    # Read in the observational data and perform identification
+    # Read in the observational data, perform identification, and setup the causal_test_engine
     past_execution_df = pd.read_csv(observational_data_path)
-    _, causal_test_engine, causal_test_case = identification(observational_data_path)
+    _, causal_test_engine, causal_test_case = engine_setup(observational_data_path)
 
     linear_regression_estimator = LinearRegressionEstimator(('beta',), 0.032, 0.016,
                                                             {'avg_age', 'contacts'},  # We use custom adjustment set
@@ -179,7 +179,7 @@ def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: b
     age_contact_fig.savefig(outpath_base_str + "age_contact_executions.pdf", format="pdf")
 
 
-def identification(observational_data_path):
+def engine_setup(observational_data_path):
     # 1. Read in the Causal DAG
     causal_dag = CausalDAG('dag.dot')
 
