@@ -66,6 +66,7 @@ class CausalTestEngine:
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
+
         minimal_adjustment_sets = []
         treatment_variables = list(causal_test_case.control_input_configuration)
         if causal_test_case.effect == "total":
