@@ -51,6 +51,7 @@ class CausalTestEngine:
         self.data_collector = data_collector
         self.scenario_execution_data_df = pd.DataFrame()
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
+        self.minimal_adjustment_set = None
 
     def identification(self, causal_test_case):
         """Identify and return the minimum adjustment set
@@ -73,8 +74,8 @@ class CausalTestEngine:
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
 
-        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
-        return minimal_adjustment_set
+        self.minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
+        return self.minimal_adjustment_set
 
     def execute_test(
         self, estimator: Estimator, causal_test_case: CausalTestCase, estimate_type: str = "ate"
@@ -103,14 +104,12 @@ class CausalTestEngine:
         treatment_variables = list(causal_test_case.control_input_configuration)
         treatments = [v.name for v in treatment_variables]
         outcomes = [v.name for v in causal_test_case.outcome_variables]
-        minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(treatments, outcomes)
-        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
 
         logger.info("treatments: %s", treatments)
         logger.info("outcomes: %s", outcomes)
-        logger.info("minimal_adjustment_set: %s", minimal_adjustment_set)
+        logger.info("minimal_adjustment_set: %s", self.minimal_adjustment_set)
 
-        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.control_input_configuration}
+        minimal_adjustment_set = self.minimal_adjustment_set - {v.name for v in causal_test_case.control_input_configuration}
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.outcome_variables}
         assert all(
             (v.name not in minimal_adjustment_set for v in causal_test_case.control_input_configuration)
