@@ -75,7 +75,6 @@ class CausalTestEngine:
             raise ValueError("Causal effect should be 'total' or 'direct'")
 
         self.minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
-        return self.minimal_adjustment_set
 
     def execute_test(
         self, estimator: Estimator, causal_test_case: CausalTestCase, estimate_type: str = "ate"
