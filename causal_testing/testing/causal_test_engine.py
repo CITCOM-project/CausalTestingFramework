@@ -109,7 +109,9 @@ class CausalTestEngine:
         logger.info("outcomes: %s", outcomes)
         logger.info("minimal_adjustment_set: %s", self.minimal_adjustment_set)
 
-        minimal_adjustment_set = self.minimal_adjustment_set - {v.name for v in causal_test_case.control_input_configuration}
+        minimal_adjustment_set = self.minimal_adjustment_set - {
+            v.name for v in causal_test_case.control_input_configuration
+        }
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.outcome_variables}
         assert all(
             (v.name not in minimal_adjustment_set for v in causal_test_case.control_input_configuration)
