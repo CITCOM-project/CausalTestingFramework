@@ -216,10 +216,9 @@ def engine_setup(observational_data_path):
     causal_test_engine = CausalTestEngine(causal_specification, data_collector)
 
     # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
-    causal_test_engine.load_data(index_col=0)
-    minimal_adjustment_set = causal_test_engine.identification(causal_test_case)
+    causal_test_engine.identification(causal_test_case)
 
-    return minimal_adjustment_set, causal_test_engine, causal_test_case
+    return causal_test_engine.minimal_adjustment_set, causal_test_engine, causal_test_case
 
 
 def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=None, col=None):
