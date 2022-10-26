@@ -29,20 +29,9 @@ class CausalTestEngine:
         provided as an instance of the CausalTestResult class.
     (4) Define a test oracle procedure which uses the causal test results to determine whether the intervention has
         had the anticipated causal effect. This should assign a pass/fail value to the CausalTestResult.
-    """
 
-    def __init__(self, causal_specification: CausalSpecification, data_collector: DataCollector):
-        self.casual_dag, self.scenario = (
-            causal_specification.causal_dag,
-            causal_specification.scenario,
-        )
-        self.data_collector = data_collector
-        self.scenario_execution_data_df = pd.DataFrame()
-
-    def load_data(self, **kwargs):
-        """Load execution data corresponding to the causal test case into a pandas dataframe.
-
-        Data can be loaded in two ways:
+    Data is loaded as part of the "__init__" function
+    Data can be loaded in two ways:
             (1) Experimentally - the model is executed with the treatment and control input configurations under
                 conditions that guarantee the observed change in outcome must be caused by the change in input
                 (intervention).
@@ -52,11 +41,15 @@ class CausalTestEngine:
 
         After the data is loaded, both are treated in the same way and, provided the identifiability and modelling
         assumptions hold, can be used to estimate the causal effect for the causal test case.
+    """
 
-        :return self: Update the causal test case's execution data dataframe.
-
-        """
-
+    def __init__(self, causal_specification: CausalSpecification, data_collector: DataCollector, **kwargs):
+        self.casual_dag, self.scenario = (
+            causal_specification.causal_dag,
+            causal_specification.scenario,
+        )
+        self.data_collector = data_collector
+        self.scenario_execution_data_df = pd.DataFrame()
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
 
     def identification(self, causal_test_case):
