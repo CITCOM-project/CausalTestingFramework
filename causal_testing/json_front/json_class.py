@@ -203,8 +203,7 @@ class JsonUtility(ABC):
                 - estimation_model - Estimator instance for the test being run
         """
         data_collector = ObservationalDataCollector(self.modelling_scenario, self.data_path)
-        causal_test_engine = CausalTestEngine(self.causal_specification, data_collector)
-        causal_test_engine.load_data(index_col=0)
+        causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
         minimal_adjustment_set = causal_test_engine.identification(causal_test_case)
         treatment_vars = list(causal_test_case.treatment_input_configuration)
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in treatment_vars}
