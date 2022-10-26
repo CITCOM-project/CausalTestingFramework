@@ -64,10 +64,9 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_specification,
             self.data_collector
         )
-        self.causal_test_engine.load_data()
-        self.minimal_adjustment_set =\
-            self.causal_test_engine.identification(self.causal_test_case)
 
+        self.causal_test_engine.identification(self.causal_test_case)
+        self.minimal_adjustment_set = self.causal_test_engine.minimal_adjustment_set
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
         self.control_value = 0
@@ -77,7 +76,6 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_specification,
             self.data_collector
         )
-        causal_test_engine.load_data()
         causal_test_engine.scenario_execution_data_df.drop("A", axis=1, inplace=True)
         estimation_model = LinearRegressionEstimator(('A',),
                                                      self.treatment_value,
@@ -116,7 +114,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
     def test_check_minimum_adjustment_set(self):
         """ Check that the minimum adjustment set is correctly made"""
-        minimum_adjustment_set = self.causal_test_engine.identification(self.causal_test_case)
+        self.causal_test_engine.identification(self.causal_test_case)
+        minimum_adjustment_set = self.causal_test_engine.minimal_adjustment_set
         self.assertEqual(minimum_adjustment_set, {'D'})
 
     def test_execute_test_observational_causal_forest_estimator(self):
@@ -178,9 +177,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_specification,
             self.data_collector
         )
-        causal_test_engine.load_data()
-        self.minimal_adjustment_set = causal_test_engine.identification(causal_test_case)
-
+        causal_test_engine.identification(causal_test_case)
+        self.minimal_adjustment_set = causal_test_engine.minimal_adjustment_set
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
         self.control_value = 0
