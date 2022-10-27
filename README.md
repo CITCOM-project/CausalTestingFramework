@@ -84,10 +84,10 @@ data_collector = ObservationalDataCollector(modelling_scenario, data_csv_path)
 The actual running of the tests is done using the `CausalTestEngine` class. This is still a work in progress and may change in the future to improve ease of use, but currently proceeds as follows.
 
 ```{python}
-causal_test_engine = CausalTestEngine(causal_test_case, causal_specification, data_collector)  # Instantiate the causal test engine
-minimal_adjustment_set = causal_test_engine.load_data(data_csv_path, index_col=0)  # Calculate the adjustment set
+causal_test_engine = CausalTestEngine(causal_specification, data_collector, data_csv_path, index_col=0)  # Instantiate the causal test engine
+causal_test_engine.identification(causal_test_case) #Perform identification and produce the minimum adjustment set
 treatment_vars = list(causal_test_case.treatment_input_configuration)
-minimal_adjustment_set = minimal_adjustment_set - set([v.name for v in treatment_vars])  # Remove the treatment variables from the adjustment set. This is necessary for causal inference to work properly.
+minimal_adjustment_set = causal_test_engine.minimal_adjustment_set - set([v.name for v in treatment_vars])  # Remove the treatment variables from the adjustment set. This is necessary for causal inference to work properly.
 ```
 
 Whether using fresh or pre-existing data, a key aspect of causal inference is estimation. To actually execute a test, we need an estimator. We currently support two estimators: linear regression and causal forest. These can simply be instantiated as per the [documentation](https://causal-testing-framework.readthedocs.io/en/latest/autoapi/causal_testing/testing/estimators/index.html).
