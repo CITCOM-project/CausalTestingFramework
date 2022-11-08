@@ -12,6 +12,7 @@ from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEff
 from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
+import time
 
 
 def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 30, verbose: bool = False):
@@ -81,11 +82,11 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
 
 
         # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
-        minimal_adjustment_set = causal_test_engine.identification(causal_test_case)
+        causal_test_engine.identification(causal_test_case)
 
         # 9. Build statistical model
         linear_regression_estimator = LinearRegressionEstimator((vaccine.name,), 1, 0,
-                                                                minimal_adjustment_set,
+                                                                causal_test_engine.minimal_adjustment_set,
                                                                 (outcome_variable.name,))
 
         # 10. Execute test and save results in dict

@@ -51,7 +51,7 @@ class CausalTestEngine:
         self.data_collector = data_collector
         self.scenario_execution_data_df = pd.DataFrame()
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
-        self.minimal_adjustment_set = None
+        self.minimal_adjustment_set = set()
 
     def identification(self, causal_test_case):
         """Identify and return the minimum adjustment set
