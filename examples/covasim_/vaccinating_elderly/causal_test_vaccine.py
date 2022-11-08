@@ -9,10 +9,8 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect
-from causal_testing.testing.intervention import Intervention
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
-import time
 
 
 def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 30, verbose: bool = False):
