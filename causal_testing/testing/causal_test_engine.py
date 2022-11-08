@@ -49,7 +49,6 @@ class CausalTestEngine:
             causal_specification.scenario,
         )
         self.data_collector = data_collector
-        self.scenario_execution_data_df = pd.DataFrame()
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
         self.minimal_adjustment_set = set()
 
