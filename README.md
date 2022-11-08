@@ -14,7 +14,7 @@ The causal testing framework has three core components:
     1. Using the causal DAG, identify an estimand for the effect of the intervention on the output of interest. That is, a statistical procedure capable of estimating the causal effect of the intervention on the output.
     2. Collect the data to which the statistical procedure will be applied (see Data collection below).
     3. Apply a statistical model (e.g. linear regression or causal forest) to the data to obtain a point estimate for the causal effect. Depending on the estimator used, confidence intervals may also be obtained at a specified confidence level e.g. 0.05 corresponds to 95% confidence intervals (optional).
-    4. Return the casual test result including a point estimate and 95% confidence intervals, usally quantifying the average treatment effect (ATE).
+    4. Return the casual test result including a point estimate and 95% confidence intervals, usually quantifying the average treatment effect (ATE).
     5. Implement and apply a test oracle to the causal test result - that is, a procedure that determines whether the test should pass or fail based on the results. In the simplest case, this takes the form of an assertion which compares the point estimate to the expected causal effect specified in the causal test case.
 
 3. [Data collection](causal_testing/data_collection/README.md): Data for the system-under-test can be collected in two ways: experimentally or observationally. The former involves executing the system-under-test under controlled conditions which, by design, isolate the causal effect of interest (accurate but expensive), while the latter involves collecting suitable previous execution data and utilising our causal knowledge to draw causal inferences (potentially less accurate but efficient). To collect experimental data, the user must implement a single method which runs the system-under-test with a given input configuration. On the other hand, when dealing with observational data, we automatically check whether the data is suitable for the identified estimand in two steps. First, confirm whether the data contains a column for each variable in the causal DAG. Second, we check for [positivity violations](https://www.youtube.com/watch?v=4xc8VkrF98w). If there are positivity violations, we can provide instructions for an execution that will fill the gap (future work).
@@ -84,10 +84,10 @@ data_collector = ObservationalDataCollector(modelling_scenario, data_csv_path)
 The actual running of the tests is done using the `CausalTestEngine` class. This is still a work in progress and may change in the future to improve ease of use, but currently proceeds as follows.
 
 ```{python}
-causal_test_engine = CausalTestEngine(causal_test_case, causal_specification, data_collector)  # Instantiate the causal test engine
-minimal_adjustment_set = causal_test_engine.load_data(data_csv_path, index_col=0)  # Calculate the adjustment set
+causal_test_engine = CausalTestEngine(causal_specification, data_collector, data_csv_path, index_col=0)  # Instantiate the causal test engine
+causal_test_engine.identification(causal_test_case) #Perform identification and produce the minimum adjustment set
 treatment_vars = list(causal_test_case.treatment_input_configuration)
-minimal_adjustment_set = minimal_adjustment_set - set([v.name for v in treatment_vars])  # Remove the treatment variables from the adjustment set. This is necessary for causal inference to work properly.
+minimal_adjustment_set = causal_test_engine.minimal_adjustment_set - set([v.name for v in treatment_vars])  # Remove the treatment variables from the adjustment set. This is necessary for causal inference to work properly.
 ```
 
 Whether using fresh or pre-existing data, a key aspect of causal inference is estimation. To actually execute a test, we need an estimator. We currently support two estimators: linear regression and causal forest. These can simply be instantiated as per the [documentation](https://causal-testing-framework.readthedocs.io/en/latest/autoapi/causal_testing/testing/estimators/index.html).
