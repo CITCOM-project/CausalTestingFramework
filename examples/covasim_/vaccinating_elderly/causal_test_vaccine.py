@@ -70,7 +70,7 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
                     'max_doses': {}
                     }
 
-    causal_test_engine = CausalTestEngine(causal_specification, data_collector)
+    causal_test_engine = CausalTestEngine(causal_specification, data_collector, index_col=0)
     for outcome_variable, expected_effect in expected_outcome_effects.items():
         causal_test_case = CausalTestCase(control_input_configuration={vaccine: 0},
                                           expected_causal_effect=expected_effect,
@@ -81,7 +81,6 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
 
 
         # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
-        causal_test_engine.load_data(index_col=0)
         minimal_adjustment_set = causal_test_engine.identification(causal_test_case)
 
         # 9. Build statistical model
