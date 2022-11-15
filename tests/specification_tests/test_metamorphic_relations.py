@@ -21,12 +21,28 @@ def program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
     return {'Z': Z, 'M': M, 'Y': Y}
 
 
+def buggy_program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
+    if Z is None:
+        Z = 2  # No effect of X1 or X2 on Z
+    if M is None:
+        M = 3*Z + X3
+    if Y is None:
+        Y = M/2
+    return {'Z': Z, 'M': M, 'Y': Y}
+
+
 class ProgramUnderTestEDC(ExperimentalDataCollector):
 
     def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:
-        print(input_configuration)
         results_dict = program_under_test(**input_configuration)
-        print(results_dict)
+        results_df = pd.DataFrame(results_dict, index=[0])
+        return results_df
+
+
+class BuggyProgramUnderTestEDC(ExperimentalDataCollector):
+
+    def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:
+        results_dict = buggy_program_under_test(**input_configuration)
         results_df = pd.DataFrame(results_dict, index=[0])
         return results_df
 
@@ -46,18 +62,35 @@ class TestMetamorphicRelation(unittest.TestCase):
         Z = Output('Z', float)
         M = Output('M', float)
         Y = Output('Y', float)
-        scenario = Scenario(variables={X1, X2, X3, Z, M, Y})
-        default_control_input_config = {'X1': 1, 'X2': 2, 'X3': 3}
-        default_treatment_input_config = {'X1': 2, 'X2': 3, 'X3': 3}
-        self.data_collector = ProgramUnderTestEDC(scenario,
-                                                  default_control_input_config,
-                                                  default_treatment_input_config)
+        self.scenario = Scenario(variables={X1, X2, X3, Z, M, Y})
+        self.default_control_input_config = {'X1': 1, 'X2': 2, 'X3': 3}
+        self.default_treatment_input_config = {'X1': 2, 'X2': 3, 'X3': 3}
+        self.data_collector = ProgramUnderTestEDC(self.scenario,
+                                                  self.default_control_input_config,
+                                                  self.default_treatment_input_config)
 
-    def test_metamorphic_relation(self):
+    def test_should_cause_metamorphic_relations_should_pass(self):
         causal_dag = CausalDAG(self.dag_dot_path)
         for edge in causal_dag.graph.edges:
             (u, v) = edge
             should_cause_MR = ShouldCause(u, v, None, causal_dag)
             should_cause_MR.generate_follow_up(10, -10.0, 10.0, 1)
             test_results = should_cause_MR.execute_tests(self.data_collector)
-            print(test_results)
+            should_cause_MR.test_oracle(test_results)
+
+    def test_should_cause_metamorphic_relation_missing_relationship(self):
+        """Test whether the ShouldCause MR catches missing relationships in the DAG."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        self.data_collector = BuggyProgramUnderTestEDC(self.scenario,
+                                                       self.default_control_input_config,
+                                                       self.default_treatment_input_config)
+        X1_should_cause_Z_MR = ShouldCause('X1', 'Z', None, causal_dag)
+        X2_should_cause_Z_MR = ShouldCause('X2', 'Z', None, causal_dag)
+        X1_should_cause_Z_MR.generate_follow_up(10, -100, 100, 1)
+        X2_should_cause_Z_MR.generate_follow_up(10, -100, 100, 1)
+        X1_should_cause_Z_test_results = X1_should_cause_Z_MR.execute_tests(self.data_collector)
+        X2_should_cause_Z_test_results = X2_should_cause_Z_MR.execute_tests(self.data_collector)
+        self.assertRaises(AssertionError, X1_should_cause_Z_MR.test_oracle, X1_should_cause_Z_test_results)
+        self.assertRaises(AssertionError, X2_should_cause_Z_MR.test_oracle, X2_should_cause_Z_test_results)
+
+

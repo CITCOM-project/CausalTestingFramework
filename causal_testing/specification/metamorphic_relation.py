@@ -89,15 +89,15 @@ class MetamorphicRelation:
             data_collector.control_input_configuration = control_input_config
             data_collector.treatment_input_configuration = treatment_input_config
             metamorphic_test_results_df = data_collector.collect_data()
-            print(metamorphic_test_results_df)
-            # Compare control and treatment results
+
+            # Apply assertion to control and treatment outputs
             control_output = metamorphic_test_results_df.loc["control_0"][metamorphic_test.output]
             treatment_output = metamorphic_test_results_df.loc["treatment_0"][metamorphic_test.output]
             if not self.assertion(control_output, treatment_output):
                 test_results["fail"].append(metamorphic_test)
             else:
                 test_results["pass"].append(metamorphic_test)
-            return test_results
+        return test_results
 
     @abstractmethod
     def assertion(self, source_output, follow_up_output):
@@ -121,8 +121,9 @@ class ShouldCause(MetamorphicRelation):
         return source_output != follow_up_output
 
     def test_oracle(self, test_results):
-        ...
-
+        """A single passing test is sufficient to show presence of a causal effect."""
+        assert len(test_results["fail"]) < len(self.tests),\
+            f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
 
     def __str__(self):
         formatted_str = f"{self.treatment_var} --> {self.output_var}"
