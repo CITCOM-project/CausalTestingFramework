@@ -179,6 +179,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         )
         causal_test_engine.identification(causal_test_case)
         self.minimal_adjustment_set = causal_test_engine.minimal_adjustment_set
+        print(self.minimal_adjustment_set)
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
         self.control_value = 0
@@ -189,7 +190,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
                                                      ('C',),
                                                      causal_test_engine.scenario_execution_data_df)
         causal_test_result = causal_test_engine.execute_test(estimation_model, causal_test_case)
-        self.assertAlmostEqual(causal_test_result.ate, 0, delta=1e-10)
+        self.assertAlmostEqual(causal_test_result.ate, 4, delta=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
         """ Check that executing the causal test case returns the correct results for dummy data using a linear
