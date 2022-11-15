@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from causal_testing.specification.causal_specification import CausalDAG, Node
+from causal_testing.data_collection.data_collector import ExperimentalDataCollector
 
 @dataclass(order=True)
 class MetamorphicRelation:
@@ -57,28 +58,57 @@ class MetamorphicRelation:
         )
         source_test_inputs = source_follow_up_test_inputs[[self.treatment_var]]
         follow_up_test_inputs = source_follow_up_test_inputs[[follow_up_input]]
-        follow_up_test_inputs.rename({follow_up_input: self.treatment_var})
+        follow_up_test_inputs = follow_up_test_inputs.rename(columns={follow_up_input: self.treatment_var})
+        source_test_inputs_record = source_test_inputs.to_dict(orient="records")
+        follow_up_test_inputs_record = follow_up_test_inputs.to_dict(orient="records")
+        if not test_inputs.empty:
+            other_test_inputs_record = test_inputs.to_dict(orient="records")
+        else:
+            other_test_inputs_record = [{}] * len(source_test_inputs)
+        metamorphic_tests = []
+        for i in range(len(source_test_inputs_record)):
+            metamorphic_test = MetamorphicTest(source_test_inputs_record[i],
+                                               follow_up_test_inputs_record[i],
+                                               other_test_inputs_record[i],
+                                               self.output_var,
+                                               str(self)
+                                               )
+            metamorphic_tests.append(metamorphic_test)
+        self.tests = metamorphic_tests
 
-        # TODO: Add a metamorphic test dataclass that stores these attributes
-        self.tests = list(
-            zip(
-                source_test_inputs.to_dict(orient="records"),
-                follow_up_test_inputs.to_dict(orient="records"),
-                test_inputs.to_dict(orient="records") if not test_inputs.empty
-                else [{}] * len(source_test_inputs),
-                [self.output_var] * len(source_test_inputs),
-                [str(self)] * len(source_test_inputs)
-            )
-        )
+    def execute_tests(self, data_collector: ExperimentalDataCollector):
+        """Execute the generated list of metamorphic tests, returning a dictionary of tests that pass and fail.
+
+        :param data_collector: An experimental data collector for the system-under-test.
+        """
+        test_results = {"pass": [], "fail": []}
+        for metamorphic_test in self.tests:
+            # Update the control and treatment configuration to take generated values for source and follow-up tests
+            control_input_config = metamorphic_test.source_inputs | metamorphic_test.other_inputs
+            treatment_input_config = metamorphic_test.follow_up_inputs | metamorphic_test.other_inputs
+            data_collector.control_input_configuration = control_input_config
+            data_collector.treatment_input_configuration = treatment_input_config
+            metamorphic_test_results_df = data_collector.collect_data()
+            print(metamorphic_test_results_df)
+            # Compare control and treatment results
+            control_output = metamorphic_test_results_df.loc["control_0"][metamorphic_test.output]
+            treatment_output = metamorphic_test_results_df.loc["treatment_0"][metamorphic_test.output]
+            if not self.assertion(control_output, treatment_output):
+                test_results["fail"].append(metamorphic_test)
+            else:
+                test_results["pass"].append(metamorphic_test)
+            return test_results
 
     @abstractmethod
-    def test_oracle(self):
-        """A test oracle i.e. a method that checks correctness of a test."""
+    def assertion(self, source_output, follow_up_output):
+        """An assertion that should be applied to an individual metamorphic test run."""
         ...
 
     @abstractmethod
-    def execute_test(self):
-        """Execute a test for this metamorphic relation."""
+    def test_oracle(self, test_results):
+        """A test oracle that assert whether the MR holds or not based on ALL test results.
+
+        This method must raise an assertion, not return a bool."""
         ...
 
 
@@ -86,14 +116,33 @@ class MetamorphicRelation:
 class ShouldCause(MetamorphicRelation):
     """Class representing a should cause metamorphic relation."""
 
-    def test_oracle(self):
-        pass
+    def assertion(self, source_output, follow_up_output):
+        """If there is a causal effect, the outputs should not be the same."""
+        return source_output != follow_up_output
 
-    def execute_test(self):
-        pass
+    def test_oracle(self, test_results):
+        ...
+
 
     def __str__(self):
         formatted_str = f"{self.treatment_var} --> {self.output_var}"
         if self.adjustment_vars:
             formatted_str += f" | {self.adjustment_vars}"
         return formatted_str
+
+
+@dataclass(order=True)
+class MetamorphicTest:
+    """Class representing a metamorphic test case."""
+    source_inputs: dict
+    follow_up_inputs: dict
+    other_inputs: dict
+    output: str
+    relation: str
+
+    def __str__(self):
+        return f"Source inputs: {self.source_inputs}\n" \
+               f"Follow-up inputs: {self.follow_up_inputs}\n" \
+               f"Other inputs: {self.other_inputs}\n" \
+               f"Output: {self.output}" \
+               f"Metamorphic Relation: {self.relation}"
