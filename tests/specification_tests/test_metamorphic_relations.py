@@ -1,12 +1,12 @@
 import unittest
 import os
-
 import pandas as pd
+from itertools import combinations
 
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import Scenario
-from causal_testing.specification.metamorphic_relation import ShouldCause
+from causal_testing.specification.metamorphic_relation import ShouldCause, ShouldNotCause
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
 from causal_testing.specification.variable import Input, Output
 
@@ -18,7 +18,7 @@ def program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
         M = 3*Z + X3
     if Y is None:
         Y = M/2
-    return {'Z': Z, 'M': M, 'Y': Y}
+    return {'X1': X1, 'X2': X2, 'X3': X3, 'Z': Z, 'M': M, 'Y': Y}
 
 
 def buggy_program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
@@ -28,7 +28,7 @@ def buggy_program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
         M = 3*Z + X3
     if Y is None:
         Y = M/2
-    return {'Z': Z, 'M': M, 'Y': Y}
+    return {'X1': X1, 'X2': X2, 'X3': X3, 'Z': Z, 'M': M, 'Y': Y}
 
 
 class ProgramUnderTestEDC(ExperimentalDataCollector):
@@ -52,7 +52,7 @@ class TestMetamorphicRelation(unittest.TestCase):
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
-        dag_dot = """digraph DAG { rankdir=LR; X1 -> Z; Z -> M; M -> Y; X1 -> M; X2 -> Z; X3 -> M;}"""
+        dag_dot = """digraph DAG { rankdir=LR; X1 -> Z; Z -> M; M -> Y; X2 -> Z; X3 -> M;}"""
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
 
@@ -69,7 +69,8 @@ class TestMetamorphicRelation(unittest.TestCase):
                                                   self.default_control_input_config,
                                                   self.default_treatment_input_config)
 
-    def test_should_cause_metamorphic_relations_should_pass(self):
+    def test_should_cause_metamorphic_relations_correct_spec(self):
+        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program."""
         causal_dag = CausalDAG(self.dag_dot_path)
         for edge in causal_dag.graph.edges:
             (u, v) = edge
@@ -78,9 +79,30 @@ class TestMetamorphicRelation(unittest.TestCase):
             test_results = should_cause_MR.execute_tests(self.data_collector)
             should_cause_MR.test_oracle(test_results)
 
+    def test_should_not_cause_metamorphic_relations_correct_spec(self):
+        """Test if the ShouldNotCause MR passes all metamorphic tests where the DAG perfectly represents the program."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        for node_pair in combinations(causal_dag.graph.nodes, 2):
+            (u, v) = node_pair
+            # Get all pairs of nodes which don't form an edge
+            if ((u, v) not in causal_dag.graph.edges) and ((v, u) not in causal_dag.graph.edges):
+                # Check both directions if there is no causality
+                # This can be done more efficiently by ignoring impossible directions (output --> input)
+                adj_set = list(causal_dag.direct_effect_adjustment_sets([u], [v])[0])
+                u_should_not_cause_v_MR = ShouldNotCause(u, v, adj_set, causal_dag)
+                v_should_not_cause_u_MR = ShouldNotCause(v, u, adj_set, causal_dag)
+                u_should_not_cause_v_MR.generate_follow_up(10, -100, 100)
+                v_should_not_cause_u_MR.generate_follow_up(10, -100, 100)
+                u_should_not_cause_v_test_results = u_should_not_cause_v_MR.execute_tests(self.data_collector)
+                v_should_not_cause_u_test_results = v_should_not_cause_u_MR.execute_tests(self.data_collector)
+                u_should_not_cause_v_MR.test_oracle(u_should_not_cause_v_test_results)
+                v_should_not_cause_u_MR.test_oracle(v_should_not_cause_u_test_results)
+
     def test_should_cause_metamorphic_relation_missing_relationship(self):
         """Test whether the ShouldCause MR catches missing relationships in the DAG."""
         causal_dag = CausalDAG(self.dag_dot_path)
+
+        # Replace the data collector with one that runs a buggy program in which X1 and X2 do not affect Z
         self.data_collector = BuggyProgramUnderTestEDC(self.scenario,
                                                        self.default_control_input_config,
                                                        self.default_treatment_input_config)
