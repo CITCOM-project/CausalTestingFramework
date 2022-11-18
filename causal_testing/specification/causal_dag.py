@@ -465,5 +465,29 @@ class CausalDAG(nx.DiGraph):
             return True
         return any([self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)])
 
+    def identification(self, base_test_case):
+        """Identify and return the minimum adjustment set
+
+        :param treatment_variables: Causal test Case to get the minimum adjustment set from
+        :param outcome_variables:
+        :param effect:
+        :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
+        estimate as opposed to a purely associational estimate.
+        """
+        minimal_adjustment_sets = []
+        if base_test_case.effect == "total":
+            minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
+                self.treatment_variable.name, self.outcome_variable.name
+            )
+        elif base_test_case.effect == "direct":
+            minimal_adjustment_sets = self.casual_dag.direct_effect_adjustment_sets(
+                self.treatment_variable.name, self.outcome_variable.name
+            )
+        else:
+            raise ValueError("Causal effect should be 'total' or 'direct'")
+
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
+        return minimal_adjustment_set
+
     def __str__(self):
         return f"Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}"
