@@ -468,9 +468,8 @@ class CausalDAG(nx.DiGraph):
     def identification(self, base_test_case):
         """Identify and return the minimum adjustment set
 
-        :param treatment_variables: Causal test Case to get the minimum adjustment set from
-        :param outcome_variables:
-        :param effect:
+        :param base_test_case: A base test case class instance containing the outcome_variable and the
+        treatment_variable required for identification.
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
