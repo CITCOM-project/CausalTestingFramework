@@ -4,6 +4,7 @@ from typing import Any
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_causal_test import BaseCausalTest
+
 logger = logging.getLogger(__name__)
 
 
