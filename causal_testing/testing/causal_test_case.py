@@ -3,12 +3,12 @@ from typing import Any
 
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
-
+from causal_testing.testing.base_causal_test import BaseCausalTest
 logger = logging.getLogger(__name__)
 
 
-class CausalTestCase:
-    """
+class CausalTestCase(BaseCausalTest):
+    """)
     A causal test case is a triple (X, Delta, Y), where X is an input configuration, Delta is an intervention, and
     Y is the expected causal effect on a particular output. The goal of a causal test case is to test whether the
     intervention Delta made to the input configuration X causes the model-under-test to produce the expected change
@@ -17,13 +17,13 @@ class CausalTestCase:
 
     def __init__(
         self,
-        control_input_configuration: dict[Variable:Any],
+        base_causal_test: BaseCausalTest,
         expected_causal_effect: CausalTestOutcome,
-        outcome_variables: dict[Variable],
-        treatment_input_configuration: dict[Variable:Any] = None,
+        control_value: Any,
+        outcome_value: Any,
+        treatment_value: Any = None,
         estimate_type: str = "ate",
         effect_modifier_configuration: dict[Variable:Any] = None,
-        effect: str = "total",
     ):
         """
         When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
@@ -36,12 +36,12 @@ class CausalTestCase:
         :param treatment_input_configuration: The input configuration representing the treatment values of the treatment
         variables. That is, the input configuration *after* applying the intervention.
         """
-        self.control_input_configuration = control_input_configuration
+        self.control_input_configuration = {base_causal_test.treatment_variable: control_value}
         self.expected_causal_effect = expected_causal_effect
-        self.outcome_variables = outcome_variables
-        self.treatment_input_configuration = treatment_input_configuration
+        self.outcome_variable = base_causal_test.outcome_variable
+        self.treatment_input_configuration = {base_causal_test.treatment_variable: treatment_value}
         self.estimate_type = estimate_type
-        self.effect = effect
+        self.effect = base_causal_test.effect
         if effect_modifier_configuration:
             self.effect_modifier_configuration = effect_modifier_configuration
         else:
