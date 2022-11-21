@@ -44,7 +44,7 @@ class CausalTestEngine:
     """
 
     def __init__(self, causal_specification: CausalSpecification, data_collector: DataCollector, **kwargs):
-        self.casual_dag, self.scenario = (
+        self.causal, self.scenario = (
             causal_specification.causal_dag,
             causal_specification.scenario,
         )
