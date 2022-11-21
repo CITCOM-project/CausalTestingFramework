@@ -52,29 +52,6 @@ class CausalTestEngine:
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
         self.minimal_adjustment_set = set()
 
-    def identification(self, causal_test_case):
-        """Identify and return the minimum adjustment set
-
-        :param causal_test_case: Causal test Case to get the minimum adjustment set from
-        :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
-        estimate as opposed to a purely associational estimate.
-        """
-
-        minimal_adjustment_sets = []
-        treatment_variables = list(causal_test_case.control_input_configuration)
-        if causal_test_case.effect == "total":
-            minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
-                [v.name for v in treatment_variables], [v.name for v in causal_test_case.outcome_variables]
-            )
-        elif causal_test_case.effect == "direct":
-            minimal_adjustment_sets = self.casual_dag.direct_effect_adjustment_sets(
-                [v.name for v in treatment_variables], [v.name for v in causal_test_case.outcome_variables]
-            )
-        else:
-            raise ValueError("Causal effect should be 'total' or 'direct'")
-
-        self.minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
-
     def execute_test(
         self, estimator: Estimator, causal_test_case: CausalTestCase, estimate_type: str = "ate"
     ) -> CausalTestResult:
