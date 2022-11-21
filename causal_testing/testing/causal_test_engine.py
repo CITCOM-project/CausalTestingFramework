@@ -52,6 +52,38 @@ class CausalTestEngine:
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
         self.minimal_adjustment_set = set()
 
+    def execute_test_suite(
+        self, test_suite: dict[dict[CausalTestCase], dict[Estimator], str]
+    ) -> list[CausalTestResult]:
+        """Execute a suite of causal tests and return the results in a list"""
+        if self.scenario_execution_data_df.empty:
+            raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
+        causal_test_results = []
+        for edge in test_suite:
+
+            logger.info("treatment: %s", edge.treatment_variable)
+            logger.info("outcome: %s", edge.outcome_variable)
+            minimal_adjustment_set = self.casual_dag.identification(edge)
+            minimal_adjustment_set = minimal_adjustment_set - {v.name for v in edge.treatment_variable}
+            minimal_adjustment_set = minimal_adjustment_set - {v.name for v in edge.outcome_variable}
+
+            variables_for_positivity = list(minimal_adjustment_set) + edge.treatment_variable + edge.outcome_variable
+
+            if self._check_positivity_violation(variables_for_positivity):
+                # TODO: We should allow users to continue because positivity can be overcome with parametric models
+                # TODO: When we implement causal contracts, we should also note the positivity violation there
+                raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
+
+            for estimator in edge["estimators"]:
+                if estimator.df is None:
+                    estimator.df = self.scenario_execution_data_df
+
+                for test in edge["tests"]:
+                    logger.info("minimal_adjustment_set: %s", self.minimal_adjustment_set)
+                    causal_test_result = self._return_causal_test_results(test_suite.estimate_type, estimator)
+                    causal_test_results.append(causal_test_result)
+        return causal_test_results
+
     def execute_test(
         self, estimator: Estimator, causal_test_case: CausalTestCase, estimate_type: str = "ate"
     ) -> CausalTestResult:
@@ -100,7 +132,12 @@ class CausalTestEngine:
             # TODO: We should allow users to continue because positivity can be overcome with parametric models
             # TODO: When we implement causal contracts, we should also note the positivity violation there
             raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
+        causal_test_result = self._return_causal_test_results(estimate_type, estimator, causal_test_case)
+        return causal_test_result
 
+    # TODO (MF) I think that the test oracle procedure should go in here.
+    # This way, the user can supply it as a function or something, which can be applied to the result of CI
+    def _return_causal_test_results(self, estimate_type, estimator, causal_test_case):
         # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
         if estimate_type == "cate":
             logger.debug("calculating cate")
@@ -165,9 +202,6 @@ class CausalTestEngine:
         else:
             raise ValueError(f"Invalid estimate type {estimate_type}, expected 'ate', 'cate', or 'risk_ratio'")
         return causal_test_result
-
-    # TODO (MF) I think that the test oracle procedure should go in here.
-    # This way, the user can supply it as a function or something, which can be applied to the result of CI
 
     def _check_positivity_violation(self, variables_list):
         """Check whether the dataframe has a positivity violation relative to the specified variables list.
