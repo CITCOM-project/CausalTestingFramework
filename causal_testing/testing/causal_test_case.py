@@ -21,7 +21,6 @@ class CausalTestCase(BaseCausalTest):
         base_causal_test: BaseCausalTest,
         expected_causal_effect: CausalTestOutcome,
         control_value: Any,
-        outcome_value: Any,
         treatment_value: Any = None,
         estimate_type: str = "ate",
         effect_modifier_configuration: dict[Variable:Any] = None,
