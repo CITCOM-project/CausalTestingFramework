@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from causal_testing.specification.variable import Variable
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseCausalTest:
     """
     A base causal test case represents the relationship of an edge on a causal DAG.
