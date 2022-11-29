@@ -121,6 +121,7 @@ class TestMetamorphicRelation(unittest.TestCase):
 
     def test_all_metamorphic_relations_implied_by_dag(self):
         dag = CausalDAG(self.dag_dot_path)
+        dag.add_edge('Z', 'Y')  # Add a direct path from Z to Y so M becomes a mediator
         metamorphic_relations = generate_metamorphic_relations(dag)
         should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
         should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
@@ -128,7 +129,8 @@ class TestMetamorphicRelation(unittest.TestCase):
         # Check all ShouldCause relations are present and no extra
         expected_should_cause_relations = [ShouldCause('X1', 'Z', [], dag),
                                            ShouldCause('Z', 'M', [], dag),
-                                           ShouldCause('M', 'Y', [], dag),
+                                           ShouldCause('M', 'Y', ['Z'], dag),
+                                           ShouldCause('Z', 'Y', ['M'], dag),
                                            ShouldCause('X2', 'Z', [], dag),
                                            ShouldCause('X3', 'M', [], dag)]
 
@@ -142,12 +144,11 @@ class TestMetamorphicRelation(unittest.TestCase):
         expected_should_not_cause_relations = [ShouldNotCause('X1', 'X2', [], dag),
                                                ShouldNotCause('X1', 'X3', [], dag),
                                                ShouldNotCause('X1', 'M', ['Z'], dag),
-                                               ShouldNotCause('X1', 'Y', ['M'], dag),
+                                               ShouldNotCause('X1', 'Y', ['Z'], dag),
                                                ShouldNotCause('X2', 'X3', [], dag),
                                                ShouldNotCause('X2', 'M', ['Z'], dag),
-                                               ShouldNotCause('X2', 'Y', ['M'], dag),
-                                               ShouldNotCause('X3', 'Y', ['M'], dag),
-                                               ShouldNotCause('Z', 'Y', ['M'], dag),
+                                               ShouldNotCause('X2', 'Y', ['Z'], dag),
+                                               ShouldNotCause('X3', 'Y', ['M', 'Z'], dag),
                                                ShouldNotCause('Z', 'X3', [], dag)]
 
         extra_snc_relations = [sncr for sncr in should_not_cause_relations if sncr
