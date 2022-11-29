@@ -4,9 +4,11 @@ from typing import Iterable
 from itertools import combinations
 import numpy as np
 import pandas as pd
+import networkx as nx
 
 from causal_testing.specification.causal_specification import CausalDAG, Node
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
+
 
 @dataclass(order=True)
 class MetamorphicRelation:
@@ -89,12 +91,12 @@ class MetamorphicRelation:
             data_collector.control_input_configuration = control_input_config
             data_collector.treatment_input_configuration = treatment_input_config
             metamorphic_test_results_df = data_collector.collect_data()
+
             # Apply assertion to control and treatment outputs
             control_output = metamorphic_test_results_df.loc["control_0"][metamorphic_test.output]
             treatment_output = metamorphic_test_results_df.loc["treatment_0"][metamorphic_test.output]
+
             if not self.assertion(control_output, treatment_output):
-                print(metamorphic_test.output)
-                print(control_output, treatment_output)
                 test_results["fail"].append(metamorphic_test)
             else:
                 test_results["pass"].append(metamorphic_test)
@@ -166,3 +168,43 @@ class MetamorphicTest:
                f"Other inputs: {self.other_inputs}\n" \
                f"Output: {self.output}" \
                f"Metamorphic Relation: {self.relation}"
+
+
+def generate_metamorphic_relations(dag: CausalDAG) -> list[MetamorphicRelation]:
+    """Construct a list of metamorphic relations implied by the Causal DAG.
+
+    This list of metamorphic relations contains a ShouldCause relation for every edge, and a ShouldNotCause
+    relation for every conditional independence relation.
+    """
+    metamorphic_relations = []
+    for node_pair in combinations(dag.graph.nodes, 2):
+        (u, v) = node_pair
+
+        # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
+        if ((u, v) not in dag.graph.edges) and ((v, u) not in dag.graph.edges):
+
+            # Case 1: U --> ... --> V
+            if u in nx.ancestors(dag.graph, v):
+                adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
+                metamorphic_relations.append(ShouldNotCause(u, v, adj_set, dag))
+
+            # Case 2: V --> ... --> U
+            elif v in nx.ancestors(dag.graph, u):
+                adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
+                metamorphic_relations.append(ShouldNotCause(v, u, adj_set, dag))
+
+            # Case 3: V _||_ U (neither is a predecessor)
+            # Only make one MR since V _||_ U == U _||_ V
+            else:
+                adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
+                metamorphic_relations.append(ShouldNotCause(u, v, adj_set, dag))
+
+        # Create a ShouldCause relation for each edge (u, v) or (v, u)
+        elif (u, v) in dag.graph.edges:
+            adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
+            metamorphic_relations.append(ShouldCause(u, v, adj_set, dag))
+        else:
+            adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
+            metamorphic_relations.append(ShouldCause(v, u, adj_set, dag))
+
+    return metamorphic_relations
