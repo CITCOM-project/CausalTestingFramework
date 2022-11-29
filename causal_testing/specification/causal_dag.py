@@ -475,12 +475,12 @@ class CausalDAG(nx.DiGraph):
         """
         minimal_adjustment_sets = []
         if base_test_case.effect == "total":
-            minimal_adjustment_sets = self.casual_dag.enumerate_minimal_adjustment_sets(
-                self.treatment_variable.name, self.outcome_variable.name
+            minimal_adjustment_sets = self.enumerate_minimal_adjustment_sets(
+                [base_test_case.treatment_variable.name], [base_test_case.outcome_variable.name]
             )
         elif base_test_case.effect == "direct":
-            minimal_adjustment_sets = self.casual_dag.direct_effect_adjustment_sets(
-                self.treatment_variable.name, self.outcome_variable.name
+            minimal_adjustment_sets = self.direct_effect_adjustment_sets(
+                [base_test_case.treatment_variable.name], [base_test_case.outcome_variable.name]
             )
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
