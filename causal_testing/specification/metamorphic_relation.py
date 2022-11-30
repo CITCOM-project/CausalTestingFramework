@@ -107,6 +107,13 @@ class MetamorphicRelation:
         This method must raise an assertion, not return a bool."""
         ...
 
+    def __eq__(self, other):
+        same_type = self.__class__ == other.__class__
+        same_treatment = self.treatment_var == other.treatment_var
+        same_output = self.output_var == other.output_var
+        same_adjustment_set = set(self.adjustment_vars) == set(other.adjustment_vars)
+        return same_type and same_treatment and same_output and same_adjustment_set
+
 
 class ShouldCause(MetamorphicRelation):
     """Class representing a should cause metamorphic relation."""

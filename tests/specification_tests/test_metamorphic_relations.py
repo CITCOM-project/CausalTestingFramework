@@ -164,3 +164,45 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         self.assertEqual(extra_snc_relations, [])
         self.assertEqual(missing_snc_relations, [])
+
+    def test_equivalent_metamorphic_relations(self):
+        dag = CausalDAG(self.dag_dot_path)
+        sc_mr_a = ShouldCause("X", "Y", ["A", "B", "C"], dag)
+        sc_mr_b = ShouldCause("X", "Y", ["A", "B", "C"], dag)
+        self.assertEqual(sc_mr_a == sc_mr_b, True)
+
+    def test_equivalent_metamorphic_relations_empty_adjustment_set(self):
+        dag = CausalDAG(self.dag_dot_path)
+        sc_mr_a = ShouldCause("X", "Y", [], dag)
+        sc_mr_b = ShouldCause("X", "Y", [], dag)
+        self.assertEqual(sc_mr_a == sc_mr_b, True)
+
+    def test_equivalent_metamorphic_relations_different_order_adjustment_set(self):
+        dag = CausalDAG(self.dag_dot_path)
+        sc_mr_a = ShouldCause("X", "Y", ["A", "B", "C"], dag)
+        sc_mr_b = ShouldCause("X", "Y", ["C", "A", "B"], dag)
+        self.assertEqual(sc_mr_a == sc_mr_b, True)
+
+    def test_different_metamorphic_relations_empty_adjustment_set_different_outcome(self):
+        dag = CausalDAG(self.dag_dot_path)
+        sc_mr_a = ShouldCause("X", "Z", [], dag)
+        sc_mr_b = ShouldCause("X", "Y", [], dag)
+        self.assertEqual(sc_mr_a == sc_mr_b, False)
+
+    def test_different_metamorphic_relations_empty_adjustment_set_different_treatment(self):
+        dag = CausalDAG(self.dag_dot_path)
+        sc_mr_a = ShouldCause("X", "Y", [], dag)
+        sc_mr_b = ShouldCause("Z", "Y", [], dag)
+        self.assertEqual(sc_mr_a == sc_mr_b, False)
+
+    def test_different_metamorphic_relations_empty_adjustment_set_adjustment_set(self):
+        dag = CausalDAG(self.dag_dot_path)
+        sc_mr_a = ShouldCause("X", "Y", ["A"], dag)
+        sc_mr_b = ShouldCause("X", "Y", [], dag)
+        self.assertEqual(sc_mr_a == sc_mr_b, False)
+
+    def test_different_metamorphic_relations_different_type(self):
+        dag = CausalDAG(self.dag_dot_path)
+        sc_mr_a = ShouldCause("X", "Y", [], dag)
+        sc_mr_b = ShouldNotCause("X", "Y", [], dag)
+        self.assertEqual(sc_mr_a == sc_mr_b, False)
