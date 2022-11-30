@@ -174,7 +174,10 @@ def generate_metamorphic_relations(dag: CausalDAG) -> list[MetamorphicRelation]:
     """Construct a list of metamorphic relations implied by the Causal DAG.
 
     This list of metamorphic relations contains a ShouldCause relation for every edge, and a ShouldNotCause
-    relation for every conditional independence relation.
+    relation for every (minimal) conditional independence relation implied by the structure of the DAG.
+
+    :param CausalDAG dag: Causal DAG from which the metamorphic relations will be generated.
+    :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
     """
     metamorphic_relations = []
     for node_pair in combinations(dag.graph.nodes, 2):
@@ -193,7 +196,7 @@ def generate_metamorphic_relations(dag: CausalDAG) -> list[MetamorphicRelation]:
                 adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
                 metamorphic_relations.append(ShouldNotCause(v, u, adj_set, dag))
 
-            # Case 3: V _||_ U (neither is a predecessor)
+            # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
             # Only make one MR since V _||_ U == U _||_ V
             else:
                 adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
