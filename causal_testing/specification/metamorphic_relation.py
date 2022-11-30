@@ -13,23 +13,19 @@ from causal_testing.data_collection.data_collector import ExperimentalDataCollec
 @dataclass(order=True)
 class MetamorphicRelation:
     """Class representing a metamorphic relation."""
+
     treatment_var: Node
     output_var: Node
     adjustment_vars: Iterable[Node]
     dag: CausalDAG
     tests: Iterable = None
 
-    def generate_follow_up(self,
-                           n_tests: int,
-                           min_val: float,
-                           max_val: float,
-                           seed: int = 0):
+    def generate_follow_up(self, n_tests: int, min_val: float, max_val: float, seed: int = 0):
         """Generate numerical follow-up input configurations."""
         np.random.seed(seed)
 
         # Get set of variables to change, excluding the treatment itself
-        variables_to_change = set([node for node in self.dag.graph.nodes if
-                                   self.dag.graph.in_degree(node) == 0])
+        variables_to_change = set([node for node in self.dag.graph.nodes if self.dag.graph.in_degree(node) == 0])
         if self.adjustment_vars:
             variables_to_change |= set(self.adjustment_vars)
         if self.treatment_var in variables_to_change:
@@ -37,26 +33,22 @@ class MetamorphicRelation:
 
         # Assign random numerical values to the variables to change
         test_inputs = pd.DataFrame(
-            np.random.randint(min_val, max_val,
-                              size=(n_tests, len(variables_to_change))
-                              ),
-            columns=sorted(variables_to_change)
+            np.random.randint(min_val, max_val, size=(n_tests, len(variables_to_change))),
+            columns=sorted(variables_to_change),
         )
 
         # Enumerate the possible source, follow-up pairs for the treatment
-        candidate_source_follow_up_pairs = np.array(
-            list(combinations(range(int(min_val), int(max_val+1)), 2))
-        )
+        candidate_source_follow_up_pairs = np.array(list(combinations(range(int(min_val), int(max_val + 1)), 2)))
 
         # Sample without replacement from the possible source, follow-up pairs
         sampled_source_follow_up_indices = np.random.choice(
             candidate_source_follow_up_pairs.shape[0], n_tests, replace=False
         )
 
-        follow_up_input = f"{self.treatment_var}\'"
+        follow_up_input = f"{self.treatment_var}'"
         source_follow_up_test_inputs = pd.DataFrame(
             candidate_source_follow_up_pairs[sampled_source_follow_up_indices],
-            columns=sorted([self.treatment_var] + [follow_up_input])
+            columns=sorted([self.treatment_var] + [follow_up_input]),
         )
         source_test_inputs = source_follow_up_test_inputs[[self.treatment_var]]
         follow_up_test_inputs = source_follow_up_test_inputs[[follow_up_input]]
@@ -69,12 +61,13 @@ class MetamorphicRelation:
             other_test_inputs_record = [{}] * len(source_test_inputs)
         metamorphic_tests = []
         for i in range(len(source_test_inputs_record)):
-            metamorphic_test = MetamorphicTest(source_test_inputs_record[i],
-                                               follow_up_test_inputs_record[i],
-                                               other_test_inputs_record[i],
-                                               self.output_var,
-                                               str(self)
-                                               )
+            metamorphic_test = MetamorphicTest(
+                source_test_inputs_record[i],
+                follow_up_test_inputs_record[i],
+                other_test_inputs_record[i],
+                self.output_var,
+                str(self),
+            )
             metamorphic_tests.append(metamorphic_test)
         self.tests = metamorphic_tests
 
@@ -124,8 +117,9 @@ class ShouldCause(MetamorphicRelation):
 
     def test_oracle(self, test_results):
         """A single passing test is sufficient to show presence of a causal effect."""
-        assert len(test_results["fail"]) < len(self.tests),\
-            f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
+        assert len(test_results["fail"]) < len(
+            self.tests
+        ), f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
 
     def __str__(self):
         formatted_str = f"{self.treatment_var} --> {self.output_var}"
@@ -143,8 +137,9 @@ class ShouldNotCause(MetamorphicRelation):
 
     def test_oracle(self, test_results):
         """A single passing test is sufficient to show presence of a causal effect."""
-        assert len(test_results["fail"]) == 0,\
-            f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
+        assert (
+            len(test_results["fail"]) == 0
+        ), f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
 
     def __str__(self):
         formatted_str = f"{self.treatment_var} _||_ {self.output_var}"
@@ -156,6 +151,7 @@ class ShouldNotCause(MetamorphicRelation):
 @dataclass(order=True)
 class MetamorphicTest:
     """Class representing a metamorphic test case."""
+
     source_inputs: dict
     follow_up_inputs: dict
     other_inputs: dict
@@ -163,11 +159,13 @@ class MetamorphicTest:
     relation: str
 
     def __str__(self):
-        return f"Source inputs: {self.source_inputs}\n" \
-               f"Follow-up inputs: {self.follow_up_inputs}\n" \
-               f"Other inputs: {self.other_inputs}\n" \
-               f"Output: {self.output}" \
-               f"Metamorphic Relation: {self.relation}"
+        return (
+            f"Source inputs: {self.source_inputs}\n"
+            f"Follow-up inputs: {self.follow_up_inputs}\n"
+            f"Other inputs: {self.other_inputs}\n"
+            f"Output: {self.output}"
+            f"Metamorphic Relation: {self.relation}"
+        )
 
 
 def generate_metamorphic_relations(dag: CausalDAG) -> list[MetamorphicRelation]:

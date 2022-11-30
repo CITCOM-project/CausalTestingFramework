@@ -7,34 +7,36 @@ from itertools import combinations
 from tests.test_helpers import create_temp_dir_if_non_existent
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import Scenario
-from causal_testing.specification.metamorphic_relation import (ShouldCause, ShouldNotCause,
-                                                               generate_metamorphic_relations)
+from causal_testing.specification.metamorphic_relation import (
+    ShouldCause,
+    ShouldNotCause,
+    generate_metamorphic_relations,
+)
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
 from causal_testing.specification.variable import Input, Output
 
 
 def program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
     if Z is None:
-        Z = 2*X1 + -3*X2 + 10
+        Z = 2 * X1 + -3 * X2 + 10
     if M is None:
-        M = 3*Z + X3
+        M = 3 * Z + X3
     if Y is None:
-        Y = M/2
-    return {'X1': X1, 'X2': X2, 'X3': X3, 'Z': Z, 'M': M, 'Y': Y}
+        Y = M / 2
+    return {"X1": X1, "X2": X2, "X3": X3, "Z": Z, "M": M, "Y": Y}
 
 
 def buggy_program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
     if Z is None:
         Z = 2  # No effect of X1 or X2 on Z
     if M is None:
-        M = 3*Z + X3
+        M = 3 * Z + X3
     if Y is None:
-        Y = M/2
-    return {'X1': X1, 'X2': X2, 'X3': X3, 'Z': Z, 'M': M, 'Y': Y}
+        Y = M / 2
+    return {"X1": X1, "X2": X2, "X3": X3, "Z": Z, "M": M, "Y": Y}
 
 
 class ProgramUnderTestEDC(ExperimentalDataCollector):
-
     def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:
         results_dict = program_under_test(**input_configuration)
         results_df = pd.DataFrame(results_dict, index=[0])
@@ -42,7 +44,6 @@ class ProgramUnderTestEDC(ExperimentalDataCollector):
 
 
 class BuggyProgramUnderTestEDC(ExperimentalDataCollector):
-
     def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:
         results_dict = buggy_program_under_test(**input_configuration)
         results_df = pd.DataFrame(results_dict, index=[0])
@@ -50,7 +51,6 @@ class BuggyProgramUnderTestEDC(ExperimentalDataCollector):
 
 
 class TestMetamorphicRelation(unittest.TestCase):
-
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
@@ -58,18 +58,18 @@ class TestMetamorphicRelation(unittest.TestCase):
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
 
-        X1 = Input('X1', float)
-        X2 = Input('X2', float)
-        X3 = Input('X3', float)
-        Z = Output('Z', float)
-        M = Output('M', float)
-        Y = Output('Y', float)
+        X1 = Input("X1", float)
+        X2 = Input("X2", float)
+        X3 = Input("X3", float)
+        Z = Output("Z", float)
+        M = Output("M", float)
+        Y = Output("Y", float)
         self.scenario = Scenario(variables={X1, X2, X3, Z, M, Y})
-        self.default_control_input_config = {'X1': 1, 'X2': 2, 'X3': 3}
-        self.default_treatment_input_config = {'X1': 2, 'X2': 3, 'X3': 3}
-        self.data_collector = ProgramUnderTestEDC(self.scenario,
-                                                  self.default_control_input_config,
-                                                  self.default_treatment_input_config)
+        self.default_control_input_config = {"X1": 1, "X2": 2, "X3": 3}
+        self.default_treatment_input_config = {"X1": 2, "X2": 3, "X3": 3}
+        self.data_collector = ProgramUnderTestEDC(
+            self.scenario, self.default_control_input_config, self.default_treatment_input_config
+        )
 
     def test_should_cause_metamorphic_relations_correct_spec(self):
         """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program."""
@@ -107,11 +107,11 @@ class TestMetamorphicRelation(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
 
         # Replace the data collector with one that runs a buggy program in which X1 and X2 do not affect Z
-        self.data_collector = BuggyProgramUnderTestEDC(self.scenario,
-                                                       self.default_control_input_config,
-                                                       self.default_treatment_input_config)
-        X1_should_cause_Z_MR = ShouldCause('X1', 'Z', None, causal_dag)
-        X2_should_cause_Z_MR = ShouldCause('X2', 'Z', None, causal_dag)
+        self.data_collector = BuggyProgramUnderTestEDC(
+            self.scenario, self.default_control_input_config, self.default_treatment_input_config
+        )
+        X1_should_cause_Z_MR = ShouldCause("X1", "Z", None, causal_dag)
+        X2_should_cause_Z_MR = ShouldCause("X2", "Z", None, causal_dag)
         X1_should_cause_Z_MR.generate_follow_up(10, -100, 100, 1)
         X2_should_cause_Z_MR.generate_follow_up(10, -100, 100, 1)
         X1_should_cause_Z_test_results = X1_should_cause_Z_MR.execute_tests(self.data_collector)
@@ -121,18 +121,20 @@ class TestMetamorphicRelation(unittest.TestCase):
 
     def test_all_metamorphic_relations_implied_by_dag(self):
         dag = CausalDAG(self.dag_dot_path)
-        dag.add_edge('Z', 'Y')  # Add a direct path from Z to Y so M becomes a mediator
+        dag.add_edge("Z", "Y")  # Add a direct path from Z to Y so M becomes a mediator
         metamorphic_relations = generate_metamorphic_relations(dag)
         should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
         should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
 
         # Check all ShouldCause relations are present and no extra
-        expected_should_cause_relations = [ShouldCause('X1', 'Z', [], dag),
-                                           ShouldCause('Z', 'M', [], dag),
-                                           ShouldCause('M', 'Y', ['Z'], dag),
-                                           ShouldCause('Z', 'Y', ['M'], dag),
-                                           ShouldCause('X2', 'Z', [], dag),
-                                           ShouldCause('X3', 'M', [], dag)]
+        expected_should_cause_relations = [
+            ShouldCause("X1", "Z", [], dag),
+            ShouldCause("Z", "M", [], dag),
+            ShouldCause("M", "Y", ["Z"], dag),
+            ShouldCause("Z", "Y", ["M"], dag),
+            ShouldCause("X2", "Z", [], dag),
+            ShouldCause("X3", "M", [], dag),
+        ]
 
         extra_sc_relations = [scr for scr in should_cause_relations if scr not in expected_should_cause_relations]
         missing_sc_relations = [escr for escr in expected_should_cause_relations if escr not in should_cause_relations]
@@ -141,20 +143,24 @@ class TestMetamorphicRelation(unittest.TestCase):
         self.assertEqual(missing_sc_relations, [])
 
         # Check all ShouldNotCause relations are present and no extra
-        expected_should_not_cause_relations = [ShouldNotCause('X1', 'X2', [], dag),
-                                               ShouldNotCause('X1', 'X3', [], dag),
-                                               ShouldNotCause('X1', 'M', ['Z'], dag),
-                                               ShouldNotCause('X1', 'Y', ['Z'], dag),
-                                               ShouldNotCause('X2', 'X3', [], dag),
-                                               ShouldNotCause('X2', 'M', ['Z'], dag),
-                                               ShouldNotCause('X2', 'Y', ['Z'], dag),
-                                               ShouldNotCause('X3', 'Y', ['M', 'Z'], dag),
-                                               ShouldNotCause('Z', 'X3', [], dag)]
+        expected_should_not_cause_relations = [
+            ShouldNotCause("X1", "X2", [], dag),
+            ShouldNotCause("X1", "X3", [], dag),
+            ShouldNotCause("X1", "M", ["Z"], dag),
+            ShouldNotCause("X1", "Y", ["Z"], dag),
+            ShouldNotCause("X2", "X3", [], dag),
+            ShouldNotCause("X2", "M", ["Z"], dag),
+            ShouldNotCause("X2", "Y", ["Z"], dag),
+            ShouldNotCause("X3", "Y", ["M", "Z"], dag),
+            ShouldNotCause("Z", "X3", [], dag),
+        ]
 
-        extra_snc_relations = [sncr for sncr in should_not_cause_relations if sncr
-                               not in expected_should_not_cause_relations]
-        missing_snc_relations = [esncr for esncr in expected_should_not_cause_relations if esncr
-                                 not in should_not_cause_relations]
+        extra_snc_relations = [
+            sncr for sncr in should_not_cause_relations if sncr not in expected_should_not_cause_relations
+        ]
+        missing_snc_relations = [
+            esncr for esncr in expected_should_not_cause_relations if esncr not in should_not_cause_relations
+        ]
 
         self.assertEqual(extra_snc_relations, [])
         self.assertEqual(missing_snc_relations, [])
