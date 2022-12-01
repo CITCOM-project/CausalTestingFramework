@@ -16,6 +16,16 @@ from causal_testing.data_collection.data_collector import ExperimentalDataCollec
 from causal_testing.specification.variable import Input, Output
 
 
+def single_input_program_under_test(X1, Z=None, M=None, Y=None):
+    if Z is None:
+        Z = 2 * X1 + -3
+    if M is None:
+        M = 3 * Z
+    if Y is None:
+        Y = M / 2
+    return {"X1": X1, "Z": Z, "M": M, "Y": Y}
+
+
 def program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
     if Z is None:
         Z = 2 * X1 + -3 * X2 + 10
@@ -34,6 +44,13 @@ def buggy_program_under_test(X1, X2, X3, Z=None, M=None, Y=None):
     if Y is None:
         Y = M / 2
     return {"X1": X1, "X2": X2, "X3": X3, "Z": Z, "M": M, "Y": Y}
+
+
+class SingleInputProgramUnderTestEDC(ExperimentalDataCollector):
+    def run_system_with_input_configuration(self, input_configuration: dict) -> pd.DataFrame:
+        results_dict = single_input_program_under_test(**input_configuration)
+        results_df = pd.DataFrame(results_dict, index=[0])
+        return results_df
 
 
 class ProgramUnderTestEDC(ExperimentalDataCollector):
@@ -81,6 +98,20 @@ class TestMetamorphicRelation(unittest.TestCase):
             should_cause_MR.generate_follow_up(10, -10.0, 10.0, 1)
             test_results = should_cause_MR.execute_tests(self.data_collector)
             should_cause_MR.test_oracle(test_results)
+
+    def test_should_cause_metamorphic_relations_correct_spec_one_input(self):
+        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
+        and there is only a single input."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        self.data_collector = SingleInputProgramUnderTestEDC(
+            self.scenario, self.default_control_input_config, self.default_treatment_input_config
+        )
+        causal_dag.graph.remove_nodes_from(['X2', 'X3'])
+        adj_set = list(causal_dag.direct_effect_adjustment_sets(['X1'], ['Z'])[0])
+        should_cause_MR = ShouldCause('X1', 'Z', adj_set, causal_dag)
+        should_cause_MR.generate_follow_up(10, -10.0, 10.0, 1)
+        test_results = should_cause_MR.execute_tests(self.data_collector)
+        should_cause_MR.test_oracle(test_results)
 
     def test_should_not_cause_metamorphic_relations_correct_spec(self):
         """Test if the ShouldNotCause MR passes all metamorphic tests where the DAG perfectly represents the program."""
