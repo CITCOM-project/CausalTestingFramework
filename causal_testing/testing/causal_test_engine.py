@@ -59,9 +59,10 @@ class CausalTestEngine:
         """Execute a suite of causal tests and return the results in a list"""
         if self.scenario_execution_data_df.empty:
             raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
-        causal_test_results = []
+        test_suite_results = {}
         for edge in test_suite:
-
+            print("edge: ")
+            print(edge)
             logger.info("treatment: %s", edge.treatment_variable)
             logger.info("outcome: %s", edge.outcome_variable)
             minimal_adjustment_set = self.causal_dag.identification(edge)
@@ -78,10 +79,13 @@ class CausalTestEngine:
             estimators = test_suite[edge]["estimators"]
             tests = test_suite[edge]["tests"]
             estimate_type = test_suite[edge]["estimate_type"]
-
+            results = []
             for EstimatorClass in estimators:
-
+                print("tests: ")
+                print(tests)
+                causal_test_results = []
                 for test in tests:
+
                     treatment_variable = list(test.treatment_input_configuration.keys())[0]
                     treatment_value = list(test.treatment_input_configuration.values())[0]
                     control_value = list(test.control_input_configuration.values())[0]
@@ -91,7 +95,10 @@ class CausalTestEngine:
                         estimator.df = self.scenario_execution_data_df
                     causal_test_result = self._return_causal_test_results(estimate_type, estimator, test)
                     causal_test_results.append(causal_test_result)
-        return causal_test_results
+                results.append(causal_test_results)
+            test_suite_results[edge] = results
+        breakpoint()
+        return test_suite_results
 
     def execute_test(
             self, estimator: type(Estimator), causal_test_case: CausalTestCase, estimate_type: str = "ate"
