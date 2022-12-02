@@ -7,6 +7,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestResult
 from causal_testing.testing.estimators import Estimator
+from causal_testing.testing.base_causal_test import BaseCausalTest
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +51,10 @@ class CausalTestEngine:
         )
         self.data_collector = data_collector
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
-        self.minimal_adjustment_set = set()
+
 
     def execute_test_suite(
-        self, test_suite: dict[dict[CausalTestCase], dict[Estimator], str]
+            self, test_suite: dict[dict[CausalTestCase], dict[Estimator], str]
     ) -> list[CausalTestResult]:
         """Execute a suite of causal tests and return the results in a list"""
         if self.scenario_execution_data_df.empty:
@@ -63,29 +64,37 @@ class CausalTestEngine:
 
             logger.info("treatment: %s", edge.treatment_variable)
             logger.info("outcome: %s", edge.outcome_variable)
-            minimal_adjustment_set = self.casual_dag.identification(edge)
-            minimal_adjustment_set = minimal_adjustment_set - {v.name for v in edge.treatment_variable}
-            minimal_adjustment_set = minimal_adjustment_set - {v.name for v in edge.outcome_variable}
+            minimal_adjustment_set = self.causal_dag.identification(edge)
+            minimal_adjustment_set = minimal_adjustment_set - set(edge.treatment_variable.name)
+            minimal_adjustment_set = minimal_adjustment_set - set(edge.outcome_variable.name)
 
-            variables_for_positivity = list(minimal_adjustment_set) + edge.treatment_variable + edge.outcome_variable
-
+            variables_for_positivity = list(minimal_adjustment_set) + [edge.treatment_variable.name] + [
+                edge.outcome_variable.name]
             if self._check_positivity_violation(variables_for_positivity):
                 # TODO: We should allow users to continue because positivity can be overcome with parametric models
                 # TODO: When we implement causal contracts, we should also note the positivity violation there
                 raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
 
-            for estimator in edge["estimators"]:
-                if estimator.df is None:
-                    estimator.df = self.scenario_execution_data_df
+            estimators = test_suite[edge]["estimators"]
+            tests = test_suite[edge]["tests"]
+            estimate_type = test_suite[edge]["estimate_type"]
 
-                for test in edge["tests"]:
-                    logger.info("minimal_adjustment_set: %s", self.minimal_adjustment_set)
-                    causal_test_result = self._return_causal_test_results(test_suite.estimate_type, estimator)
+            for EstimatorClass in estimators:
+
+                for test in tests:
+                    treatment_variable = list(test.treatment_input_configuration.keys())[0]
+                    treatment_value = list(test.treatment_input_configuration.values())[0]
+                    control_value = list(test.control_input_configuration.values())[0]
+                    estimator = EstimatorClass((treatment_variable.name,), treatment_value, control_value,
+                                               minimal_adjustment_set, (test.outcome_variable.name,))
+                    if estimator.df is None:
+                        estimator.df = self.scenario_execution_data_df
+                    causal_test_result = self._return_causal_test_results(estimate_type, estimator, test)
                     causal_test_results.append(causal_test_result)
         return causal_test_results
 
     def execute_test(
-        self, estimator: Estimator, causal_test_case: CausalTestCase, estimate_type: str = "ate"
+            self, estimator: type(Estimator), causal_test_case: CausalTestCase, estimate_type: str = "ate"
     ) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
 
@@ -108,26 +117,26 @@ class CausalTestEngine:
             raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
         if estimator.df is None:
             estimator.df = self.scenario_execution_data_df
-        treatment_variables = list(causal_test_case.control_input_configuration)
-        treatments = [v.name for v in treatment_variables]
-        outcomes = [v.name for v in causal_test_case.outcome_variables]
+        treatment_variable = list(causal_test_case.control_input_configuration.keys())[0]
+        treatments = treatment_variable.name
+        outcome_variable = causal_test_case.outcome_variable
 
         logger.info("treatments: %s", treatments)
-        logger.info("outcomes: %s", outcomes)
-        logger.info("minimal_adjustment_set: %s", self.minimal_adjustment_set)
-
-        minimal_adjustment_set = self.minimal_adjustment_set - {
+        logger.info("outcomes: %s", outcome_variable)
+        minimal_adjustment_set = self.causal_dag.identification(BaseCausalTest(treatment_variable, outcome_variable))
+        minimal_adjustment_set = minimal_adjustment_set - {
             v.name for v in causal_test_case.control_input_configuration
         }
-        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.outcome_variables}
+        minimal_adjustment_set = minimal_adjustment_set - set(outcome_variable.name)
         assert all(
             (v.name not in minimal_adjustment_set for v in causal_test_case.control_input_configuration)
         ), "Treatment vars in adjustment set"
-        assert all(
-            (v.name not in minimal_adjustment_set for v in causal_test_case.outcome_variables)
+        assert (
+            outcome_variable not in minimal_adjustment_set
         ), "Outcome vars in adjustment set"
+        variables_for_positivity = list(minimal_adjustment_set) + [treatment_variable.name] + [
+            outcome_variable.name]
 
-        variables_for_positivity = list(minimal_adjustment_set) + treatments + outcomes
         if self._check_positivity_violation(variables_for_positivity):
             # TODO: We should allow users to continue because positivity can be overcome with parametric models
             # TODO: When we implement causal contracts, we should also note the positivity violation there
