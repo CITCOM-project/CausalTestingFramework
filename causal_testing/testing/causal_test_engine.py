@@ -81,11 +81,9 @@ class CausalTestEngine:
             estimate_type = test_suite[edge]["estimate_type"]
             results = []
             for EstimatorClass in estimators:
-                print("tests: ")
-                print(tests)
                 causal_test_results = []
-                for test in tests:
 
+                for test in tests:
                     treatment_variable = list(test.treatment_input_configuration.keys())[0]
                     treatment_value = list(test.treatment_input_configuration.values())[0]
                     control_value = list(test.control_input_configuration.values())[0]
@@ -95,9 +93,9 @@ class CausalTestEngine:
                         estimator.df = self.scenario_execution_data_df
                     causal_test_result = self._return_causal_test_results(estimate_type, estimator, test)
                     causal_test_results.append(causal_test_result)
+
                 results.append(causal_test_results)
             test_suite_results[edge] = results
-        breakpoint()
         return test_suite_results
 
     def execute_test(
