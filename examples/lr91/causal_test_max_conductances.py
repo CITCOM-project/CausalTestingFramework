@@ -10,6 +10,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.testing.base_causal_test import BaseCausalTest
 from matplotlib.pyplot import rcParams
 
 # Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
@@ -109,12 +110,12 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
 
     # 5. Create a causal specification from the scenario and causal DAG
     causal_specification = CausalSpecification(scenario, causal_dag)
-
+    base_test_case = BaseCausalTest(treatment_var, apd90)
     # 6. Create a causal test case
-    causal_test_case = CausalTestCase(control_input_configuration={treatment_var: control_val},
+    causal_test_case = CausalTestCase(base_causal_test=base_test_case,
                                       expected_causal_effect=expected_causal_effect,
-                                      treatment_input_configuration={treatment_var: treatment_val},
-                                      outcome_variables={apd90})
+                                      control_value=control_val,
+                                      treatment_value=treatment_val)
 
     # 7. Create a data collector
     data_collector = ObservationalDataCollector(scenario, observational_data_path)
@@ -123,9 +124,9 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     causal_test_engine = CausalTestEngine(causal_specification, data_collector)
 
     # 9. Obtain the minimal adjustment set from the causal DAG
-    causal_test_engine.identification(causal_test_case)
+    minimal_adjustment_set = causal_dag.identification(base_test_case)
     linear_regression_estimator = LinearRegressionEstimator((treatment_var.name,), treatment_val, control_val,
-                                                            causal_test_engine.minimal_adjustment_set,
+                                                            minimal_adjustment_set,
                                                             ('APD90',)
                                                             )
 
@@ -157,7 +158,6 @@ def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = True):
         latex_compatible_treatment_str = rf"${before_underscore}_{after_underscore_braces}$"
         cis_low = [c[0] for c in cis]
         cis_high = [c[1] for c in cis]
-
         axes.fill_between(xs, cis_low, cis_high, alpha=.2, color=input_colors[treatment],
                           label=latex_compatible_treatment_str)
         axes.plot(xs, ates, color=input_colors[treatment], linewidth=1)
