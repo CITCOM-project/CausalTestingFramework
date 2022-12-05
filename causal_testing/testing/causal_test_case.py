@@ -8,7 +8,7 @@ from causal_testing.testing.base_causal_test import BaseCausalTest
 logger = logging.getLogger(__name__)
 
 
-class CausalTestCase(BaseCausalTest):
+class CausalTestCase:
     """)
     A causal test case is a triple (X, Delta, Y), where X is an input configuration, Delta is an intervention, and
     Y is the expected causal effect on a particular output. The goal of a causal test case is to test whether the
@@ -71,5 +71,5 @@ class CausalTestCase(BaseCausalTest):
         control_config = {k.name: v for k, v in self.control_input_configuration.items()}
         return (
             f"Running {treatment_config} instead of {control_config} should cause the following "
-            f"changes to {self.outcome_variables}: {self.expected_causal_effect}."
+            f"changes to {self.outcome_variable}: {self.expected_causal_effect}."
         )
