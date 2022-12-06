@@ -98,14 +98,14 @@ class MetamorphicRelation:
     @abstractmethod
     def assertion(self, source_output, follow_up_output):
         """An assertion that should be applied to an individual metamorphic test run."""
-        ...
+        pass
 
     @abstractmethod
     def test_oracle(self, test_results):
         """A test oracle that assert whether the MR holds or not based on ALL test results.
 
         This method must raise an assertion, not return a bool."""
-        ...
+        pass
 
     def __eq__(self, other):
         same_type = self.__class__ == other.__class__
