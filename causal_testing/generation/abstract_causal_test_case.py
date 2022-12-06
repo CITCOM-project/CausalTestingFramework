@@ -9,6 +9,7 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
+from causal_testing.testing.base_causal_test import BaseCausalTest
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class AbstractCausalTestCase:
         effect_modifiers: set[Variable] = None,
         estimate_type: str = "ate",
     ):
-        assert treatment_variables.issubset(scenario.variables.values()), (
+        assert {treatment_variables}.issubset(scenario.variables.values()), (
             "Treatment variables must be a subset of variables."
             + f" Instead got:\ntreatment_variables={treatment_variables}\nvariables={scenario.variables}"
         )
@@ -109,13 +110,15 @@ class AbstractCausalTestCase:
                 )
             model = optimizer.model()
 
+            base_causal_test = BaseCausalTest(self.treatment_variables, list(self.expected_causal_effect.keys())[0])
+
             concrete_test = CausalTestCase(
-                control_input_configuration={v: v.cast(model[v.z3]) for v in self.treatment_variables},
-                treatment_input_configuration={
-                    v: v.cast(model[self.scenario.treatment_variables[v.name].z3]) for v in self.treatment_variables
-                },
+                base_causal_test=base_causal_test,
+                control_value=self.treatment_variables.cast(model[self.treatment_variables.z3]),
+                treatment_value=self.treatment_variables.cast(
+                    model[self.scenario.treatment_variables[self.treatment_variables.name].z3]
+                ),
                 expected_causal_effect=list(self.expected_causal_effect.values())[0],
-                outcome_variables=list(self.expected_causal_effect.keys()),
                 estimate_type=self.estimate_type,
                 effect_modifier_configuration={v: v.cast(model[v.z3]) for v in self.effect_modifiers},
             )

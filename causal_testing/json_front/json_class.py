@@ -89,10 +89,11 @@ class JsonUtility(ABC):
         self._populate_metas()
 
     def _create_abstract_test_case(self, test, mutates, effects):
+
         abstract_test = AbstractCausalTestCase(
             scenario=self.modelling_scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-            treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
+            treatment_variables=self.modelling_scenario.variables[next(iter(test["mutations"]))],
             expected_causal_effect={
                 self.modelling_scenario.variables[variable]: effects[effect]
                 for variable, effect in test["expectedEffect"].items()
@@ -121,7 +122,7 @@ class JsonUtility(ABC):
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
             logger.info("Executing test: %s", test["name"])
             logger.info(abstract_test)
-            logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
+            logger.info([abstract_test.treatment_variables.name, abstract_test.treatment_variables.distribution])
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
             failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
         logger.info("%s/%s failed", failures, len(concrete_tests))
@@ -204,15 +205,15 @@ class JsonUtility(ABC):
         """
         data_collector = ObservationalDataCollector(self.modelling_scenario, self.data_path)
         causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
-        causal_test_engine.identification(causal_test_case)
+        minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_causal_test)
         treatment_vars = list(causal_test_case.treatment_input_configuration)
-        minimal_adjustment_set = causal_test_engine.minimal_adjustment_set - {v.name for v in treatment_vars}
+        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in treatment_vars}
         estimation_model = estimator(
             (list(treatment_vars)[0].name,),
             [causal_test_case.treatment_input_configuration[v] for v in treatment_vars][0],
             [causal_test_case.control_input_configuration[v] for v in treatment_vars][0],
             minimal_adjustment_set,
-            (list(causal_test_case.outcome_variables)[0].name,),
+            (causal_test_case.outcome_variable.name,),
             causal_test_engine.scenario_execution_data_df,
             effect_modifiers=causal_test_case.effect_modifier_configuration,
         )
