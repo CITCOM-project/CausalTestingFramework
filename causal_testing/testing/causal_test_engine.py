@@ -8,6 +8,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestResult
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.base_causal_test import BaseCausalTest
+from causal_testing.testing.causal_test_suite import CausalTestSuite
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +54,18 @@ class CausalTestEngine:
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
 
     def execute_test_suite(
-        self, test_suite: dict[dict[CausalTestCase], dict[Estimator], str]
-    ) -> list[CausalTestResult]:
-        """Execute a suite of causal tests and return the results in a list"""
+            self, test_suite: CausalTestSuite) -> list[CausalTestResult]:
+
+        """Execute a suite of causal tests and return the results in a list
+        :param test_suite: CasualTestSuite object
+        :return: test_suite results which contains a list of CausalTestResult objects
+
+        """
         if self.scenario_execution_data_df.empty:
             raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
         test_suite_results = {}
-        for edge in test_suite:
+        test_suite_dict = test_suite.test_suite
+        for edge in test_suite_dict:
             print("edge: ")
             print(edge)
             logger.info("treatment: %s", edge.treatment_variable)
@@ -69,16 +75,16 @@ class CausalTestEngine:
             minimal_adjustment_set = minimal_adjustment_set - set(edge.outcome_variable.name)
 
             variables_for_positivity = (
-                list(minimal_adjustment_set) + [edge.treatment_variable.name] + [edge.outcome_variable.name]
+                    list(minimal_adjustment_set) + [edge.treatment_variable.name] + [edge.outcome_variable.name]
             )
             if self._check_positivity_violation(variables_for_positivity):
                 # TODO: We should allow users to continue because positivity can be overcome with parametric models
                 # TODO: When we implement causal contracts, we should also note the positivity violation there
                 raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
 
-            estimators = test_suite[edge]["estimators"]
-            tests = test_suite[edge]["tests"]
-            estimate_type = test_suite[edge]["estimate_type"]
+            estimators = test_suite_dict[edge]["estimators"]
+            tests = test_suite_dict[edge]["tests"]
+            estimate_type = test_suite_dict[edge]["estimate_type"]
             results = []
             for EstimatorClass in estimators:
                 causal_test_results = []
@@ -104,7 +110,7 @@ class CausalTestEngine:
         return test_suite_results
 
     def execute_test(
-        self, estimator: type(Estimator), causal_test_case: CausalTestCase, estimate_type: str = "ate"
+            self, estimator: type(Estimator), causal_test_case: CausalTestCase, estimate_type: str = "ate"
     ) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
 
@@ -151,7 +157,15 @@ class CausalTestEngine:
 
     # TODO (MF) I think that the test oracle procedure should go in here.
     # This way, the user can supply it as a function or something, which can be applied to the result of CI
+
     def _return_causal_test_results(self, estimate_type, estimator, causal_test_case):
+        """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
+
+        :param estimate_type: A string which denotes the type of estimate to return
+        :param estimator: An Estimator class object
+        :param causal_test_case: The concrete test case to be executed
+        :return: a CausalTestResult object containing the confidence intervals
+        """
         # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
         if estimate_type == "cate":
             logger.debug("calculating cate")

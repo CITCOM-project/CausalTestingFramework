@@ -86,12 +86,9 @@ def causal_testing_sensitivity_analysis():
 def effects_on_APD90(observational_data_path, test_suite):
     """Perform causal testing for the scenario in which we investigate the causal effect of a given input on APD90.
 
-    :param observational_data_path: Path to observational data containing previous executions of the LR91 model.
-    :param treatment_var: The input variable whose effect on APD90 we are interested in.
-    :param control_val: The control value for the treatment variable (before intervention).
-    :param treatment_val: The treatment value for the treatment variable (after intervention).
-    :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
-    :return: ATE for the effect of G_K on APD90
+    :param: test_suite: A CausalTestSuite object containing a dictionary of base_test_cases and the treatment/outcome
+                        values to be tested
+    :return: causal_test_results containing a list of causal_test_result objects
     """
     # 1. Define Causal DAG
     causal_dag = CausalDAG('./dag.dot')
@@ -128,11 +125,8 @@ def effects_on_APD90(observational_data_path, test_suite):
     # 8. Create an instance of the causal test engine
     causal_test_engine = CausalTestEngine(causal_specification, data_collector)
 
-    # 9. Obtain the minimal adjustment set from the causal DAG
-
-    # 10. Run the causal test and print results
-    causal_test_results = causal_test_engine.execute_test_suite(test_suite.test_suite)
-    print(causal_test_results)
+    # 9. Run the causal test suite
+    causal_test_results = causal_test_engine.execute_test_suite(test_suite)
     return causal_test_results
 
 
