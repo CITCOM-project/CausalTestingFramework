@@ -11,6 +11,7 @@ from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEff
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.base_causal_test import BaseCausalTest
+from causal_testing.testing.causal_test_suite import CausalTestSuite
 from matplotlib.pyplot import rcParams
 
 # Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
@@ -58,7 +59,8 @@ def causal_testing_sensitivity_analysis():
 
     apd90 = Output('APD90', int)
     outcome_variable = apd90
-    test_suite = {}
+    test_suite = CausalTestSuite()
+
     for conductance_param, mean_and_oracle in conductance_means.items():
         treatment_variable = Input(conductance_param, float)
         base_test_case = BaseCausalTest(treatment_variable, outcome_variable)
@@ -67,17 +69,16 @@ def causal_testing_sensitivity_analysis():
         mean, oracle = mean_and_oracle
         for treatment_value in treatment_values:
             test_list.append(CausalTestCase(base_test_case, oracle, control_value, treatment_value))
-
-        test_suite[base_test_case] = {'tests': test_list,
-                                      'estimators': [LinearRegressionEstimator],
-                                      'estimate_type': "ate"}
+        test_suite.add_test_object(base_test_case, test_list, [LinearRegressionEstimator], 'ate')
 
     causal_test_results = effects_on_APD90(OBSERVATIONAL_DATA_PATH, test_suite)
 
+    # Extract data from causal_test_results needed for plotting
     for base_test_case in causal_test_results:
-        results[base_test_case.treatment_variable.name] = {"ate": [result.ate for result in causal_test_results[base_test_case][0]],
-                                   "cis": [result.confidence_intervals for result in
-                                           causal_test_results[base_test_case][0]]}
+        results[base_test_case.treatment_variable.name] = \
+            {"ate": [result.ate for result in causal_test_results[base_test_case][0]],
+             "cis": [result.confidence_intervals for result in
+                     causal_test_results[base_test_case][0]]}
 
     plot_ates_with_cis(results, treatment_values)
 
@@ -130,7 +131,7 @@ def effects_on_APD90(observational_data_path, test_suite):
     # 9. Obtain the minimal adjustment set from the causal DAG
 
     # 10. Run the causal test and print results
-    causal_test_results = causal_test_engine.execute_test_suite(test_suite)
+    causal_test_results = causal_test_engine.execute_test_suite(test_suite.test_suite)
     print(causal_test_results)
     return causal_test_results
 
