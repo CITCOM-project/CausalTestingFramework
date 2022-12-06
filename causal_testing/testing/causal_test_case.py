@@ -36,6 +36,7 @@ class CausalTestCase:
         :param treatment_input_configuration: The input configuration representing the treatment values of the treatment
         variables. That is, the input configuration *after* applying the intervention.
         """
+        self.base_causal_test = base_causal_test
         self.control_input_configuration = {base_causal_test.treatment_variable: control_value}
         self.expected_causal_effect = expected_causal_effect
         self.outcome_variable = base_causal_test.outcome_variable
