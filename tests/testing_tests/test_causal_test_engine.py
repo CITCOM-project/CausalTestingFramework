@@ -11,7 +11,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.causal_test_outcome import ExactValue
 from causal_testing.testing.estimators import CausalForestEstimator, LinearRegressionEstimator
-
+from causal_testing.testing.base_test_case import BaseTestCase
 
 class TestCausalTestEngineObservational(unittest.TestCase):
     """ Test the CausalTestEngine workflow using observational data.
@@ -41,11 +41,12 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
         # 3. Create a causal test case
         self.expected_causal_effect = ExactValue(4)
+        self.base_test_case = BaseTestCase(A, C)
         self.causal_test_case = CausalTestCase(
-            control_input_configuration={A: 0},
+            base_test_case=self.base_test_case,
             expected_causal_effect=self.expected_causal_effect,
-            treatment_input_configuration={A: 1},
-            outcome_variables={C})
+            control_value=0,
+            treatment_value=1)
 
         # 4. Create dummy test data and write to csv
         np.random.seed(1)
@@ -64,9 +65,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_specification,
             self.data_collector
         )
-
-        self.causal_test_engine.identification(self.causal_test_case)
-        self.minimal_adjustment_set = self.causal_test_engine.minimal_adjustment_set
+        self.minimal_adjustment_set = self.causal_dag.identification(self.base_test_case)
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
         self.control_value = 0
@@ -114,9 +113,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
     def test_check_minimum_adjustment_set(self):
         """ Check that the minimum adjustment set is correctly made"""
-        self.causal_test_engine.identification(self.causal_test_case)
-        minimum_adjustment_set = self.causal_test_engine.minimal_adjustment_set
-        self.assertEqual(minimum_adjustment_set, {'D'})
+        minimal_adjustment_set = self.causal_dag.identification(self.base_test_case)
+        self.assertEqual(minimal_adjustment_set, {'D'})
 
     def test_execute_test_observational_causal_forest_estimator(self):
         """ Check that executing the causal test case returns the correct results for the dummy data using a causal
@@ -134,19 +132,14 @@ class TestCausalTestEngineObservational(unittest.TestCase):
     def test_invalid_causal_effect(self):
         """ Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator. """
-        causal_test_case = CausalTestCase(
-            control_input_configuration={self.A: 0},
-            expected_causal_effect=self.expected_causal_effect,
-            treatment_input_configuration={self.A: 1},
-            outcome_variables={self.C},
-            effect="error")
-        # 5. Create causal test engine
-        causal_test_engine = CausalTestEngine(
-            self.causal_specification,
-            self.data_collector
+        base_test_case = BaseTestCase(
+            treatment_variable=self.A,
+            outcome_variable=self.C,
+            effect="error"
         )
+
         with self.assertRaises(Exception):
-            causal_test_engine.identification()
+            self.causal_dag.identification(base_test_case)
 
 
     def test_execute_test_observational_linear_regression_estimator(self):
@@ -165,27 +158,30 @@ class TestCausalTestEngineObservational(unittest.TestCase):
     def test_execute_test_observational_linear_regression_estimator_direct_effect(self):
         """ Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator. """
-        causal_test_case = CausalTestCase(
-            control_input_configuration={self.A: 0},
-            expected_causal_effect=self.expected_causal_effect,
-            treatment_input_configuration={self.A: 1},
-            outcome_variables={self.C},
+        base_test_case = BaseTestCase(
+            treatment_variable=self.A,
+            outcome_variable=self.C,
             effect="direct")
+
+        causal_test_case = CausalTestCase(
+            base_test_case=base_test_case,
+            expected_causal_effect=self.expected_causal_effect,
+            control_value=0,
+            treatment_value=1)
 
         # 5. Create causal test engine
         causal_test_engine = CausalTestEngine(
             self.causal_specification,
             self.data_collector
         )
-        causal_test_engine.identification(causal_test_case)
-        self.minimal_adjustment_set = causal_test_engine.minimal_adjustment_set
+        minimal_adjustment_set = self.causal_dag.identification(base_test_case)
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
         self.control_value = 0
         estimation_model = LinearRegressionEstimator(('A',),
                                                      self.treatment_value,
                                                      self.control_value,
-                                                     self.minimal_adjustment_set,
+                                                     minimal_adjustment_set,
                                                      ('C',),
                                                      causal_test_engine.scenario_execution_data_df)
         causal_test_result = causal_test_engine.execute_test(estimation_model, causal_test_case)
