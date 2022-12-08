@@ -10,7 +10,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
-from causal_testing.testing.base_causal_test import BaseCausalTest
+from causal_testing.testing.base_test_case import BaseTestCase
 from matplotlib.pyplot import rcParams
 
 # Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
@@ -110,9 +110,9 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
 
     # 5. Create a causal specification from the scenario and causal DAG
     causal_specification = CausalSpecification(scenario, causal_dag)
-    base_test_case = BaseCausalTest(treatment_var, apd90)
+    base_test_case = BaseTestCase(treatment_var, apd90)
     # 6. Create a causal test case
-    causal_test_case = CausalTestCase(base_causal_test=base_test_case,
+    causal_test_case = CausalTestCase(base_test_case=base_test_case,
                                       expected_causal_effect=expected_causal_effect,
                                       control_value=control_val,
                                       treatment_value=treatment_val)

@@ -7,7 +7,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestResult
 from causal_testing.testing.estimators import Estimator
-from causal_testing.testing.base_causal_test import BaseCausalTest
+from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,7 @@ class CausalTestEngine:
         self.data_collector = data_collector
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
 
-    def execute_test_suite(
-            self, test_suite: CausalTestSuite) -> list[CausalTestResult]:
+    def execute_test_suite(self, test_suite: CausalTestSuite) -> list[CausalTestResult]:
 
         """Execute a suite of causal tests and return the results in a list
         :param test_suite: CasualTestSuite object
@@ -75,7 +74,7 @@ class CausalTestEngine:
             minimal_adjustment_set = minimal_adjustment_set - set(edge.outcome_variable.name)
 
             variables_for_positivity = (
-                    list(minimal_adjustment_set) + [edge.treatment_variable.name] + [edge.outcome_variable.name]
+                list(minimal_adjustment_set) + [edge.treatment_variable.name] + [edge.outcome_variable.name]
             )
             if self._check_positivity_violation(variables_for_positivity):
                 # TODO: We should allow users to continue because positivity can be overcome with parametric models
@@ -110,7 +109,7 @@ class CausalTestEngine:
         return test_suite_results
 
     def execute_test(
-            self, estimator: type(Estimator), causal_test_case: CausalTestCase, estimate_type: str = "ate"
+        self, estimator: type(Estimator), causal_test_case: CausalTestCase, estimate_type: str = "ate"
     ) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
 
@@ -139,7 +138,7 @@ class CausalTestEngine:
 
         logger.info("treatments: %s", treatments)
         logger.info("outcomes: %s", outcome_variable)
-        minimal_adjustment_set = self.causal_dag.identification(BaseCausalTest(treatment_variable, outcome_variable))
+        minimal_adjustment_set = self.causal_dag.identification(BaseTestCase(treatment_variable, outcome_variable))
         minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.control_input_configuration}
         minimal_adjustment_set = minimal_adjustment_set - set(outcome_variable.name)
         assert all(

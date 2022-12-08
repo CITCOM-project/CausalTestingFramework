@@ -10,7 +10,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
-from causal_testing.testing.base_causal_test import BaseCausalTest
+from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 from matplotlib.pyplot import rcParams
 
@@ -63,7 +63,7 @@ def causal_testing_sensitivity_analysis():
 
     for conductance_param, mean_and_oracle in conductance_means.items():
         treatment_variable = Input(conductance_param, float)
-        base_test_case = BaseCausalTest(treatment_variable, outcome_variable)
+        base_test_case = BaseTestCase(treatment_variable, outcome_variable)
         test_list = []
         control_value = 0.5
         mean, oracle = mean_and_oracle

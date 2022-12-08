@@ -9,12 +9,12 @@ class CausalTestSuite:
     """
 
     def __init__(
-            self,
+        self,
     ):
         self.test_suite = {}
 
     def add_test_object(self, base_test_case, causal_test_case_list, estimators, estimate_type):
-        test_object = {'tests': causal_test_case_list, 'estimators': estimators, 'estimate_type': estimate_type}
+        test_object = {"tests": causal_test_case_list, "estimators": estimators, "estimate_type": estimate_type}
         self.test_suite[base_test_case] = test_object
 
     def get_single_test_object(self, base_test_case):

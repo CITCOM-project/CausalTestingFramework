@@ -6,7 +6,7 @@ from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue
-from causal_testing.testing.base_causal_test import BaseCausalTest
+from causal_testing.testing.base_test_case import BaseTestCase
 
 class TestCausalTestEngineObservational(unittest.TestCase):
     """ Test the CausalTestEngine workflow using observational data.
@@ -34,9 +34,9 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
         # 3. Create an intervention and causal test case
         self.expected_causal_effect = ExactValue(4)
-        self.base_causal_test = BaseCausalTest(A, C)
+        self.base_test_case = BaseTestCase(A, C)
         self.causal_test_case = CausalTestCase(
-            base_causal_test=self.base_causal_test,
+            base_test_case=self.base_test_case,
             expected_causal_effect=self.expected_causal_effect,
             control_value=0,
             treatment_value=1

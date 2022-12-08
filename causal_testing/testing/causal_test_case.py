@@ -3,7 +3,7 @@ from typing import Any
 
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
-from causal_testing.testing.base_causal_test import BaseCausalTest
+from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class CausalTestCase:
 
     def __init__(
         self,
-        base_causal_test: BaseCausalTest,
+        base_test_case: BaseTestCase,
         expected_causal_effect: CausalTestOutcome,
         control_value: Any,
         treatment_value: Any = None,
@@ -36,13 +36,13 @@ class CausalTestCase:
         :param treatment_input_configuration: The input configuration representing the treatment values of the treatment
         variables. That is, the input configuration *after* applying the intervention.
         """
-        self.base_causal_test = base_causal_test
-        self.control_input_configuration = {base_causal_test.treatment_variable: control_value}
+        self.base_test_case = base_test_case
+        self.control_input_configuration = {base_test_case.treatment_variable: control_value}
         self.expected_causal_effect = expected_causal_effect
-        self.outcome_variable = base_causal_test.outcome_variable
-        self.treatment_input_configuration = {base_causal_test.treatment_variable: treatment_value}
+        self.outcome_variable = base_test_case.outcome_variable
+        self.treatment_input_configuration = {base_test_case.treatment_variable: treatment_value}
         self.estimate_type = estimate_type
-        self.effect = base_causal_test.effect
+        self.effect = base_test_case.effect
         if effect_modifier_configuration:
             self.effect_modifier_configuration = effect_modifier_configuration
         else:
