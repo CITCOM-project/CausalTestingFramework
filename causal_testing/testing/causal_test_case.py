@@ -57,7 +57,7 @@ class CausalTestCase:
 
     def get_outcome_variables(self):
         """Return a list of the outcome variables (as strings) for this causal test case."""
-        return [v.name for v in self.outcome_variables]
+        return [self.outcome_variable.name]
 
     def get_control_values(self):
         """Return a list of the control values for each treatment variable in this causal test case."""
@@ -70,7 +70,8 @@ class CausalTestCase:
     def __str__(self):
         treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
         control_config = {k.name: v for k, v in self.control_input_configuration.items()}
+        outcome_variable = {self.outcome_variable}
         return (
             f"Running {treatment_config} instead of {control_config} should cause the following "
-            f"changes to {self.outcome_variable}: {self.expected_causal_effect}."
+            f"changes to {outcome_variable}: {self.expected_causal_effect}."
         )
