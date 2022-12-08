@@ -8,18 +8,21 @@ from scipy.stats import uniform, rv_discrete
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.testing.causal_test_outcome import Positive
 
+
 class TestAbstractTestCase(unittest.TestCase):
     """
-        Class to test abstract test cases.
+    Class to test abstract test cases.
     """
+
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
         self.observational_df_path = os.path.join(temp_dir_path, "observational_data.csv")
         # Y = 3*X1 + X2*X3 + 10
         self.observational_df = pd.DataFrame({"X1": [1, 2, 3, 4], "X2": [5, 6, 7, 8], "X3": [10, 20, 30, 40]})
-        self.observational_df["Y"] = self.observational_df.apply(lambda row: (3 * row.X1) + (row.X2 * row.X3) + 10,
-                                                                 axis=1)
+        self.observational_df["Y"] = self.observational_df.apply(
+            lambda row: (3 * row.X1) + (row.X2 * row.X3) + 10, axis=1
+        )
         self.observational_df.to_csv(self.observational_df_path)
         self.X1 = Input("X1", float, uniform(1, 4))
         self.X2 = Input("X2", int, rv_discrete(values=([7], [1])))
@@ -51,9 +54,9 @@ class TestAbstractTestCase(unittest.TestCase):
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
-        assert str(abstract) == \
-        "When we apply intervention {X1' > X1}, the effect on Output: Y::int should be Positive", \
-        f"Unexpected string {str(abstract)}"
+        assert (
+            str(abstract) == "When we apply intervention {X1' > X1}, the effect on Output: Y::int should be Positive"
+        ), f"Unexpected string {str(abstract)}"
 
     def test_datapath(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.X4})
@@ -109,7 +112,6 @@ class TestAbstractTestCase(unittest.TestCase):
         assert len(concrete_tests) == 2, "Expected 2 concrete tests"
         assert len(runs) == 4, "Expected 4 runs"
 
-
     def test_infeasible_constraints(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.X4}, [self.X1.z3 > 2])
         scenario.setup_treatment_variables()
@@ -125,9 +127,8 @@ class TestAbstractTestCase(unittest.TestCase):
 
         with self.assertWarns(Warning):
             concrete_tests, runs = abstract.generate_concrete_tests(4, rct=True, target_ks_score=0.1, hard_max=HARD_MAX)
-        self.assertTrue(all((x > 2 for x in runs['X1'])))
+        self.assertTrue(all((x > 2 for x in runs["X1"])))
         self.assertEqual(len(concrete_tests), HARD_MAX * NUM_STRATA)
-
 
     def test_feasible_constraints(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.X4})
@@ -141,7 +142,6 @@ class TestAbstractTestCase(unittest.TestCase):
         )
         concrete_tests, _ = abstract.generate_concrete_tests(4, rct=True, target_ks_score=0.1, hard_max=1000)
         assert len(concrete_tests) < 1000
-
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

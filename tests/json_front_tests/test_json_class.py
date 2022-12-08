@@ -93,12 +93,10 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
         mutates = {
-            "Increase": lambda x: self.json_class.modelling_scenario.treatment_variables[x].z3 >
-                                  self.json_class.modelling_scenario.variables[x].z3
+            "Increase": lambda x: self.json_class.modelling_scenario.treatment_variables[x].z3
+            > self.json_class.modelling_scenario.variables[x].z3
         }
-        estimators = {
-            "LinearRegressionEstimator": LinearRegressionEstimator
-        }
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
         with self.assertLogs() as captured:
             self.json_class.generate_tests(effects, mutates, estimators, False)
@@ -108,9 +106,8 @@ class TestJsonClass(unittest.TestCase):
 
     def tearDown(self) -> None:
         pass
-        #remove_temp_dir_if_existent()
+        # remove_temp_dir_if_existent()
 
 
 def populate_example(*args, **kwargs):
     pass
-
