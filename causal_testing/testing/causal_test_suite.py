@@ -13,7 +13,7 @@ class CausalTestSuite:
     ):
         self.test_suite = {}
 
-    def add_test_object(self, base_test_case, causal_test_case_list, estimators, estimate_type):
+    def add_test_object(self, base_test_case, causal_test_case_list, estimators, estimate_type: str = "ate"):
         test_object = {"tests": causal_test_case_list, "estimators": estimators, "estimate_type": estimate_type}
         self.test_suite[base_test_case] = test_object
 
