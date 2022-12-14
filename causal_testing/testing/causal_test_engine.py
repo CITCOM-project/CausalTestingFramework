@@ -84,7 +84,7 @@ class CausalTestEngine:
             estimators = test_suite_dict[edge]["estimators"]
             tests = test_suite_dict[edge]["tests"]
             estimate_type = test_suite_dict[edge]["estimate_type"]
-            results = []
+            results = {}
             for EstimatorClass in estimators:
                 causal_test_results = []
 
@@ -104,7 +104,7 @@ class CausalTestEngine:
                     causal_test_result = self._return_causal_test_results(estimate_type, estimator, test)
                     causal_test_results.append(causal_test_result)
 
-                results.append(causal_test_results)
+                results[EstimatorClass.__name__] = causal_test_results
             test_suite_results[edge] = results
         return test_suite_results
 
