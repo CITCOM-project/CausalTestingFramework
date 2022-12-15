@@ -38,10 +38,10 @@ class TestCausalTestSuite(unittest.TestCase):
                                     self.expected_causal_effect,
                                     0,
                                     2)]
-        estimators = [LinearRegressionEstimator]
+        self.estimators = [LinearRegressionEstimator]
         self.test_suite.add_test_object(base_test_case=self.base_test_case,
                                         causal_test_case_list=test_list,
-                                        estimators=estimators)
+                                        estimators=self.estimators)
 
         temp_dir_path = create_temp_dir_if_non_existent()
         dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
@@ -91,18 +91,24 @@ class TestCausalTestSuite(unittest.TestCase):
 
         self.assertEqual(test_case, manual_test_case)
 
-    def test_execute_test_suite_single_test_case(self):
-        causal_specification = CausalSpecification(self.scenario, self.causal_dag)
-
-        data_collector = ObservationalDataCollector(self.scenario, self.observational_data_csv_path)
-        causal_test_engine = CausalTestEngine(causal_specification, data_collector)
+    def test_execute_test_suite_single_base_test_case(self):
+        """Check that the test suite can return the correct results from dummy data for a single base_test-case"""
+        causal_test_engine = self.create_causal_test_engine()
 
         causal_test_results = causal_test_engine.execute_test_suite(test_suite=self.test_suite)
-        breakpoint()
-        self.assertAlmostEqual(causal_test_results[self.base_test_case][0][0].ate, 4, delta=1e-10)
+        causal_test_case = causal_test_results[self.base_test_case]
+        self.assertAlmostEqual(causal_test_case['LinearRegressionEstimator'][0].ate, 4, delta=1e-10)
 
-    def test_execute_test_suite_multiple_test_case(self):
+    def test_execute_test_suite_multiple_base_test_cases(self):
         pass
 
     def test_execute_test_suite_multiple_estimators(self):
         pass
+
+    def create_causal_test_engine(self):
+
+        causal_specification = CausalSpecification(self.scenario, self.causal_dag)
+
+        data_collector = ObservationalDataCollector(self.scenario, self.observational_data_csv_path)
+        causal_test_engine = CausalTestEngine(causal_specification, data_collector)
+        return causal_test_engine
