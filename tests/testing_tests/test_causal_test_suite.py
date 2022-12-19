@@ -71,7 +71,7 @@ class TestCausalTestSuite(unittest.TestCase):
                                    estimators=estimators)
         manual_test_object = {
             self.base_test_case: {"tests": test_list, "estimators": estimators, "estimate_type": "ate"}}
-        self.assertEqual(test_suite.test_suite, manual_test_object)
+        self.assertEqual(test_suite, manual_test_object)
 
     def test_return_single_test_object(self):
         base_test_case = BaseTestCase(self.A, self.D)
@@ -87,7 +87,7 @@ class TestCausalTestSuite(unittest.TestCase):
 
         manual_test_case = {"tests": test_list, "estimators": estimators, "estimate_type": "ate"}
 
-        test_case = self.test_suite.get_single_test_object(base_test_case)
+        test_case = self.test_suite[base_test_case]
 
         self.assertEqual(test_case, manual_test_case)
 
@@ -103,8 +103,10 @@ class TestCausalTestSuite(unittest.TestCase):
         pass
 
     def test_execute_test_suite_multiple_estimators(self):
-        pass
-
+        #estimators = [LinearRegressionEstimator, CausalForestEstimator]
+        #test_suite_2_estimators = CausalTestSuite
+        #test_suite_2_estimators
+        causal_test_engine = self.create_causal_test_engine()
     def create_causal_test_engine(self):
 
         causal_specification = CausalSpecification(self.scenario, self.causal_dag)

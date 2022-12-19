@@ -63,8 +63,7 @@ class CausalTestEngine:
         if self.scenario_execution_data_df.empty:
             raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
         test_suite_results = {}
-        test_suite_dict = test_suite.test_suite
-        for edge in test_suite_dict:
+        for edge in test_suite:
             print("edge: ")
             print(edge)
             logger.info("treatment: %s", edge.treatment_variable)
@@ -81,9 +80,9 @@ class CausalTestEngine:
                 # TODO: When we implement causal contracts, we should also note the positivity violation there
                 raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
 
-            estimators = test_suite_dict[edge]["estimators"]
-            tests = test_suite_dict[edge]["tests"]
-            estimate_type = test_suite_dict[edge]["estimate_type"]
+            estimators = test_suite[edge]["estimators"]
+            tests = test_suite[edge]["tests"]
+            estimate_type = test_suite[edge]["estimate_type"]
             results = {}
             for EstimatorClass in estimators:
                 causal_test_results = []
