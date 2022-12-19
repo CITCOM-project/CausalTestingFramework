@@ -60,7 +60,9 @@ def causal_testing_sensitivity_analysis():
     apd90 = Output('APD90', int)
     outcome_variable = apd90
     test_suite = CausalTestSuite()
+    estimator_list = [LinearRegressionEstimator]
 
+    # For each parameter in conductance_means, setup variables and add a test case to the test suite
     for conductance_param, mean_and_oracle in conductance_means.items():
         treatment_variable = Input(conductance_param, float)
         base_test_case = BaseTestCase(treatment_variable, outcome_variable)
@@ -69,14 +71,19 @@ def causal_testing_sensitivity_analysis():
         mean, oracle = mean_and_oracle
         for treatment_value in treatment_values:
             test_list.append(CausalTestCase(base_test_case, oracle, control_value, treatment_value))
-        test_suite.add_test_object(base_test_case, test_list, [LinearRegressionEstimator], 'ate')
+        test_suite.add_test_object(base_test_case=base_test_case,
+                                   test_list=test_list,
+                                   estimators=estimator_list,
+                                   estimate_type='ate')
 
     causal_test_results = effects_on_APD90(OBSERVATIONAL_DATA_PATH, test_suite)
 
     # Extract data from causal_test_results needed for plotting
     for base_test_case in causal_test_results:
+
+        # Place results of test_suite into format required for plotting
         results[base_test_case.treatment_variable.name] = \
-            {"ate": [result.ate for result in causal_test_results[base_test_case][0]],
+            {"ate": [result.ate for result in causal_test_results[base_test_case]['LinearRegressionEstimator']],
              "cis": [result.confidence_intervals for result in
                      causal_test_results[base_test_case][0]]}
 
