@@ -57,8 +57,8 @@ class CausalTestEngine:
 
         """Execute a suite of causal tests and return the results in a list
         :param test_suite: CasualTestSuite object
-        :return: test_suite results which contains a list of CausalTestResult objects
-
+        :return: A dictionary where each key is the name of the estimators specified and the values are lists of
+                causal_test_result objects
         """
         if self.scenario_execution_data_df.empty:
             raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
