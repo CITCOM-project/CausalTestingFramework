@@ -2,6 +2,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
+import math
+from scipy.stats import t
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -313,6 +315,7 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
+        self.model = model
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
         individuals.loc["control", list(self.treatment)] = self.control_values
@@ -440,6 +443,46 @@ class LinearRegressionEstimator(Estimator):
             confidence_intervals[1][list(self.treatment)],
         )
         return [ci_low.values[0], ci_high.values[0]]
+
+    # https://github.com/carloscinelli/sensemakr/blob/master/R/sensitivity_stats.R
+    # Line 132
+    def estimate_robustness(self, model, q = 1, alpha = 1):
+        dof = model.df_resid
+        t_values = model.tvalues
+
+        fq = q * abs(t_values / math.sqrt(dof))
+        f_crit = abs(t.ppf(alpha / 2, dof - 1)) / math.sqrt(dof - 1)
+        fqa = fq - f_crit
+
+        rv = 0.5 * (np.sqrt(fqa**4 + (4 * fqa**2)) - fqa**2)
+
+        return rv
+
+
+    def estimate_e_value(self, risk_ratio, confidence_intervals: tuple[float, float]) -> tuple[float, tuple[float, float]]:
+        if risk_ratio >= 1:
+            e = risk_ratio + math.sqrt(risk_ratio * (risk_ratio - 1))
+
+            lower_limit = confidence_intervals[0]
+            if lower_limit <= 1:
+                lower_limit = 1
+            else:
+                lower_limit = lower_limit + math.sqrt(lower_limit * (lower_limit - 1))
+
+            return (e, (lower_limit, 1))
+            
+        else:
+            risk_ratio_prime = 1 / risk_ratio
+            e = risk_ratio_prime + math.sqrt(risk_ratio_prime * (risk_ratio_prime - 1))
+
+            upper_limit = confidence_intervals[1]
+            if upper_limit >= 1:
+                upper_limit = 1
+            else:
+                upper_limit_prime = 1 / upper_limit
+                upper_limit = upper_limit_prime + math.sqrt(upper_limit_prime * (upper_limit_prime - 1))
+
+            return (e, (1, upper_limit))
 
 
 class CausalForestEstimator(Estimator):
