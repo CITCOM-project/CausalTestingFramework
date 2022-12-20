@@ -11,7 +11,7 @@ requirements = [
     "scipy~=1.7.3",
     "statsmodels~=0.13.2",
     "tabulate~=0.8.10",
-    "z3_solver~=4.8.13.0",
+    "z3_solver~=4.11.2",
 ]
 
 # Additional dependencies for development
