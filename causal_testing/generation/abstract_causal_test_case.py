@@ -141,7 +141,8 @@ class AbstractCausalTestCase:
             # Treatment run
             if rct:
                 treatment_run = control_run.copy()
-                treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
+                treatment_run.update({concrete_test.treatment_variable.name: concrete_test.treatment_value})
+                #treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
                 treatment_run["bin"] = index
                 runs.append(treatment_run)
 
@@ -185,7 +186,7 @@ class AbstractCausalTestCase:
             runs = pd.concat([runs, runs_])
             assert concrete_tests_ not in concrete_tests, "Duplicate entries unlikely unless something went wrong"
 
-            control_configs = pd.DataFrame([test.control_input_configuration for test in concrete_tests])
+            control_configs = pd.DataFrame([{test.treatment_variable: test.control_value} for test in concrete_tests])
             ks_stats = {
                 var: stats.kstest(control_configs[var], var.distribution.cdf).statistic
                 for var in control_configs.columns

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class CausalTestCase:
-    """)
+    """
     A causal test case is a triple (X, Delta, Y), where X is an input configuration, Delta is an intervention, and
     Y is the expected causal effect on a particular output. The goal of a causal test case is to test whether the
     intervention Delta made to the input configuration X causes the model-under-test to produce the expected change
@@ -37,39 +37,38 @@ class CausalTestCase:
         variables. That is, the input configuration *after* applying the intervention.
         """
         self.base_test_case = base_test_case
-        self.control_input_configuration = {base_test_case.treatment_variable: control_value}
+        self.control_value = control_value
         self.expected_causal_effect = expected_causal_effect
         self.outcome_variable = base_test_case.outcome_variable
-        self.treatment_input_configuration = {base_test_case.treatment_variable: treatment_value}
+        self.treatment_variable = base_test_case.treatment_variable
+        self.treatment_value = treatment_value
         self.estimate_type = estimate_type
         self.effect = base_test_case.effect
+
         if effect_modifier_configuration:
             self.effect_modifier_configuration = effect_modifier_configuration
         else:
             self.effect_modifier_configuration = dict()
-        assert (
-            self.control_input_configuration.keys() == self.treatment_input_configuration.keys()
-        ), "Control and treatment input configurations must have the same keys."
 
-    def get_treatment_variables(self):
+    def get_treatment_variable(self):
         """Return a list of the treatment variables (as strings) for this causal test case."""
-        return [v.name for v in self.control_input_configuration]
+        return self.treatment_variable.name
 
-    def get_outcome_variables(self):
+    def get_outcome_variable(self):
         """Return a list of the outcome variables (as strings) for this causal test case."""
-        return [self.outcome_variable.name]
+        return self.outcome_variable.name
 
-    def get_control_values(self):
+    def get_control_value(self):
         """Return a list of the control values for each treatment variable in this causal test case."""
-        return list(self.control_input_configuration.values())
+        return self.control_value
 
-    def get_treatment_values(self):
+    def get_treatment_value(self):
         """Return a list of the treatment values for each treatment variable in this causal test case."""
-        return list(self.treatment_input_configuration.values())
+        return self.treatment_value
 
     def __str__(self):
-        treatment_config = {k.name: v for k, v in self.treatment_input_configuration.items()}
-        control_config = {k.name: v for k, v in self.control_input_configuration.items()}
+        treatment_config = {self.treatment_variable.name: self.treatment_value}
+        control_config = {self.treatment_variable.name: self.control_value}
         outcome_variable = {self.outcome_variable}
         return (
             f"Running {treatment_config} instead of {control_config} should cause the following "

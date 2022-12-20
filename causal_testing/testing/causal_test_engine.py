@@ -131,19 +131,16 @@ class CausalTestEngine:
             raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
         if estimator.df is None:
             estimator.df = self.scenario_execution_data_df
-        treatment_variable = list(causal_test_case.control_input_configuration.keys())[0]
+        treatment_variable = causal_test_case.treatment_variable
         treatments = treatment_variable.name
         outcome_variable = causal_test_case.outcome_variable
 
         logger.info("treatments: %s", treatments)
         logger.info("outcomes: %s", outcome_variable)
         minimal_adjustment_set = self.causal_dag.identification(BaseTestCase(treatment_variable, outcome_variable))
-        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.control_input_configuration}
+        minimal_adjustment_set = minimal_adjustment_set - set(treatment_variable.name)
         minimal_adjustment_set = minimal_adjustment_set - set(outcome_variable.name)
-        assert all(
-            (v.name not in minimal_adjustment_set for v in causal_test_case.control_input_configuration)
-        ), "Treatment vars in adjustment set"
-        assert outcome_variable not in minimal_adjustment_set, "Outcome vars in adjustment set"
+
         variables_for_positivity = list(minimal_adjustment_set) + [treatment_variable.name] + [outcome_variable.name]
 
         if self._check_positivity_violation(variables_for_positivity):
