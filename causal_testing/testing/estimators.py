@@ -149,7 +149,8 @@ class LogisticRegressionEstimator(Estimator):
     def estimate_control_treatment(self) -> tuple[pd.Series, pd.Series]:
         """Estimate the outcomes under control and treatment.
 
-        :return: The average treatment effect and the 95% Wald confidence intervals.
+        :return: The estimated control and treatment values and their confidence
+        intervals in the form ((ci_low, control, ci_high), (ci_low, treatment, ci_high)).
         """
         model = self._run_logistic_regression()
         self.model = model
@@ -168,7 +169,17 @@ class LogisticRegressionEstimator(Estimator):
         x = x[model.params.index]
 
         y = model.predict(x)
-        return y.iloc[1], y.iloc[0]
+
+        # Delta method confidence intervals from
+        # https://stackoverflow.com/questions/47414842/confidence-interval-of-probability-prediction-from-logistic-regression-statsmode
+        cov = model.cov_params()
+        gradient = (y * (1 - y) * x.T).T # matrix of gradients for each observation
+        std_errors = np.array([np.sqrt(np.dot(np.dot(g, cov), g)) for g in gradient.to_numpy()])
+        c = 1.96 # multiplier for confidence interval
+        upper = np.maximum(0, np.minimum(1, y + std_errors * c))
+        lower = np.maximum(0, np.minimum(1, y - std_errors * c))
+
+        return (lower.iloc[1], y.iloc[1], upper.iloc[1]), (lower.iloc[0], y.iloc[0], upper.iloc[0])
 
     def estimate_ate(self) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
@@ -176,11 +187,18 @@ class LogisticRegressionEstimator(Estimator):
         calculate the expected outcomes under control and treatment and take one away from the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
-        :return: The average treatment effect. Confidence intervals are not yet supported.
+        :return: The estimated average treatment effect and 95% confidence intervals
         """
-        control_outcome, treatment_outcome = self.estimate_control_treatment()
+        (cci_low, control_outcome, cci_high), (tci_low, treatment_outcome, tci_high) = self.estimate_control_treatment()
 
-        return treatment_outcome - control_outcome
+        ci_low = tci_low - cci_high
+        ci_high = tci_high - cci_low
+        estimate = treatment_outcome - control_outcome
+
+        logger.info(f"Changing {self.treatment} from {self.control_values} to {self.treatment_values} gives an estimated ATE of {ci_low} < {estimate} < {ci_high}")
+        assert ci_low < estimate < ci_high, f"Expecting {ci_low} < {estimate} < {ci_high}"
+
+        return estimate, (ci_low, ci_high)
 
     def estimate_risk_ratio(self) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
@@ -188,11 +206,14 @@ class LogisticRegressionEstimator(Estimator):
         calculate the expected outcomes under control and treatment and divide one by the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
-        :return: The average treatment effect. Confidence intervals are not yet supported.
+        :return: The estimated risk ratio and 95% confidence intervals.
         """
-        control_outcome, treatment_outcome = self.estimate_control_treatment()
+        (cci_low, control_outcome, cci_high), (tci_low, treatment_outcome, tci_high) = self.estimate_control_treatment()
 
-        return treatment_outcome / control_outcome
+        ci_low = tci_low / cci_high
+        ci_high = tci_high / cci_low
+
+        return treatment_outcome / control_outcome, (ci_low, ci_high)
 
     def estimate_unit_odds_ratio(self) -> float:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
@@ -214,7 +235,7 @@ class LinearRegressionEstimator(Estimator):
         treatment: tuple,
         treatment_values: float,
         control_values: float,
-        adjustment_set: set,
+        adjustment_set: list[float],
         outcome: tuple,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
@@ -332,7 +353,8 @@ class LinearRegressionEstimator(Estimator):
     def estimate_control_treatment(self) -> tuple[pd.Series, pd.Series]:
         """Estimate the outcomes under control and treatment.
 
-        :return: The average treatment effect and the 95% Wald confidence intervals.
+        :return: The estimated outcome under control and treatment in the form
+        (control_outcome, treatment_outcome).
         """
         model = self._run_linear_regression()
         self.model = model
