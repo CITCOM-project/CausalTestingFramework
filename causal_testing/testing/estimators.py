@@ -173,9 +173,9 @@ class LogisticRegressionEstimator(Estimator):
         # Delta method confidence intervals from
         # https://stackoverflow.com/questions/47414842/confidence-interval-of-probability-prediction-from-logistic-regression-statsmode
         cov = model.cov_params()
-        gradient = (y * (1 - y) * x.T).T # matrix of gradients for each observation
+        gradient = (y * (1 - y) * x.T).T  # matrix of gradients for each observation
         std_errors = np.array([np.sqrt(np.dot(np.dot(g, cov), g)) for g in gradient.to_numpy()])
-        c = 1.96 # multiplier for confidence interval
+        c = 1.96  # multiplier for confidence interval
         upper = np.maximum(0, np.minimum(1, y + std_errors * c))
         lower = np.maximum(0, np.minimum(1, y - std_errors * c))
 
@@ -195,7 +195,9 @@ class LogisticRegressionEstimator(Estimator):
         ci_high = tci_high - cci_low
         estimate = treatment_outcome - control_outcome
 
-        logger.info(f"Changing {self.treatment} from {self.control_values} to {self.treatment_values} gives an estimated ATE of {ci_low} < {estimate} < {ci_high}")
+        logger.info(
+            f"Changing {self.treatment} from {self.control_values} to {self.treatment_values} gives an estimated ATE of {ci_low} < {estimate} < {ci_high}"
+        )
         assert ci_low < estimate < ci_high, f"Expecting {ci_low} < {estimate} < {ci_high}"
 
         return estimate, (ci_low, ci_high)
