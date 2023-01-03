@@ -62,7 +62,7 @@ class TestCausalTestSuite(unittest.TestCase):
         # 3. Create test_suite and add a test
         self.test_suite = CausalTestSuite()
         self.test_suite.add_test_object(
-            base_test_case=self.base_test_case, causal_test_case_list=test_list, estimators=self.estimators
+            base_test_case=self.base_test_case, causal_test_case_list=test_list, estimators_classes=self.estimators
         )
 
     def test_adding_test_object(self):
@@ -71,7 +71,7 @@ class TestCausalTestSuite(unittest.TestCase):
         test_list = [CausalTestCase(self.base_test_case, self.expected_causal_effect, 0, 1)]
         estimators = [LinearRegressionEstimator]
         test_suite.add_test_object(
-            base_test_case=self.base_test_case, causal_test_case_list=test_list, estimators=estimators
+            base_test_case=self.base_test_case, causal_test_case_list=test_list, estimators_classes=estimators
         )
         manual_test_object = {
             self.base_test_case: {"tests": test_list, "estimators": estimators, "estimate_type": "ate"}
@@ -85,7 +85,7 @@ class TestCausalTestSuite(unittest.TestCase):
         test_list = [CausalTestCase(self.base_test_case, self.expected_causal_effect, 0, 1)]
         estimators = [LinearRegressionEstimator]
         self.test_suite.add_test_object(
-            base_test_case=base_test_case, causal_test_case_list=test_list, estimators=estimators
+            base_test_case=base_test_case, causal_test_case_list=test_list, estimators_classes=estimators
         )
 
         manual_test_case = {"tests": test_list, "estimators": estimators, "estimate_type": "ate"}
@@ -110,7 +110,7 @@ class TestCausalTestSuite(unittest.TestCase):
         test_suite_2_estimators = CausalTestSuite()
         test_list = [CausalTestCase(self.base_test_case, self.expected_causal_effect, 0, 1)]
         test_suite_2_estimators.add_test_object(
-            base_test_case=self.base_test_case, causal_test_case_list=test_list, estimators=estimators
+            base_test_case=self.base_test_case, causal_test_case_list=test_list, estimators_classes=estimators
         )
         causal_test_engine = self.create_causal_test_engine()
         causal_test_results = causal_test_engine.execute_test_suite(test_suite=test_suite_2_estimators)
