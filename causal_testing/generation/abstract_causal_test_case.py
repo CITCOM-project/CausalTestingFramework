@@ -30,7 +30,7 @@ class AbstractCausalTestCase:
         effect_modifiers: set[Variable] = None,
         estimate_type: str = "ate",
     ):
-        assert {treatment_variables}.issubset(scenario.variables.values()), (
+        assert (treatment_variables in scenario.variables.values()), (
             "Treatment variables must be a subset of variables."
             + f" Instead got:\ntreatment_variables={treatment_variables}\nvariables={scenario.variables}"
         )
