@@ -13,8 +13,7 @@ class CausalTestSuite(UserDict):
     base_test_case's and execute each causal_test_case with each iterator.
     """
 
-    def add_test_object(self, base_test_case, causal_test_case_list, estimators_classes,
-                        estimate_type: str = "ate"):
+    def add_test_object(self, base_test_case, causal_test_case_list, estimators_classes, estimate_type: str = "ate"):
         """
         A setter object to allow for the easy construction of the dictionary test suite structure
 

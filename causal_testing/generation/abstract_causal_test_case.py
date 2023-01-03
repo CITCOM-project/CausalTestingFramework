@@ -142,7 +142,7 @@ class AbstractCausalTestCase:
             if rct:
                 treatment_run = control_run.copy()
                 treatment_run.update({concrete_test.treatment_variable.name: concrete_test.treatment_value})
-                #treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
+                # treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
                 treatment_run["bin"] = index
                 runs.append(treatment_run)
 
