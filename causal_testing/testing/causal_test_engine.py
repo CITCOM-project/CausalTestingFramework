@@ -172,8 +172,8 @@ class CausalTestEngine:
                 causal_test_result = CausalTestResult(
                     treatment=estimator.treatment,
                     outcome=estimator.outcome,
-                    treatment_value=estimator.treatment_values,
-                    control_value=estimator.control_values,
+                    treatment_value=estimator.treatment_value,
+                    control_value=estimator.control_value,
                     adjustment_set=estimator.adjustment_set,
                     ate=cates_df,
                     effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
@@ -185,8 +185,8 @@ class CausalTestEngine:
             causal_test_result = CausalTestResult(
                 treatment=estimator.treatment,
                 outcome=estimator.outcome,
-                treatment_value=estimator.treatment_values,
-                control_value=estimator.control_values,
+                treatment_value=estimator.treatment_value,
+                control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
                 ate=risk_ratio,
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
@@ -198,8 +198,8 @@ class CausalTestEngine:
             causal_test_result = CausalTestResult(
                 treatment=estimator.treatment,
                 outcome=estimator.outcome,
-                treatment_value=estimator.treatment_values,
-                control_value=estimator.control_values,
+                treatment_value=estimator.treatment_value,
+                control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
                 ate=ate,
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
@@ -213,8 +213,8 @@ class CausalTestEngine:
             causal_test_result = CausalTestResult(
                 treatment=estimator.treatment,
                 outcome=estimator.outcome,
-                treatment_value=estimator.treatment_values,
-                control_value=estimator.control_values,
+                treatment_value=estimator.treatment_value,
+                control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
                 ate=ate,
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
