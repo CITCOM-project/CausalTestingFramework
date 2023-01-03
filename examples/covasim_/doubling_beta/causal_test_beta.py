@@ -10,6 +10,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.testing.base_test_case import BaseTestCase
 from matplotlib.pyplot import rcParams
 
 # Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
@@ -203,22 +204,26 @@ def engine_setup(observational_data_path):
     # 4. Construct a causal specification from the scenario and causal DAG
     causal_specification = CausalSpecification(scenario, causal_dag)
 
-    # 5. Create a causal test case
-    causal_test_case = CausalTestCase(control_input_configuration={beta: 0.016},
-                                      expected_causal_effect=Positive,
-                                      treatment_input_configuration={beta: 0.032},
-                                      outcome_variables={cum_infections})
+    # 5. Create a base test case
+    base_test_case = BaseTestCase(treatment_variable=beta,
+                                  outcome_variable=cum_infections)
 
-    # 6. Create a data collector
+    # 6. Create a causal test case
+    causal_test_case = CausalTestCase(base_test_case=base_test_case,
+                                      expected_causal_effect=Positive,
+                                      control_value=0.016,
+                                      treatment_value=0.032)
+
+    # 7. Create a data collector
     data_collector = ObservationalDataCollector(scenario, observational_data_path)
 
-    # 7. Create an instance of the causal test engine
+    # 8. Create an instance of the causal test engine
     causal_test_engine = CausalTestEngine(causal_specification, data_collector)
 
-    # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
-    causal_test_engine.identification(causal_test_case)
+    # 9. Obtain the minimal adjustment set for the base test case from the causal DAG
+    minimal_adjustment_set = causal_dag.identification(base_test_case)
 
-    return causal_test_engine.minimal_adjustment_set, causal_test_engine, causal_test_case
+    return minimal_adjustment_set, causal_test_engine, causal_test_case
 
 
 def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=None, col=None):
