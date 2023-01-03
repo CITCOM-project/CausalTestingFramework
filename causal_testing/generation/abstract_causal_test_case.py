@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class AbstractCausalTestCase:
     """
-    An abstract test case serves as a generator for concrete test cases. Instead of having concrete conctrol
+    An abstract test case serves as a generator for concrete test cases. Instead of having concrete control
     and treatment values, we instead just specify the intervention and the treatment variables. This then
     enables potentially infinite concrete test cases to be generated between different values of the treatment.
     """
