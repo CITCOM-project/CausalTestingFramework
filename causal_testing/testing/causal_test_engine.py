@@ -88,9 +88,9 @@ class CausalTestEngine:
                 causal_test_results = []
 
                 for test in tests:
-                    treatment_variable = list(test.treatment_input_configuration.keys())[0]
-                    treatment_value = list(test.treatment_input_configuration.values())[0]
-                    control_value = list(test.control_input_configuration.values())[0]
+                    treatment_variable = test.treatment_variable
+                    treatment_value = test.treatment_value
+                    control_value = test.control_value
                     estimator = EstimatorClass(
                         (treatment_variable.name,),
                         treatment_value,

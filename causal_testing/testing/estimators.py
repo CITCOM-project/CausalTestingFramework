@@ -34,16 +34,16 @@ class Estimator(ABC):
     def __init__(
         self,
         treatment: tuple,
-        treatment_values: float,
-        control_values: float,
+        treatment_value: float,
+        control_value: float,
         adjustment_set: set,
         outcome: tuple,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
     ):
         self.treatment = treatment
-        self.treatment_values = treatment_values
-        self.control_values = control_values
+        self.treatment_values = treatment_value
+        self.control_values = control_value
         self.adjustment_set = adjustment_set
         self.outcome = outcome
         self.df = df
