@@ -10,10 +10,14 @@ logger = logging.getLogger(__name__)
 
 class CausalTestCase:
     """
-    A causal test case is a triple (X, Delta, Y), where X is an input configuration, Delta is an intervention, and
-    Y is the expected causal effect on a particular output. The goal of a causal test case is to test whether the
-    intervention Delta made to the input configuration X causes the model-under-test to produce the expected change
-    in Y.
+    A CausalTestCase extends the information held in a BaseTestCase. As well as storing the treatment and outcome
+    variables, a CausalTestCase stores the values of these variables. Also the outcome variable and value are
+    specified.
+
+    The goal of a CausalTestCase is to test whether the intervention made to the control via the treatment causes the
+    model-under-test to produce the expected change. The CausalTestCase structure is designed for execution using the
+    CausalTestEngine, using either execute_test() function to execute a single test case or packing CausalTestCases into
+    a CausalTestSuite and executing them as a batch using the execute_test_suite() function.
     """
 
     def __init__(
@@ -26,15 +30,12 @@ class CausalTestCase:
         effect_modifier_configuration: dict[Variable:Any] = None,
     ):
         """
-        When a CausalTestCase is initialised, it takes the intervention and applies it to the input configuration to
-        create two distinct input configurations: a control input configuration and a treatment input configuration.
-        The former is the input configuration before applying the intervention and the latter is the input configuration
-        after applying the intervention.
-
-        :param control_input_configuration: The input configuration representing the control values of the treatment
-        variables.
-        :param treatment_input_configuration: The input configuration representing the treatment values of the treatment
-        variables. That is, the input configuration *after* applying the intervention.
+        :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
+        :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
+        :param control_value: The control value for the treatment variable (before intervention).
+        :param treatment_value: The treatment value for the treatment variable (after intervention).
+        :param estimate_type: A string which denotes the type of estimate to return
+        :param effect_modifier_configuration:
         """
         self.base_test_case = base_test_case
         self.control_value = control_value
