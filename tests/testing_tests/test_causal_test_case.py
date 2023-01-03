@@ -43,17 +43,17 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             treatment_value=1,
         )
 
-    def test_get_treatment_variables(self):
-        self.assertEqual(self.causal_test_case.get_treatment_variables(), ["A"])
+    def test_get_treatment_variable(self):
+        self.assertEqual(self.causal_test_case.get_treatment_variable(), "A")
 
-    def test_get_outcome_variables(self):
-        self.assertEqual(self.causal_test_case.get_outcome_variables(), ["C"])
+    def test_get_outcome_variable(self):
+        self.assertEqual(self.causal_test_case.get_outcome_variable(), "C")
 
-    def test_get_treatment_values(self):
-        self.assertEqual(self.causal_test_case.get_treatment_values(), [1])
+    def test_get_treatment_value(self):
+        self.assertEqual(self.causal_test_case.get_treatment_value(), 1)
 
-    def test_get_control_values(self):
-        self.assertEqual(self.causal_test_case.get_control_values(), [0])
+    def test_get_control_value(self):
+        self.assertEqual(self.causal_test_case.get_control_value(), 0)
 
     def test_str(self):
         self.assertEqual(

@@ -59,11 +59,11 @@ class CausalTestCase:
         return self.outcome_variable.name
 
     def get_control_value(self):
-        """Return a list of the control values for each treatment variable in this causal test case."""
+        """Return a list of the control value for each treatment variable in this causal test case."""
         return self.control_value
 
     def get_treatment_value(self):
-        """Return a list of the treatment values for each treatment variable in this causal test case."""
+        """Return a list of the treatment value for each treatment variable in this causal test case."""
         return self.treatment_value
 
     def __str__(self):
