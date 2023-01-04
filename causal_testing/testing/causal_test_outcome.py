@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from causal_test_result import CausalTestResult
+from causal_testing.testing.causal_test_result import CausalTestResult
 import numpy as np
 
 class CausalTestOutcome(ABC):
