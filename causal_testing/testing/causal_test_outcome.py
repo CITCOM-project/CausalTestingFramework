@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from causal_testing.testing.causal_test_result import CausalTestResult
 import numpy as np
 
+
 class CausalTestOutcome(ABC):
     """An abstract class representing an expected causal effect."""
 

@@ -3,12 +3,14 @@ from dataclasses import dataclass
 
 from causal_testing.specification.variable import Variable
 
+
 @dataclass
 class TestValue:
     """A dataclass to hold both the type and value of a causal test result"""
 
     type: str
     value: float
+
 
 class CausalTestResult:
     """A container to hold the results of a causal test case. Every causal test case provides a point estimate of
