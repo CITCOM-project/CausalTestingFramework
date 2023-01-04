@@ -1,5 +1,6 @@
 import unittest
-from causal_testing.testing.causal_test_outcome import CausalTestResult, ExactValue, SomeEffect
+from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect
+from causal_testing.testing.causal_test_result import CausalTestResult
 
 class TestCausalTestOutcome(unittest.TestCase):
     """ Test the TestCausalTestOutcome basic methods.
