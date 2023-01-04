@@ -71,7 +71,7 @@ class NoEffect(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.test_value.type == "ate":
-            return (res.ci_low() < 0 < res.ci_high()) or (abs(res.ate) < 1e-10)
+            return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < 1e-10)
         elif res.test_value.type == "risk_ratio":
             return (res.ci_low() < 1 < res.ci_high()) or np.isclose(res.test_value.value, 1.0, atol=1e-10)
 
