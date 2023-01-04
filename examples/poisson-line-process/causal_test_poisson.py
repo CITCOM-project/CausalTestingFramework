@@ -218,7 +218,7 @@ for i in range(17):
             "control": control_value,
             "treatment": treatment_value,
             "intensity": i,
-            "ate": causal_test_result.ate,
+            "ate": causal_test_result.test_value.value,
             "ci_low": min(causal_test_result.confidence_intervals),
             "ci_high": max(causal_test_result.confidence_intervals),
         }
