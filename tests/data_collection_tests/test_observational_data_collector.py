@@ -9,7 +9,6 @@ from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_
 
 
 class TestObservationalDataCollector(unittest.TestCase):
-
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
@@ -17,7 +16,8 @@ class TestObservationalDataCollector(unittest.TestCase):
         # Y = 3*X1 + X2*X3 + 10
         self.observational_df = pd.DataFrame({"X1": [1, 2, 3, 4], "X2": [5, 6, 7, 8], "X3": [10, 20, 30, 40]})
         self.observational_df["Y"] = self.observational_df.apply(
-                lambda row: (3 * row.X1) + (row.X2 * row.X3) + 10, axis=1)
+            lambda row: (3 * row.X1) + (row.X2 * row.X3) + 10, axis=1
+        )
         self.observational_df.to_csv(self.observational_df_path)
         self.X1 = Input("X1", int, uniform(1, 4))
         self.X2 = Input("X2", int, rv_discrete(values=([7], [1])))
@@ -45,12 +45,13 @@ class TestObservationalDataCollector(unittest.TestCase):
 
     def test_meta_population(self):
         def populate_m(data):
-            data['M'] = data['X1'] * 2
+            data["M"] = data["X1"] * 2
+
         meta = Meta("M", int, populate_m)
         scenario = Scenario({self.X1, meta})
         observational_data_collector = ObservationalDataCollector(scenario, self.observational_df_path)
         data = observational_data_collector.collect_data()
-        assert all((m == 2*x1 for x1, m in zip(data['X1'], data['M'])))
+        assert all((m == 2 * x1 for x1, m in zip(data["X1"], data["M"])))
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
