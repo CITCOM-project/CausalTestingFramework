@@ -14,15 +14,16 @@ class TestVariable(unittest.TestCase):
     def setUp(self) -> None:
         pass
 
-
     def test_z3_types_enum(self):
         class Color(Enum):
             """
             Example enum class color.
             """
+
             RED = 1
             GREEN = 2
             BLUE = 3
+
         dtype, _ = z3.EnumSort("color", ("RED", "GREEN", "BLUE"))
         z3_color = z3.Const("color", dtype)
         expected = z3_types(Color)("color")
@@ -34,27 +35,28 @@ class TestVariable(unittest.TestCase):
         # z3_types(Color)("color") != z3_types(Color)("color")
         self.assertEqual(list(map(str, expected_values)), list(map(str, z3_color_values)))
 
-
     def test_z3_value_enum(self):
         class Color(Enum):
             """
             Example enum class color.
             """
+
             RED = "RED"
             GREEN = "GREEN"
             BLUE = "BLUE"
+
         dtype, members = z3.EnumSort("color", ("RED", "GREEN", "BLUE"))
         z3_color = z3.Const("color", dtype)
         color = Input("color", Color)
 
         self.assertEqual(color.z3_val(z3_color, "RED"), members[0])
 
-
     def test_z3_types_custom(self):
-        class Color():
+        class Color:
             """
             Example enum class color.
             """
+
             RED = 1
             GREEN = 2
             BLUE = 3
@@ -75,23 +77,25 @@ class TestVariable(unittest.TestCase):
         # z3_types(Color)("color") != z3_types(Color)("color")
         self.assertEqual(list(map(str, expected_values)), list(map(str, z3_color_values)))
 
-
     def test_z3_types_invalid(self):
         with self.assertRaises(ValueError):
-            class Err():
+
+            class Err:
                 """
                 The simplest class which will elicit the correct error.
                 """
-            z3_types(Err)
 
+            z3_types(Err)
 
     def test_typestring(self):
         class Var(Variable):
             """
             The simplest class which will elicit the correct error.
             """
+
             def copy(self, name: str = None):
                 pass
+
         var = Var("v", int)
         self.assertEqual(var.typestring(), "Var")
 
@@ -107,18 +111,14 @@ class TestZ3Methods(unittest.TestCase):
     def setUp(self) -> None:
         self.i1 = Input("i1", int)
 
-
     def test_ge_add(self):
         self.assertEqual(str(self.i1 + 1 >= 5), "i1 + 1 >= 5")
-
 
     def test_le_mul(self):
         self.assertEqual(str(self.i1 * 2 <= 5), "i1*2 <= 5")
 
-
     def test_gt_truediv(self):
         self.assertEqual(str(self.i1 / 3 > 5), "i1/3 > 5")
-
 
     def test_lt_sub(self):
         self.assertEqual(str(self.i1 - 4 < 5), "i1 - 4 < 5")

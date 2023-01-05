@@ -176,11 +176,9 @@ class JsonUtility(ABC):
 
         result_string = str()
         if causal_test_result.ci_low() and causal_test_result.ci_high():
-            result_string = (
-                f"{causal_test_result.ci_low()} < {causal_test_result.ate} <  {causal_test_result.ci_high()}"
-            )
+            result_string = f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  {causal_test_result.ci_high()}"
         else:
-            result_string = causal_test_result.ate
+            result_string = causal_test_result.test_value.value
         if f_flag:
             assert test_passes, (
                 f"{causal_test_case}\n    FAILED - expected {causal_test_case.expected_causal_effect}, "
@@ -191,7 +189,7 @@ class JsonUtility(ABC):
             logger.warning(
                 "   FAILED- expected %s, got %s",
                 causal_test_case.expected_causal_effect,
-                causal_test_result.ate,
+                causal_test_result.test_value.value,
             )
         return failed
 

@@ -3,8 +3,8 @@ import pandas as pd
 import scipy
 
 from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
-from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Negative, NoEffect, CausalTestOutcome, \
-    CausalTestResult
+from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Negative, NoEffect, CausalTestOutcome
+from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.json_front.json_class import JsonUtility
 from causal_testing.testing.estimators import Estimator
 from causal_testing.specification.scenario import Scenario
@@ -70,8 +70,8 @@ class PoissonWidthHeight(CausalTestOutcome):
         i = effect_modifier_configuration['intensity']
         self.i2c = i * 2 * c
         print("2ic:", f"2*{i}*{c}={self.i2c}")
-        print("ate:", res.ate)
-        return np.isclose(res.ate, self.i2c, atol=self.tolerance)
+        print("ate:", res.test_value.value)
+        return np.isclose(res.test_value.value, self.i2c, atol=self.tolerance)
 
     def __str__(self):
         if self.i2c is None:
