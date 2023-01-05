@@ -444,9 +444,11 @@ class LinearRegressionEstimator(Estimator):
         )
         return [ci_low.values[0], ci_high.values[0]]
 
-    # https://github.com/carloscinelli/sensemakr/blob/master/R/sensitivity_stats.R
-    # Line 132
-    def estimate_robustness(self, model, q = 1, alpha = 1):
+    def estimate_robustness(self, model, q=1, alpha=1):
+        """Calculate the robustness of a linear regression model. This allow
+        the user to identify how large an unidentified confounding variable
+        would need to be to nullify the causal relationship under test."""
+
         dof = model.df_resid
         t_values = model.tvalues
 
@@ -458,8 +460,14 @@ class LinearRegressionEstimator(Estimator):
 
         return rv
 
+    def estimate_e_value(
+        self, risk_ratio, confidence_intervals: tuple[float, float]
+    ) -> tuple[float, tuple[float, float]]:
+        """Calculate the E value from a risk ratio. This allow
+        the user to identify how large a risk an unidentified confounding
+        variable would need to be to nullify the causal relationship
+        under test."""
 
-    def estimate_e_value(self, risk_ratio, confidence_intervals: tuple[float, float]) -> tuple[float, tuple[float, float]]:
         if risk_ratio >= 1:
             e = risk_ratio + math.sqrt(risk_ratio * (risk_ratio - 1))
 
@@ -470,7 +478,7 @@ class LinearRegressionEstimator(Estimator):
                 lower_limit = lower_limit + math.sqrt(lower_limit * (lower_limit - 1))
 
             return (e, (lower_limit, 1))
-            
+
         else:
             risk_ratio_prime = 1 / risk_ratio
             e = risk_ratio_prime + math.sqrt(risk_ratio_prime * (risk_ratio_prime - 1))
