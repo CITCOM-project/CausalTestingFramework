@@ -5,7 +5,7 @@ import pandas as pd
 from causal_testing.data_collection.data_collector import DataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_outcome import CausalTestResult
+from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite
@@ -178,7 +178,7 @@ class CausalTestEngine:
                     treatment_value=estimator.treatment_values,
                     control_value=estimator.control_values,
                     adjustment_set=estimator.adjustment_set,
-                    ate=cates_df,
+                    test_value=TestValue("ate", cates_df),
                     effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                     confidence_intervals=confidence_intervals,
                 )
@@ -191,7 +191,7 @@ class CausalTestEngine:
                 treatment_value=estimator.treatment_values,
                 control_value=estimator.control_values,
                 adjustment_set=estimator.adjustment_set,
-                ate=risk_ratio,
+                test_value=TestValue("risk_ratio", risk_ratio),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )
@@ -204,7 +204,7 @@ class CausalTestEngine:
                 treatment_value=estimator.treatment_values,
                 control_value=estimator.control_values,
                 adjustment_set=estimator.adjustment_set,
-                ate=ate,
+                test_value=TestValue("ate", ate),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )
@@ -219,7 +219,7 @@ class CausalTestEngine:
                 treatment_value=estimator.treatment_values,
                 control_value=estimator.control_values,
                 adjustment_set=estimator.adjustment_set,
-                ate=ate,
+                test_value=TestValue("ate", ate),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )

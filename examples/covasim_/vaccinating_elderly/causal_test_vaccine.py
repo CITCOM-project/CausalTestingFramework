@@ -92,7 +92,7 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
         causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
         if verbose:
             print(f"Causation:\n{causal_test_result}")
-        results_dict[outcome_variable.name]['ate'] = causal_test_result.ate
+        results_dict[outcome_variable.name]['ate'] = causal_test_result.test_value.value
         results_dict[outcome_variable.name]['cis'] = causal_test_result.confidence_intervals
         results_dict[outcome_variable.name]['test_passes'] = causal_test_case.expected_causal_effect.apply(
             causal_test_result)

@@ -94,13 +94,13 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
     def test_ate(self):
         df = self.scarf_df
         logistic_regression_estimator = LogisticRegressionEstimator(("length_in",), 65, 55, set(), ("completed",), df)
-        ate = logistic_regression_estimator.estimate_ate()
+        ate, _ = logistic_regression_estimator.estimate_ate()
         self.assertEqual(round(ate, 4), -0.1987)
 
     def test_risk_ratio(self):
         df = self.scarf_df
         logistic_regression_estimator = LogisticRegressionEstimator(("length_in",), 65, 55, set(), ("completed",), df)
-        rr = logistic_regression_estimator.estimate_risk_ratio()
+        rr, _ = logistic_regression_estimator.estimate_risk_ratio()
         self.assertEqual(round(rr, 4), 0.7664)
 
     def test_odds_ratio(self):
