@@ -127,7 +127,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_test_engine.scenario_execution_data_df,
         )
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
-        self.assertAlmostEqual(causal_test_result.ate, 4, delta=1)
+        self.assertAlmostEqual(causal_test_result.test_value.value, 4, delta=1)
 
     def test_invalid_causal_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -156,7 +156,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_test_engine.scenario_execution_data_df,
         )
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
-        self.assertAlmostEqual(causal_test_result.ate, 4, delta=1e-10)
+        self.assertAlmostEqual(causal_test_result.test_value.value, 4, delta=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_direct_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -185,7 +185,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             causal_test_engine.scenario_execution_data_df,
         )
         causal_test_result = causal_test_engine.execute_test(estimation_model, causal_test_case)
-        self.assertAlmostEqual(causal_test_result.ate, 0, delta=1e-10)
+        self.assertAlmostEqual(causal_test_result.test_value.value, 0, delta=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -201,7 +201,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         causal_test_result = self.causal_test_engine.execute_test(
             estimation_model, self.causal_test_case, estimate_type="risk_ratio"
         )
-        self.assertEqual(int(causal_test_result.ate), 0)
+        self.assertEqual(int(causal_test_result.test_value.value), 0)
 
     def test_invalid_estimate_type(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -230,7 +230,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         )
         estimation_model.add_squared_term_to_df("D")
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
-        self.assertAlmostEqual(round(causal_test_result.ate, 1), 4, delta=1)
+        self.assertAlmostEqual(round(causal_test_result.test_value.value, 1), 4, delta=1)
 
     def test_execute_observational_causal_forest_estimator_cates(self):
         """Check that executing the causal test case returns the correct conditional average treatment effects for
@@ -254,7 +254,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         causal_test_result = self.causal_test_engine.execute_test(
             estimation_model, self.causal_test_case, estimate_type="cate"
         )
-        causal_test_result = causal_test_result.ate
+        causal_test_result = causal_test_result.test_value.value
         # Check that each effect modifier's strata has a greater ATE than the last (ascending order)
         causal_test_result_m1 = causal_test_result.loc[causal_test_result["M"] == 1]
         causal_test_result_m2 = causal_test_result.loc[causal_test_result["M"] == 2]
