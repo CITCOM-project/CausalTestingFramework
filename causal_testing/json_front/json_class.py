@@ -176,9 +176,7 @@ class JsonUtility(ABC):
 
         result_string = str()
         if causal_test_result.ci_low() and causal_test_result.ci_high():
-            result_string = (
-                f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  {causal_test_result.ci_high()}"
-            )
+            result_string = f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  {causal_test_result.ci_high()}"
         else:
             result_string = causal_test_result.test_value.value
         if f_flag:
