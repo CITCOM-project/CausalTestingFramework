@@ -64,10 +64,10 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
     association_test_result = causal_test_engine.execute_test(no_adjustment_linear_regression_estimator, causal_test_case, 'ate')
 
     # Store results for plotting
-    results_dict['association'] = {'ate': association_test_result.ate,
+    results_dict['association'] = {'ate': association_test_result.test_value.value,
                                    'cis': association_test_result.confidence_intervals,
                                    'df': past_execution_df}
-    results_dict['causation'] = {'ate': causal_test_result.ate,
+    results_dict['causation'] = {'ate': causal_test_result.test_value.value,
                                  'cis': causal_test_result.confidence_intervals,
                                  'df': past_execution_df}
 
@@ -84,7 +84,7 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
                                                                                df=counterfactual_past_execution_df)
         counterfactual_linear_regression_estimator.add_squared_term_to_df('beta')
         counterfactual_causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
-        results_dict['counterfactual'] = {'ate': counterfactual_causal_test_result.ate,
+        results_dict['counterfactual'] = {'ate': counterfactual_causal_test_result.test_value.value,
                                           'cis': counterfactual_causal_test_result.confidence_intervals,
                                           'df': counterfactual_past_execution_df}
         if verbose:
