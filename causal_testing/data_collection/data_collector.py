@@ -49,6 +49,10 @@ class DataCollector(ABC):
         for _, row in data.iterrows():
             solver.push()
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
+            for var in self.scenario.variables:
+                self.scenario.variables[var].z3 == self.scenario.variables[var].z3_val(
+                    self.scenario.variables[var].z3, row[var]
+                )
             model = [
                 self.scenario.variables[var].z3
                 == self.scenario.variables[var].z3_val(self.scenario.variables[var].z3, row[var])
