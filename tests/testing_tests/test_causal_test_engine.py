@@ -193,7 +193,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         causal_test_result = self.causal_test_engine.execute_test(
             estimation_model, self.causal_test_case, estimate_type="risk_ratio"
         )
-        self.assertEqual(int(causal_test_result.ate), 0)
+        self.assertEqual(int(causal_test_result.test_value.value), 0)
 
     def test_invalid_estimate_type(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear

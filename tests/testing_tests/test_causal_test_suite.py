@@ -100,7 +100,7 @@ class TestCausalTestSuite(unittest.TestCase):
 
         causal_test_results = causal_test_engine.execute_test_suite(test_suite=self.test_suite)
         causal_test_case_result = causal_test_results[self.base_test_case]
-        self.assertAlmostEqual(causal_test_case_result["LinearRegressionEstimator"][0].ate, 4, delta=1e-10)
+        self.assertAlmostEqual(causal_test_case_result["LinearRegressionEstimator"][0].test_value.value, 4, delta=1e-10)
 
     def test_execute_test_suite_multiple_estimators(self):
         """Check that executing a test suite with multiple estimators returns correct results for the dummy data
@@ -117,8 +117,8 @@ class TestCausalTestSuite(unittest.TestCase):
         causal_test_case_result = causal_test_results[self.base_test_case]
         linear_regression_result = causal_test_case_result["LinearRegressionEstimator"][0]
         causal_forrest_result = causal_test_case_result["CausalForestEstimator"][0]
-        self.assertAlmostEqual(linear_regression_result.ate, 4, delta=1e-1)
-        self.assertAlmostEqual(causal_forrest_result.ate, 4, delta=1e-1)
+        self.assertAlmostEqual(linear_regression_result.test_value.value, 4, delta=1e-1)
+        self.assertAlmostEqual(causal_forrest_result.test_value.value, 4, delta=1e-1)
 
     def create_causal_test_engine(self):
         """
