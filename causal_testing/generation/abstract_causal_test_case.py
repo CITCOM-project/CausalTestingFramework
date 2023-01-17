@@ -93,6 +93,7 @@ class AbstractCausalTestCase:
             var = self.scenario.variables[name]
             samples[var.name] = lhsmdu.inverseTransformSample(var.distribution, samples[var.name])
 
+        print(samples["ego_vehicle"])
         for index, row in samples.iterrows():
             optimizer = z3.Optimize()
             for c in self.scenario.constraints:
@@ -100,7 +101,10 @@ class AbstractCausalTestCase:
             for c in self.intervention_constraints:
                 optimizer.assert_and_track(c, str(c))
 
-            optimizer.add_soft([self.scenario.variables[v].z3 == row[v] for v in run_columns])
+            for v in run_columns:
+                optimizer.add_soft(self.scenario.variables[v].z3 == self.scenario.variables[v].z3_val(self.scenario.variables[v].z3, row[v]))
+
+            # optimizer.add_soft([optimizer.add_soft(self.scenario.variables[v].z3 == self.scenario.variables[v].z3_val(self.scenario.variables[v].z3, row[v])) for v in run_columns])
             if optimizer.check() == z3.unsat:
                 logger.warning(
                     "Satisfiability of test case was unsat.\n" "Constraints \n %s \n Unsat core %s",

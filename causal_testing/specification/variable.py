@@ -6,7 +6,7 @@ from typing import Any, TypeVar
 import lhsmdu
 from pandas import DataFrame
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String
+from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String, DatatypeRef
 
 # Declare type variable
 # Is there a better way? I'd really like to do Variable[T](ExprRef)
@@ -153,19 +153,24 @@ class Variable(ABC):
         :rtype: T
         """
         assert val is not None, f"Invalid value None for variable {self}"
+        if isinstance(val, self.datatype):
+            return val
         if isinstance(val, RatNumRef) and self.datatype == float:
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
         if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
             return self.datatype(val)
+        if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
+            return self.datatype[str(val)]
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
         native_val = self.cast(val)
+        print(val, type(val), native_val, type(native_val))
         if isinstance(native_val, Enum):
             values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
-            values = [v for v in values if str(v) == str(val)]
+            values = [v for v in values if type(val)[str(v)] == val]
             assert len(values) == 1, f"Expected {values} to be length 1"
             return values[0]
         return native_val
