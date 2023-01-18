@@ -93,7 +93,6 @@ class AbstractCausalTestCase:
             var = self.scenario.variables[name]
             samples[var.name] = lhsmdu.inverseTransformSample(var.distribution, samples[var.name])
 
-        print(samples["ego_vehicle"])
         for index, row in samples.iterrows():
             optimizer = z3.Optimize()
             for c in self.scenario.constraints:

@@ -22,7 +22,7 @@ def z3_types(datatype):
     if datatype in types:
         return types[datatype]
     if issubclass(datatype, Enum):
-        dtype, _ = EnumSort(datatype.__name__, [x.name for x in datatype])
+        dtype, _ = EnumSort(datatype.__name__, [x.value for x in datatype])
         return lambda x: Const(x, dtype)
     if hasattr(datatype, "to_z3"):
         return datatype.to_z3()
@@ -162,15 +162,14 @@ class Variable(ABC):
         if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
             return self.datatype(val)
         if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
-            return self.datatype[str(val)]
+            return self.datatype(str(val))
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
         native_val = self.cast(val)
-        print(val, type(val), native_val, type(native_val))
         if isinstance(native_val, Enum):
             values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
-            values = [v for v in values if type(val)[str(v)] == val]
+            values = [v for v in values if type(val)(str(v)) == val]
             assert len(values) == 1, f"Expected {values} to be length 1"
             return values[0]
         return native_val

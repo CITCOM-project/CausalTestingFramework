@@ -453,6 +453,9 @@ class LinearRegressionEstimator(Estimator):
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
         outcome_col = reduced_df[list(self.outcome)]
+        for col in treatment_and_adjustments_cols:
+            if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
+                treatment_and_adjustments_cols = pd.get_dummies(treatment_and_adjustments_cols, columns=[col], drop_first=True)
         regression = sm.OLS(outcome_col, treatment_and_adjustments_cols)
         model = regression.fit()
         return model
