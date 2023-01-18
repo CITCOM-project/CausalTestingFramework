@@ -153,9 +153,6 @@ class CausalTestEngine:
         causal_test_result = self._return_causal_test_results(estimate_type, estimator, causal_test_case)
         return causal_test_result
 
-    # TODO (MF) I think that the test oracle procedure should go in here.
-    # This way, the user can supply it as a function or something, which can be applied to the result of CI
-
     def _return_causal_test_results(self, estimate_type, estimator, causal_test_case):
         """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
 
