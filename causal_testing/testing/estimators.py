@@ -142,6 +142,9 @@ class LogisticRegressionEstimator(Estimator):
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
         outcome_col = reduced_df[list(self.outcome)]
+        for col in treatment_and_adjustments_cols:
+            if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
+                treatment_and_adjustments_cols = pd.get_dummies(treatment_and_adjustments_cols, columns=[col], drop_first=True)
         regression = sm.Logit(outcome_col, treatment_and_adjustments_cols)
         model = regression.fit()
         return model
@@ -166,6 +169,10 @@ class LogisticRegressionEstimator(Estimator):
             x["1/" + t] = 1 / x[t]
         for a, b in self.product_terms:
             x[f"{a}*{b}"] = x[a] * x[b]
+
+        for col in x:
+            if str(x.dtypes[col]) == "object":
+                x = pd.get_dummies(x, columns=[col], drop_first=True)
         x = x[model.params.index]
 
         y = model.predict(x)
@@ -360,6 +367,8 @@ class LinearRegressionEstimator(Estimator):
         """
         model = self._run_linear_regression()
         self.model = model
+        print(model.summary())
+
 
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
@@ -376,13 +385,14 @@ class LinearRegressionEstimator(Estimator):
         print(x)
         for col in x:
             if str(x.dtypes[col]) == "object":
-                x[col] = [v.value for v in x[]]
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
         print("dummy")
         print(x)
         x = x[model.params.index]
 
         y = model.get_prediction(x).summary_frame()
+
+        print("control", y.iloc[1], "treatment", y.iloc[0])
         return y.iloc[1], y.iloc[0]
 
     def estimate_risk_ratio(self) -> tuple[float, list[float, float]]:
@@ -406,6 +416,7 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         control_outcome, treatment_outcome = self.estimate_control_treatment()
+        assert False
         ci_low = treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"]
         ci_high = treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"]
 
@@ -461,8 +472,6 @@ class LinearRegressionEstimator(Estimator):
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
         outcome_col = reduced_df[list(self.outcome)]
-        print("train_data")
-        print(treatment_and_adjustments_cols)
         for col in treatment_and_adjustments_cols:
             if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
                 treatment_and_adjustments_cols = pd.get_dummies(treatment_and_adjustments_cols, columns=[col], drop_first=True)
