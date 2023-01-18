@@ -26,9 +26,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         temp_dir_path = create_temp_dir_if_non_existent()
         dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
         dag_dot = """digraph G { A -> C; D -> A; D -> C}"""
-        f = open(dag_dot_path, "w")
-        f.write(dag_dot)
-        f.close()
+        with open(dag_dot_path, "w") as file:
+            file.write(dag_dot)
         self.causal_dag = CausalDAG(dag_dot_path)
 
         # 2. Create Scenario and Causal Specification

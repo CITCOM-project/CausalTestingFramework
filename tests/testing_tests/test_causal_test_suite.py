@@ -33,9 +33,8 @@ class TestCausalTestSuite(unittest.TestCase):
         temp_dir_path = create_temp_dir_if_non_existent()
         dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
         dag_dot = """digraph G { A -> C; D -> A; D -> C}"""
-        f = open(dag_dot_path, "w")
-        f.write(dag_dot)
-        f.close()
+        with open(dag_dot_path, "w") as file:
+            file.write(dag_dot)
 
         np.random.seed(1)
         df = pd.DataFrame({"D": list(np.random.normal(60, 10, 1000))})  # D = exogenous
