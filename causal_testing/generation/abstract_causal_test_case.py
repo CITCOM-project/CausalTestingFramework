@@ -30,10 +30,11 @@ class AbstractCausalTestCase:
         effect_modifiers: set[Variable] = None,
         estimate_type: str = "ate",
     ):
-        assert treatment_variables in scenario.variables.values(), (
-            "Treatment variables must be a subset of variables."
-            + f" Instead got:\ntreatment_variables={treatment_variables}\nvariables={scenario.variables}"
-        )
+        if treatment_variables not in scenario.variables.values():
+            raise ValueError(
+                "Treatment variables must be a subset of variables."
+                + f" Instead got:\ntreatment_variables={treatment_variables}\nvariables={scenario.variables}"
+            )
 
         assert len(expected_causal_effect) == 1, "We currently only support tests with one causal outcome"
 
