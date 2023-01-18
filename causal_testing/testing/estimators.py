@@ -372,6 +372,14 @@ class LinearRegressionEstimator(Estimator):
             x["1/" + t] = 1 / x[t]
         for a, b in self.product_terms:
             x[f"{a}*{b}"] = x[a] * x[b]
+        print("full")
+        print(x)
+        for col in x:
+            if str(x.dtypes[col]) == "object":
+                x[col] = [v.value for v in x[]]
+                x = pd.get_dummies(x, columns=[col], drop_first=True)
+        print("dummy")
+        print(x)
         x = x[model.params.index]
 
         y = model.get_prediction(x).summary_frame()
@@ -453,6 +461,8 @@ class LinearRegressionEstimator(Estimator):
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
         outcome_col = reduced_df[list(self.outcome)]
+        print("train_data")
+        print(treatment_and_adjustments_cols)
         for col in treatment_and_adjustments_cols:
             if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
                 treatment_and_adjustments_cols = pd.get_dummies(treatment_and_adjustments_cols, columns=[col], drop_first=True)
