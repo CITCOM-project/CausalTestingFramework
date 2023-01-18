@@ -89,10 +89,12 @@ class JsonUtility(ABC):
         self._populate_metas()
 
     def _create_abstract_test_case(self, test, mutates, effects):
+        assert len(test["mutations"]) == 1
         abstract_test = AbstractCausalTestCase(
             scenario=self.modelling_scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-            treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
+            # TODO: Could change JSON to be treatment_var and mutation to it rather than a dict of mutations
+            treatment_variable=next(self.modelling_scenario.variables[v] for v in test["mutations"]),
             expected_causal_effect={
                 self.modelling_scenario.variables[variable]: effects[effect]
                 for variable, effect in test["expectedEffect"].items()
@@ -121,7 +123,7 @@ class JsonUtility(ABC):
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
             logger.info("Executing test: %s", test["name"])
             logger.info(abstract_test)
-            logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
+            logger.info([(v.name, v.distribution) for v in [abstract_test.treatment_variable]])
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
             failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
         logger.info("%s/%s failed", failures, len(concrete_tests))

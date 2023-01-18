@@ -203,7 +203,7 @@ class LogisticRegressionEstimator(Estimator):
         estimate = treatment_outcome - control_outcome
 
         logger.info(
-            f"Changing {self.treatment} from {self.control_values} to {self.treatment_values} gives an estimated ATE of {ci_low} < {estimate} < {ci_high}"
+            f"Changing {self.treatment[0]} from {self.control_values} to {self.treatment_values} gives an estimated ATE of {ci_low} < {estimate} < {ci_high}"
         )
         assert ci_low < estimate < ci_high, f"Expecting {ci_low} < {estimate} < {ci_high}"
 

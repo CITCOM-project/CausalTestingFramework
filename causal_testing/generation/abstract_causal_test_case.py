@@ -4,11 +4,14 @@ import lhsmdu
 import pandas as pd
 import z3
 from scipy import stats
+import itertools
 
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
+
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -24,21 +27,21 @@ class AbstractCausalTestCase:
         self,
         scenario: Scenario,
         intervention_constraints: set[z3.ExprRef],
-        treatment_variables: set[Variable],
+        treatment_variable: Variable,
         expected_causal_effect: dict[Variable:CausalTestOutcome],
         effect_modifiers: set[Variable] = None,
         estimate_type: str = "ate",
     ):
-        assert treatment_variables.issubset(scenario.variables.values()), (
+        assert treatment_variable in scenario.variables.values(), (
             "Treatment variables must be a subset of variables."
-            + f" Instead got:\ntreatment_variables={treatment_variables}\nvariables={scenario.variables}"
+            + f" Instead got:\ntreatment_variable={treatment_variable}\nvariables={scenario.variables}"
         )
 
         assert len(expected_causal_effect) == 1, "We currently only support tests with one causal outcome"
 
         self.scenario = scenario
         self.intervention_constraints = intervention_constraints
-        self.treatment_variables = treatment_variables
+        self.treatment_variable = treatment_variable
         self.expected_causal_effect = expected_causal_effect
         self.estimate_type = estimate_type
 
@@ -113,9 +116,9 @@ class AbstractCausalTestCase:
             model = optimizer.model()
 
             concrete_test = CausalTestCase(
-                control_input_configuration={v: v.cast(model[v.z3]) for v in self.treatment_variables},
+                control_input_configuration={v: v.cast(model[v.z3]) for v in [self.treatment_variable]},
                 treatment_input_configuration={
-                    v: v.cast(model[self.scenario.treatment_variables[v.name].z3]) for v in self.treatment_variables
+                    v: v.cast(model[self.scenario.treatment_variables[v.name].z3]) for v in [self.treatment_variable]
                 },
                 expected_causal_effect=list(self.expected_causal_effect.values())[0],
                 outcome_variables=list(self.expected_causal_effect.keys()),
@@ -208,7 +211,13 @@ class AbstractCausalTestCase:
                     for var in effect_modifier_configs.columns
                 }
             )
-            if target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
+            print("=== test ===")
+            control_values = [test.control_input_configuration[self.treatment_variable] for test in concrete_tests]
+            treatment_values = [test.treatment_input_configuration[self.treatment_variable] for test in concrete_tests]
+
+            if issubclass(self.treatment_variable.datatype, Enum) and set(zip(control_values, treatment_values)).issubset(itertools.product(self.treatment_variable.datatype, self.treatment_variable.datatype)):
+                break
+            elif target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
                 break
 
         if target_ks_score is not None and not all((stat <= target_ks_score for stat in ks_stats.values())):
