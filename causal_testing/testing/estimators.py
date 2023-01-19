@@ -121,13 +121,13 @@ class LogisticRegressionEstimator(Estimator):
         self.modelling_assumptions += "The outcome must be binary."
         self.modelling_assumptions += "Independently and identically distributed errors."
 
-    def _run_logistic_regression(self) -> RegressionResultsWrapper:
+    def _run_logistic_regression(self, data) -> RegressionResultsWrapper:
         """Run logistic regression of the treatment and adjustment set against the outcome and return the model.
 
         :return: The model after fitting to data.
         """
         # 1. Reduce dataframe to contain only the necessary columns
-        reduced_df = self.df.copy()
+        reduced_df = data.copy()
         necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
@@ -149,13 +149,8 @@ class LogisticRegressionEstimator(Estimator):
         model = regression.fit()
         return model
 
-    def estimate_control_treatment(self) -> tuple[pd.Series, pd.Series]:
-        """Estimate the outcomes under control and treatment.
-
-        :return: The estimated control and treatment values and their confidence
-        intervals in the form ((ci_low, control, ci_high), (ci_low, treatment, ci_high)).
-        """
-        model = self._run_logistic_regression()
+    def estimate(self, data):
+        model = self._run_logistic_regression(data)
         self.model = model
 
         x = pd.DataFrame()
@@ -175,20 +170,33 @@ class LogisticRegressionEstimator(Estimator):
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
         x = x[model.params.index]
 
-        y = model.predict(x)
+        return model.predict(x)
+
+    def estimate_control_treatment(self, bootstrap_size=100) -> tuple[pd.Series, pd.Series]:
+        """Estimate the outcomes under control and treatment.
+
+        :return: The estimated control and treatment values and their confidence
+        intervals in the form ((ci_low, control, ci_high), (ci_low, treatment, ci_high)).
+        """
+
+        y = self.estimate(self.df)
+
+        bootstrap_samples = [self.estimate(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
+        control, treatment = zip(*[(x.iloc[1], x.iloc[0]) for x in bootstrap_samples])
+
 
         # Delta method confidence intervals from
         # https://stackoverflow.com/questions/47414842/confidence-interval-of-probability-prediction-from-logistic-regression-statsmode
-        cov = model.cov_params()
-        gradient = (y * (1 - y) * x.T).T  # matrix of gradients for each observation
-        std_errors = np.array([np.sqrt(np.dot(np.dot(g, cov), g)) for g in gradient.to_numpy()])
-        c = 1.96  # multiplier for confidence interval
-        upper = np.maximum(0, np.minimum(1, y + std_errors * c))
-        lower = np.maximum(0, np.minimum(1, y - std_errors * c))
+        # cov = model.cov_params()
+        # gradient = (y * (1 - y) * x.T).T  # matrix of gradients for each observation
+        # std_errors = np.array([np.sqrt(np.dot(np.dot(g, cov), g)) for g in gradient.to_numpy()])
+        # c = 1.96  # multiplier for confidence interval
+        # upper = np.maximum(0, np.minimum(1, y + std_errors * c))
+        # lower = np.maximum(0, np.minimum(1, y - std_errors * c))
 
-        return (lower.iloc[1], y.iloc[1], upper.iloc[1]), (lower.iloc[0], y.iloc[0], upper.iloc[0])
+        return (y.iloc[1], np.array(control)), (y.iloc[0], np.array(treatment))
 
-    def estimate_ate(self) -> float:
+    def estimate_ate(self, bootstrap_size=100) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and take one away from the other. This
@@ -196,11 +204,13 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The estimated average treatment effect and 95% confidence intervals
         """
-        (cci_low, control_outcome, cci_high), (tci_low, treatment_outcome, tci_high) = self.estimate_control_treatment()
+        (control_outcome, control_bootstraps), (treatment_outcome, treatment_bootstraps) = self.estimate_control_treatment()
 
-        ci_low = tci_low - cci_high
-        ci_high = tci_high - cci_low
         estimate = treatment_outcome - control_outcome
+        bootstraps = sorted(list(treatment_bootstraps - control_bootstraps))
+        bound = int((bootstrap_size * 0.05)/2)
+        ci_low = bootstraps[bound]
+        ci_high = bootstraps[bootstrap_size - bound]
 
         logger.info(
             f"Changing {self.treatment[0]} from {self.control_values} to {self.treatment_values} gives an estimated ATE of {ci_low} < {estimate} < {ci_high}"
@@ -217,12 +227,20 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The estimated risk ratio and 95% confidence intervals.
         """
-        (cci_low, control_outcome, cci_high), (tci_low, treatment_outcome, tci_high) = self.estimate_control_treatment()
+        (control_outcome, control_bootstraps), (treatment_outcome, treatment_bootstraps) = self.estimate_control_treatment()
 
-        ci_low = tci_low / cci_high
-        ci_high = tci_high / cci_low
+        estimate = treatment_outcome / control_outcome
+        bootstraps = sorted(list(treatment_bootstraps / control_bootstraps))
+        bound = int((bootstrap_size * 0.05)/2)
+        ci_low = bootstraps[bound]
+        ci_high = bootstraps[bootstrap_size - bound]
 
-        return treatment_outcome / control_outcome, (ci_low, ci_high)
+        logger.info(
+            f"Changing {self.treatment[0]} from {self.control_values} to {self.treatment_values} gives an estimated risk ratio of {ci_low} < {estimate} < {ci_high}"
+        )
+        assert ci_low < estimate < ci_high, f"Expecting {ci_low} < {estimate} < {ci_high}"
+
+        return estimate, (ci_low, ci_high)
 
     def estimate_unit_odds_ratio(self) -> float:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the

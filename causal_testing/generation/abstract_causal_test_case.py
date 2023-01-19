@@ -182,6 +182,7 @@ class AbstractCausalTestCase:
         runs = pd.DataFrame()
         ks_stats = []
 
+        pre_break = False
         for i in range(hard_max):
             concrete_tests_, runs_ = self._generate_concrete_tests(sample_size, rct, seed + i)
             concrete_tests += concrete_tests_
@@ -216,11 +217,13 @@ class AbstractCausalTestCase:
             treatment_values = [test.treatment_input_configuration[self.treatment_variable] for test in concrete_tests]
 
             if issubclass(self.treatment_variable.datatype, Enum) and set(zip(control_values, treatment_values)).issubset(itertools.product(self.treatment_variable.datatype, self.treatment_variable.datatype)):
+                pre_break = True
                 break
             elif target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
+                pre_break = True
                 break
 
-        if target_ks_score is not None and not all((stat <= target_ks_score for stat in ks_stats.values())):
+        if target_ks_score is not None and not pre_break:
             logger.error(
                 "Hard max of %s reached but could not achieve target ks_score of %s. Got %s.",
                 hard_max,
