@@ -31,7 +31,7 @@ Here are some explanations for the causal inference terminology used above.
 
 ## Installation
 
-To use the causal testing framework, clone the repository, `cd` into the root directory, and run `pip install -e .`. More detailled installation instructions can be found in the [online documentation](https://causal-testing-framework.readthedocs.io/en/latest/installation.html).
+See the readthedocs site for installation instructions](https://causal-testing-framework.readthedocs.io/en/latest/installation.html).
 
 ## Usage
 
