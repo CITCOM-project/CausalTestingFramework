@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from causal_testing.specification.variable import Variable
+from causal_testing.testing.effect import Effect
 
 
 @dataclass(frozen=True)
@@ -10,4 +11,4 @@ class BaseTestCase:
 
     treatment_variable: Variable
     outcome_variable: Variable
-    effect: str = "total"
+    effect: str = Effect.total.value
