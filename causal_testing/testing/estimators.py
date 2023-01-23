@@ -361,15 +361,19 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
+
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
-        individuals.loc["control", list(self.treatment)] = self.control_values
-        individuals.loc["treated", list(self.treatment)] = self.treatment_values
         # This is a temporary hack
         for t in self.square_terms:
             individuals[t + "^2"] = individuals[t] ** 2
         for a, b in self.product_terms:
             individuals[f"{a}*{b}"] = individuals[a] * individuals[b]
+
+        # It is ABSOLUTELY CRITICAL that these go last, otherwise we can't index
+        # the effect with "ate = t_test_results.effect[0]"
+        individuals.loc["control", list(self.treatment)] = self.control_values
+        individuals.loc["treated", list(self.treatment)] = self.treatment_values
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
@@ -385,7 +389,6 @@ class LinearRegressionEstimator(Estimator):
         """
         model = self._run_linear_regression()
         self.model = model
-        print(model.summary())
 
 
         x = pd.DataFrame()
@@ -399,18 +402,12 @@ class LinearRegressionEstimator(Estimator):
             x["1/" + t] = 1 / x[t]
         for a, b in self.product_terms:
             x[f"{a}*{b}"] = x[a] * x[b]
-        print("full")
-        print(x)
         for col in x:
             if str(x.dtypes[col]) == "object":
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
-        print("dummy")
-        print(x)
         x = x[model.params.index]
-
         y = model.get_prediction(x).summary_frame()
 
-        print("control", y.iloc[1], "treatment", y.iloc[0])
         return y.iloc[1], y.iloc[0]
 
     def estimate_risk_ratio(self) -> tuple[float, list[float, float]]:

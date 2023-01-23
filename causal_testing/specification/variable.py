@@ -155,11 +155,13 @@ class Variable(ABC):
         assert val is not None, f"Invalid value None for variable {self}"
         if isinstance(val, self.datatype):
             return val
+        if isinstance(val, BoolRef) and self.datatype == bool:
+            return str(val) == "True"
         if isinstance(val, RatNumRef) and self.datatype == float:
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
-        if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
+        if (isinstance(val, float) or isinstance(val, int) or isinstance(val, bool)) and (self.datatype == int or self.datatype == float or self.datatype == bool):
             return self.datatype(val)
         if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
             return self.datatype(str(val))
