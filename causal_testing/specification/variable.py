@@ -201,7 +201,6 @@ class Variable(ABC):
         """
         return type(self).__name__
 
-    @abstractmethod
     def copy(self, name: str = None) -> Variable:
         """Return a new instance of the Variable with the given name, or with
         the original name if no name is supplied.
@@ -211,25 +210,17 @@ class Variable(ABC):
         :rtype: Variable
 
         """
-        raise NotImplementedError("Method `copy` must be instantiated.")
+        if name:
+            return self.__class__(name, self.datatype, self.distribution)
+        return self.__class__(self.name, self.datatype, self.distribution)
 
 
 class Input(Variable):
     """An extension of the Variable class representing inputs."""
 
-    def copy(self, name=None) -> Input:
-        if name:
-            return Input(name, self.datatype, self.distribution)
-        return Input(self.name, self.datatype, self.distribution)
-
 
 class Output(Variable):
     """An extension of the Variable class representing outputs."""
-
-    def copy(self, name=None) -> Output:
-        if name:
-            return Output(name, self.datatype, self.distribution)
-        return Output(self.name, self.datatype, self.distribution)
 
 
 class Meta(Variable):
@@ -250,8 +241,3 @@ class Meta(Variable):
     def __init__(self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]):
         super().__init__(name, datatype)
         self.populate = populate
-
-    def copy(self, name=None) -> Meta:
-        if name:
-            return Meta(name, self.datatype, self.distribution)
-        return Meta(self.name, self.datatype, self.distribution)
