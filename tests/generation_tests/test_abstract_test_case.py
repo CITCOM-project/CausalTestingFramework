@@ -76,15 +76,15 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={
-                And(scenario.treatment_variables[self.X5.name].z3 == True, scenario.variables[self.X5.name].z3 == False)
+                scenario.treatment_variables[self.X5.name].z3 != scenario.variables[self.X5.name].z3
             },
             treatment_variable=self.X5,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
         concrete_tests, runs = abstract.generate_concrete_tests(2)
-        assert len(concrete_tests) == 1, "Expected 1 concrete test"
-        assert len(runs) == 1, "Expected 1 run"
+        assert len(concrete_tests) == 2, "Expected 2 concrete test"
+        assert len(runs) == 2, "Expected 2 run"
 
     def test_generate_enum_concrete_test_cases(self):
         scenario = Scenario({self.Car})
@@ -98,7 +98,7 @@ class TestAbstractTestCase(unittest.TestCase):
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
-        concrete_tests, runs = abstract.generate_concrete_tests(2)
+        concrete_tests, runs = abstract.generate_concrete_tests(10)
         assert len(concrete_tests) == 2, "Expected 2 concrete tests"
         assert len(runs) == 2, "Expected 2 runs"
 

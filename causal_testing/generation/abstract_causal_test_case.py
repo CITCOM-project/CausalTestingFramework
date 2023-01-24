@@ -230,7 +230,11 @@ class AbstractCausalTestCase:
                 pre_break = True
                 break
             if issubclass(self.treatment_variable.datatype, Enum) and set(
-                itertools.product(self.treatment_variable.datatype, self.treatment_variable.datatype)
+                {
+                    (x, y)
+                    for x, y in itertools.product(self.treatment_variable.datatype, self.treatment_variable.datatype)
+                    if x != y
+                }
             ).issubset(zip(control_values, treatment_values)):
                 pre_break = True
                 break
