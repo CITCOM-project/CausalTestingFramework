@@ -4,12 +4,15 @@ import lhsmdu
 import pandas as pd
 import z3
 from scipy import stats
+import itertools
 
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
+
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -25,24 +28,26 @@ class AbstractCausalTestCase:
         self,
         scenario: Scenario,
         intervention_constraints: set[z3.ExprRef],
-        treatment_variables: set[Variable],
+        treatment_variable: Variable,
         expected_causal_effect: dict[Variable:CausalTestOutcome],
         effect_modifiers: set[Variable] = None,
         estimate_type: str = "ate",
+        effect: str = "total",
     ):
-        if treatment_variables not in scenario.variables.values():
+        if treatment_variable not in scenario.variables.values():
             raise ValueError(
                 "Treatment variables must be a subset of variables."
-                + f" Instead got:\ntreatment_variables={treatment_variables}\nvariables={scenario.variables}"
+                + f" Instead got:\ntreatment_variables={treatment_variable}\nvariables={scenario.variables}"
             )
 
         assert len(expected_causal_effect) == 1, "We currently only support tests with one causal outcome"
 
         self.scenario = scenario
         self.intervention_constraints = intervention_constraints
-        self.treatment_variables = treatment_variables
+        self.treatment_variable = treatment_variable
         self.expected_causal_effect = expected_causal_effect
         self.estimate_type = estimate_type
+        self.effect = effect
 
         if effect_modifiers is not None:
             self.effect_modifiers = effect_modifiers
@@ -102,7 +107,12 @@ class AbstractCausalTestCase:
             for c in self.intervention_constraints:
                 optimizer.assert_and_track(c, str(c))
 
-            optimizer.add_soft([self.scenario.variables[v].z3 == row[v] for v in run_columns])
+            for v in run_columns:
+                optimizer.add_soft(
+                    self.scenario.variables[v].z3
+                    == self.scenario.variables[v].z3_val(self.scenario.variables[v].z3, row[v])
+                )
+
             if optimizer.check() == z3.unsat:
                 logger.warning(
                     "Satisfiability of test case was unsat.\n" "Constraints \n %s \n Unsat core %s",
@@ -122,6 +132,7 @@ class AbstractCausalTestCase:
                 expected_causal_effect=list(self.expected_causal_effect.values())[0],
                 estimate_type=self.estimate_type,
                 effect_modifier_configuration={v: v.cast(model[v.z3]) for v in self.effect_modifiers},
+                effect=self.effect,
             )
 
             for v in self.scenario.inputs():
@@ -132,19 +143,20 @@ class AbstractCausalTestCase:
                         + f"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}"
                     )
 
-            concrete_tests.append(concrete_test)
-            # Control run
-            control_run = {
-                v.name: v.cast(model[v.z3]) for v in self.scenario.variables.values() if v.name in run_columns
-            }
-            control_run["bin"] = index
-            runs.append(control_run)
-            # Treatment run
-            if rct:
-                treatment_run = control_run.copy()
-                treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
-                treatment_run["bin"] = index
-                runs.append(treatment_run)
+            if not any([vars(t) == vars(concrete_test) for t in concrete_tests]):
+                concrete_tests.append(concrete_test)
+                # Control run
+                control_run = {
+                    v.name: v.cast(model[v.z3]) for v in self.scenario.variables.values() if v.name in run_columns
+                }
+                control_run["bin"] = index
+                runs.append(control_run)
+                # Treatment run
+                if rct:
+                    treatment_run = control_run.copy()
+                    treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
+                    treatment_run["bin"] = index
+                    runs.append(treatment_run)
 
         return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
 
@@ -180,9 +192,12 @@ class AbstractCausalTestCase:
         runs = pd.DataFrame()
         ks_stats = []
 
+        pre_break = False
         for i in range(hard_max):
             concrete_tests_, runs_ = self._generate_concrete_tests(sample_size, rct, seed + i)
-            concrete_tests += concrete_tests_
+            for t_ in concrete_tests_:
+                if not any([vars(t_) == vars(t) for t in concrete_tests]):
+                    concrete_tests.append(t_)
             runs = pd.concat([runs, runs_])
             assert concrete_tests_ not in concrete_tests, "Duplicate entries unlikely unless something went wrong"
 
@@ -209,14 +224,32 @@ class AbstractCausalTestCase:
                     for var in effect_modifier_configs.columns
                 }
             )
-            if target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
+            control_values = [test.control_input_configuration[self.treatment_variable] for test in concrete_tests]
+            treatment_values = [test.treatment_input_configuration[self.treatment_variable] for test in concrete_tests]
+
+            if self.treatment_variable.datatype is bool and set([(True, False), (False, True)]).issubset(
+                set(zip(control_values, treatment_values))
+            ):
+                pre_break = True
+                break
+            if issubclass(self.treatment_variable.datatype, Enum) and set(
+                {
+                    (x, y)
+                    for x, y in itertools.product(self.treatment_variable.datatype, self.treatment_variable.datatype)
+                    if x != y
+                }
+            ).issubset(zip(control_values, treatment_values)):
+                pre_break = True
+                break
+            elif target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
+                pre_break = True
                 break
 
-        if target_ks_score is not None and not all((stat <= target_ks_score for stat in ks_stats.values())):
+        if target_ks_score is not None and not pre_break:
             logger.error(
-                "Hard max of %s reached but could not achieve target ks_score of %s. Got %s.",
-                hard_max,
+                "Hard max reached but could not achieve target ks_score of %s. Got %s. Generated %s distinct tests",
                 target_ks_score,
                 ks_stats,
+                len(concrete_tests),
             )
         return concrete_tests, runs
