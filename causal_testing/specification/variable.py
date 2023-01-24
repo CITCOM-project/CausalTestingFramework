@@ -173,7 +173,7 @@ class Variable(ABC):
         native_val = self.cast(val)
         if isinstance(native_val, Enum):
             values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
-            values = [v for v in values if type(val)(str(v)) == val]
+            values = [v for v in values if val.__class__(str(v)) == val]
             assert len(values) == 1, f"Expected {values} to be length 1"
             return values[0]
         return native_val

@@ -93,7 +93,6 @@ class JsonUtility(ABC):
         abstract_test = AbstractCausalTestCase(
             scenario=self.modelling_scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-            # TODO: Could change JSON to be treatment_var and mutation to it rather than a dict of mutations
             treatment_variable=next(self.modelling_scenario.variables[v] for v in test["mutations"]),
             expected_causal_effect={
                 self.modelling_scenario.variables[variable]: effects[effect]

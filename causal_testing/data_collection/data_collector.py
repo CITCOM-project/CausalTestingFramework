@@ -50,10 +50,6 @@ class DataCollector(ABC):
         for _, row in data.iterrows():
             solver.push()
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
-            for var in self.scenario.variables:
-                self.scenario.variables[var].z3 == self.scenario.variables[var].z3_val(
-                    self.scenario.variables[var].z3, row[var]
-                )
             model = [
                 self.scenario.variables[var].z3
                 == self.scenario.variables[var].z3_val(self.scenario.variables[var].z3, row[var])
@@ -145,7 +141,7 @@ class ObservationalDataCollector(DataCollector):
         for meta in self.scenario.metas():
             meta.populate(execution_data_df)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
-        for vname, var in self.scenario.variables.items():
+        for var_name, var in self.scenario.variables.items():
             if issubclass(var.datatype, Enum):
-                scenario_execution_data_df[vname] = [var.datatype(x) for x in scenario_execution_data_df[vname]]
+                scenario_execution_data_df[var_name] = [var.datatype(x) for x in scenario_execution_data_df[var_name]]
         return scenario_execution_data_df
