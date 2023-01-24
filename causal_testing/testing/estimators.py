@@ -8,6 +8,7 @@ import statsmodels.api as sm
 from econml.dml import CausalForestDML
 from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
+from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
 from causal_testing.specification.variable import Variable
 
@@ -144,7 +145,9 @@ class LogisticRegressionEstimator(Estimator):
         outcome_col = reduced_df[list(self.outcome)]
         for col in treatment_and_adjustments_cols:
             if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
-                treatment_and_adjustments_cols = pd.get_dummies(treatment_and_adjustments_cols, columns=[col], drop_first=True)
+                treatment_and_adjustments_cols = pd.get_dummies(
+                    treatment_and_adjustments_cols, columns=[col], drop_first=True
+                )
         regression = sm.Logit(outcome_col, treatment_and_adjustments_cols)
         model = regression.fit()
         return model
@@ -181,9 +184,16 @@ class LogisticRegressionEstimator(Estimator):
 
         y = self.estimate(self.df)
 
-        bootstrap_samples = [self.estimate(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
-        control, treatment = zip(*[(x.iloc[1], x.iloc[0]) for x in bootstrap_samples])
-
+        try:
+            bootstrap_samples = [
+                self.estimate(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)
+            ]
+            control, treatment = zip(*[(x.iloc[1], x.iloc[0]) for x in bootstrap_samples])
+        except PerfectSeparationError:
+            logger.warning(
+                "Perfect separation detected, results not available. Cannot calculate confidence intervals for such a small dataset."
+            )
+            return (y.iloc[1], None), (y.iloc[0], None)
 
         # Delta method confidence intervals from
         # https://stackoverflow.com/questions/47414842/confidence-interval-of-probability-prediction-from-logistic-regression-statsmode
@@ -204,11 +214,17 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The estimated average treatment effect and 95% confidence intervals
         """
-        (control_outcome, control_bootstraps), (treatment_outcome, treatment_bootstraps) = self.estimate_control_treatment()
-
+        (control_outcome, control_bootstraps), (
+            treatment_outcome,
+            treatment_bootstraps,
+        ) = self.estimate_control_treatment()
         estimate = treatment_outcome - control_outcome
+
+        if control_bootstraps is None or treatment_bootstraps is None:
+            return estimate, (None, None)
+
         bootstraps = sorted(list(treatment_bootstraps - control_bootstraps))
-        bound = int((bootstrap_size * 0.05)/2)
+        bound = int((bootstrap_size * 0.05) / 2)
         ci_low = bootstraps[bound]
         ci_high = bootstraps[bootstrap_size - bound]
 
@@ -227,11 +243,17 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The estimated risk ratio and 95% confidence intervals.
         """
-        (control_outcome, control_bootstraps), (treatment_outcome, treatment_bootstraps) = self.estimate_control_treatment()
-
+        (control_outcome, control_bootstraps), (
+            treatment_outcome,
+            treatment_bootstraps,
+        ) = self.estimate_control_treatment()
         estimate = treatment_outcome / control_outcome
+
+        if control_bootstraps is None or treatment_bootstraps is None:
+            return estimate, (None, None)
+
         bootstraps = sorted(list(treatment_bootstraps / control_bootstraps))
-        bound = int((bootstrap_size * 0.05)/2)
+        bound = int((bootstrap_size * 0.05) / 2)
         ci_low = bootstraps[bound]
         ci_high = bootstraps[bootstrap_size - bound]
 
@@ -248,7 +270,7 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The odds ratio. Confidence intervals are not yet supported.
         """
-        model = self._run_logistic_regression()
+        model = self._run_logistic_regression(self.df)
         return np.exp(model.params[self.treatment[0]])
 
 
@@ -390,7 +412,6 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         self.model = model
 
-
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_values, self.control_values]
         x["Intercept"] = self.intercept
@@ -489,7 +510,9 @@ class LinearRegressionEstimator(Estimator):
         outcome_col = reduced_df[list(self.outcome)]
         for col in treatment_and_adjustments_cols:
             if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
-                treatment_and_adjustments_cols = pd.get_dummies(treatment_and_adjustments_cols, columns=[col], drop_first=True)
+                treatment_and_adjustments_cols = pd.get_dummies(
+                    treatment_and_adjustments_cols, columns=[col], drop_first=True
+                )
         regression = sm.OLS(outcome_col, treatment_and_adjustments_cols)
         model = regression.fit()
         return model

@@ -31,7 +31,7 @@ class AbstractCausalTestCase:
         expected_causal_effect: dict[Variable:CausalTestOutcome],
         effect_modifiers: set[Variable] = None,
         estimate_type: str = "ate",
-        effect: str = "total"
+        effect: str = "total",
     ):
         assert treatment_variable in scenario.variables.values(), (
             "Treatment variables must be a subset of variables."
@@ -105,9 +105,11 @@ class AbstractCausalTestCase:
             for c in self.intervention_constraints:
                 optimizer.assert_and_track(c, str(c))
 
-
             for v in run_columns:
-                optimizer.add_soft(self.scenario.variables[v].z3 == self.scenario.variables[v].z3_val(self.scenario.variables[v].z3, row[v]))
+                optimizer.add_soft(
+                    self.scenario.variables[v].z3
+                    == self.scenario.variables[v].z3_val(self.scenario.variables[v].z3, row[v])
+                )
 
             # optimizer.add_soft([optimizer.add_soft(self.scenario.variables[v].z3 == self.scenario.variables[v].z3_val(self.scenario.variables[v].z3, row[v])) for v in run_columns])
             if optimizer.check() == z3.unsat:
@@ -127,7 +129,7 @@ class AbstractCausalTestCase:
                 outcome_variables=list(self.expected_causal_effect.keys()),
                 estimate_type=self.estimate_type,
                 effect_modifier_configuration={v: v.cast(model[v.z3]) for v in self.effect_modifiers},
-                effect=self.effect
+                effect=self.effect,
             )
 
             for v in self.scenario.inputs():
@@ -222,10 +224,14 @@ class AbstractCausalTestCase:
             control_values = [test.control_input_configuration[self.treatment_variable] for test in concrete_tests]
             treatment_values = [test.treatment_input_configuration[self.treatment_variable] for test in concrete_tests]
 
-            if self.treatment_variable.datatype is bool and set([(True, False), (False, True)]).issubset(set(zip(control_values, treatment_values))):
+            if self.treatment_variable.datatype is bool and set([(True, False), (False, True)]).issubset(
+                set(zip(control_values, treatment_values))
+            ):
                 pre_break = True
                 break
-            if issubclass(self.treatment_variable.datatype, Enum) and set(itertools.product(self.treatment_variable.datatype, self.treatment_variable.datatype)).issubset(zip(control_values, treatment_values)):
+            if issubclass(self.treatment_variable.datatype, Enum) and set(
+                itertools.product(self.treatment_variable.datatype, self.treatment_variable.datatype)
+            ).issubset(zip(control_values, treatment_values)):
                 pre_break = True
                 break
             elif target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
@@ -237,6 +243,6 @@ class AbstractCausalTestCase:
                 "Hard max reached but could not achieve target ks_score of %s. Got %s. Generated %s distinct tests",
                 target_ks_score,
                 ks_stats,
-                len(concrete_tests)
+                len(concrete_tests),
             )
         return concrete_tests, runs

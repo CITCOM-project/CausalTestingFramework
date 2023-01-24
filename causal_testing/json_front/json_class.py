@@ -103,7 +103,7 @@ class JsonUtility(ABC):
             if "effect_modifiers" in test
             else {},
             estimate_type=test["estimate_type"],
-            effect=test.get("effect", "total")
+            effect=test.get("effect", "total"),
         )
         return abstract_test
 
@@ -190,11 +190,7 @@ class JsonUtility(ABC):
             )
         if not test_passes:
             failed = True
-            logger.warning(
-                "   FAILED- expected %s, got %s",
-                causal_test_case.expected_causal_effect,
-                result_string
-            )
+            logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:

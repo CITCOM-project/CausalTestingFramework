@@ -20,9 +20,9 @@ class TestVariable(unittest.TestCase):
             Example enum class color.
             """
 
-            RED = 1
-            GREEN = 2
-            BLUE = 3
+            RED = "RED"
+            GREEN = "GREEN"
+            BLUE = "BLUE"
 
         dtype, _ = z3.EnumSort("color", ("RED", "GREEN", "BLUE"))
         z3_color = z3.Const("color", dtype)

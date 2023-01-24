@@ -255,7 +255,8 @@ class CausalDAG(nx.DiGraph):
         gam.add_edges_from(edges_to_add)
 
         min_seps = list(list_all_min_sep(gam, "TREATMENT", "OUTCOME", set(treatments), set(outcomes)))
-        min_seps.remove(set(outcomes))
+        if set(outcomes) in min_seps:
+            min_seps.remove(set(outcomes))
         return min_seps
 
     def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:

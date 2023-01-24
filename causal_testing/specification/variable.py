@@ -22,7 +22,7 @@ def z3_types(datatype):
     if datatype in types:
         return types[datatype]
     if issubclass(datatype, Enum):
-        dtype, _ = EnumSort(datatype.__name__, [x.value for x in datatype])
+        dtype, _ = EnumSort(datatype.__name__, [str(x.value) for x in datatype])
         return lambda x: Const(x, dtype)
     if hasattr(datatype, "to_z3"):
         return datatype.to_z3()
@@ -161,7 +161,9 @@ class Variable(ABC):
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
-        if (isinstance(val, float) or isinstance(val, int) or isinstance(val, bool)) and (self.datatype == int or self.datatype == float or self.datatype == bool):
+        if (isinstance(val, float) or isinstance(val, int) or isinstance(val, bool)) and (
+            self.datatype == int or self.datatype == float or self.datatype == bool
+        ):
             return self.datatype(val)
         if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
             return self.datatype(str(val))

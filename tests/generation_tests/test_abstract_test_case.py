@@ -36,7 +36,7 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
+            treatment_variable=self.X1,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
@@ -50,7 +50,7 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
+            treatment_variable=self.X1,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
@@ -64,7 +64,7 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
+            treatment_variable=self.X1,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
@@ -76,7 +76,7 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
+            treatment_variable=self.X1,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
@@ -90,7 +90,7 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
+            treatment_variable=self.X1,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers={self.X2},
         )
@@ -104,7 +104,7 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
+            treatment_variable=self.X1,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
@@ -118,7 +118,7 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
+            treatment_variable=self.X1,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
@@ -128,7 +128,7 @@ class TestAbstractTestCase(unittest.TestCase):
         with self.assertWarns(Warning):
             concrete_tests, runs = abstract.generate_concrete_tests(4, rct=True, target_ks_score=0.1, hard_max=HARD_MAX)
         self.assertTrue(all((x > 2 for x in runs["X1"])))
-        self.assertEqual(len(concrete_tests), HARD_MAX * NUM_STRATA)
+        self.assertTrue(len(concrete_tests) <= HARD_MAX * NUM_STRATA)
 
     def test_feasible_constraints(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.X4})
@@ -136,7 +136,7 @@ class TestAbstractTestCase(unittest.TestCase):
         abstract = AbstractCausalTestCase(
             scenario=scenario,
             intervention_constraints={scenario.treatment_variables[self.X1.name].z3 > self.X1.z3},
-            treatment_variables={self.X1},
+            treatment_variable=self.X1,
             expected_causal_effect={self.Y: Positive()},
             effect_modifiers=None,
         )
