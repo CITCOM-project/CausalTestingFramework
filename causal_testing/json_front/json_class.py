@@ -75,7 +75,7 @@ class JsonUtility(ABC):
         :param metas:
         """
         self.inputs = [Input(i["name"], i["type"], i["distribution"]) for i in inputs]
-        self.outputs = [Output(i["name"], i["type"]) for i in outputs]
+        self.outputs = [Output(i["name"], i["type"], i.get("distribution", None)) for i in outputs]
         self.metas = [Meta(i["name"], i["type"], i["populate"]) for i in metas] if metas else []
 
     def setup(self):
@@ -89,10 +89,11 @@ class JsonUtility(ABC):
         self._populate_metas()
 
     def _create_abstract_test_case(self, test, mutates, effects):
+        assert len(test["mutations"]) == 1
         abstract_test = AbstractCausalTestCase(
             scenario=self.modelling_scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-            treatment_variables={self.modelling_scenario.variables[v] for v in test["mutations"]},
+            treatment_variable=next(self.modelling_scenario.variables[v] for v in test["mutations"]),
             expected_causal_effect={
                 self.modelling_scenario.variables[variable]: effects[effect]
                 for variable, effect in test["expectedEffect"].items()
@@ -101,6 +102,7 @@ class JsonUtility(ABC):
             if "effect_modifiers" in test
             else {},
             estimate_type=test["estimate_type"],
+            effect=test.get("effect", "total"),
         )
         return abstract_test
 
@@ -121,10 +123,10 @@ class JsonUtility(ABC):
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
             logger.info("Executing test: %s", test["name"])
             logger.info(abstract_test)
-            logger.info([(v.name, v.distribution) for v in abstract_test.treatment_variables])
+            logger.info([(v.name, v.distribution) for v in [abstract_test.treatment_variable]])
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
             failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
-        logger.info("%s/%s failed", failures, len(concrete_tests))
+            logger.info("%s/%s failed for %s\n", failures, len(concrete_tests), test["name"])
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
@@ -151,11 +153,12 @@ class JsonUtility(ABC):
             meta.populate(self.data)
 
         for var in self.metas + self.outputs:
-            fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
-            fitter.fit()
-            (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
-            var.distribution = getattr(scipy.stats, dist)(**params)
-            logger.info(var.name + f"{dist}({params})")
+            if not var.distribution:
+                fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
+                fitter.fit()
+                (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
+                var.distribution = getattr(scipy.stats, dist)(**params)
+                logger.info(var.name + f" {dist}({params})")
 
     def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
         """Executes a singular test case, prints the results and returns the test case result
@@ -178,7 +181,7 @@ class JsonUtility(ABC):
         if causal_test_result.ci_low() and causal_test_result.ci_high():
             result_string = f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  {causal_test_result.ci_high()}"
         else:
-            result_string = causal_test_result.test_value.value
+            result_string = f"{causal_test_result.test_value.value} no confidence intervals"
         if f_flag:
             assert test_passes, (
                 f"{causal_test_case}\n    FAILED - expected {causal_test_case.expected_causal_effect}, "
@@ -186,11 +189,7 @@ class JsonUtility(ABC):
             )
         if not test_passes:
             failed = True
-            logger.warning(
-                "   FAILED- expected %s, got %s",
-                causal_test_case.expected_causal_effect,
-                causal_test_result.test_value.value,
-            )
+            logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:

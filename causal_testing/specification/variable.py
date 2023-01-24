@@ -6,7 +6,7 @@ from typing import Any, TypeVar
 import lhsmdu
 from pandas import DataFrame
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String
+from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String, DatatypeRef
 
 # Declare type variable
 # Is there a better way? I'd really like to do Variable[T](ExprRef)
@@ -22,7 +22,7 @@ def z3_types(datatype):
     if datatype in types:
         return types[datatype]
     if issubclass(datatype, Enum):
-        dtype, _ = EnumSort(datatype.__name__, [x.name for x in datatype])
+        dtype, _ = EnumSort(datatype.__name__, [str(x.value) for x in datatype])
         return lambda x: Const(x, dtype)
     if hasattr(datatype, "to_z3"):
         return datatype.to_z3()
@@ -153,19 +153,27 @@ class Variable(ABC):
         :rtype: T
         """
         assert val is not None, f"Invalid value None for variable {self}"
+        if isinstance(val, self.datatype):
+            return val
+        if isinstance(val, BoolRef) and self.datatype == bool:
+            return str(val) == "True"
         if isinstance(val, RatNumRef) and self.datatype == float:
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
-        if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
+        if (isinstance(val, float) or isinstance(val, int) or isinstance(val, bool)) and (
+            self.datatype == int or self.datatype == float or self.datatype == bool
+        ):
             return self.datatype(val)
+        if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
+            return self.datatype(str(val))
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
         native_val = self.cast(val)
         if isinstance(native_val, Enum):
             values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
-            values = [v for v in values if str(v) == str(val)]
+            values = [v for v in values if val.__class__(str(v)) == val]
             assert len(values) == 1, f"Expected {values} to be length 1"
             return values[0]
         return native_val
@@ -193,7 +201,6 @@ class Variable(ABC):
         """
         return type(self).__name__
 
-    @abstractmethod
     def copy(self, name: str = None) -> Variable:
         """Return a new instance of the Variable with the given name, or with
         the original name if no name is supplied.
@@ -203,25 +210,17 @@ class Variable(ABC):
         :rtype: Variable
 
         """
-        raise NotImplementedError("Method `copy` must be instantiated.")
+        if name:
+            return self.__class__(name, self.datatype, self.distribution)
+        return self.__class__(self.name, self.datatype, self.distribution)
 
 
 class Input(Variable):
     """An extension of the Variable class representing inputs."""
 
-    def copy(self, name=None) -> Input:
-        if name:
-            return Input(name, self.datatype, self.distribution)
-        return Input(self.name, self.datatype, self.distribution)
-
 
 class Output(Variable):
     """An extension of the Variable class representing outputs."""
-
-    def copy(self, name=None) -> Output:
-        if name:
-            return Output(name, self.datatype, self.distribution)
-        return Output(self.name, self.datatype, self.distribution)
 
 
 class Meta(Variable):
@@ -242,8 +241,3 @@ class Meta(Variable):
     def __init__(self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]):
         super().__init__(name, datatype)
         self.populate = populate
-
-    def copy(self, name=None) -> Meta:
-        if name:
-            return Meta(name, self.datatype, self.distribution)
-        return Meta(self.name, self.datatype, self.distribution)

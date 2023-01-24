@@ -255,7 +255,8 @@ class CausalDAG(nx.DiGraph):
         gam.add_edges_from(edges_to_add)
 
         min_seps = list(list_all_min_sep(gam, "TREATMENT", "OUTCOME", set(treatments), set(outcomes)))
-        # min_seps.remove(set(outcomes))
+        if set(outcomes) in min_seps:
+            min_seps.remove(set(outcomes))
         return min_seps
 
     def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
@@ -278,6 +279,7 @@ class CausalDAG(nx.DiGraph):
         :param outcomes: A list of strings representing outcomes.
         :return: A list of strings representing the minimal adjustment set.
         """
+
         # 1. Construct the proper back-door graph's ancestor moral graph
         proper_backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
         ancestor_proper_backdoor_graph = proper_backdoor_graph.get_ancestor_graph(treatments, outcomes)
@@ -316,6 +318,7 @@ class CausalDAG(nx.DiGraph):
             for adj in minimum_adjustment_sets
             if self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes, adj)
         ]
+
         return valid_minimum_adjustment_sets
 
     def adjustment_set_is_minimal(self, treatments: list[str], outcomes: list[str], adjustment_set: set[str]) -> bool:
