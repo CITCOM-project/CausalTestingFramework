@@ -121,18 +121,21 @@ class AbstractCausalTestCase:
                 )
             model = optimizer.model()
 
-            base_test_case = BaseTestCase(self.treatment_variables, list(self.expected_causal_effect.keys())[0])
+            base_test_case = BaseTestCase(
+                treatment_variable=self.treatment_variable,
+                outcome_variable=list(self.expected_causal_effect.keys())[0],
+                effect=self.effect,
+            )
 
             concrete_test = CausalTestCase(
                 base_test_case=base_test_case,
-                control_value=self.treatment_variables.cast(model[self.treatment_variables.z3]),
-                treatment_value=self.treatment_variables.cast(
-                    model[self.scenario.treatment_variables[self.treatment_variables.name].z3]
+                control_value=self.treatment_variable.cast(model[self.treatment_variable.z3]),
+                treatment_value=self.treatment_variable.cast(
+                    model[self.scenario.treatment_variables[self.treatment_variable.name].z3]
                 ),
                 expected_causal_effect=list(self.expected_causal_effect.values())[0],
                 estimate_type=self.estimate_type,
                 effect_modifier_configuration={v: v.cast(model[v.z3]) for v in self.effect_modifiers},
-                effect=self.effect,
             )
 
             for v in self.scenario.inputs():

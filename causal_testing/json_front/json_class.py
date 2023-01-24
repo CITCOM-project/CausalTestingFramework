@@ -123,7 +123,7 @@ class JsonUtility(ABC):
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
             logger.info("Executing test: %s", test["name"])
             logger.info(abstract_test)
-            logger.info([abstract_test.treatment_variables.name, abstract_test.treatment_variables.distribution])
+            logger.info([abstract_test.treatment_variable.name, abstract_test.treatment_variable.distribution])
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
             failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
             logger.info("%s/%s failed for %s\n", failures, len(concrete_tests), test["name"])
