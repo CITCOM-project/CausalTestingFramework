@@ -30,24 +30,27 @@ In future it will be possible to install from PyPI, but for now...
 
 then, to install a specific release:
 
-.. code-block:: console    
+.. code-block:: console
+
     git fetch --all --tags --prune
     git checkout tags/<tag> -b <branch>
     pip install -e .
 
 e.g. version `1.0.0`
 
-.. code-block:: console    
+.. code-block:: console
+
     git fetch --all --tags --prune
     git checkout tags/1.0.0 -b version
     pip install -e .
 
 or to install the latest development version:
 
-.. code-block:: console    
+.. code-block:: console
+
     pip install -e .
 
-Use 
+Use
 
 .. code-block:: console
 
