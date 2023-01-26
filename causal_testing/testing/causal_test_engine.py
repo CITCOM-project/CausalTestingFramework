@@ -5,7 +5,7 @@ import pandas as pd
 from causal_testing.data_collection.data_collector import DataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_outcome import CausalTestResult
+from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite
@@ -150,9 +150,6 @@ class CausalTestEngine:
         causal_test_result = self._return_causal_test_results(estimate_type, estimator, causal_test_case)
         return causal_test_result
 
-    # TODO (MF) I think that the test oracle procedure should go in here.
-    # This way, the user can supply it as a function or something, which can be applied to the result of CI
-
     def _return_causal_test_results(self, estimate_type, estimator, causal_test_case):
         """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
 
@@ -175,7 +172,7 @@ class CausalTestEngine:
                     treatment_value=estimator.treatment_value,
                     control_value=estimator.control_value,
                     adjustment_set=estimator.adjustment_set,
-                    ate=cates_df,
+                    test_value=TestValue("ate", cates_df),
                     effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                     confidence_intervals=confidence_intervals,
                 )
@@ -188,7 +185,7 @@ class CausalTestEngine:
                 treatment_value=estimator.treatment_value,
                 control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
-                ate=risk_ratio,
+                test_value=TestValue("risk_ratio", risk_ratio),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )
@@ -201,7 +198,7 @@ class CausalTestEngine:
                 treatment_value=estimator.treatment_value,
                 control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
-                ate=ate,
+                test_value=TestValue("ate", ate),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )
@@ -216,7 +213,7 @@ class CausalTestEngine:
                 treatment_value=estimator.treatment_value,
                 control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
-                ate=ate,
+                test_value=TestValue("ate", ate),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )

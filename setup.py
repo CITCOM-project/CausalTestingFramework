@@ -11,7 +11,7 @@ requirements = [
     "scipy~=1.7.3",
     "statsmodels~=0.13.2",
     "tabulate~=0.8.10",
-    "z3_solver~=4.8.13.0",
+    "z3_solver~=4.11.2",
 ]
 
 # Additional dependencies for development
@@ -21,7 +21,7 @@ readme = open("README.md", encoding = "UTF-8").read()
 
 setup(
     name="causal_testing_framework",
-    version="0.0.1",
+    version="1.0.0",
     description="A framework for causal testing using causal directed acyclic graphs.",
     long_description=readme,
     long_description_content_type="text/markdown",

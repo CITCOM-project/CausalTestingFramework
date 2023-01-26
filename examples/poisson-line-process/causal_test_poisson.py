@@ -176,8 +176,8 @@ for wh in range(1, 11):
             "height": wh,
             "control": control_value,
             "treatment": treatment_value,
-            "smt_risk_ratio": smt_causal_test_result.ate,
-            "obs_risk_ratio": obs_causal_test_result.ate,
+            "smt_risk_ratio": smt_causal_test_result.test_value.value,
+            "obs_risk_ratio": obs_causal_test_result.test_value.value,
         }
         intensity_num_shapes_results.append(results)
 
@@ -216,7 +216,7 @@ for i in range(17):
             "control": control_value,
             "treatment": treatment_value,
             "intensity": i,
-            "ate": causal_test_result.ate,
+            "ate": causal_test_result.test_value.value,
             "ci_low": min(causal_test_result.confidence_intervals),
             "ci_high": max(causal_test_result.confidence_intervals),
         }
