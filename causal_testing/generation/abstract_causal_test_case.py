@@ -229,8 +229,8 @@ class AbstractCausalTestCase:
                     for var in effect_modifier_configs.columns
                 }
             )
-            control_values = [test.control_input_configuration[self.treatment_variable] for test in concrete_tests]
-            treatment_values = [test.treatment_input_configuration[self.treatment_variable] for test in concrete_tests]
+            control_values = [test.control_value for test in concrete_tests]
+            treatment_values = [test.treatment_value for test in concrete_tests]
 
             if self.treatment_variable.datatype is bool and set([(True, False), (False, True)]).issubset(
                 set(zip(control_values, treatment_values))
