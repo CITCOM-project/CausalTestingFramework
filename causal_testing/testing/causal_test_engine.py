@@ -88,9 +88,9 @@ class CausalTestEngine:
                 causal_test_results = []
 
                 for test in tests:
-                    treatment_variable = list(test.treatment_input_configuration.keys())[0]
-                    treatment_value = list(test.treatment_input_configuration.values())[0]
-                    control_value = list(test.control_input_configuration.values())[0]
+                    treatment_variable = test.treatment_variable
+                    treatment_value = test.treatment_value
+                    control_value = test.control_value
                     estimator = EstimatorClass(
                         (treatment_variable.name,),
                         treatment_value,
@@ -131,19 +131,16 @@ class CausalTestEngine:
             raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
         if estimator.df is None:
             estimator.df = self.scenario_execution_data_df
-        treatment_variable = list(causal_test_case.control_input_configuration.keys())[0]
+        treatment_variable = causal_test_case.treatment_variable
         treatments = treatment_variable.name
         outcome_variable = causal_test_case.outcome_variable
 
         logger.info("treatments: %s", treatments)
         logger.info("outcomes: %s", outcome_variable)
         minimal_adjustment_set = self.causal_dag.identification(BaseTestCase(treatment_variable, outcome_variable))
-        minimal_adjustment_set = minimal_adjustment_set - {v.name for v in causal_test_case.control_input_configuration}
+        minimal_adjustment_set = minimal_adjustment_set - set(treatment_variable.name)
         minimal_adjustment_set = minimal_adjustment_set - set(outcome_variable.name)
-        assert all(
-            (v.name not in minimal_adjustment_set for v in causal_test_case.control_input_configuration)
-        ), "Treatment vars in adjustment set"
-        assert outcome_variable not in minimal_adjustment_set, "Outcome vars in adjustment set"
+
         variables_for_positivity = list(minimal_adjustment_set) + [treatment_variable.name] + [outcome_variable.name]
 
         if self._check_positivity_violation(variables_for_positivity):
@@ -172,8 +169,8 @@ class CausalTestEngine:
                 causal_test_result = CausalTestResult(
                     treatment=estimator.treatment,
                     outcome=estimator.outcome,
-                    treatment_value=estimator.treatment_values,
-                    control_value=estimator.control_values,
+                    treatment_value=estimator.treatment_value,
+                    control_value=estimator.control_value,
                     adjustment_set=estimator.adjustment_set,
                     test_value=TestValue("ate", cates_df),
                     effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
@@ -185,8 +182,8 @@ class CausalTestEngine:
             causal_test_result = CausalTestResult(
                 treatment=estimator.treatment,
                 outcome=estimator.outcome,
-                treatment_value=estimator.treatment_values,
-                control_value=estimator.control_values,
+                treatment_value=estimator.treatment_value,
+                control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
                 test_value=TestValue("risk_ratio", risk_ratio),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
@@ -198,8 +195,8 @@ class CausalTestEngine:
             causal_test_result = CausalTestResult(
                 treatment=estimator.treatment,
                 outcome=estimator.outcome,
-                treatment_value=estimator.treatment_values,
-                control_value=estimator.control_values,
+                treatment_value=estimator.treatment_value,
+                control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
                 test_value=TestValue("ate", ate),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
@@ -213,8 +210,8 @@ class CausalTestEngine:
             causal_test_result = CausalTestResult(
                 treatment=estimator.treatment,
                 outcome=estimator.outcome,
-                treatment_value=estimator.treatment_values,
-                control_value=estimator.control_values,
+                treatment_value=estimator.treatment_value,
+                control_value=estimator.control_value,
                 adjustment_set=estimator.adjustment_set,
                 test_value=TestValue("ate", ate),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,

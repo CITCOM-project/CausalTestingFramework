@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class AbstractCausalTestCase:
     """
-    An abstract test case serves as a generator for concrete test cases. Instead of having concrete conctrol
+    An abstract test case serves as a generator for concrete test cases. Instead of having concrete control
     and treatment values, we instead just specify the intervention and the treatment variables. This then
     enables potentially infinite concrete test cases to be generated between different values of the treatment.
     """
@@ -157,7 +157,7 @@ class AbstractCausalTestCase:
                 # Treatment run
                 if rct:
                     treatment_run = control_run.copy()
-                    treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
+                    treatment_run.update({concrete_test.treatment_variable.name: concrete_test.treatment_value})
                     treatment_run["bin"] = index
                     runs.append(treatment_run)
 
@@ -204,7 +204,7 @@ class AbstractCausalTestCase:
             runs = pd.concat([runs, runs_])
             assert concrete_tests_ not in concrete_tests, "Duplicate entries unlikely unless something went wrong"
 
-            control_configs = pd.DataFrame([test.control_input_configuration for test in concrete_tests])
+            control_configs = pd.DataFrame([{test.treatment_variable: test.control_value} for test in concrete_tests])
             ks_stats = {
                 var: stats.kstest(control_configs[var], var.distribution.cdf).statistic
                 for var in control_configs.columns
@@ -227,8 +227,8 @@ class AbstractCausalTestCase:
                     for var in effect_modifier_configs.columns
                 }
             )
-            control_values = [test.control_input_configuration[self.treatment_variable] for test in concrete_tests]
-            treatment_values = [test.treatment_input_configuration[self.treatment_variable] for test in concrete_tests]
+            control_values = [test.control_value for test in concrete_tests]
+            treatment_values = [test.treatment_value for test in concrete_tests]
 
             if self.treatment_variable.datatype is bool and set([(True, False), (False, True)]).issubset(
                 set(zip(control_values, treatment_values))

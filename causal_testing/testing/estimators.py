@@ -35,16 +35,16 @@ class Estimator(ABC):
     def __init__(
         self,
         treatment: tuple,
-        treatment_values: float,
-        control_values: float,
+        treatment_value: float,
+        control_value: float,
         adjustment_set: set,
         outcome: tuple,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
     ):
         self.treatment = treatment
-        self.treatment_values = treatment_values
-        self.control_values = control_values
+        self.treatment_value = treatment_value
+        self.control_value = control_value
         self.adjustment_set = adjustment_set
         self.outcome = outcome
         self.df = df
@@ -92,15 +92,15 @@ class LogisticRegressionEstimator(Estimator):
     def __init__(
         self,
         treatment: tuple,
-        treatment_values: float,
-        control_values: float,
+        treatment_value: float,
+        control_value: float,
         adjustment_set: set,
         outcome: tuple,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
         intercept: int = 1,
     ):
-        super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
@@ -158,7 +158,7 @@ class LogisticRegressionEstimator(Estimator):
         self.model = model
 
         x = pd.DataFrame()
-        x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x[self.treatment[0]] = [self.treatment_value, self.control_value]
         x["Intercept"] = self.intercept
         for k, v in self.effect_modifiers.items():
             x[k] = v
@@ -283,16 +283,16 @@ class LinearRegressionEstimator(Estimator):
     def __init__(
         self,
         treatment: tuple,
-        treatment_values: float,
-        control_values: float,
-        adjustment_set: list[float],
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
         outcome: tuple,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
         product_terms: list[tuple[Variable, Variable]] = None,
         intercept: int = 1,
     ):
-        super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
         if product_terms is None:
             product_terms = []
@@ -375,7 +375,7 @@ class LinearRegressionEstimator(Estimator):
         unit_effect = model.params[list(self.treatment)].values[0]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model)
 
-        return unit_effect * self.treatment_values - unit_effect * self.control_values, [ci_low, ci_high]
+        return unit_effect * self.treatment_value - unit_effect * self.control_value, [ci_low, ci_high]
 
     def estimate_ate(self) -> tuple[float, list[float, float], float]:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
@@ -387,6 +387,7 @@ class LinearRegressionEstimator(Estimator):
 
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
+
         # This is a temporary hack
         for t in self.square_terms:
             individuals[t + "^2"] = individuals[t] ** 2
@@ -395,8 +396,8 @@ class LinearRegressionEstimator(Estimator):
 
         # It is ABSOLUTELY CRITICAL that these go last, otherwise we can't index
         # the effect with "ate = t_test_results.effect[0]"
-        individuals.loc["control", list(self.treatment)] = self.control_values
-        individuals.loc["treated", list(self.treatment)] = self.treatment_values
+        individuals.loc["control", list(self.treatment)] = self.control_value
+        individuals.loc["treated", list(self.treatment)] = self.treatment_value
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
@@ -417,7 +418,7 @@ class LinearRegressionEstimator(Estimator):
         self.model = model
 
         x = pd.DataFrame()
-        x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x[self.treatment[0]] = [self.treatment_value, self.control_value]
         x["Intercept"] = self.intercept
         for k, v in adjustment_config.items():
             x[k] = v
@@ -473,7 +474,7 @@ class LinearRegressionEstimator(Estimator):
             self.effect_modifiers
         ), f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
         x = pd.DataFrame()
-        x[self.treatment[0]] = [self.treatment_values, self.control_values]
+        x[self.treatment[0]] = [self.treatment_value, self.control_value]
         x["Intercept"] = self.intercept
         for k, v in self.effect_modifiers.items():
             self.adjustment_set.add(k)
@@ -574,8 +575,8 @@ class CausalForestEstimator(Estimator):
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
-        ate = model.ate(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
-        ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
+        ate = model.ate(effect_modifier_df, T0=self.control_value, T1=self.treatment_value)
+        ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_value, T1=self.treatment_value)
         ci_low, ci_high = ate_interval[0], ate_interval[1]
         return ate, [ci_low, ci_high]
 
@@ -614,9 +615,9 @@ class CausalForestEstimator(Estimator):
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain CATES and confidence intervals
-        conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values).flatten()
+        conditional_ates = model.effect(effect_modifier_df, T0=self.control_value, T1=self.treatment_value).flatten()
         [ci_low, ci_high] = model.effect_interval(
-            effect_modifier_df, T0=self.control_values, T1=self.treatment_values, alpha=0.05
+            effect_modifier_df, T0=self.control_value, T1=self.treatment_value, alpha=0.05
         )
 
         # Merge results into a dataframe (CATE, confidence intervals, and effect modifier values)
