@@ -146,7 +146,6 @@ class AbstractCausalTestCase:
                         + f"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}"
                     )
 
-
             if not any([vars(t) == vars(concrete_test) for t in concrete_tests]):
                 concrete_tests.append(concrete_test)
                 # Control run
@@ -161,7 +160,6 @@ class AbstractCausalTestCase:
                     treatment_run.update({concrete_test.treatment_variable.name: concrete_test.treatment_value})
                     treatment_run["bin"] = index
                     runs.append(treatment_run)
-
 
         return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
 

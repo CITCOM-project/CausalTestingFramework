@@ -282,7 +282,7 @@ class LinearRegressionEstimator(Estimator):
 
     def __init__(
         self,
-        treatment: tuple,    
+        treatment: tuple,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
