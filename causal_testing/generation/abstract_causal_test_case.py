@@ -10,6 +10,7 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
+from causal_testing.testing.base_test_case import BaseTestCase
 
 from enum import Enum
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class AbstractCausalTestCase:
     """
-    An abstract test case serves as a generator for concrete test cases. Instead of having concrete conctrol
+    An abstract test case serves as a generator for concrete test cases. Instead of having concrete control
     and treatment values, we instead just specify the intervention and the treatment variables. This then
     enables potentially infinite concrete test cases to be generated between different values of the treatment.
     """
@@ -33,10 +34,11 @@ class AbstractCausalTestCase:
         estimate_type: str = "ate",
         effect: str = "total",
     ):
-        assert treatment_variable in scenario.variables.values(), (
-            "Treatment variables must be a subset of variables."
-            + f" Instead got:\ntreatment_variable={treatment_variable}\nvariables={scenario.variables}"
-        )
+        if treatment_variable not in scenario.variables.values():
+            raise ValueError(
+                "Treatment variables must be a subset of variables."
+                + f" Instead got:\ntreatment_variables={treatment_variable}\nvariables={scenario.variables}"
+            )
 
         assert len(expected_causal_effect) == 1, "We currently only support tests with one causal outcome"
 
@@ -119,16 +121,21 @@ class AbstractCausalTestCase:
                 )
             model = optimizer.model()
 
+            base_test_case = BaseTestCase(
+                treatment_variable=self.treatment_variable,
+                outcome_variable=list(self.expected_causal_effect.keys())[0],
+                effect=self.effect,
+            )
+
             concrete_test = CausalTestCase(
-                control_input_configuration={v: v.cast(model[v.z3]) for v in [self.treatment_variable]},
-                treatment_input_configuration={
-                    v: v.cast(model[self.scenario.treatment_variables[v.name].z3]) for v in [self.treatment_variable]
-                },
+                base_test_case=base_test_case,
+                control_value=self.treatment_variable.cast(model[self.treatment_variable.z3]),
+                treatment_value=self.treatment_variable.cast(
+                    model[self.scenario.treatment_variables[self.treatment_variable.name].z3]
+                ),
                 expected_causal_effect=list(self.expected_causal_effect.values())[0],
-                outcome_variables=list(self.expected_causal_effect.keys()),
                 estimate_type=self.estimate_type,
                 effect_modifier_configuration={v: v.cast(model[v.z3]) for v in self.effect_modifiers},
-                effect=self.effect,
             )
 
             for v in self.scenario.inputs():
@@ -150,7 +157,7 @@ class AbstractCausalTestCase:
                 # Treatment run
                 if rct:
                     treatment_run = control_run.copy()
-                    treatment_run.update({k.name: v for k, v in concrete_test.treatment_input_configuration.items()})
+                    treatment_run.update({concrete_test.treatment_variable.name: concrete_test.treatment_value})
                     treatment_run["bin"] = index
                     runs.append(treatment_run)
 
@@ -197,7 +204,7 @@ class AbstractCausalTestCase:
             runs = pd.concat([runs, runs_])
             assert concrete_tests_ not in concrete_tests, "Duplicate entries unlikely unless something went wrong"
 
-            control_configs = pd.DataFrame([test.control_input_configuration for test in concrete_tests])
+            control_configs = pd.DataFrame([{test.treatment_variable: test.control_value} for test in concrete_tests])
             ks_stats = {
                 var: stats.kstest(control_configs[var], var.distribution.cdf).statistic
                 for var in control_configs.columns
@@ -220,8 +227,8 @@ class AbstractCausalTestCase:
                     for var in effect_modifier_configs.columns
                 }
             )
-            control_values = [test.control_input_configuration[self.treatment_variable] for test in concrete_tests]
-            treatment_values = [test.treatment_input_configuration[self.treatment_variable] for test in concrete_tests]
+            control_values = [test.control_value for test in concrete_tests]
+            treatment_values = [test.treatment_value for test in concrete_tests]
 
             if self.treatment_variable.datatype is bool and set([(True, False), (False, True)]).issubset(
                 set(zip(control_values, treatment_values))

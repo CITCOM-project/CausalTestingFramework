@@ -11,6 +11,7 @@ from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEff
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.causal_test_suite import CausalTestSuite
 from matplotlib.pyplot import rcParams
 
 # Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
@@ -55,32 +56,45 @@ def causal_testing_sensitivity_analysis():
                'G_si': {},
                'G_Na': {},
                'G_Kp': {}}
+
+    apd90 = Output('APD90', int)
+    outcome_variable = apd90
+    test_suite = CausalTestSuite()
+    estimator_list = [LinearRegressionEstimator]
+
+    # For each parameter in conductance_means, setup variables and add a test case to the test suite
     for conductance_param, mean_and_oracle in conductance_means.items():
-        average_treatment_effects = []
-        confidence_intervals = []
-
-        # Perform each causal test for the given input
+        treatment_variable = Input(conductance_param, float)
+        base_test_case = BaseTestCase(treatment_variable, outcome_variable)
+        test_list = []
+        control_value = 0.5
+        mean, oracle = mean_and_oracle
         for treatment_value in treatment_values:
-            mean, oracle = mean_and_oracle
-            conductance_input = Input(conductance_param, float)
-            ate, ci = effects_on_APD90(OBSERVATIONAL_DATA_PATH, conductance_input, 0.5, treatment_value, oracle)
+            test_list.append(CausalTestCase(base_test_case, oracle, control_value, treatment_value))
+        test_suite.add_test_object(base_test_case=base_test_case,
+                                   causal_test_case_list=test_list,
+                                   estimators_classes=estimator_list,
+                                   estimate_type='ate')
 
-            # Store results
-            average_treatment_effects.append(ate)
-            confidence_intervals.append(ci)
-        results[conductance_param] = {"ate": average_treatment_effects, "cis": confidence_intervals}
+    causal_test_results = effects_on_APD90(OBSERVATIONAL_DATA_PATH, test_suite)
+
+    # Extract data from causal_test_results needed for plotting
+    for base_test_case in causal_test_results:
+        # Place results of test_suite into format required for plotting
+        results[base_test_case.treatment_variable.name] = \
+            {"ate": [result.ate for result in causal_test_results[base_test_case]['LinearRegressionEstimator']],
+             "cis": [result.confidence_intervals for result in
+                     causal_test_results[base_test_case]['LinearRegressionEstimator']]}
+
     plot_ates_with_cis(results, treatment_values)
 
 
-def effects_on_APD90(observational_data_path, treatment_var, control_val, treatment_val, expected_causal_effect):
+def effects_on_APD90(observational_data_path, test_suite):
     """Perform causal testing for the scenario in which we investigate the causal effect of a given input on APD90.
 
-    :param observational_data_path: Path to observational data containing previous executions of the LR91 model.
-    :param treatment_var: The input variable whose effect on APD90 we are interested in.
-    :param control_val: The control value for the treatment variable (before intervention).
-    :param treatment_val: The treatment value for the treatment variable (after intervention).
-    :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
-    :return: ATE for the effect of G_K on APD90
+    :param: test_suite: A CausalTestSuite object containing a dictionary of base_test_cases and the treatment/outcome
+                        values to be tested
+    :return: causal_test_results containing a list of causal_test_result objects
     """
     # 1. Define Causal DAG
     causal_dag = CausalDAG('./dag.dot')
@@ -110,12 +124,6 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
 
     # 5. Create a causal specification from the scenario and causal DAG
     causal_specification = CausalSpecification(scenario, causal_dag)
-    base_test_case = BaseTestCase(treatment_var, apd90)
-    # 6. Create a causal test case
-    causal_test_case = CausalTestCase(base_test_case=base_test_case,
-                                      expected_causal_effect=expected_causal_effect,
-                                      control_value=control_val,
-                                      treatment_value=treatment_val)
 
     # 7. Create a data collector
     data_collector = ObservationalDataCollector(scenario, observational_data_path)
@@ -123,17 +131,9 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     # 8. Create an instance of the causal test engine
     causal_test_engine = CausalTestEngine(causal_specification, data_collector)
 
-    # 9. Obtain the minimal adjustment set from the causal DAG
-    minimal_adjustment_set = causal_dag.identification(base_test_case)
-    linear_regression_estimator = LinearRegressionEstimator((treatment_var.name,), treatment_val, control_val,
-                                                            minimal_adjustment_set,
-                                                            ('APD90',)
-                                                            )
-
-    # 10. Run the causal test and print results
-    causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
-    print(causal_test_result)
-    return causal_test_result.test_value.value, causal_test_result.confidence_intervals
+    # 9. Run the causal test suite
+    causal_test_results = causal_test_engine.execute_test_suite(test_suite)
+    return causal_test_results
 
 
 def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = True):
