@@ -27,6 +27,12 @@ Causal testing is a causal inference-driven framework for functional black-box t
 
    json_front_end
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Glossary
+
+   glossary
+
 Indices and tables
 ==================
 

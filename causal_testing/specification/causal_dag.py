@@ -255,7 +255,8 @@ class CausalDAG(nx.DiGraph):
         gam.add_edges_from(edges_to_add)
 
         min_seps = list(list_all_min_sep(gam, "TREATMENT", "OUTCOME", set(treatments), set(outcomes)))
-        # min_seps.remove(set(outcomes))
+        if set(outcomes) in min_seps:
+            min_seps.remove(set(outcomes))
         return min_seps
 
     def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
@@ -278,6 +279,7 @@ class CausalDAG(nx.DiGraph):
         :param outcomes: A list of strings representing outcomes.
         :return: A list of strings representing the minimal adjustment set.
         """
+
         # 1. Construct the proper back-door graph's ancestor moral graph
         proper_backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
         ancestor_proper_backdoor_graph = proper_backdoor_graph.get_ancestor_graph(treatments, outcomes)
@@ -316,6 +318,7 @@ class CausalDAG(nx.DiGraph):
             for adj in minimum_adjustment_sets
             if self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes, adj)
         ]
+
         return valid_minimum_adjustment_sets
 
     def adjustment_set_is_minimal(self, treatments: list[str], outcomes: list[str], adjustment_set: set[str]) -> bool:
@@ -464,6 +467,29 @@ class CausalDAG(nx.DiGraph):
         if isinstance(scenario.variables[node], Output):
             return True
         return any([self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)])
+
+    def identification(self, base_test_case):
+        """Identify and return the minimum adjustment set
+
+        :param base_test_case: A base test case instance containing the outcome_variable and the
+        treatment_variable required for identification.
+        :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
+        estimate as opposed to a purely associational estimate.
+        """
+        minimal_adjustment_sets = []
+        if base_test_case.effect == "total":
+            minimal_adjustment_sets = self.enumerate_minimal_adjustment_sets(
+                [base_test_case.treatment_variable.name], [base_test_case.outcome_variable.name]
+            )
+        elif base_test_case.effect == "direct":
+            minimal_adjustment_sets = self.direct_effect_adjustment_sets(
+                [base_test_case.treatment_variable.name], [base_test_case.outcome_variable.name]
+            )
+        else:
+            raise ValueError("Causal effect should be 'total' or 'direct'")
+
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
+        return minimal_adjustment_set
 
     def __str__(self):
         return f"Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}"

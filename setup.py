@@ -15,13 +15,23 @@ requirements = [
 ]
 
 # Additional dependencies for development
-dev_requirements = ["autopep8", "isort", "pytest", "pylint", "black"]
+dev_requirements = [
+    "autopep8",
+    "isort",
+    "pytest",
+    "pylint",
+    "black",
+    "autoapi",
+    "myst-parser",
+    "sphinx-autoapi",
+    "sphinx_rtd_theme",
+]
 
-readme = open("README.md", encoding = "UTF-8").read()
+readme = open("README.md", encoding="UTF-8").read()
 
 setup(
     name="causal_testing_framework",
-    version="0.0.1",
+    version="1.0.0",
     description="A framework for causal testing using causal directed acyclic graphs.",
     long_description=readme,
     long_description_content_type="text/markdown",

@@ -209,6 +209,64 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
 
+    def test_program_15_no_interaction_ate(self):
+        """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
+        without product parameter."""
+        df = self.nhefs_df
+        covariates = {
+            "sex",
+            "race",
+            "age",
+            "edu_2",
+            "edu_3",
+            "edu_4",
+            "edu_5",
+            "exercise_1",
+            "exercise_2",
+            "active_1",
+            "active_2",
+            "wt71",
+            "smokeintensity",
+            "smokeyrs",
+        }
+        linear_regression_estimator = LinearRegressionEstimator(("qsmk",), 1, 0, covariates, ("wt82_71",), df)
+        terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
+        for term_to_square in terms_to_square:
+            linear_regression_estimator.add_squared_term_to_df(term_to_square)
+        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate()
+        self.assertEqual(round(ate, 1), 3.5)
+        self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
+
+    def test_program_15_no_interaction_ate_calculated(self):
+        """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
+        without product parameter."""
+        df = self.nhefs_df
+        covariates = {
+            "sex",
+            "race",
+            "age",
+            "edu_2",
+            "edu_3",
+            "edu_4",
+            "edu_5",
+            "exercise_1",
+            "exercise_2",
+            "active_1",
+            "active_2",
+            "wt71",
+            "smokeintensity",
+            "smokeyrs",
+        }
+        linear_regression_estimator = LinearRegressionEstimator(("qsmk",), 1, 0, covariates, ("wt82_71",), df)
+        terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
+        for term_to_square in terms_to_square:
+            linear_regression_estimator.add_squared_term_to_df(term_to_square)
+        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
+            {k: self.nhefs_df.mean()[k] for k in covariates}
+        )
+        self.assertEqual(round(ate, 1), 3.5)
+        self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [1.9, 5])
+
 
 class TestCausalForestEstimator(unittest.TestCase):
     """Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].

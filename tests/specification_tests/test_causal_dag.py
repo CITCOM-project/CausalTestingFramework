@@ -107,7 +107,7 @@ class TestDAGDirectEffectIdentification(unittest.TestCase):
     def test_direct_effect_adjustment_sets(self):
         causal_dag = CausalDAG(self.dag_dot_path)
         adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X1"], ["Y"])
-        self.assertEqual(list(adjustment_sets), [{"Y"}, {"D1", "Z"}, {"X2", "Z"}])
+        self.assertEqual(list(adjustment_sets), [{"D1", "Z"}, {"X2", "Z"}])
 
     def test_direct_effect_adjustment_sets_no_adjustment(self):
         causal_dag = CausalDAG(self.dag_dot_path)

@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from enum import Enum
 
 import pandas as pd
 import z3
@@ -140,4 +141,7 @@ class ObservationalDataCollector(DataCollector):
         for meta in self.scenario.metas():
             meta.populate(execution_data_df)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
+        for var_name, var in self.scenario.variables.items():
+            if issubclass(var.datatype, Enum):
+                scenario_execution_data_df[var_name] = [var.datatype(x) for x in scenario_execution_data_df[var_name]]
         return scenario_execution_data_df
