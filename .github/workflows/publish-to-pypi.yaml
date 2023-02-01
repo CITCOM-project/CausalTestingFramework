@@ -20,6 +20,8 @@ jobs:
         run: |
           pip3 install .
           pip3 install .[pypi]
+          pip3 install build
+
       - name: Build Package
         run: |
           python -m build --no-isolation
