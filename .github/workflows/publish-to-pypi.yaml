@@ -1,9 +1,5 @@
 name: Publish python PyPI
 
-on:
-  release:
-    types: [published]
-
 jobs:
   build-release:
     name: Build and publish PyPI
@@ -21,7 +17,6 @@ jobs:
           pip3 install .
           pip3 install .[pypi]
           pip3 install build
-
       - name: Build Package
         run: |
           python -m build --no-isolation
