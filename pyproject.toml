@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "setuptools>=45",
-    "setuptools_scm>=6.2",
+    "setuptools_scm[toml]>=6.2",
     "wheel"
     ]
 build-backend = "setuptools.build_meta"
@@ -14,17 +14,17 @@ build-backend = "setuptools.build_meta"
     license = {text = "MIT"}
     keywords = ["causal inference", "verification"]
     dependencies = [
-    "econml~=0.12.0",
-    "fitter~=1.4.0",
+    "econml~=0.12",
+    "fitter~=1.4",
     "lhsmdu~=1.1",
-    "networkx~=2.6.3",
-    "numpy~=1.22.4",
-    "pandas~=1.3.5",
-    "scikit_learn~=1.1.2",
-    "scipy~=1.7.3",
-    "statsmodels~=0.13.2",
-    "tabulate~=0.8.10",
-    "z3_solver~=4.11.2",
+    "networkx~=2.6",
+    "numpy~=1.22",
+    "pandas~=1.3",
+    "scikit_learn~=1.1",
+    "scipy~=1.7",
+    "statsmodels~=0.13",
+    "tabulate~=0.8",
+    "z3_solver~=4.11",
     ]
     dynamic = ["version"]
 
