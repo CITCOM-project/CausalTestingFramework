@@ -24,8 +24,8 @@ build-backend = "setuptools.build_meta"
     "scipy~=1.7",
     "statsmodels~=0.13",
     "tabulate~=0.8",
-    "z3_solver~=4.11",
-    ]
+    "z3_solver~=4.11.2",
+    ] # z3_solver does not follow semantic versioning and tying to 4.11 introduces problems
     dynamic = ["version"]
 
 [project.optional-dependencies]
