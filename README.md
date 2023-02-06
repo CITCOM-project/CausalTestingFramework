@@ -181,3 +181,6 @@ causal_test_result = causal_test_engine.execute_test(
 test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 assert test_passes, "Expected to see a positive change in y."
 ```
+
+Multiple tests can be executed at once using the test engines [test_suite](https://causal-testing-framework.readthedocs.io/en/test_suite.html)
+feature
