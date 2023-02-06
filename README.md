@@ -61,15 +61,21 @@ Note that scenario constraints are primarily intended to help specify the region
 Having fully specified the modelling scenario, we are now ready to test. Causal tests are, essentially [metamorphic tests](https://en.wikipedia.org/wiki/Metamorphic_testing) which are executed using statistical causal inference. A causal test expresses the change in a given output that we expect to see when we change a particular input in a particular way, e.g.
 
 ```{python}
+from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
 
+base_test_case = BaseTestCase(
+   treatment_variable: x # Set the treatment (input) variable to x
+   outcome_variable: y # set the outcome (output) variable to y
+   effect = direct # effect type, current accepted types are direct and total
+   
 causal_test_case = CausalTestCase(
-    control_input_configuration={x: 0},  # Our unmodified (or 'control') configuration in which input x is 0
-    treatment_input_configuration={x: 1}, # Our modified (or 'treatment') configuration in which input x is 1
-    expected_causal_effect=Positive,  # We expect to see a positive change as a result of this
-    outcome_variables=[y],  # We expect to observe that positive change in variable y
-)
+   base_test_case = base_test_case
+   expected_causal_effect = Positive # We expect to see a positive change as a result of this
+   control_value = 0 # Set the unmodified (control) value for x to 0
+   treatment_value = 1 # Set the modified (treatment) value for x to 1
+   estimate_type = "ate" 
 ```
 
 Before we can run our test case, we first need data. There are two ways to acquire this: 1. run the model with the specific input configurations we're interested in, 2. use data from previous model runs. For a small number of specific tests where accuracy is critical, the first approach will yield the best results. To do this, you need to instantiate the `ExperimentalDataCollector` class.
