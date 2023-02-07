@@ -49,7 +49,6 @@ def list_all_min_sep(
 
     # 4. Confirm that the connected component containing the treatment node is disjoint with the outcome node set
     if not treatment_connected_component_node_set.intersection(outcome_node_set):
-
         # 5. Update the treatment node set to the set of nodes in the connected component containing the treatment node
         treatment_node_set = treatment_connected_component_node_set
 
@@ -60,7 +59,6 @@ def list_all_min_sep(
 
         # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
         if treatment_node_set_neighbours.difference(outcome_node_set):
-
             # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
             node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
 
@@ -82,7 +80,6 @@ def list_all_min_sep(
                 outcome_node_set.union(node),
             )
         else:
-
             # 8. If all neighbours of the treatments nodes are in the outcome node set, return the set of treatment
             # node neighbours
             yield treatment_node_set_neighbours

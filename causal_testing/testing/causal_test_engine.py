@@ -54,7 +54,6 @@ class CausalTestEngine:
         self.scenario_execution_data_df = self.data_collector.collect_data(**kwargs)
 
     def execute_test_suite(self, test_suite: CausalTestSuite) -> list[CausalTestResult]:
-
         """Execute a suite of causal tests and return the results in a list
         :param test_suite: CasualTestSuite object
         :return: A dictionary where each key is the name of the estimators specified and the values are lists of

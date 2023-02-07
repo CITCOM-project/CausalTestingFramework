@@ -68,7 +68,6 @@ class JsonUtility(ABC):
         self.data_path = Path(data_path)
 
     def set_variables(self, inputs: dict, outputs: dict, metas: dict):
-
         """Populate the Causal Variables
         :param inputs:
         :param outputs:
@@ -137,7 +136,6 @@ class JsonUtility(ABC):
         return failures
 
     def _json_parse(self):
-
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
         with open(self.json_path) as f:
             self.test_plan = json.load(f)
