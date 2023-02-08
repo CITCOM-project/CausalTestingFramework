@@ -350,11 +350,8 @@ class CausalDAG(nx.DiGraph):
                 proper_backdoor_graph, treatments, outcomes, smaller_adjustment_set
             ):
                 logger.info(
-                    f"Z={adjustment_set} is not minimal because Z'=Z\\{variable}= {smaller_adjustment_set} is also a"
+                    f"Z={adjustment_set} is not minimal because Z'=Z\\{variable} = {smaller_adjustment_set} is also a"
                     f"valid adjustment set.",
-                    adjustment_set,
-                    variable,
-                    smaller_adjustment_set,
                 )
                 return False
 
