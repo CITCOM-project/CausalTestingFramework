@@ -1,8 +1,9 @@
-import logging
 from __future__ import annotations
+
+import logging
 from itertools import combinations
 from random import sample
-from typing import TypeVar, Union
+from typing import Union
 
 import networkx as nx
 
@@ -349,7 +350,8 @@ class CausalDAG(nx.DiGraph):
                 proper_backdoor_graph, treatments, outcomes, smaller_adjustment_set
             ):
                 logger.info(
-                    "Z=%s is not minimal because Z'=Z\\{{'%s'}}=" "%s is also a valid adjustment set.",
+                    f"Z={adjustment_set} is not minimal because Z'=Z\\{variable}= {smaller_adjustment_set} is also a"
+                    f"valid adjustment set.",
                     adjustment_set,
                     variable,
                     smaller_adjustment_set,
@@ -463,7 +465,7 @@ class CausalDAG(nx.DiGraph):
         """
         if isinstance(scenario.variables[node], Output):
             return True
-        return any([self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)])
+        return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
 
     def identification(self, base_test_case):
         """Identify and return the minimum adjustment set
