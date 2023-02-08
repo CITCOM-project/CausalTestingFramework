@@ -219,10 +219,7 @@ class JsonUtility(ABC):
 
         return causal_test_engine, estimation_model
 
-    def add_modelling_assumptions(
-            self,
-            estimation_model: Estimator # pylint: disable=unused-argument
-    ):
+    def add_modelling_assumptions(self, estimation_model: Estimator):  # pylint: disable=unused-argument
         """Optional abstract method where user functionality can be written to determine what assumptions are required
         for specific test cases
         :param estimation_model: estimator model instance for the current running test.

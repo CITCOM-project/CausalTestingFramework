@@ -15,6 +15,7 @@ class CausalSpecification(ABC):
     """
     Abstract Class for the Causal Specification (combination of Scenario and Causal Dag)
     """
+
     scenario: Scenario
     causal_dag: CausalDAG
 
