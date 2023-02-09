@@ -1,4 +1,5 @@
-from abc import ABC, abstractmethod
+from __future__ import annotations
+from abc import ABC
 from collections.abc import Callable
 from enum import Enum
 from typing import Any, TypeVar
@@ -9,15 +10,15 @@ from scipy.stats._distn_infrastructure import rv_generic
 from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String, DatatypeRef
 
 # Declare type variable
-# Is there a better way? I'd really like to do Variable[T](ExprRef)
 T = TypeVar("T")
-Variable = TypeVar("Variable")
-Input = TypeVar("Input")
-Output = TypeVar("Output")
-Meta = TypeVar("Meta")
+Z3 = TypeVar("Z3")
 
 
-def z3_types(datatype):
+def z3_types(datatype: T) -> Z3:
+    """Cast datatype to Z3 datatype
+    :param datatype: python datatype to be cast
+    :return: Type name compatible with Z3 library
+    """
     types = {int: Int, str: String, float: Real, bool: Bool}
     if datatype in types:
         return types[datatype]
@@ -161,8 +162,8 @@ class Variable(ABC):
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
-        if (isinstance(val, float) or isinstance(val, int) or isinstance(val, bool)) and (
-            self.datatype == int or self.datatype == float or self.datatype == bool
+        if (isinstance(val, (float, int, bool))) and (
+            self.datatype in (float, int, bool)
         ):
             return self.datatype(val)
         if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
@@ -170,6 +171,8 @@ class Variable(ABC):
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
+        """Cast value to Z3 value
+        """
         native_val = self.cast(val)
         if isinstance(native_val, Enum):
             values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
