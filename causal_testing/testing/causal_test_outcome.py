@@ -13,7 +13,6 @@ class CausalTestOutcome(ABC):
         :param res: CausalTestResult to be checked
         :return: Bool that is true if outcome is met
         """
-        pass
 
     def __str__(self) -> str:
         return type(self).__name__
