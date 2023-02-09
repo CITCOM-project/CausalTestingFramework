@@ -40,7 +40,6 @@ class Positive(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be positive."""
 
     def apply(self, res: CausalTestResult) -> bool:
-        # TODO: confidence intervals?
         if res.test_value.type == "ate":
             return res.test_value.value > 0
         if res.test_value.type == "risk_ratio":
@@ -52,7 +51,6 @@ class Negative(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be negative."""
 
     def apply(self, res: CausalTestResult) -> bool:
-        # TODO: confidence intervals?
         if res.test_value.type == "ate":
             return res.test_value.value < 0
         if res.test_value.type == "risk_ratio":
