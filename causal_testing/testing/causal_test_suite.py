@@ -29,8 +29,8 @@ class CausalTestSuite(UserDict):
 
         :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
         :param causal_test_case_list: A list of causal test cases to be executed
-        :param estimators_classes: A list of estimator class references, the execute_test_suite function in the TestEngine will produce a list
-                            of test results for each estimator
+        :param estimators_classes: A list of estimator class references, the execute_test_suite function in the
+            TestEngine will produce a list of test results for each estimator
         :param estimate_type: A string which denotes the type of estimate to return
         """
         test_object = {"tests": causal_test_case_list, "estimators": estimators_classes, "estimate_type": estimate_type}
