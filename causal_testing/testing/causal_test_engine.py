@@ -1,7 +1,5 @@
 import logging
 
-import pandas as pd
-
 from causal_testing.data_collection.data_collector import DataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -75,22 +73,20 @@ class CausalTestEngine:
                 list(minimal_adjustment_set) + [edge.treatment_variable.name] + [edge.outcome_variable.name]
             )
             if self._check_positivity_violation(variables_for_positivity):
-                # TODO: We should allow users to continue because positivity can be overcome with parametric models
-                # TODO: When we implement causal contracts, we should also note the positivity violation there
                 raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
 
             estimators = test_suite[edge]["estimators"]
             tests = test_suite[edge]["tests"]
             estimate_type = test_suite[edge]["estimate_type"]
             results = {}
-            for EstimatorClass in estimators:
+            for estimator_class in estimators:
                 causal_test_results = []
 
                 for test in tests:
                     treatment_variable = test.treatment_variable
                     treatment_value = test.treatment_value
                     control_value = test.control_value
-                    estimator = EstimatorClass(
+                    estimator = estimator_class(
                         (treatment_variable.name,),
                         treatment_value,
                         control_value,
@@ -102,7 +98,7 @@ class CausalTestEngine:
                     causal_test_result = self._return_causal_test_results(estimate_type, estimator, test)
                     causal_test_results.append(causal_test_result)
 
-                results[EstimatorClass.__name__] = causal_test_results
+                results[estimator_class.__name__] = causal_test_results
             test_suite_results[edge] = results
         return test_suite_results
 
@@ -143,9 +139,8 @@ class CausalTestEngine:
         variables_for_positivity = list(minimal_adjustment_set) + [treatment_variable.name] + [outcome_variable.name]
 
         if self._check_positivity_violation(variables_for_positivity):
-            # TODO: We should allow users to continue because positivity can be overcome with parametric models
-            # TODO: When we implement causal contracts, we should also note the positivity violation there
             raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
+
         causal_test_result = self._return_causal_test_results(estimate_type, estimator, causal_test_case)
         return causal_test_result
 
@@ -157,24 +152,22 @@ class CausalTestEngine:
         :param causal_test_case: The concrete test case to be executed
         :return: a CausalTestResult object containing the confidence intervals
         """
-        # TODO: Some estimators also return the CATE. Find the best way to add this into the causal test engine.
         if estimate_type == "cate":
             logger.debug("calculating cate")
             if not hasattr(estimator, "estimate_cates"):
                 raise NotImplementedError(f"{estimator.__class__} has no CATE method.")
-            else:
-                cates_df, confidence_intervals = estimator.estimate_cates()
-                # TODO: Work out how to handle CATE test results (just return the results df for now)
-                causal_test_result = CausalTestResult(
-                    treatment=estimator.treatment,
-                    outcome=estimator.outcome,
-                    treatment_value=estimator.treatment_value,
-                    control_value=estimator.control_value,
-                    adjustment_set=estimator.adjustment_set,
-                    test_value=TestValue("ate", cates_df),
-                    effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
-                    confidence_intervals=confidence_intervals,
-                )
+
+            cates_df, confidence_intervals = estimator.estimate_cates()
+            causal_test_result = CausalTestResult(
+                treatment=estimator.treatment,
+                outcome=estimator.outcome,
+                treatment_value=estimator.treatment_value,
+                control_value=estimator.control_value,
+                adjustment_set=estimator.adjustment_set,
+                test_value=TestValue("ate", cates_df),
+                effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
+                confidence_intervals=confidence_intervals,
+            )
         elif estimate_type == "risk_ratio":
             logger.debug("calculating risk_ratio")
             risk_ratio, confidence_intervals = estimator.estimate_risk_ratio()
@@ -233,7 +226,6 @@ class CausalTestEngine:
         :param variables_list: The list of variables for which positivity must be satisfied.
         :return: True if positivity is violated, False otherwise.
         """
-        # TODO: Improve positivity checks to look for stratum-specific violations, not just missing variables in df
         if not set(variables_list).issubset(self.scenario_execution_data_df.columns):
             missing_variables = set(variables_list) - set(self.scenario_execution_data_df.columns)
             logger.warning(
@@ -244,5 +236,5 @@ class CausalTestEngine:
                 missing_variables,
             )
             return True
-        else:
-            return False
+
+        return False
