@@ -162,17 +162,14 @@ class Variable(ABC):
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
-        if (isinstance(val, (float, int, bool))) and (
-            self.datatype in (float, int, bool)
-        ):
+        if (isinstance(val, (float, int, bool))) and (self.datatype in (float, int, bool)):
             return self.datatype(val)
         if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
             return self.datatype(str(val))
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
-        """Cast value to Z3 value
-        """
+        """Cast value to Z3 value"""
         native_val = self.cast(val)
         if isinstance(native_val, Enum):
             values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]

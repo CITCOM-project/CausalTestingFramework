@@ -63,9 +63,8 @@ class AbstractCausalTestCase:
         return f"When we apply intervention {self.intervention_constraints}, {outcome_string}"
 
     def datapath(self) -> str:
-        """ Create and return the sanitised data path
+        """Create and return the sanitised data path"""
 
-        """
         def sanitise(string):
             return "".join([x for x in string if x.isalnum()])
 
@@ -77,10 +76,7 @@ class AbstractCausalTestCase:
         )
 
     def _generate_concrete_tests(
-        self,
-        sample_size: int,
-        rct: bool = False,
-        seed: int = 0
+        self, sample_size: int, rct: bool = False, seed: int = 0
     ) -> tuple[list[CausalTestCase], pd.DataFrame]:
         """Generates a list of `num` concrete test cases.
 

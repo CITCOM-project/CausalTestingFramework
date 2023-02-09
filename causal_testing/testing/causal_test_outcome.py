@@ -4,7 +4,6 @@ import numpy as np
 from causal_testing.testing.causal_test_result import CausalTestResult
 
 
-
 class CausalTestOutcome(ABC):
     """An abstract class representing an expected causal effect."""
 
@@ -59,6 +58,7 @@ class Negative(CausalTestOutcome):
         if res.test_value.type == "risk_ratio":
             return res.test_value.value < 1
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
+
 
 class SomeEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should not be zero."""

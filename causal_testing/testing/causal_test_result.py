@@ -60,7 +60,7 @@ class CausalTestResult:
         return base_str + confidence_str
 
     def to_dict(self):
-        """ Return result contents as a dictionary
+        """Return result contents as a dictionary
         :return: Dictionary containing contents of causal_test_result
         """
         base_dict = {
