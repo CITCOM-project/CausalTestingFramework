@@ -50,7 +50,7 @@ class Estimator(ABC):
         self.df = df
         if effect_modifiers is None:
             self.effect_modifiers = {}
-        elif isinstance(effect_modifiers, set) or isinstance(effect_modifiers, list):
+        elif isinstance(effect_modifiers, (list, set)):
             self.effect_modifiers = {k.name for k in effect_modifiers}
         elif isinstance(effect_modifiers, dict):
             self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()}
@@ -109,6 +109,7 @@ class LogisticRegressionEstimator(Estimator):
         self.square_terms = []
         self.inverse_terms = []
         self.intercept = intercept
+        self.model = None
 
     def add_modelling_assumptions(self):
         """
@@ -153,7 +154,11 @@ class LogisticRegressionEstimator(Estimator):
         model = regression.fit()
         return model
 
-    def estimate(self, data):
+    def estimate(self, data: pd.DataFrame) -> RegressionResultsWrapper:
+        """add terms to the dataframe and estimate the outcome from the data
+        :param data: A pandas dataframe containing execution data from the system-under-test.
+
+        """
         model = self._run_logistic_regression(data)
         self.model = model
 
@@ -192,7 +197,8 @@ class LogisticRegressionEstimator(Estimator):
             control, treatment = zip(*[(x.iloc[1], x.iloc[0]) for x in bootstrap_samples])
         except PerfectSeparationError:
             logger.warning(
-                "Perfect separation detected, results not available. Cannot calculate confidence intervals for such a small dataset."
+                "Perfect separation detected, results not available. Cannot calculate confidence intervals for such "
+                "a small dataset."
             )
             return (y.iloc[1], None), (y.iloc[0], None)
 
@@ -230,13 +236,14 @@ class LogisticRegressionEstimator(Estimator):
         ci_high = bootstraps[bootstrap_size - bound]
 
         logger.info(
-            f"Changing {self.treatment[0]} from {self.control_values} to {self.treatment_values} gives an estimated ATE of {ci_low} < {estimate} < {ci_high}"
+            f"Changing {self.treatment[0]} from {self.control_value} to {self.treatment_value} gives an estimated "
+            f"ATE of {ci_low} < {estimate} < {ci_high}"
         )
         assert ci_low < estimate < ci_high, f"Expecting {ci_low} < {estimate} < {ci_high}"
 
         return estimate, (ci_low, ci_high)
 
-    def estimate_risk_ratio(self) -> float:
+    def estimate_risk_ratio(self, bootstrap_size=100) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
@@ -259,7 +266,8 @@ class LogisticRegressionEstimator(Estimator):
         ci_high = bootstraps[bootstrap_size - bound]
 
         logger.info(
-            f"Changing {self.treatment[0]} from {self.control_values} to {self.treatment_values} gives an estimated risk ratio of {ci_low} < {estimate} < {ci_high}"
+            f"Changing {self.treatment[0]} from {self.control_value} to {self.treatment_value} gives an estimated "
+            f"risk ratio of {ci_low} < {estimate} < {ci_high}"
         )
         assert ci_low < estimate < ci_high, f"Expecting {ci_low} < {estimate} < {ci_high}"
 
@@ -305,6 +313,7 @@ class LinearRegressionEstimator(Estimator):
         self.square_terms = []
         self.inverse_terms = []
         self.intercept = intercept
+        self.model = None
 
     def add_modelling_assumptions(self):
         """
@@ -412,7 +421,7 @@ class LinearRegressionEstimator(Estimator):
         (control_outcome, treatment_outcome).
         """
         if adjustment_config is None:
-            adjustment_config = dict()
+            adjustment_config = {}
 
         model = self._run_linear_regression()
         self.model = model
