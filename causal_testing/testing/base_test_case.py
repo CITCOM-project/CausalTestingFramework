@@ -14,4 +14,4 @@ class BaseTestCase:
 
     treatment_variable: Variable
     outcome_variable: Variable
-    effect: str = Effect.total.value
+    effect: str = Effect.TOTAL.value
