@@ -73,7 +73,7 @@ Here are some explanations for the causal inference terminology used above.
 
 ## Installation
 
-See the readthedocs site for installation
+See the readthedocs site for [installation
 instructions](https://causal-testing-framework.readthedocs.io/en/latest/installation.html).
 
 ## Usage
