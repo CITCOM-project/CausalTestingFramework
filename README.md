@@ -122,16 +122,16 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
 
 base_test_case = BaseTestCase(
-   treatment_variable: x # Set the treatment (input) variable to x
-   outcome_variable: y # set the outcome (output) variable to y
+   treatment_variable = x, # Set the treatment (input) variable to x
+   outcome_variable = y, # set the outcome (output) variable to y
    effect = direct) # effect type, current accepted types are direct and total
    
 causal_test_case = CausalTestCase(
-   base_test_case = base_test_case
-   expected_causal_effect = Positive # We expect to see a positive change as a result of this
-   control_value = 0 # Set the unmodified (control) value for x to 0
-   treatment_value = 1 # Set the modified (treatment) value for x to 1
-   estimate_type = "ate")
+   base_test_case = base_test_case,
+   expected_causal_effect = Positive, # We expect to see a positive change as a result of this
+   control_value = 0 # Set the unmodified (control) value for x to 0,
+   treatment_value = 1 # Set the modified (treatment) value for x to ,1
+   estimate_type = "ate"),
 ```
 
 Before we can run our test case, we first need data. There are two ways to acquire this: 1. run the model with the
@@ -175,8 +175,8 @@ various information. Here, we simply assert that the observed result is (on aver
 
 ```{python}
 causal_test_result = causal_test_engine.execute_test(
-    estimator = estimation_model
-    causal_test_case = causal_test_case
+    estimator = estimation_model,
+    causal_test_case = causal_test_case,
     estimate_type = "ate")
 test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 assert test_passes, "Expected to see a positive change in y."
