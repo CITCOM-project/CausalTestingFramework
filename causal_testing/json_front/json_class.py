@@ -1,3 +1,5 @@
+"""This module contains the JsonUtility class, details of using this class can be found here:
+https://causal-testing-framework.readthedocs.io/en/latest/json_front_end.html"""
 import argparse
 import json
 import logging

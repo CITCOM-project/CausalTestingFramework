@@ -1,3 +1,6 @@
+"""This module contains the Variable abstract class, as well as its concrete extensions: Input, Output and Meta. The
+function z3_types and the private function _coerce are also in this module."""
+
 from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable

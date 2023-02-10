@@ -1,3 +1,5 @@
+"""This module contains the CausalTestSuite class, for details on using it:
+https://causal-testing-framework.readthedocs.io/en/latest/test_suite.html"""
 from collections import UserDict
 from typing import Type, Iterable
 from causal_testing.testing.base_test_case import BaseTestCase

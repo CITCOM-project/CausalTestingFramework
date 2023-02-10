@@ -1,3 +1,4 @@
+"""This module holds the Scenario Class"""
 from collections.abc import Iterable, Mapping
 
 from tabulate import tabulate

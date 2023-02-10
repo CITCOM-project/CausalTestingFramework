@@ -1,3 +1,5 @@
+"""This module contains the CausalDAG class, as well as the functions list_all_min_sep and close_seperator"""
+
 from __future__ import annotations
 
 import logging

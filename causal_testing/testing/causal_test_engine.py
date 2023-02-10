@@ -1,3 +1,5 @@
+"""This module contains the CausalTestEngine class, a class responsible for the execution of causal tests"""
+
 import logging
 
 from causal_testing.data_collection.data_collector import DataCollector

@@ -1,3 +1,6 @@
+"""This module contains the DataCollector abstract class, as well as its concrete extensions: ExperimentalDataCollector
+and ObservationalDataCollector"""
+
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum

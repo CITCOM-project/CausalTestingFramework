@@ -1,3 +1,6 @@
+"""This module contains the CausalTestResult class, which is a container for the results of a causal test, and the
+TestValue dataclass.
+"""
 from typing import Any, Union
 from dataclasses import dataclass
 
