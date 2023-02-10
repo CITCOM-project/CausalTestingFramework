@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """This module contains the CausalTestOutcome abstract class, as well as the concrete extension classes:
 ExactValue, Positive, Negative, SomeEffect, NoEffect"""
 
