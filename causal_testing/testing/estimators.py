@@ -300,7 +300,7 @@ class LinearRegressionEstimator(Estimator):
         self.intercept = intercept
 
         if product_terms:
-            for (term_a, term_b) in product_terms:
+            for term_a, term_b in product_terms:
                 self.add_product_term_to_df(term_a, term_b)
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
