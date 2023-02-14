@@ -294,17 +294,16 @@ class LinearRegressionEstimator(Estimator):
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
-        if product_terms is None:
-            product_terms = []
-        for (term_a, term_b) in product_terms:
-            self.add_product_term_to_df(term_a, term_b)
-        for term in self.effect_modifiers:
-            self.adjustment_set.add(term)
-
-        self.product_terms = product_terms
+        self.product_terms = []
         self.square_terms = []
         self.inverse_terms = []
         self.intercept = intercept
+
+        if product_terms:
+            for (term_a, term_b) in product_terms:
+                self.add_product_term_to_df(term_a, term_b)
+        for term in self.effect_modifiers:
+            self.adjustment_set.add(term)
 
     def add_modelling_assumptions(self):
         """
