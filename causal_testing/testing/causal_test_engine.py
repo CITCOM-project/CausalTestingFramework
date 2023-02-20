@@ -85,13 +85,10 @@ class CausalTestEngine:
                 causal_test_results = []
 
                 for test in tests:
-                    treatment_variable = test.treatment_variable
-                    treatment_value = test.treatment_value
-                    control_value = test.control_value
                     estimator = estimator_class(
-                        (treatment_variable.name,),
-                        treatment_value,
-                        control_value,
+                        (test.treatment_variable.name,),
+                        test.treatment_value,
+                        test.control_value,
                         minimal_adjustment_set,
                         (test.outcome_variable.name,),
                     )
