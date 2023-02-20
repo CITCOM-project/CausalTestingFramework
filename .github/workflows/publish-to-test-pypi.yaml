@@ -22,6 +22,7 @@ jobs:
           pip3 install .
           pip3 install .[pypi]
           pip3 install build
+          pip3 install setuptools_scm
       - name: Build Package
         run: |
           python -m build --no-isolation
