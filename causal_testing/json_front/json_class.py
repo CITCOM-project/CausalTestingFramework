@@ -1,3 +1,5 @@
+"""This module contains the JsonUtility class, details of using this class can be found here:
+https://causal-testing-framework.readthedocs.io/en/latest/json_front_end.html"""
 import argparse
 import json
 import logging
@@ -68,7 +70,6 @@ class JsonUtility(ABC):
         self.data_path = Path(data_path)
 
     def set_variables(self, inputs: dict, outputs: dict, metas: dict):
-
         """Populate the Causal Variables
         :param inputs:
         :param outputs:
@@ -137,9 +138,8 @@ class JsonUtility(ABC):
         return failures
 
     def _json_parse(self):
-
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
-        with open(self.json_path) as f:
+        with open(self.json_path, encoding="utf-8") as f:
             self.test_plan = json.load(f)
 
         self.data = pd.read_csv(self.data_path)
@@ -179,7 +179,10 @@ class JsonUtility(ABC):
 
         result_string = str()
         if causal_test_result.ci_low() and causal_test_result.ci_high():
-            result_string = f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  {causal_test_result.ci_high()}"
+            result_string = (
+                f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  "
+                f"{causal_test_result.ci_high()}"
+            )
         else:
             result_string = f"{causal_test_result.test_value.value} no confidence intervals"
         if f_flag:
@@ -218,7 +221,7 @@ class JsonUtility(ABC):
 
         return causal_test_engine, estimation_model
 
-    def add_modelling_assumptions(self, estimation_model: Estimator):
+    def add_modelling_assumptions(self, estimation_model: Estimator):  # pylint: disable=unused-argument
         """Optional abstract method where user functionality can be written to determine what assumptions are required
         for specific test cases
         :param estimation_model: estimator model instance for the current running test.

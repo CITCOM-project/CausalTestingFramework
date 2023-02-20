@@ -1,3 +1,6 @@
+"""This module contains the DataCollector abstract class, as well as its concrete extensions: ExperimentalDataCollector
+and ObservationalDataCollector"""
+
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -73,10 +76,7 @@ class DataCollector(ABC):
         size_diff = len(data) - len(satisfying_data)
         if size_diff > 0:
             logger.warning(
-                "Discarded %s/%s values due to constraint violations.\n" "For example%s",
-                size_diff,
-                len(data),
-                unsat_core,
+                f"Discarded {size_diff}/{len(data)} values due to constraint violations.\n For example {unsat_core}",
             )
         return satisfying_data
 
