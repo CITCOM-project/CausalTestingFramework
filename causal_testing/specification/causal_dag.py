@@ -1,7 +1,11 @@
+"""This module contains the CausalDAG class, as well as the functions list_all_min_sep and close_seperator"""
+
+from __future__ import annotations
+
 import logging
 from itertools import combinations
 from random import sample
-from typing import TypeVar, Union
+from typing import Union
 
 import networkx as nx
 
@@ -9,7 +13,6 @@ from .scenario import Scenario
 from .variable import Output
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
-CausalDAG = TypeVar("CausalDAG")
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +52,6 @@ def list_all_min_sep(
 
     # 4. Confirm that the connected component containing the treatment node is disjoint with the outcome node set
     if not treatment_connected_component_node_set.intersection(outcome_node_set):
-
         # 5. Update the treatment node set to the set of nodes in the connected component containing the treatment node
         treatment_node_set = treatment_connected_component_node_set
 
@@ -60,7 +62,6 @@ def list_all_min_sep(
 
         # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
         if treatment_node_set_neighbours.difference(outcome_node_set):
-
             # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
             node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
 
@@ -82,7 +83,6 @@ def list_all_min_sep(
                 outcome_node_set.union(node),
             )
         else:
-
             # 8. If all neighbours of the treatments nodes are in the outcome node set, return the set of treatment
             # node neighbours
             yield treatment_node_set_neighbours
@@ -352,10 +352,8 @@ class CausalDAG(nx.DiGraph):
                 proper_backdoor_graph, treatments, outcomes, smaller_adjustment_set
             ):
                 logger.info(
-                    "Z=%s is not minimal because Z'=Z\\{{'%s'}}=" "%s is also a valid adjustment set.",
-                    adjustment_set,
-                    variable,
-                    smaller_adjustment_set,
+                    f"Z={adjustment_set} is not minimal because Z'=Z\\{variable} = {smaller_adjustment_set} is also a"
+                    f"valid adjustment set.",
                 )
                 return False
 
@@ -466,7 +464,7 @@ class CausalDAG(nx.DiGraph):
         """
         if isinstance(scenario.variables[node], Output):
             return True
-        return any([self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)])
+        return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
 
     def identification(self, base_test_case):
         """Identify and return the minimum adjustment set

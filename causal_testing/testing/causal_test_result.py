@@ -1,3 +1,6 @@
+"""This module contains the CausalTestResult class, which is a container for the results of a causal test, and the
+TestValue dataclass.
+"""
 from typing import Any, Union
 from dataclasses import dataclass
 
@@ -19,8 +22,8 @@ class CausalTestResult:
 
     def __init__(
         self,
-        treatment: tuple,
-        outcome: tuple,
+        treatment: Variable,
+        outcome: Variable,
         treatment_value: Union[int, float, str],
         control_value: Union[int, float, str],
         adjustment_set: set,
@@ -60,6 +63,9 @@ class CausalTestResult:
         return base_str + confidence_str
 
     def to_dict(self):
+        """Return result contents as a dictionary
+        :return: Dictionary containing contents of causal_test_result
+        """
         base_dict = {
             "treatment": self.treatment[0],
             "control_value": self.control_value,

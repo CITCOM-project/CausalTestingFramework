@@ -1,3 +1,6 @@
+"""This module contains the Intervention class, which intervenes on an input configuration"""
+
+
 class Intervention:
     """
     An intervention is an object which manipulates the input configuration of the scenario-under-test. It must define

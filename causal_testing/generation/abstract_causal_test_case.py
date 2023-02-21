@@ -1,10 +1,14 @@
+"""This module contains the class AbstractCausalTestCase, which generates concrete test cases"""
+import itertools
 import logging
+from enum import Enum
+from typing import Iterable
 
 import lhsmdu
 import pandas as pd
 import z3
 from scipy import stats
-import itertools
+
 
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Variable
@@ -12,7 +16,6 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
 
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +63,9 @@ class AbstractCausalTestCase:
         )
         return f"When we apply intervention {self.intervention_constraints}, {outcome_string}"
 
-    def datapath(self):
+    def datapath(self) -> str:
+        """Create and return the sanitised data path"""
+
         def sanitise(string):
             return "".join([x for x in string if x.isalnum()])
 
@@ -101,25 +106,7 @@ class AbstractCausalTestCase:
             samples[var.name] = lhsmdu.inverseTransformSample(var.distribution, samples[var.name])
 
         for index, row in samples.iterrows():
-            optimizer = z3.Optimize()
-            for c in self.scenario.constraints:
-                optimizer.assert_and_track(c, str(c))
-            for c in self.intervention_constraints:
-                optimizer.assert_and_track(c, str(c))
-
-            for v in run_columns:
-                optimizer.add_soft(
-                    self.scenario.variables[v].z3
-                    == self.scenario.variables[v].z3_val(self.scenario.variables[v].z3, row[v])
-                )
-
-            if optimizer.check() == z3.unsat:
-                logger.warning(
-                    "Satisfiability of test case was unsat.\n" "Constraints \n %s \n Unsat core %s",
-                    optimizer,
-                    optimizer.unsat_core(),
-                )
-            model = optimizer.model()
+            model = self._optimizer_model(run_columns, row)
 
             base_test_case = BaseTestCase(
                 treatment_variable=self.treatment_variable,
@@ -146,7 +133,7 @@ class AbstractCausalTestCase:
                         + f"{constraints}\nUsing value {v.cast(model[v.z3])} instead in test\n{concrete_test}"
                     )
 
-            if not any([vars(t) == vars(concrete_test) for t in concrete_tests]):
+            if not any((vars(t) == vars(concrete_test) for t in concrete_tests)):
                 concrete_tests.append(concrete_test)
                 # Control run
                 control_run = {
@@ -197,12 +184,12 @@ class AbstractCausalTestCase:
 
         pre_break = False
         for i in range(hard_max):
-            concrete_tests_, runs_ = self._generate_concrete_tests(sample_size, rct, seed + i)
-            for t_ in concrete_tests_:
-                if not any([vars(t_) == vars(t) for t in concrete_tests]):
-                    concrete_tests.append(t_)
-            runs = pd.concat([runs, runs_])
-            assert concrete_tests_ not in concrete_tests, "Duplicate entries unlikely unless something went wrong"
+            concrete_tests_temp, runs_temp = self._generate_concrete_tests(sample_size, rct, seed + i)
+            for test in concrete_tests_temp:
+                if not any((vars(test) == vars(t) for t in concrete_tests)):
+                    concrete_tests.append(test)
+            runs = pd.concat([runs, runs_temp])
+            assert concrete_tests_temp not in concrete_tests, "Duplicate entries unlikely unless something went wrong"
 
             control_configs = pd.DataFrame([{test.treatment_variable: test.control_value} for test in concrete_tests])
             ks_stats = {
@@ -230,7 +217,7 @@ class AbstractCausalTestCase:
             control_values = [test.control_value for test in concrete_tests]
             treatment_values = [test.treatment_value for test in concrete_tests]
 
-            if self.treatment_variable.datatype is bool and set([(True, False), (False, True)]).issubset(
+            if self.treatment_variable.datatype is bool and {(True, False), (False, True)}.issubset(
                 set(zip(control_values, treatment_values))
             ):
                 pre_break = True
@@ -244,7 +231,7 @@ class AbstractCausalTestCase:
             ).issubset(zip(control_values, treatment_values)):
                 pre_break = True
                 break
-            elif target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
+            if target_ks_score and all((stat <= target_ks_score for stat in ks_stats.values())):
                 pre_break = True
                 break
 
@@ -256,3 +243,30 @@ class AbstractCausalTestCase:
                 len(concrete_tests),
             )
         return concrete_tests, runs
+
+    def _optimizer_model(self, run_columns: Iterable[str], row: pd.core.series) -> z3.Optimize:
+        """
+        :param run_columns: A sorted list of Variable names from the scenario variables
+        :param row: A pandas Series containing a row from the Samples dataframe
+        :return: z3 optimize model with constraints tracked and soft constraints added
+        :rtype: z3.Optimize
+        """
+        optimizer = z3.Optimize()
+        for c in self.scenario.constraints:
+            optimizer.assert_and_track(c, str(c))
+        for c in self.intervention_constraints:
+            optimizer.assert_and_track(c, str(c))
+
+        for v in run_columns:
+            optimizer.add_soft(
+                self.scenario.variables[v].z3
+                == self.scenario.variables[v].z3_val(self.scenario.variables[v].z3, row[v])
+            )
+
+        if optimizer.check() == z3.unsat:
+            logger.warning(
+                f"Satisfiability of test case was unsat.\n"
+                f"Constraints \n {optimizer} \n Unsat core {optimizer.unsat_core()}",
+            )
+        model = optimizer.model()
+        return model
