@@ -543,6 +543,59 @@ class LinearRegressionEstimator(Estimator):
         return [ci_low.values[0], ci_high.values[0]]
 
 
+class InstrumentalVariableEstimator(Estimator):
+    """
+    Carry out estimation using instrumental variable adjustment rather than conventional adjustment. This means we do
+    not need to observe all confounders in order to adjust for them. A key assumption here is linearity.
+    """
+
+    def __init__(
+        self,
+        treatment: tuple,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: tuple,
+        instrument: str,
+        df: pd.DataFrame = None,
+        intercept: int = 1,
+    ):
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, None)
+        self.intercept = intercept
+        self.model = None
+        self.instrument = instrument
+
+    def add_modelling_assumptions(self):
+        """
+        Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
+        must hold if the resulting causal inference is to be considered valid.
+        """
+        self.modelling_assumptions += """The instrument and the treatment, and the treatment and the outcome must be
+        related linearly in the form Y = aX + b."""
+        self.modelling_assumptions += """The three IV conditions must hold
+            (i) Instrument is associated with treatment
+            (ii) Instrument does not affect outcome except through its potential effect on treatment
+            (iii) Instrument and outcome do not share causes
+        """
+
+    def estimate_coefficient(self):
+        """
+        Estimate the linear regression coefficient of the treatment on the outcome.
+        """
+
+        # Estimate the total effect of instrument I on outcome Y = abI + c1
+        ab = sm.OLS(self.df[self.outcome], self.df[[self.instrument]]).fit().params[self.instrument]
+
+        # Estimate the direct effect of instrument I on treatment X = aI + c1
+        a = sm.OLS(self.df[self.treatment], self.df[[self.instrument]]).fit().params[self.instrument]
+
+        # Estimate the coefficient of I on X by cancelling
+        return ab / a
+
+    def estimate_ate(self):
+        return (self.treatment_value - self.control_value) * self.estimate_coefficient(), (None, None)
+
+
 class CausalForestEstimator(Estimator):
     """A causal random forest estimator is a non-parametric estimator which recursively partitions the covariate space
     to learn a low-dimensional representation of treatment effect heterogeneity. This form of estimator is best suited

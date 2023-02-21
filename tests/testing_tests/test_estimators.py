@@ -6,6 +6,7 @@ from causal_testing.testing.estimators import (
     LinearRegressionEstimator,
     CausalForestEstimator,
     LogisticRegressionEstimator,
+    InstrumentalVariableEstimator,
 )
 from causal_testing.specification.variable import Input
 
@@ -108,6 +109,34 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         logistic_regression_estimator = LogisticRegressionEstimator(("length_in",), 65, 55, set(), ("completed",), df)
         odds = logistic_regression_estimator.estimate_unit_odds_ratio()
         self.assertEqual(round(odds, 4), 0.8948)
+
+
+class TestInstrumentalVariableEstimator(unittest.TestCase):
+    """
+    Test the instrumental variable estimator.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        Z = np.linspace(0, 10)
+        X = 2 * Z
+        Y = 2 * X
+        cls.df = pd.DataFrame({"Z": Z, "X": X, "Y": Y})
+
+    def test_estimate_coefficient(self):
+        """
+        Test we get the correct coefficient.
+        """
+        iv_estimator = InstrumentalVariableEstimator(
+            treatment="X",
+            treatment_value=None,
+            control_value=None,
+            adjustment_set=set(),
+            outcome="Y",
+            instrument="Z",
+            df=self.df,
+        )
+        self.assertEqual(iv_estimator.estimate_coefficient(), 2)
 
 
 class TestLinearRegressionEstimator(unittest.TestCase):
