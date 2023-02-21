@@ -47,9 +47,9 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
     past_execution_df = pd.read_csv(observational_data_path)
     _, causal_test_engine, causal_test_case = engine_setup(observational_data_path)
 
-    linear_regression_estimator = LinearRegressionEstimator(('beta',), 0.032, 0.016,
+    linear_regression_estimator = LinearRegressionEstimator('beta', 0.032, 0.016,
                                                             {'avg_age', 'contacts'},  # We use custom adjustment set
-                                                            ('cum_infections',),
+                                                            'cum_infections',
                                                             df=past_execution_df)
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
@@ -57,9 +57,9 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
     causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
 
     # Repeat for association estimate (no adjustment)
-    no_adjustment_linear_regression_estimator = LinearRegressionEstimator(('beta',), 0.032, 0.016,
+    no_adjustment_linear_regression_estimator = LinearRegressionEstimator('beta', 0.032, 0.016,
                                                                           set(),
-                                                                          ('cum_infections',),
+                                                                          'cum_infections',
                                                                           df=past_execution_df)
     no_adjustment_linear_regression_estimator.add_squared_term_to_df('beta')
     association_test_result = causal_test_engine.execute_test(no_adjustment_linear_regression_estimator, causal_test_case, 'ate')
@@ -79,9 +79,9 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
     # Repeat causal inference after deleting all rows with treatment value to obtain counterfactual inferences
     if simulate_counterfactuals:
         counterfactual_past_execution_df = past_execution_df[past_execution_df['beta'] != 0.032]
-        counterfactual_linear_regression_estimator = LinearRegressionEstimator(('beta',), 0.032, 0.016,
+        counterfactual_linear_regression_estimator = LinearRegressionEstimator('beta', 0.032, 0.016,
                                                                                {'avg_age', 'contacts'},
-                                                                               ('cum_infections',),
+                                                                               'cum_infections',
                                                                                df=counterfactual_past_execution_df)
         counterfactual_linear_regression_estimator.add_squared_term_to_df('beta')
         counterfactual_causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
