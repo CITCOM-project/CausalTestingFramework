@@ -431,8 +431,6 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         self.model = model
 
-
-
         x = pd.DataFrame(columns=self.df.columns)
         x[self.treatment] = [self.treatment_value, self.control_value]
         x["Intercept"] = 1#self.intercept
@@ -532,7 +530,6 @@ class LinearRegressionEstimator(Estimator):
                 )
         # model = sm.OLS(outcome_col, treatment_and_adjustments_cols).fit()
         model = smf.ols(formula=self.formula, data=self.df).fit()
-        print(model.summary())
         return model
 
     def _get_confidence_intervals(self, model):

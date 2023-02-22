@@ -67,8 +67,6 @@ class TestJsonClass(unittest.TestCase):
 
     def test_setup_modelling_scenario(self):
         self.json_class.setup()
-        print(type(self.json_class.modelling_scenario))
-        print(self.json_class.modelling_scenario)
         self.assertIsInstance(self.json_class.modelling_scenario, Scenario)
 
     def test_setup_causal_specification(self):

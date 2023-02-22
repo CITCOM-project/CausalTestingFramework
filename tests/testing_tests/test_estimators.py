@@ -200,11 +200,12 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df,
-        formula="""wt82_71 ~ qsmk +
-                             age + np.power(age, 2) +
-                             wt71 + np.power(wt71, 2) +
-                             smokeintensity + np.power(smokeintensity, 2) +
-                             smokeyrs + np.power(smokeyrs, 2) +
+        formula=f"""wt82_71 ~ qsmk +
+                             {'+'.join(sorted(list(covariates)))} +
+                             np.power(age, 2) +
+                             np.power(wt71, 2) +
+                             np.power(smokeintensity, 2) +
+                             np.power(smokeyrs, 2) +
                              (qsmk * smokeintensity)""")
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # terms_to_product = [("qsmk", "smokeintensity")]
@@ -215,7 +216,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 
         model = linear_regression_estimator._run_linear_regression()
         self.assertEqual(round(model.params["qsmk"], 1), 2.6)
-        self.assertEqual(round(model.params["qsmk*smokeintensity"], 2), 0.05)
+        self.assertEqual(round(model.params["qsmk:smokeintensity"], 2), 0.05)
 
     def test_program_15_no_interaction(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
