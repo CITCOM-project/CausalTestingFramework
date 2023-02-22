@@ -9,6 +9,7 @@ import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from econml.dml import CausalForestDML
+from patsy import dmatrix
 
 from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
@@ -314,7 +315,7 @@ class LinearRegressionEstimator(Estimator):
             self.formula = formula
         else:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(((terms)))} + Intercept"
+            self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
 
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
@@ -330,53 +331,53 @@ class LinearRegressionEstimator(Estimator):
             "do not need to be linear."
         )
 
-    def add_squared_term_to_df(self, term_to_square: str):
-        """Add a squared term to the linear regression model and df.
+    # def add_squared_term_to_df(self, term_to_square: str):
+    #     """Add a squared term to the linear regression model and df.
+    #
+    #     This enables the user to capture curvilinear relationships with a linear regression model, not just straight
+    #     lines, while automatically adding the modelling assumption imposed by the addition of this term.
+    #
+    #     :param term_to_square: The term (column in data and variable in DAG) which is to be squared.
+    #     """
+    #     new_term = str(term_to_square) + "^2"
+    #     self.df[new_term] = self.df[term_to_square] ** 2
+    #     self.adjustment_set.add(new_term)
+    #     self.modelling_assumptions += (
+    #         f"Relationship between {self.treatment} and {self.outcome} varies quadratically" f"with {term_to_square}."
+    #     )
+    #     self.square_terms.append(term_to_square)
 
-        This enables the user to capture curvilinear relationships with a linear regression model, not just straight
-        lines, while automatically adding the modelling assumption imposed by the addition of this term.
+    # def add_inverse_term_to_df(self, term_to_invert: str):
+    #     """Add an inverse term to the linear regression model and df.
+    #
+    #     This enables the user to capture curvilinear relationships with a linear regression model, not just straight
+    #     lines, while automatically adding the modelling assumption imposed by the addition of this term.
+    #
+    #     :param term_to_square: The term (column in data and variable in DAG) which is to be squared.
+    #     """
+    #     new_term = "1/" + str(term_to_invert)
+    #     self.df[new_term] = 1 / self.df[term_to_invert]
+    #     self.adjustment_set.add(new_term)
+    #     self.modelling_assumptions += (
+    #         f"Relationship between {self.treatment} and {self.outcome} varies inversely" f"with {term_to_invert}."
+    #     )
+    #     self.inverse_terms.append(term_to_invert)
 
-        :param term_to_square: The term (column in data and variable in DAG) which is to be squared.
-        """
-        new_term = str(term_to_square) + "^2"
-        self.df[new_term] = self.df[term_to_square] ** 2
-        self.adjustment_set.add(new_term)
-        self.modelling_assumptions += (
-            f"Relationship between {self.treatment} and {self.outcome} varies quadratically" f"with {term_to_square}."
-        )
-        self.square_terms.append(term_to_square)
-
-    def add_inverse_term_to_df(self, term_to_invert: str):
-        """Add an inverse term to the linear regression model and df.
-
-        This enables the user to capture curvilinear relationships with a linear regression model, not just straight
-        lines, while automatically adding the modelling assumption imposed by the addition of this term.
-
-        :param term_to_square: The term (column in data and variable in DAG) which is to be squared.
-        """
-        new_term = "1/" + str(term_to_invert)
-        self.df[new_term] = 1 / self.df[term_to_invert]
-        self.adjustment_set.add(new_term)
-        self.modelling_assumptions += (
-            f"Relationship between {self.treatment} and {self.outcome} varies inversely" f"with {term_to_invert}."
-        )
-        self.inverse_terms.append(term_to_invert)
-
-    def add_product_term_to_df(self, term_a: str, term_b: str):
-        """Add a product term to the linear regression model and df.
-
-        This enables the user to capture interaction between a pair of variables in the model. In other words, while
-        each covariate's contribution to the mean is assumed to be independent of the other covariates, the pair of
-        product terms term_a*term_b a are restricted to vary linearly with each other.
-
-        :param term_a: The first term of the product term.
-        :param term_b: The second term of the product term.
-        """
-        new_term = str(term_a) + "*" + str(term_b)
-        self.df[new_term] = self.df[term_a] * self.df[term_b]
-        self.adjustment_set.add(new_term)
-        self.modelling_assumptions += f"{term_a} and {term_b} vary linearly with each other."
-        self.product_terms.append((term_a, term_b))
+    # def add_product_term_to_df(self, term_a: str, term_b: str):
+    #     """Add a product term to the linear regression model and df.
+    #
+    #     This enables the user to capture interaction between a pair of variables in the model. In other words, while
+    #     each covariate's contribution to the mean is assumed to be independent of the other covariates, the pair of
+    #     product terms term_a*term_b a are restricted to vary linearly with each other.
+    #
+    #     :param term_a: The first term of the product term.
+    #     :param term_b: The second term of the product term.
+    #     """
+    #     new_term = str(term_a) + "*" + str(term_b)
+    #     self.df[new_term] = self.df[term_a] * self.df[term_b]
+    #     self.adjustment_set.add(new_term)
+    #     self.modelling_assumptions += f"{term_a} and {term_b} vary linearly with each other."
+    #     self.product_terms.append((term_a, term_b))
 
     def estimate_unit_ate(self) -> float:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
@@ -430,19 +431,16 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         self.model = model
 
-        x = pd.DataFrame()
+
+
+        x = pd.DataFrame(columns=self.df.columns)
         x[self.treatment] = [self.treatment_value, self.control_value]
         x["Intercept"] = 1#self.intercept
         for k, v in adjustment_config.items():
             x[k] = v
         for k, v in self.effect_modifiers.items():
             x[k] = v
-        for t in self.square_terms:
-            x[t + "^2"] = x[t] ** 2
-        for t in self.inverse_terms:
-            x["1/" + t] = 1 / x[t]
-        for a, b in self.product_terms:
-            x[f"{a}*{b}"] = x[a] * x[b]
+        x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
         for col in x:
             if str(x.dtypes[col]) == "object":
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
@@ -534,6 +532,7 @@ class LinearRegressionEstimator(Estimator):
                 )
         # model = sm.OLS(outcome_col, treatment_and_adjustments_cols).fit()
         model = smf.ols(formula=self.formula, data=self.df).fit()
+        print(model.summary())
         return model
 
     def _get_confidence_intervals(self, model):
