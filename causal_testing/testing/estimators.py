@@ -103,18 +103,23 @@ class LogisticRegressionEstimator(Estimator):
         outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
-        intercept: int = 1,
+        formula: str = None
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
+        self.model = None
+        if effect_modifiers is None:
+            effect_modifiers = []
+
+        if formula is not None:
+            # TODO: validate it
+            self.formula = formula
+        else:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
+
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
-
-        self.product_terms = []
-        self.square_terms = []
-        self.inverse_terms = []
-        self.intercept = intercept
-        self.model = None
 
     def add_modelling_assumptions(self):
         """
@@ -143,7 +148,7 @@ class LogisticRegressionEstimator(Estimator):
         logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
-        reduced_df["Intercept"] = self.intercept
+        reduced_df["Intercept"] = 1#self.intercept
 
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
         cols = [self.treatment]
@@ -155,35 +160,34 @@ class LogisticRegressionEstimator(Estimator):
                 treatment_and_adjustments_cols = pd.get_dummies(
                     treatment_and_adjustments_cols, columns=[col], drop_first=True
                 )
-        regression = sm.Logit(outcome_col, treatment_and_adjustments_cols)
-        model = regression.fit()
+        # regression = sm.Logit(outcome_col, treatment_and_adjustments_cols) # This one works
+        regression = smf.logit(formula=self.formula, data=self.df) # This one doesn't work
+        model = regression.fit(disp=0)
         return model
 
-    def estimate(self, data: pd.DataFrame) -> RegressionResultsWrapper:
+    def estimate(self, data: pd.DataFrame, adjustment_config=None) -> RegressionResultsWrapper:
         """add terms to the dataframe and estimate the outcome from the data
         :param data: A pandas dataframe containing execution data from the system-under-test.
 
         """
+        if adjustment_config is None:
+            adjustment_config = {}
+
         model = self._run_logistic_regression(data)
         self.model = model
 
-        x = pd.DataFrame()
+        x = pd.DataFrame(columns=self.df.columns)
+        x["Intercept"] = 1#self.intercept
         x[self.treatment] = [self.treatment_value, self.control_value]
-        x["Intercept"] = self.intercept
+        for k, v in adjustment_config.items():
+            x[k] = v
         for k, v in self.effect_modifiers.items():
             x[k] = v
-        for t in self.square_terms:
-            x[t + "^2"] = x[t] ** 2
-        for t in self.inverse_terms:
-            x["1/" + t] = 1 / x[t]
-        for a, b in self.product_terms:
-            x[f"{a}*{b}"] = x[a] * x[b]
-
+        x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
         for col in x:
             if str(x.dtypes[col]) == "object":
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
-        x = x[model.params.index]
-
+        # x = x[model.params.index]
         return model.predict(x)
 
     def estimate_control_treatment(self, bootstrap_size=100) -> tuple[pd.Series, pd.Series]:
