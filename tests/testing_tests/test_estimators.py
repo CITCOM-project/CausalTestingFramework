@@ -6,6 +6,7 @@ from causal_testing.testing.estimators import (
     LinearRegressionEstimator,
     CausalForestEstimator,
     LogisticRegressionEstimator,
+    InstrumentalVariableEstimator,
 )
 from causal_testing.specification.variable import Input
 
@@ -93,21 +94,49 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     def test_ate(self):
         df = self.scarf_df
-        logistic_regression_estimator = LogisticRegressionEstimator(("length_in",), 65, 55, set(), ("completed",), df)
+        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         ate, _ = logistic_regression_estimator.estimate_ate()
         self.assertEqual(round(ate, 4), -0.1987)
 
     def test_risk_ratio(self):
         df = self.scarf_df
-        logistic_regression_estimator = LogisticRegressionEstimator(("length_in",), 65, 55, set(), ("completed",), df)
+        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         rr, _ = logistic_regression_estimator.estimate_risk_ratio()
         self.assertEqual(round(rr, 4), 0.7664)
 
     def test_odds_ratio(self):
         df = self.scarf_df
-        logistic_regression_estimator = LogisticRegressionEstimator(("length_in",), 65, 55, set(), ("completed",), df)
+        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         odds = logistic_regression_estimator.estimate_unit_odds_ratio()
         self.assertEqual(round(odds, 4), 0.8948)
+
+
+class TestInstrumentalVariableEstimator(unittest.TestCase):
+    """
+    Test the instrumental variable estimator.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        Z = np.linspace(0, 10)
+        X = 2 * Z
+        Y = 2 * X
+        cls.df = pd.DataFrame({"Z": Z, "X": X, "Y": Y})
+
+    def test_estimate_coefficient(self):
+        """
+        Test we get the correct coefficient.
+        """
+        iv_estimator = InstrumentalVariableEstimator(
+            treatment="X",
+            treatment_value=None,
+            control_value=None,
+            adjustment_set=set(),
+            outcome="Y",
+            instrument="Z",
+            df=self.df,
+        )
+        self.assertEqual(iv_estimator.estimate_coefficient(), 2)
 
 
 class TestLinearRegressionEstimator(unittest.TestCase):
@@ -137,7 +166,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
-        linear_regression_estimator = LinearRegressionEstimator(("treatments",), 100, 90, set(), ("outcomes",), df)
+        linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df)
         linear_regression_estimator.add_squared_term_to_df("treatments")
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
@@ -169,7 +198,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator(("qsmk",), 1, 0, covariates, ("wt82_71",), df)
+        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df)
         terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         terms_to_product = [("qsmk", "smokeintensity")]
         for term_to_square in terms_to_square:
@@ -201,7 +230,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator(("qsmk",), 1, 0, covariates, ("wt82_71",), df)
+        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df)
         terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         for term_to_square in terms_to_square:
             linear_regression_estimator.add_squared_term_to_df(term_to_square)
@@ -229,7 +258,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator(("qsmk",), 1, 0, covariates, ("wt82_71",), df)
+        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df)
         terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         for term_to_square in terms_to_square:
             linear_regression_estimator.add_squared_term_to_df(term_to_square)
@@ -257,7 +286,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator(("qsmk",), 1, 0, covariates, ("wt82_71",), df)
+        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df)
         terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         for term_to_square in terms_to_square:
             linear_regression_estimator.add_squared_term_to_df(term_to_square)
@@ -300,7 +329,7 @@ class TestCausalForestEstimator(unittest.TestCase):
             "smokeyrs",
         }
         causal_forest = CausalForestEstimator(
-            ("qsmk",), 1, 0, covariates, ("wt82_71",), df, {Input("smokeintensity", int): 40}
+            "qsmk", 1, 0, covariates, "wt82_71", df, {Input("smokeintensity", int): 40}
         )
         ate, _ = causal_forest.estimate_ate()
         self.assertGreater(round(ate, 1), 2.5)
@@ -327,7 +356,7 @@ class TestCausalForestEstimator(unittest.TestCase):
             "smokeyrs",
         }
         causal_forest = CausalForestEstimator(
-            ("qsmk",), 1, 0, covariates, ("wt82_71",), smoking_intensity_5_and_40_df, {Input("smokeintensity", int): 40}
+            "qsmk", 1, 0, covariates, "wt82_71", smoking_intensity_5_and_40_df, {Input("smokeintensity", int): 40}
         )
         cates_df, _ = causal_forest.estimate_cates()
         self.assertGreater(cates_df["cate"].mean(), 0)

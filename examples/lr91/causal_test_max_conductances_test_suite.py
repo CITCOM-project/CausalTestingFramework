@@ -82,7 +82,7 @@ def causal_testing_sensitivity_analysis():
     for base_test_case in causal_test_results:
         # Place results of test_suite into format required for plotting
         results[base_test_case.treatment_variable.name] = \
-            {"ate": [result.ate for result in causal_test_results[base_test_case]['LinearRegressionEstimator']],
+            {"ate": [result.test_value.value for result in causal_test_results[base_test_case]['LinearRegressionEstimator']],
              "cis": [result.confidence_intervals for result in
                      causal_test_results[base_test_case]['LinearRegressionEstimator']]}
 
