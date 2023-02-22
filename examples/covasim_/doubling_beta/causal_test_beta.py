@@ -54,7 +54,6 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
                                                             formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts")
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    # linear_regression_estimator.add_squared_term_to_df('beta')
     causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
 
     # Repeat for association estimate (no adjustment)
@@ -63,7 +62,6 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
                                                                           'cum_infections',
                                                                           df=past_execution_df,
                                                                           formula="cum_infections ~ beta + np.power(beta, 2)")
-    # no_adjustment_linear_regression_estimator.add_squared_term_to_df('beta')
     association_test_result = causal_test_engine.execute_test(no_adjustment_linear_regression_estimator, causal_test_case, 'ate')
 
     # Store results for plotting
@@ -86,7 +84,6 @@ def doubling_beta_CATE_on_csv(observational_data_path: str, simulate_counterfact
                                                                                'cum_infections',
                                                                                df=counterfactual_past_execution_df,
                                                                                formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts")
-        # counterfactual_linear_regression_estimator.add_squared_term_to_df('beta')
         counterfactual_causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
         results_dict['counterfactual'] = {'ate': counterfactual_causal_test_result.test_value.value,
                                           'cis': counterfactual_causal_test_result.confidence_intervals,

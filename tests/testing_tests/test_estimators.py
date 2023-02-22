@@ -168,7 +168,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df, formula="outcomes ~ treatments + np.power(treatments, 2)")
-        # linear_regression_estimator.add_squared_term_to_df("treatments")
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
         self.assertEqual(
@@ -210,7 +209,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # terms_to_product = [("qsmk", "smokeintensity")]
         # for term_to_square in terms_to_square:
-        #     linear_regression_estimator.add_squared_term_to_df(term_to_square)
         # for term_a, term_b in terms_to_product:
         #     linear_regression_estimator.add_product_term_to_df(term_a, term_b)
 
@@ -242,7 +240,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)")
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
-        #     linear_regression_estimator.add_squared_term_to_df(term_to_square)
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_unit_ate()
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
@@ -271,7 +268,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)")
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
-        #     linear_regression_estimator.add_squared_term_to_df(term_to_square)
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate()
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
@@ -300,7 +296,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)")
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
-        #     linear_regression_estimator.add_squared_term_to_df(term_to_square)
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
             {k: self.nhefs_df.mean()[k] for k in covariates}
         )

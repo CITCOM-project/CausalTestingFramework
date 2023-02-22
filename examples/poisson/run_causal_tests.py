@@ -150,11 +150,7 @@ class MyJsonUtility(JsonUtility):
     def add_modelling_assumptions(self, estimation_model: Estimator):
         # Add squared intensity term as a modelling assumption if intensity is the treatment of the test
         if "intensity" in estimation_model.treatment[0]:
-            estimation_model.add_squared_term_to_df("intensity")
             estimation_model.intercept = 0
-        if isinstance(estimation_model, WidthHeightEstimator):
-            estimation_model.add_product_term_to_df("width", "intensity")
-            estimation_model.add_product_term_to_df("height", "intensity")
 
 
 if __name__ == "__main__":
