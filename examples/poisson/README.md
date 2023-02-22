@@ -7,5 +7,3 @@ To run this case study:
    (instructions are provided in the project README).
 2. Change directory to `causal_testing/examples/poisson`.
 3. Run the command `python run_causal_tests.py --data_path data.csv --dag_path dag.dot --json_path causal_tests.json`
-
-This should print a series of causal test results and produce two CSV files. `intensity_num_shapes_results_random_1000.csv` corresponds to table 1, and `width_num_shapes_results_random_1000.csv` relates to our findings regarding the relationship of width and `P_u`.
