@@ -7,7 +7,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+import statsmodels.formula.api as smf
 from econml.dml import CausalForestDML
+
 from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
@@ -36,11 +38,11 @@ class Estimator(ABC):
 
     def __init__(
         self,
-        treatment: tuple,
+        treatment: str,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
-        outcome: tuple,
+        outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
     ):
@@ -93,11 +95,11 @@ class LogisticRegressionEstimator(Estimator):
 
     def __init__(
         self,
-        treatment: tuple,
+        treatment: str,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
-        outcome: tuple,
+        outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
         intercept: int = 1,
@@ -292,27 +294,28 @@ class LinearRegressionEstimator(Estimator):
 
     def __init__(
         self,
-        treatment: tuple,
+        treatment: str,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
-        outcome: tuple,
+        outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
-        product_terms: list[tuple[Variable, Variable]] = None,
-        intercept: int = 1,
+        formula: str = None
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
-        self.product_terms = []
-        self.square_terms = []
-        self.inverse_terms = []
-        self.intercept = intercept
         self.model = None
+        if effect_modifiers is None:
+            effect_modifiers = []
 
-        if product_terms:
-            for term_a, term_b in product_terms:
-                self.add_product_term_to_df(term_a, term_b)
+        if formula is not None:
+            # TODO: validate it
+            self.formula = formula
+        else:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            self.formula = f"{outcome} ~ {'+'.join(((terms)))} + Intercept"
+
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
 
@@ -399,10 +402,10 @@ class LinearRegressionEstimator(Estimator):
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
 
         # This is a temporary hack
-        for t in self.square_terms:
-            individuals[t + "^2"] = individuals[t] ** 2
-        for a, b in self.product_terms:
-            individuals[f"{a}*{b}"] = individuals[a] * individuals[b]
+        # for t in self.square_terms:
+        #     individuals[t + "^2"] = individuals[t] ** 2
+        # for a, b in self.product_terms:
+        #     individuals[f"{a}*{b}"] = individuals[a] * individuals[b]
 
         # It is ABSOLUTELY CRITICAL that these go last, otherwise we can't index
         # the effect with "ate = t_test_results.effect[0]"
@@ -429,7 +432,7 @@ class LinearRegressionEstimator(Estimator):
 
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_value, self.control_value]
-        x["Intercept"] = self.intercept
+        x["Intercept"] = 1#self.intercept
         for k, v in adjustment_config.items():
             x[k] = v
         for k, v in self.effect_modifiers.items():
@@ -485,7 +488,7 @@ class LinearRegressionEstimator(Estimator):
         ), f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
         x = pd.DataFrame()
         x[self.treatment[0]] = [self.treatment_value, self.control_value]
-        x["Intercept"] = self.intercept
+        x["Intercept"] = 1#self.intercept
         for k, v in self.effect_modifiers.items():
             self.adjustment_set.add(k)
             x[k] = v
@@ -517,7 +520,7 @@ class LinearRegressionEstimator(Estimator):
         logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
-        reduced_df["Intercept"] = self.intercept
+        reduced_df["Intercept"] = 1#self.intercept
 
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
         cols = list(self.treatment)
@@ -529,8 +532,8 @@ class LinearRegressionEstimator(Estimator):
                 treatment_and_adjustments_cols = pd.get_dummies(
                     treatment_and_adjustments_cols, columns=[col], drop_first=True
                 )
-        regression = sm.OLS(outcome_col, treatment_and_adjustments_cols)
-        model = regression.fit()
+        # model = sm.OLS(outcome_col, treatment_and_adjustments_cols).fit()
+        model = smf.ols(formula=self.formula, data=self.df).fit()
         return model
 
     def _get_confidence_intervals(self, model):

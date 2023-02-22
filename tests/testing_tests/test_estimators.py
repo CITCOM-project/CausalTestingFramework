@@ -125,7 +125,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator(("treatments",), 100, 90, set(), ("outcomes",), df)
+        linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df)
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
 
@@ -348,7 +348,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
         x2 = Input("X2", float)
         lr_model = LinearRegressionEstimator(
-            ("X1",), 1, 0, {"X2"}, ("Y",), effect_modifiers={x2: 0}, product_terms=[("X1", "X2")], df=self.df
+            ("X1",), 1, 0, {"X2"}, ("Y",), effect_modifiers={x2: 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
         )
         test_results = lr_model.estimate_ate()
         ate = test_results[0]
