@@ -74,26 +74,22 @@ class CausalTestResult:
             "adjustment_set": self.adjustment_set,
             "test_value": self.test_value,
         }
-        if self.confidence_intervals:
+        if self.confidence_intervals and all(self.confidence_intervals):
             base_dict["ci_low"] = min(self.confidence_intervals)
             base_dict["ci_high"] = max(self.confidence_intervals)
         return base_dict
 
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""
-        if not self.confidence_intervals:
-            return None
-        if any([x is None for x in self.confidence_intervals]):
-            return None
-        return min(self.confidence_intervals)
+        if self.confidence_intervals and all(self.confidence_intervals):
+            return min(self.confidence_intervals)
+        return None
 
     def ci_high(self):
         """Return the higher bracket of the confidence intervals."""
-        if not self.confidence_intervals:
-            return None
-        if any([x is None for x in self.confidence_intervals]):
-            return None
-        return max(self.confidence_intervals)
+        if self.confidence_intervals and all(self.confidence_intervals):
+            return max(self.confidence_intervals)
+        return None
 
     def summary(self):
         """Summarise the causal test result as an intuitive sentence."""
