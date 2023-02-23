@@ -10,7 +10,7 @@ from typing import Any, TypeVar
 import lhsmdu
 from pandas import DataFrame
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String, DatatypeRef
+from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String
 
 # Declare type variable
 T = TypeVar("T")
@@ -76,7 +76,6 @@ class Variable(ABC):
     def __repr__(self):
         return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
 
-    # TODO: We're going to need to implement all the supported Z3 operations like this
     def __ge__(self, other: Any) -> BoolRef:
         """Create the Z3 expression `other >= self`.
 
@@ -167,8 +166,6 @@ class Variable(ABC):
             return val.as_string()
         if (isinstance(val, (float, int, bool))) and (self.datatype in (float, int, bool)):
             return self.datatype(val)
-        if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
-            return self.datatype(str(val))
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
