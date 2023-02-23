@@ -158,11 +158,7 @@ class CausalTestEngine:
 
             cates_df, confidence_intervals = estimator.estimate_cates()
             causal_test_result = CausalTestResult(
-                treatment=estimator.treatment,
-                outcome=estimator.outcome,
-                treatment_value=estimator.treatment_value,
-                control_value=estimator.control_value,
-                adjustment_set=estimator.adjustment_set,
+                estimator=estimator,
                 test_value=TestValue("ate", cates_df),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
@@ -171,11 +167,7 @@ class CausalTestEngine:
             logger.debug("calculating risk_ratio")
             risk_ratio, confidence_intervals = estimator.estimate_risk_ratio()
             causal_test_result = CausalTestResult(
-                treatment=estimator.treatment,
-                outcome=estimator.outcome,
-                treatment_value=estimator.treatment_value,
-                control_value=estimator.control_value,
-                adjustment_set=estimator.adjustment_set,
+                estimator=estimator,
                 test_value=TestValue("risk_ratio", risk_ratio),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
@@ -184,11 +176,7 @@ class CausalTestEngine:
             logger.debug("calculating ate")
             ate, confidence_intervals = estimator.estimate_ate()
             causal_test_result = CausalTestResult(
-                treatment=estimator.treatment,
-                outcome=estimator.outcome,
-                treatment_value=estimator.treatment_value,
-                control_value=estimator.control_value,
-                adjustment_set=estimator.adjustment_set,
+                estimator=estimator,
                 test_value=TestValue("ate", ate),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
@@ -199,11 +187,7 @@ class CausalTestEngine:
             logger.debug("calculating ate")
             ate, confidence_intervals = estimator.estimate_ate_calculated()
             causal_test_result = CausalTestResult(
-                treatment=estimator.treatment,
-                outcome=estimator.outcome,
-                treatment_value=estimator.treatment_value,
-                control_value=estimator.control_value,
-                adjustment_set=estimator.adjustment_set,
+                estimator=estimator,
                 test_value=TestValue("ate", ate),
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
