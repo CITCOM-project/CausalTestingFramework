@@ -559,13 +559,12 @@ class InstrumentalVariableEstimator(Estimator):
         instrument: str,
         df: pd.DataFrame = None,
         intercept: int = 1,
-        effect_modifiers: dict=None # Not used (yet?). Needed for compatibility
+        effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, None)
         self.intercept = intercept
         self.model = None
         self.instrument = instrument
-
 
     def add_modelling_assumptions(self):
         """
