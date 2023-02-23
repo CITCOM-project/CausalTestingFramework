@@ -360,3 +360,25 @@ class TestCausalForestEstimator(unittest.TestCase):
         )
         cates_df, _ = causal_forest.estimate_cates()
         self.assertGreater(cates_df["cate"].mean(), 0)
+
+
+class TestLinearRegressionInteraction(unittest.TestCase):
+    """Test linear regression for estimating effects involving interaction."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Y = 2X1 - 3X2 + 2*X1*X2 + 10
+        df = pd.DataFrame({"X1": np.random.uniform(-1000, 1000, 1000), "X2": np.random.uniform(-1000, 1000, 1000)})
+        df["Y"] = 2 * df["X1"] - 3 * df["X2"] + 2 * df["X1"] * df["X2"] + 10
+        cls.df = df
+        print(df)
+
+    def test_X1_effect(self):
+        """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
+        x2 = Input("X2", float)
+        lr_model = LinearRegressionEstimator(
+            ("X1",), 1, 0, {"X2"}, ("Y",), effect_modifiers={x2: 0}, product_terms=[("X1", "X2")], df=self.df
+        )
+        test_results = lr_model.estimate_ate()
+        ate = test_results[0]
+        self.assertAlmostEqual(ate, 2.0)
