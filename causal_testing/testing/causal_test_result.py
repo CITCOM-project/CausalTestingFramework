@@ -1,9 +1,10 @@
 """This module contains the CausalTestResult class, which is a container for the results of a causal test, and the
 TestValue dataclass.
 """
-from typing import Any, Union
+from typing import Any
 from dataclasses import dataclass
 
+from causal_testing.testing.estimators import Estimator
 from causal_testing.specification.variable import Variable
 
 
@@ -22,21 +23,14 @@ class CausalTestResult:
 
     def __init__(
         self,
-        treatment: Variable,
-        outcome: Variable,
-        treatment_value: Union[int, float, str],
-        control_value: Union[int, float, str],
-        adjustment_set: set,
+        estimator: Estimator,
         test_value: TestValue,
         confidence_intervals: [float, float] = None,
         effect_modifier_configuration: {Variable: Any} = None,
     ):
-        self.treatment = treatment
-        self.outcome = outcome
-        self.treatment_value = treatment_value
-        self.control_value = control_value
-        if adjustment_set:
-            self.adjustment_set = adjustment_set
+        self.estimator = estimator
+        if estimator.adjustment_set:
+            self.adjustment_set = estimator.adjustment_set
         else:
             self.adjustment_set = set()
         self.test_value = test_value
@@ -50,10 +44,10 @@ class CausalTestResult:
     def __str__(self):
         base_str = (
             f"Causal Test Result\n==============\n"
-            f"Treatment: {self.treatment[0]}\n"
-            f"Control value: {self.control_value}\n"
-            f"Treatment value: {self.treatment_value}\n"
-            f"Outcome: {self.outcome[0]}\n"
+            f"Treatment: {self.estimator.treatment[0]}\n"
+            f"Control value: {self.estimator.control_value}\n"
+            f"Treatment value: {self.estimator.treatment_value}\n"
+            f"Outcome: {self.estimator.outcome[0]}\n"
             f"Adjustment set: {self.adjustment_set}\n"
             f"{self.test_value.type}: {self.test_value.value}\n"
         )
@@ -67,10 +61,10 @@ class CausalTestResult:
         :return: Dictionary containing contents of causal_test_result
         """
         base_dict = {
-            "treatment": self.treatment[0],
-            "control_value": self.control_value,
-            "treatment_value": self.treatment_value,
-            "outcome": self.outcome[0],
+            "treatment": self.estimator.treatment[0],
+            "control_value": self.estimator.control_value,
+            "treatment_value": self.estimator.treatment_value,
+            "outcome": self.estimator.outcome[0],
             "adjustment_set": self.adjustment_set,
             "test_value": self.test_value,
         }
@@ -94,7 +88,7 @@ class CausalTestResult:
     def summary(self):
         """Summarise the causal test result as an intuitive sentence."""
         print(
-            f"The causal effect of changing {self.treatment[0]} = {self.control_value} to "
-            f"{self.treatment[0]}' = {self.treatment_value} is {self.test_value.value} (95% confidence intervals: "
-            f"{self.confidence_intervals})."
+            f"The causal effect of changing {self.estimator.treatment[0]} = {self.estimator.control_value} to "
+            f"{self.estimator.treatment[0]}' = {self.estimator.treatment_value} is {self.test_value.value}"
+            f"(95% confidence intervals: {self.confidence_intervals})."
         )
