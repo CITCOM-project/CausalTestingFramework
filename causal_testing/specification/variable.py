@@ -14,10 +14,10 @@ from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String
 
 # Declare type variable
 T = TypeVar("T")
-Z3 = TypeVar("Z3")
+z3 = TypeVar("Z3")
 
 
-def z3_types(datatype: T) -> Z3:
+def z3_types(datatype: T) -> z3:
     """Cast datatype to Z3 datatype
     :param datatype: python datatype to be cast
     :return: Type name compatible with Z3 library
