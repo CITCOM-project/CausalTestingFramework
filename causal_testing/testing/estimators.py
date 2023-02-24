@@ -569,7 +569,6 @@ class CausalForestEstimator(Estimator):
         reduced_df = reduced_df[~missing_rows]
 
         # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
-        # TODO: Is it right to ignore the adjustment set if we have effect modifiers?
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:

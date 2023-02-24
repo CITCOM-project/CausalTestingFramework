@@ -59,11 +59,7 @@ class JsonUtility(ABC):
         :param dag_path: string path representation to the .dot file containing the Causal DAG
         :param data_path: string path representation to the data file
         """
-        self.paths = JsonClassPaths(
-            json_path=json_path,
-            dag_path=dag_path,
-            data_path=data_path
-        )
+        self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_path=data_path)
 
     def set_variables(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
         """Populate the Causal Variables
@@ -72,11 +68,8 @@ class JsonUtility(ABC):
         :param metas:
         """
 
-        self.variables = CausalVariables(
-            inputs=inputs,
-            outputs=outputs,
-            metas=metas
-                                          )
+        self.variables = CausalVariables(inputs=inputs, outputs=outputs, metas=metas)
+
     def setup(self):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
         self.modelling_scenario = Scenario(self.variables.inputs + self.variables.outputs + self.variables.metas, None)
@@ -286,12 +279,7 @@ class JsonClassPaths:
     dag_path: Path
     data_path: Path
 
-    def __init__(
-            self,
-            json_path: str,
-            dag_path: str,
-            data_path: str
-    ):
+    def __init__(self, json_path: str, dag_path: str, data_path: str):
         self.json_path = Path(json_path)
         self.dag_path = Path(dag_path)
         self.data_path = Path(data_path)
@@ -307,12 +295,7 @@ class CausalVariables:
     outputs: list[Output]
     metas: list[Meta]
 
-    def __init__(
-            self,
-            inputs: list[dict],
-            outputs: list[dict],
-            metas: list[dict]
-    ):
+    def __init__(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
         self.inputs = [Input(i["name"], i["type"], i["distribution"]) for i in inputs]
         self.outputs = [Output(i["name"], i["type"], i.get("distribution", None)) for i in outputs]
         self.metas = [Meta(i["name"], i["type"], i["populate"]) for i in metas] if metas else []
