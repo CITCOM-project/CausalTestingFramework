@@ -60,7 +60,7 @@ class CausalTestEngine:
                 causal_test_result objects
         """
         if self.scenario_execution_data_df.empty:
-            raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
+            raise ValueError("No data has been loaded. Please call load_data prior to executing a causal test case.")
         test_suite_results = {}
         for edge in test_suite:
             print("edge: ")
@@ -75,7 +75,7 @@ class CausalTestEngine:
                 list(minimal_adjustment_set) + [edge.treatment_variable.name] + [edge.outcome_variable.name]
             )
             if self._check_positivity_violation(variables_for_positivity):
-                raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
+                raise ValueError("POSITIVITY VIOLATION -- Cannot proceed.")
 
             estimators = test_suite[edge]["estimators"]
             tests = test_suite[edge]["tests"]
@@ -122,7 +122,7 @@ class CausalTestEngine:
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
         if self.scenario_execution_data_df.empty:
-            raise Exception("No data has been loaded. Please call load_data prior to executing a causal test case.")
+            raise ValueError("No data has been loaded. Please call load_data prior to executing a causal test case.")
         if estimator.df is None:
             estimator.df = self.scenario_execution_data_df
         treatment_variable = causal_test_case.treatment_variable
@@ -138,7 +138,7 @@ class CausalTestEngine:
         variables_for_positivity = list(minimal_adjustment_set) + [treatment_variable.name] + [outcome_variable.name]
 
         if self._check_positivity_violation(variables_for_positivity):
-            raise Exception("POSITIVITY VIOLATION -- Cannot proceed.")
+            raise ValueError("POSITIVITY VIOLATION -- Cannot proceed.")
 
         causal_test_result = self._return_causal_test_results(estimate_type, estimator, causal_test_case)
         return causal_test_result

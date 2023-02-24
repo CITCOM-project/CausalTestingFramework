@@ -611,7 +611,7 @@ class CausalForestEstimator(Estimator):
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
-            raise Exception("CATE requires the user to define a set of effect modifiers.")
+            raise ValueError("CATE requires the user to define a set of effect modifiers.")
 
         if self.adjustment_set:
             confounders_df = reduced_df[list(self.adjustment_set)]
