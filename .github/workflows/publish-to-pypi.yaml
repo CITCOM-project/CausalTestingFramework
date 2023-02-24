@@ -1,5 +1,9 @@
 name: Publish python PyPI
 
+on:
+  push:
+    tags:
+      - v0.0.0
 jobs:
   build-release:
     name: Build and publish PyPI
