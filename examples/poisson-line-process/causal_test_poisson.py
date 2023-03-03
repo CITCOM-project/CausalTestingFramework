@@ -118,11 +118,11 @@ def test_intensity_num_shapes(
         )
     else:
         estimator = LinearRegressionEstimator(
-            treatment=[treatment],
+            treatment=treatment,
             control_value=causal_test_case.control_value,
             treatment_value=causal_test_case.treatment_value,
             adjustment_set=set(),
-            outcome=[outcome],
+            outcome=outcome,
             df=data,
             intercept=0,
             effect_modifiers=causal_test_case.effect_modifier_configuration,

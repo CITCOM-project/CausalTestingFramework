@@ -72,11 +72,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         causal_test_engine = CausalTestEngine(self.causal_specification, self.data_collector)
         causal_test_engine.scenario_execution_data_df.drop("A", axis=1, inplace=True)
         estimation_model = LinearRegressionEstimator(
-            ("A",),
+            "A",
             self.treatment_value,
             self.control_value,
             self.minimal_adjustment_set,
-            ("C",),
+            "C",
             self.causal_test_engine.scenario_execution_data_df,
         )
         with self.assertRaises(Exception):
@@ -117,11 +117,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         """Check that executing the causal test case returns the correct results for the dummy data using a causal
         forest estimator."""
         estimation_model = CausalForestEstimator(
-            ("A",),
+            "A",
             self.treatment_value,
             self.control_value,
             self.minimal_adjustment_set,
-            ("C",),
+            "C",
             self.causal_test_engine.scenario_execution_data_df,
         )
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
@@ -139,11 +139,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
         estimation_model = LinearRegressionEstimator(
-            ("A",),
+            "A",
             self.treatment_value,
             self.control_value,
             self.minimal_adjustment_set,
-            ("C",),
+            "C",
             self.causal_test_engine.scenario_execution_data_df,
         )
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
@@ -168,11 +168,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         self.treatment_value = 1
         self.control_value = 0
         estimation_model = LinearRegressionEstimator(
-            ("A",),
+            "A",
             self.treatment_value,
             self.control_value,
             minimal_adjustment_set,
-            ("C",),
+            "C",
             causal_test_engine.scenario_execution_data_df,
         )
         causal_test_result = causal_test_engine.execute_test(estimation_model, causal_test_case)
@@ -182,11 +182,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
         estimation_model = LinearRegressionEstimator(
-            ("D",),
+            "D",
             self.treatment_value,
             self.control_value,
             self.minimal_adjustment_set,
-            ("A",),
+            "A",
             self.causal_test_engine.scenario_execution_data_df,
         )
         causal_test_result = self.causal_test_engine.execute_test(
@@ -198,11 +198,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
         estimation_model = LinearRegressionEstimator(
-            ("D",),
+            "D",
             self.treatment_value,
             self.control_value,
             self.minimal_adjustment_set,
-            ("A",),
+            "A",
             self.causal_test_engine.scenario_execution_data_df,
         )
         with self.assertRaises(ValueError):
@@ -212,11 +212,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
         """Check that executing the causal test case returns the correct results for dummy data with a squared term
         using a linear regression estimator. C ~ 4*(A+2) + D + D^2"""
         estimation_model = LinearRegressionEstimator(
-            ("A",),
+            "A",
             self.treatment_value,
             self.control_value,
             self.minimal_adjustment_set,
-            ("C",),
+            "C",
             self.causal_test_engine.scenario_execution_data_df,
         )
         estimation_model.add_squared_term_to_df("D")
@@ -234,11 +234,11 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             "M"
         ]
         estimation_model = CausalForestEstimator(
-            ("A",),
+            "A",
             self.treatment_value,
             self.control_value,
             self.minimal_adjustment_set,
-            ("C",),
+            "C",
             self.causal_test_engine.scenario_execution_data_df,
             effect_modifiers={Input("M", int): None},
         )

@@ -89,11 +89,11 @@ class CausalTestEngine:
                     treatment_value = test.treatment_value
                     control_value = test.control_value
                     estimator = estimator_class(
-                        (treatment_variable.name,),
+                        treatment_variable.name,
                         treatment_value,
                         control_value,
                         minimal_adjustment_set,
-                        (test.outcome_variable.name,),
+                        test.outcome_variable.name,
                     )
                     if estimator.df is None:
                         estimator.df = self.scenario_execution_data_df
