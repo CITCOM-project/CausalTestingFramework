@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=45",
+    "setuptools>=64",
     "setuptools_scm[toml]>=6.2",
     "wheel"
     ]
@@ -46,8 +46,8 @@ build-backend = "setuptools.build_meta"
         Documentation = "https://causal-testing-framework.readthedocs.io/"
         Source = "https://github.com/CITCOM-project/CausalTestingFramework"
 
-[tool.setuptools.packages.find]
-where = ["causal_testing"]
+[tool.setuptools.packages]
+find = {}
 
 [tool.setuptools_scm]
 
