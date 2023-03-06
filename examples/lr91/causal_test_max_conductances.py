@@ -125,9 +125,9 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
 
     # 9. Obtain the minimal adjustment set from the causal DAG
     minimal_adjustment_set = causal_dag.identification(base_test_case)
-    linear_regression_estimator = LinearRegressionEstimator((treatment_var.name,), treatment_val, control_val,
+    linear_regression_estimator = LinearRegressionEstimator(treatment_var.name, treatment_val, control_val,
                                                             minimal_adjustment_set,
-                                                            ('APD90',)
+                                                            'APD90'
                                                             )
 
     # 10. Run the causal test and print results

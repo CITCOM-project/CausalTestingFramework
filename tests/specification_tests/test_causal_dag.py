@@ -29,6 +29,38 @@ class TestCausalDAGIssue90(unittest.TestCase):
         remove_temp_dir_if_existent()
 
 
+class TestIVAssumptions(unittest.TestCase):
+    def setUp(self) -> None:
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = """digraph G { I -> X; X -> Y; U -> X; U -> Y;}"""
+        f = open(self.dag_dot_path, "w")
+        f.write(dag_dot)
+        f.close()
+
+    def test_valid_iv(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        self.assertTrue(causal_dag.check_iv_assumptions("X", "Y", "I"))
+
+    def test_unrelated_instrument(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.graph.remove_edge("I", "X")
+        with self.assertRaises(ValueError):
+            causal_dag.check_iv_assumptions("X", "Y", "I")
+
+    def test_direct_cause(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.graph.add_edge("I", "Y")
+        with self.assertRaises(ValueError):
+            causal_dag.check_iv_assumptions("X", "Y", "I")
+
+    def test_common_cause(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.graph.add_edge("U", "I")
+        with self.assertRaises(ValueError):
+            causal_dag.check_iv_assumptions("X", "Y", "I")
+
+
 class TestCausalDAG(unittest.TestCase):
 
     """

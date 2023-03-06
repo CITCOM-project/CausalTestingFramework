@@ -199,12 +199,12 @@ class JsonUtility(ABC):
         treatment_var = causal_test_case.treatment_variable
         minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
         estimation_model = estimator(
-            (treatment_var.name,),
-            causal_test_case.treatment_value,
-            causal_test_case.control_value,
-            minimal_adjustment_set,
-            (causal_test_case.outcome_variable.name,),
-            causal_test_engine.scenario_execution_data_df,
+            treatment=treatment_var.name,
+            treatment_value=causal_test_case.treatment_value,
+            control_value=causal_test_case.control_value,
+            adjustment_set=minimal_adjustment_set,
+            outcome=causal_test_case.outcome_variable.name,
+            df=causal_test_engine.scenario_execution_data_df,
             effect_modifiers=causal_test_case.effect_modifier_configuration,
         )
 

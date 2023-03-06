@@ -138,6 +138,36 @@ class CausalDAG(nx.DiGraph):
         if not self.is_acyclic():
             raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
+    def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
+        """
+        Checks the three instrumental variable assumptions, raising a
+        ValueError if any are violated.
+
+        :return Boolean True if the three IV assumptions hold.
+        """
+        # (i) Instrument is associated with treatment
+        if nx.d_separated(self.graph, {instrument}, {treatment}, set()):
+            raise ValueError(f"Instrument {instrument} is not associated with treatment {treatment} in the DAG")
+
+        # (ii) Instrument does not affect outcome except through its potential effect on treatment
+        if not all([treatment in path for path in nx.all_simple_paths(self.graph, source=instrument, target=outcome)]):
+            raise ValueError(
+                f"Instrument {instrument} affects the outcome {outcome} other than through the treatment {treatment}"
+            )
+
+        # (iii) Instrument and outcome do not share causes
+        if any(
+            [
+                cause
+                for cause in self.graph.nodes
+                if list(nx.all_simple_paths(self.graph, source=cause, target=instrument))
+                and list(nx.all_simple_paths(self.graph, source=cause, target=outcome))
+            ]
+        ):
+            raise ValueError(f"Instrument {instrument} and outcome {outcome} share common causes")
+
+        return True
+
     def add_edge(self, u_of_edge: Node, v_of_edge: Node, **attr):
         """Add an edge to the causal DAG.
 
