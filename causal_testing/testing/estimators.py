@@ -152,8 +152,7 @@ class LogisticRegressionEstimator(Estimator):
                 treatment_and_adjustments_cols = pd.get_dummies(
                     treatment_and_adjustments_cols, columns=[col], drop_first=True
                 )
-        regression = sm.Logit(outcome_col, treatment_and_adjustments_cols)
-        model = regression.fit()
+        model = sm.Logit(outcome_col, treatment_and_adjustments_cols).fit(disp=0)
         return model
 
     def estimate(self, data: pd.DataFrame) -> RegressionResultsWrapper:
