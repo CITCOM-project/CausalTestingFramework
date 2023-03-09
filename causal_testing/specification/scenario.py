@@ -143,6 +143,11 @@ class Scenario:
         return self.variables_of_type(Meta)
 
     def hidden_variables(self) -> set[Variable]:
+        """Get the set of hidden variables
+
+        :return The variables marked as hidden.
+        :rtype: {Variable}
+        """
         return {v for v in self.variables.values() if v.hidden}
 
     def add_variable(self, v: Variable) -> None:
