@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class CausalTestCase:
-    #pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
     """
     A CausalTestCase extends the information held in a BaseTestCase. As well as storing the treatment and outcome
     variables, a CausalTestCase stores the values of these variables. Also the outcome variable and value are
@@ -23,7 +23,7 @@ class CausalTestCase:
     """
 
     def __init__(
-        #pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments
         self,
         base_test_case: BaseTestCase,
         expected_causal_effect: CausalTestOutcome,

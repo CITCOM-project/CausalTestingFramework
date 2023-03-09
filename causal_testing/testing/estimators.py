@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class Estimator(ABC):
-    #pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
     """An estimator contains all of the information necessary to compute a causal estimate for the effect of changing
     a set of treatment variables to a set of values.
 
@@ -36,7 +36,7 @@ class Estimator(ABC):
     """
 
     def __init__(
-        #pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments
         self,
         treatment: str,
         treatment_value: float,
