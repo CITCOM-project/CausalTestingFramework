@@ -28,6 +28,7 @@ class AbstractCausalTestCase:
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         scenario: Scenario,
         intervention_constraints: set[z3.ExprRef],
@@ -77,7 +78,11 @@ class AbstractCausalTestCase:
         )
 
     def _generate_concrete_tests(
-        self, sample_size: int, rct: bool = False, seed: int = 0
+        # pylint: disable=too-many-locals
+        self,
+        sample_size: int,
+        rct: bool = False,
+        seed: int = 0,
     ) -> tuple[list[CausalTestCase], pd.DataFrame]:
         """Generates a list of `num` concrete test cases.
 
@@ -151,6 +156,7 @@ class AbstractCausalTestCase:
         return concrete_tests, pd.DataFrame(runs, columns=run_columns + ["bin"])
 
     def generate_concrete_tests(
+        # pylint: disable=too-many-arguments, too-many-locals
         self,
         sample_size: int,
         target_ks_score: float = None,
