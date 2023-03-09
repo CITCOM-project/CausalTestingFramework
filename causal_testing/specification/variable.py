@@ -67,7 +67,7 @@ class Variable(ABC):
     datatype: T
     distribution: rv_generic
 
-    def __init__(self, name: str, datatype: T, distribution: rv_generic = None, hidden: bool =  False):
+    def __init__(self, name: str, datatype: T, distribution: rv_generic = None, hidden: bool = False):
         self.name = name
         self.datatype = datatype
         self.z3 = z3_types(datatype)(name)

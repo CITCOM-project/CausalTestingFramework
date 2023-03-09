@@ -40,9 +40,13 @@ class DataCollector(ABC):
         # Check positivity
         scenario_variables = set(self.scenario.variables) - {x.name for x in self.scenario.hidden_variables()}
 
-        if check_pos and not (scenario_variables - {x.name for x in self.scenario.hidden_variables()}).issubset(set(data.columns)):
+        if check_pos and not (scenario_variables - {x.name for x in self.scenario.hidden_variables()}).issubset(
+            set(data.columns)
+        ):
             missing_variables = scenario_variables - set(data.columns)
-            raise IndexError(f"Missing columns: missing data for variables {missing_variables}. Should they be marked as hidden?")
+            raise IndexError(
+                f"Missing columns: missing data for variables {missing_variables}. Should they be marked as hidden?"
+            )
 
         # For each row, does it satisfy the constraints?
         solver = z3.Solver()
