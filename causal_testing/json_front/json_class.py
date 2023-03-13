@@ -195,10 +195,8 @@ class JsonUtility(ABC):
                 - estimation_model - Estimator instance for the test being run
         """
 
-        with tempfile.TemporaryFile(delete=False) as temp:
-            self.data.to_csv(temp)
-            data_collector = ObservationalDataCollector(self.modelling_scenario, temp.name)
-            causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
+        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data)
+        causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
 
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
         treatment_var = causal_test_case.treatment_variable
