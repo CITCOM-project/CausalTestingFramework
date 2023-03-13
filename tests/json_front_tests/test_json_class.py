@@ -31,9 +31,9 @@ class TestJsonClass(unittest.TestCase):
         self.data_path = [str(test_data_dir_path / data_file_name)]
         self.json_class = JsonUtility("logs.log")
         self.example_distribution = scipy.stats.uniform(1, 10)
-        self.input_dict_list = [{"name": "test_input", "type": float, "distribution": self.example_distribution}]
-        self.output_dict_list = [{"name": "test_output", "type": float}]
-        self.meta_dict_list = [{"name": "test_meta", "type": float, "populate": populate_example}]
+        self.input_dict_list = [{"name": "test_input", "datatype": float, "distribution": self.example_distribution}]
+        self.output_dict_list = [{"name": "test_output", "datatype": float}]
+        self.meta_dict_list = [{"name": "test_meta", "datatype": float, "populate": populate_example}]
         self.json_class.set_variables(self.input_dict_list, self.output_dict_list, None)
         self.json_class.set_paths(self.json_path, self.dag_path, self.data_path)
 

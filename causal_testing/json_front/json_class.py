@@ -300,6 +300,6 @@ class CausalVariables:
     metas: list[Meta]
 
     def __init__(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
-        self.inputs = [Input(i["name"], i["type"], i["distribution"]) for i in inputs]
-        self.outputs = [Output(i["name"], i["type"], i.get("distribution", None)) for i in outputs]
-        self.metas = [Meta(i["name"], i["type"], i["populate"]) for i in metas] if metas else []
+        self.inputs = [Input(**i) for i in inputs]
+        self.outputs = [Output(**o) for o in outputs]
+        self.metas = [Meta(**m) for m in metas] if metas else []
