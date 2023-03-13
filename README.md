@@ -17,3 +17,7 @@ system-under-test that is expected to cause a change to some output(s).
 
 See the readthedocs site for [installation
 instructions](https://causal-testing-framework.readthedocs.io/en/latest/installation.html).
+
+## Documentation
+
+Further information on causal inference, the code, usage and more can be found on the [docs](https://causal-testing-framework.readthedocs.io/en/latest/)
