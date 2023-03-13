@@ -27,13 +27,17 @@ class TestCausalTestOutcome(unittest.TestCase):
 
         self.assertIsNone(ctr.ci_low())
         self.assertIsNone(ctr.ci_high())
-        self.assertEqual(ctr.to_dict(),
-            {"treatment": "A",
-            "control_value": 0,
-            "treatment_value": 1,
-            "outcome": "A",
-            "adjustment_set": set(),
-            "test_value": test_value})
+        self.assertEqual(
+            ctr.to_dict(),
+            {
+                "treatment": "A",
+                "control_value": 0,
+                "treatment_value": 1,
+                "outcome": "A",
+                "adjustment_set": set(),
+                "test_value": test_value,
+            },
+        )
 
     def test_empty_adjustment_set(self):
         test_value = TestValue(type="ate", value=0)
@@ -46,13 +50,18 @@ class TestCausalTestOutcome(unittest.TestCase):
 
         self.assertIsNone(ctr.ci_low())
         self.assertIsNone(ctr.ci_high())
-        self.assertEqual(str(ctr), ("Causal Test Result\n==============\n"
-            "Treatment: A\n"
-            "Control value: 0\n"
-            "Treatment value: 1\n"
-            "Outcome: A\n"
-            "Adjustment set: set()\n"
-            "ate: 0\n" ))
+        self.assertEqual(
+            str(ctr),
+            (
+                "Causal Test Result\n==============\n"
+                "Treatment: A\n"
+                "Control value: 0\n"
+                "Treatment value: 1\n"
+                "Outcome: A\n"
+                "Adjustment set: set()\n"
+                "ate: 0\n"
+            ),
+        )
 
     def test_exactValue_pass(self):
         test_value = TestValue(type="ate", value=5.05)
@@ -97,20 +106,29 @@ class TestCausalTestOutcome(unittest.TestCase):
         )
         ev = SomeEffect()
         self.assertFalse(ev.apply(ctr))
-        self.assertEqual(str(ctr), ("Causal Test Result\n==============\n"
-            "Treatment: A\n"
-            "Control value: 0\n"
-            "Treatment value: 1\n"
-            "Outcome: A\n"
-            "Adjustment set: set()\n"
-            "ate: 0\n"
-            "Confidence intervals: [-0.1, 0.2]\n" ))
-        self.assertEqual(ctr.to_dict(),
-            {"treatment": "A",
-            "control_value": 0,
-            "treatment_value": 1,
-            "outcome": "A",
-            "adjustment_set": set(),
-            "test_value": test_value,
-            "ci_low": -0.1,
-            "ci_high": 0.2})
+        self.assertEqual(
+            str(ctr),
+            (
+                "Causal Test Result\n==============\n"
+                "Treatment: A\n"
+                "Control value: 0\n"
+                "Treatment value: 1\n"
+                "Outcome: A\n"
+                "Adjustment set: set()\n"
+                "ate: 0\n"
+                "Confidence intervals: [-0.1, 0.2]\n"
+            ),
+        )
+        self.assertEqual(
+            ctr.to_dict(),
+            {
+                "treatment": "A",
+                "control_value": 0,
+                "treatment_value": 1,
+                "outcome": "A",
+                "adjustment_set": set(),
+                "test_value": test_value,
+                "ci_low": -0.1,
+                "ci_high": 0.2,
+            },
+        )
