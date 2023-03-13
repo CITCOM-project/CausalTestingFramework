@@ -4,7 +4,6 @@ https://causal-testing-framework.readthedocs.io/en/latest/json_front_end.html"""
 import argparse
 import json
 import logging
-import tempfile
 
 from abc import ABC
 from dataclasses import dataclass
@@ -47,7 +46,7 @@ class JsonUtility(ABC):
     def __init__(self, log_path):
         self.paths = None
         self.variables = None
-        self.data = list()
+        self.data = []
         self.test_plan = None
         self.modelling_scenario = None
         self.causal_specification = None
@@ -137,6 +136,7 @@ class JsonUtility(ABC):
             df = pd.read_csv(data_file, header=0)
             self.data.append(df)
         self.data = pd.concat(self.data)
+
     def _populate_metas(self):
         """
         Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
@@ -255,7 +255,7 @@ class JsonUtility(ABC):
             "--data_path",
             help="Specify path to file containing runtime data",
             required=True,
-            nargs='+',
+            nargs="+",
         )
         parser.add_argument(
             "--dag_path",
@@ -286,7 +286,7 @@ class JsonClassPaths:
     def __init__(self, json_path: str, dag_path: str, data_paths: str):
         self.json_path = Path(json_path)
         self.dag_path = Path(dag_path)
-        self.data_paths = [Path(path) for path in [data_paths]]
+        self.data_paths = [Path(path) for path in data_paths]
 
 
 @dataclass()

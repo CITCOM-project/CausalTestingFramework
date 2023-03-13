@@ -40,9 +40,7 @@ class TestCausalTestSuite(unittest.TestCase):
         df = pd.DataFrame({"D": list(np.random.normal(60, 10, 1000))})  # D = exogenous
         df["A"] = [1 if d > 50 else 0 for d in df["D"]]
         df["C"] = df["D"] + (4 * (df["A"] + 2))  # C = (4*(A+2)) + D
-        self.observational_data_csv_path = os.path.join(temp_dir_path, "observational_data.csv")
-        df.to_csv(self.observational_data_csv_path, index=False)
-
+        self.df = df
         self.causal_dag = CausalDAG(dag_dot_path)
 
         # 3. Specify data structures required for test suite
@@ -126,6 +124,6 @@ class TestCausalTestSuite(unittest.TestCase):
         """
         causal_specification = CausalSpecification(self.scenario, self.causal_dag)
 
-        data_collector = ObservationalDataCollector(self.scenario, self.observational_data_csv_path)
+        data_collector = ObservationalDataCollector(self.scenario, self.df)
         causal_test_engine = CausalTestEngine(causal_specification, data_collector)
         return causal_test_engine
