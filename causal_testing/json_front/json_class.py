@@ -133,6 +133,7 @@ class JsonUtility(ABC):
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
         with open(self.paths.json_path, encoding="utf-8") as f:
             self.test_plan = json.load(f)
+            breakpoint()
         for data_file in self.paths.data_paths:
             df = pd.read_csv(data_file, header=0)
             self.data.append(df)
@@ -286,7 +287,7 @@ class JsonClassPaths:
     def __init__(self, json_path: str, dag_path: str, data_paths: str):
         self.json_path = Path(json_path)
         self.dag_path = Path(dag_path)
-        self.data_paths = [Path(path) for path in data_paths]
+        self.data_paths = [Path(path) for path in [data_paths]]
 
 
 @dataclass()
