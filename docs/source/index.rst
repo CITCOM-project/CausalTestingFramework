@@ -22,20 +22,27 @@ system-under-test that is expected to cause a change to some output(s).
 
    description
    installation
+.. toctree::
+   :maxdepth: 1
+   :caption: Module Descriptions
+
+   /modules/data_collector
+   /modules/causal_specification
+   /modules/causal_tests
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Code Docs
    :titlesonly:
 
    /autoapi/causal_testing/index
 
 .. toctree::
    :maxdepth: 1
-   :caption: Examples
+   :caption: Front Ends
 
-   json_front_end
-   test_suite
+   frontends/json_front_end
+   frontends/test_suite
 
 .. toctree::
    :maxdepth: 1

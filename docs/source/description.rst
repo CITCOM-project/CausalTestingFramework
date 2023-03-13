@@ -1,8 +1,8 @@
 Causal Testing Framework Description
 =====================================
 
-The causal testing framework has three core components:
-
+CTF Components
+--------------
 
 #.
    :doc:`Causal Specification <../modules/causal_specification>`\ : Before we can test software, we need to obtain an
