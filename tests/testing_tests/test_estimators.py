@@ -167,12 +167,17 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
-        linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df, formula="outcomes ~ treatments + np.power(treatments, 2)")
+        linear_regression_estimator = LinearRegressionEstimator(
+            "treatments", 100, 90, set(), "outcomes", df, formula="outcomes ~ treatments + np.power(treatments, 2)"
+        )
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
         self.assertEqual(
             round(
-                model.params["Intercept"] + 90 * model.params["treatments"] + 90 * 90 * model.params["np.power(treatments, 2)"], 1
+                model.params["Intercept"]
+                + 90 * model.params["treatments"]
+                + 90 * 90 * model.params["np.power(treatments, 2)"],
+                1,
             ),
             197.1,
         )
@@ -198,14 +203,21 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df,
-        formula=f"""wt82_71 ~ qsmk +
+        linear_regression_estimator = LinearRegressionEstimator(
+            "qsmk",
+            1,
+            0,
+            covariates,
+            "wt82_71",
+            df,
+            formula=f"""wt82_71 ~ qsmk +
                              {'+'.join(sorted(list(covariates)))} +
                              np.power(age, 2) +
                              np.power(wt71, 2) +
                              np.power(smokeintensity, 2) +
                              np.power(smokeyrs, 2) +
-                             (qsmk * smokeintensity)""")
+                             (qsmk * smokeintensity)""",
+        )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # terms_to_product = [("qsmk", "smokeintensity")]
         # for term_to_square in terms_to_square:
@@ -236,8 +248,15 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df,
-        formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)")
+        linear_regression_estimator = LinearRegressionEstimator(
+            "qsmk",
+            1,
+            0,
+            covariates,
+            "wt82_71",
+            df,
+            formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)",
+        )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_unit_ate()
@@ -264,8 +283,15 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df,
-        formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)")
+        linear_regression_estimator = LinearRegressionEstimator(
+            "qsmk",
+            1,
+            0,
+            covariates,
+            "wt82_71",
+            df,
+            formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)",
+        )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate()
@@ -292,8 +318,15 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df,
-        formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)")
+        linear_regression_estimator = LinearRegressionEstimator(
+            "qsmk",
+            1,
+            0,
+            covariates,
+            "wt82_71",
+            df,
+            formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)",
+        )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(

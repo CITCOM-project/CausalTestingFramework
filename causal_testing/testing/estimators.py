@@ -16,6 +16,7 @@ from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
 from causal_testing.specification.variable import Variable
+from math import ceil
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class LogisticRegressionEstimator(Estimator):
         outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
-        formula: str = None
+        formula: str = None,
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
@@ -151,7 +152,7 @@ class LogisticRegressionEstimator(Estimator):
         logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
-        reduced_df["Intercept"] = 1#self.intercept
+        reduced_df["Intercept"] = 1  # self.intercept
 
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
         cols = [self.treatment]
@@ -164,7 +165,7 @@ class LogisticRegressionEstimator(Estimator):
                     treatment_and_adjustments_cols, columns=[col], drop_first=True
                 )
         # regression = sm.Logit(outcome_col, treatment_and_adjustments_cols) # This one works
-        model = smf.logit(formula=self.formula, data=self.df).fit(disp=0)
+        model = smf.logit(formula=self.formula, data=data).fit(disp=0)
         return model
 
     def estimate(self, data: pd.DataFrame, adjustment_config=None) -> RegressionResultsWrapper:
@@ -172,6 +173,7 @@ class LogisticRegressionEstimator(Estimator):
         :param data: A pandas dataframe containing execution data from the system-under-test.
 
         """
+        print(data)
         if adjustment_config is None:
             adjustment_config = {}
 
@@ -179,7 +181,7 @@ class LogisticRegressionEstimator(Estimator):
         self.model = model
 
         x = pd.DataFrame(columns=self.df.columns)
-        x["Intercept"] = 1#self.intercept
+        x["Intercept"] = 1  # self.intercept
         x[self.treatment] = [self.treatment_value, self.control_value]
         for k, v in adjustment_config.items():
             x[k] = v
@@ -235,7 +237,7 @@ class LogisticRegressionEstimator(Estimator):
         (control_outcome, control_bootstraps), (
             treatment_outcome,
             treatment_bootstraps,
-        ) = self.estimate_control_treatment()
+        ) = self.estimate_control_treatment(bootstrap_size=bootstrap_size)
         estimate = treatment_outcome - control_outcome
 
         if control_bootstraps is None or treatment_bootstraps is None:
@@ -265,14 +267,16 @@ class LogisticRegressionEstimator(Estimator):
         (control_outcome, control_bootstraps), (
             treatment_outcome,
             treatment_bootstraps,
-        ) = self.estimate_control_treatment()
+        ) = self.estimate_control_treatment(bootstrap_size=bootstrap_size)
         estimate = treatment_outcome / control_outcome
 
         if control_bootstraps is None or treatment_bootstraps is None:
             return estimate, (None, None)
 
         bootstraps = sorted(list(treatment_bootstraps / control_bootstraps))
-        bound = int((bootstrap_size * 0.05) / 2)
+        bound = ceil((bootstrap_size * 0.05) / 2)
+        print("bootstraps", bootstraps)
+        print("bound", bound)
         ci_low = bootstraps[bound]
         ci_high = bootstraps[bootstrap_size - bound]
 
@@ -309,7 +313,7 @@ class LinearRegressionEstimator(Estimator):
         outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
-        formula: str = None
+        formula: str = None,
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
@@ -392,7 +396,7 @@ class LinearRegressionEstimator(Estimator):
 
         x = pd.DataFrame(columns=self.df.columns)
         x[self.treatment] = [self.treatment_value, self.control_value]
-        x["Intercept"] = 1#self.intercept
+        x["Intercept"] = 1  # self.intercept
         for k, v in adjustment_config.items():
             x[k] = v
         for k, v in self.effect_modifiers.items():
@@ -443,7 +447,7 @@ class LinearRegressionEstimator(Estimator):
         ), f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
         x = pd.DataFrame()
         x[self.treatment] = [self.treatment_value, self.control_value]
-        x["Intercept"] = 1#self.intercept
+        x["Intercept"] = 1  # self.intercept
         for k, v in self.effect_modifiers.items():
             self.adjustment_set.add(k)
             x[k] = v
@@ -475,7 +479,7 @@ class LinearRegressionEstimator(Estimator):
         logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
-        reduced_df["Intercept"] = 1#self.intercept
+        reduced_df["Intercept"] = 1  # self.intercept
 
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
         cols = [self.treatment]
