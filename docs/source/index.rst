@@ -22,6 +22,8 @@ system-under-test that is expected to cause a change to some output(s).
 
    description
    installation
+   usage
+
 .. toctree::
    :maxdepth: 1
    :caption: Module Descriptions

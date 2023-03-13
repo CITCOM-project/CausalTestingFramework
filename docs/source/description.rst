@@ -1,4 +1,4 @@
-Causal Testing Framework Description
+Framework Overview
 =====================================
 
 CTF Components
