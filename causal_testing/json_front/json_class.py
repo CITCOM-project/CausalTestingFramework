@@ -4,7 +4,6 @@ https://causal-testing-framework.readthedocs.io/en/latest/json_front_end.html"""
 import argparse
 import json
 import logging
-import tempfile
 
 from abc import ABC
 from dataclasses import dataclass
@@ -47,7 +46,7 @@ class JsonUtility(ABC):
     def __init__(self, log_path):
         self.paths = None
         self.variables = None
-        self.data = list()
+        self.data = []
         self.test_plan = None
         self.modelling_scenario = None
         self.causal_specification = None
@@ -256,7 +255,7 @@ class JsonUtility(ABC):
             "--data_path",
             help="Specify path to file containing runtime data",
             required=True,
-            nargs='+',
+            nargs="+",
         )
         parser.add_argument(
             "--dag_path",
