@@ -72,8 +72,9 @@ class CausalTestEngine:
             minimal_adjustment_set = minimal_adjustment_set - set(edge.outcome_variable.name)
 
             variables_for_positivity = (
-                list(minimal_adjustment_set) + [edge.treatment_variable.name] + [edge.outcome_variable.name]
+                list(minimal_adjustment_set) + [edge.treatment_variable.name, edge.outcome_variable.name]
             )
+
             if self._check_positivity_violation(variables_for_positivity):
                 raise ValueError("POSITIVITY VIOLATION -- Cannot proceed.")
 
@@ -209,13 +210,13 @@ class CausalTestEngine:
         :param variables_list: The list of variables for which positivity must be satisfied.
         :return: True if positivity is violated, False otherwise.
         """
-        if not set(variables_list).issubset(self.scenario_execution_data_df.columns):
+        if not (set(variables_list) - {x.name for x in self.scenario.hidden_variables()}).issubset(self.scenario_execution_data_df.columns):
             missing_variables = set(variables_list) - set(self.scenario_execution_data_df.columns)
             logger.warning(
-                "Positivity violation: missing data for variables {missing_variables}.\n"
+                "Positivity violation: missing data for variables %s.\n"
                 "Causal inference is only valid if a well-specified parametric model is used.\n"
                 "Alternatively, consider restricting analysis to executions without the variables:"
-                " %s.",
+                ".",
                 missing_variables,
             )
             return True
