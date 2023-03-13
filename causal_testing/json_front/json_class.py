@@ -133,7 +133,6 @@ class JsonUtility(ABC):
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
         with open(self.paths.json_path, encoding="utf-8") as f:
             self.test_plan = json.load(f)
-            breakpoint()
         for data_file in self.paths.data_paths:
             df = pd.read_csv(data_file, header=0)
             self.data.append(df)
