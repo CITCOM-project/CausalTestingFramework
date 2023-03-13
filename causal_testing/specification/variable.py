@@ -60,18 +60,19 @@ class Variable(ABC):
     :attr name:
     :attr datatype:
     :attr distribution:
-
+    :attr hidden:
     """
 
     name: str
     datatype: T
     distribution: rv_generic
 
-    def __init__(self, name: str, datatype: T, distribution: rv_generic = None):
+    def __init__(self, name: str, datatype: T, distribution: rv_generic = None, hidden: bool = False):
         self.name = name
         self.datatype = datatype
         self.z3 = z3_types(datatype)(name)
         self.distribution = distribution
+        self.hidden = hidden
 
     def __repr__(self):
         return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
