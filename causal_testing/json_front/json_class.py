@@ -4,6 +4,7 @@ https://causal-testing-framework.readthedocs.io/en/latest/json_front_end.html"""
 import argparse
 import json
 import logging
+import tempfile
 
 from abc import ABC
 from dataclasses import dataclass
@@ -46,20 +47,20 @@ class JsonUtility(ABC):
     def __init__(self, log_path):
         self.paths = None
         self.variables = None
-        self.data = None
+        self.data = list()
         self.test_plan = None
         self.modelling_scenario = None
         self.causal_specification = None
         self.setup_logger(log_path)
 
-    def set_paths(self, json_path: str, dag_path: str, data_path: str):
+    def set_paths(self, json_path: str, dag_path: str, data_paths: str):
         """
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
         :param json_path: string path representation to .json file containing test specifications
         :param dag_path: string path representation to the .dot file containing the Causal DAG
         :param data_path: string path representation to the data file
         """
-        self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_path=data_path)
+        self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
     def set_variables(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
         """Populate the Causal Variables
@@ -132,8 +133,9 @@ class JsonUtility(ABC):
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
         with open(self.paths.json_path, encoding="utf-8") as f:
             self.test_plan = json.load(f)
-
-        self.data = pd.read_csv(self.paths.data_path)
+        for data_file in self.paths.data_paths:
+            df = pd.read_csv(data_file, header=0)
+            self.data.append(df)
 
     def _populate_metas(self):
         """
@@ -252,6 +254,7 @@ class JsonUtility(ABC):
             "--data_path",
             help="Specify path to file containing runtime data",
             required=True,
+            nargs='+',
         )
         parser.add_argument(
             "--dag_path",
@@ -282,7 +285,7 @@ class JsonClassPaths:
     def __init__(self, json_path: str, dag_path: str, data_path: str):
         self.json_path = Path(json_path)
         self.dag_path = Path(dag_path)
-        self.data_path = Path(data_path)
+        self.data_paths = [Path(path) for path in data_path]
 
 
 @dataclass()
