@@ -1,4 +1,4 @@
-JSON Causal Testing Framework Frontend
+JSON Frontend
 ======================================
 The JSON frontend allows Causal Tests and parameters to be specified in JSON to allow for tests to be quickly written
 whilst retaining the flexibility of the Causal Testing Framework (CTF).
