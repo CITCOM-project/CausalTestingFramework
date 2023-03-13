@@ -8,7 +8,8 @@ the framework
 
 run_causal_tests.py
 -------------------
-`examples/poisson/run_causal_tests.py` contains python code written by the user to implement scenario specific features
+`examples/poisson/run_causal_tests.py <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/run_causal_tests.py>`_
+contains python code written by the user to implement scenario specific features
 such as:
 1. Custom Estimators
 2. Causal Variable specification
@@ -20,7 +21,8 @@ Use case specific information is also declared here such as the paths to the rel
 
 causal_tests.json
 -----------------
-`examples/poisson/causal_tests.json` is the JSON file that allows for the easy specification of multiple causal tests.
+`examples/poisson/causal_tests.json <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/causal_tests.json>`_ contains python code written by the user to implement scenario specific features
+is the JSON file that allows for the easy specification of multiple causal tests.
 Each test requires:
 1. Test name
 2. Mutations
@@ -35,11 +37,11 @@ Run Commands
 ------------
 To run the JSON frontend example from the root directory of the project, use::
 
-    python examples/poisson/run_causal_tests.py
+    python examples\poisson\run_causal_tests.py --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json
 
 A failure flag `-f` can be specified to stop the framework running if a test is failed::
 
-    python examples/poisson/run_causal_tests.py -f
+    python examples\poisson\run_causal_tests.py -f --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json
 
 There are two main outputs of this frontend, both are controlled by the logging module. Firstly outputs are printed to stdout (terminal).
 Secondly a log file is produced, by default a file called `json_frontend.log` is produced in the directory the script is called from.
