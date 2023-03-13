@@ -24,9 +24,12 @@ To instantiate a scenario, simply provide a set of variables and an optional set
    from causal_testing.specification.variable import Input, Output, Meta
    from causal_testing.specification.scenario import Scenario
 
+   def some_populate_function():
+       pass
+
    x = Input("x", int)  # Define an input with name "x" of type int
    y = Output("y", float)  # Define an output with name "y" of type float
-   z = Meta("y", int)  # Define a meta with name "z" of type int
+   z = Meta("y", int, some_populate_function)  # Define a meta with name "z" of type int
 
    modelling_scenario = Scenario({x, y, z}, {x > z, z < 3})  # Define a scenario with the three variables and two constraints
 
@@ -46,18 +49,19 @@ the given output and input and the desired effect. This information is the minim
    from causal_testing.testing.base_test_case import BaseTestCase
    from causal_testing.testing.causal_test_case import CausalTestCase
    from causal_testing.testing.causal_test_outcome import Positive
+   from causal_testing.testing.effect import Effect
 
    base_test_case = BaseTestCase(
       treatment_variable = x, # Set the treatment (input) variable to x
       outcome_variable = y, # set the outcome (output) variable to y
-      effect = direct) # effect type, current accepted types are direct and total
+      effect = Effect.direct.value) # effect type, current accepted types are direct and total
 
    causal_test_case = CausalTestCase(
       base_test_case = base_test_case,
       expected_causal_effect = Positive, # We expect to see a positive change as a result of this
-      control_value = 0 # Set the unmodified (control) value for x to 0,
-      treatment_value = 1 # Set the modified (treatment) value for x to ,1
-      estimate_type = "ate"),
+      control_value = 0, # Set the unmodified (control) value for x to 0,
+      treatment_value = 1, # Set the modified (treatment) value for x to ,1
+      estimate_type = "ate")
 
 Before we can run our test case, we first need data. There are two ways to acquire this: 1. run the model with the
 specific input configurations we're interested in, 2. use data from previous model runs. For a small number of specific
