@@ -26,9 +26,9 @@ class TestJsonClass(unittest.TestCase):
         dag_file_name = "dag.dot"
         data_file_name = "data.csv"
         test_data_dir_path = Path("tests/resources/data")
-        self.json_path = test_data_dir_path / json_file_name
-        self.dag_path = test_data_dir_path / dag_file_name
-        self.data_path = test_data_dir_path / data_file_name
+        self.json_path = str(test_data_dir_path / json_file_name)
+        self.dag_path = str(test_data_dir_path / dag_file_name)
+        self.data_path = str(test_data_dir_path / data_file_name)
         self.json_class = JsonUtility("logs.log")
         self.example_distribution = scipy.stats.uniform(1, 10)
         self.input_dict_list = [{"name": "test_input", "type": float, "distribution": self.example_distribution}]

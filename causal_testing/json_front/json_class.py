@@ -137,7 +137,6 @@ class JsonUtility(ABC):
             df = pd.read_csv(data_file, header=0)
             self.data.append(df)
         self.data = pd.concat(self.data)
-        breakpoint()
     def _populate_metas(self):
         """
         Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
@@ -196,11 +195,8 @@ class JsonUtility(ABC):
                 - estimation_model - Estimator instance for the test being run
         """
 
-        with tempfile.TemporaryFile(delete=False) as temp:
-            self.data.to_csv(temp)
-            breakpoint()
-            data_collector = ObservationalDataCollector(self.modelling_scenario, temp.name)
-            causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
+        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data)
+        causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
 
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
         treatment_var = causal_test_case.treatment_variable
@@ -290,7 +286,7 @@ class JsonClassPaths:
     def __init__(self, json_path: str, dag_path: str, data_paths: str):
         self.json_path = Path(json_path)
         self.dag_path = Path(dag_path)
-        self.data_paths = [Path(path) for path in data_paths]
+        self.data_paths = [Path(path) for path in [data_paths]]
 
 
 @dataclass()
