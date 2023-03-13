@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class Estimator(ABC):
+    # pylint: disable=too-many-instance-attributes
     """An estimator contains all of the information necessary to compute a causal estimate for the effect of changing
     a set of treatment variables to a set of values.
 
@@ -38,6 +39,7 @@ class Estimator(ABC):
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         treatment: str,
         treatment_value: float,
@@ -95,6 +97,7 @@ class LogisticRegressionEstimator(Estimator):
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         treatment: str,
         treatment_value: float,
@@ -161,8 +164,7 @@ class LogisticRegressionEstimator(Estimator):
                     treatment_and_adjustments_cols, columns=[col], drop_first=True
                 )
         # regression = sm.Logit(outcome_col, treatment_and_adjustments_cols) # This one works
-        regression = smf.logit(formula=self.formula, data=self.df) # This one doesn't work
-        model = regression.fit(disp=0)
+        model = smf.logit(formula=self.formula, data=self.df).fit(disp=0)
         return model
 
     def estimate(self, data: pd.DataFrame, adjustment_config=None) -> RegressionResultsWrapper:
@@ -298,6 +300,7 @@ class LinearRegressionEstimator(Estimator):
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         treatment: str,
         treatment_value: float,
@@ -504,6 +507,7 @@ class InstrumentalVariableEstimator(Estimator):
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         treatment: str,
         treatment_value: float,
@@ -513,13 +517,12 @@ class InstrumentalVariableEstimator(Estimator):
         instrument: str,
         df: pd.DataFrame = None,
         intercept: int = 1,
-        effect_modifiers: dict=None # Not used (yet?). Needed for compatibility
+        effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, None)
         self.intercept = intercept
         self.model = None
         self.instrument = instrument
-
 
     def add_modelling_assumptions(self):
         """
@@ -577,7 +580,6 @@ class CausalForestEstimator(Estimator):
         reduced_df = reduced_df[~missing_rows]
 
         # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
-        # TODO: Is it right to ignore the adjustment set if we have effect modifiers?
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
@@ -620,7 +622,7 @@ class CausalForestEstimator(Estimator):
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
-            raise Exception("CATE requires the user to define a set of effect modifiers.")
+            raise ValueError("CATE requires the user to define a set of effect modifiers.")
 
         if self.adjustment_set:
             confounders_df = reduced_df[list(self.adjustment_set)]

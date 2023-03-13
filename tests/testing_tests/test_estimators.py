@@ -377,7 +377,6 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         df = pd.DataFrame({"X1": np.random.uniform(-1000, 1000, 1000), "X2": np.random.uniform(-1000, 1000, 1000)})
         df["Y"] = 2 * df["X1"] - 3 * df["X2"] + 2 * df["X1"] * df["X2"] + 10
         cls.df = df
-        print(df)
 
     def test_X1_effect(self):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""

@@ -156,8 +156,8 @@ class MyJsonUtility(JsonUtility):
 if __name__ == "__main__":
     args = MyJsonUtility.get_args()
     json_utility = MyJsonUtility(args.log_path)  # Create an instance of the extended JsonUtility class
-    json_utility.set_path(args.json_path, args.dag_path,
-                          args.data_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
+    json_utility.set_paths(args.json_path, args.dag_path,
+                           args.data_path)  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
     json_utility.set_variables(inputs, outputs, metas)
