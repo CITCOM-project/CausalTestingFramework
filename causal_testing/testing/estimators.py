@@ -3,6 +3,7 @@ LinearRegressionEstimator and CausalForestEstimator"""
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
+from math import ceil
 
 import numpy as np
 import pandas as pd
@@ -16,7 +17,6 @@ from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
 from causal_testing.specification.variable import Variable
-from math import ceil
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,6 @@ class LogisticRegressionEstimator(Estimator):
             effect_modifiers = []
 
         if formula is not None:
-            # TODO: validate it
             self.formula = formula
         else:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
@@ -158,13 +157,11 @@ class LogisticRegressionEstimator(Estimator):
         cols = [self.treatment]
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
-        outcome_col = reduced_df[[self.outcome]]
         for col in treatment_and_adjustments_cols:
             if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
                 treatment_and_adjustments_cols = pd.get_dummies(
                     treatment_and_adjustments_cols, columns=[col], drop_first=True
                 )
-        # regression = sm.Logit(outcome_col, treatment_and_adjustments_cols) # This one works
         model = smf.logit(formula=self.formula, data=data).fit(disp=0)
         return model
 
@@ -322,7 +319,6 @@ class LinearRegressionEstimator(Estimator):
             effect_modifiers = []
 
         if formula is not None:
-            # TODO: validate it
             self.formula = formula
         else:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
@@ -485,13 +481,11 @@ class LinearRegressionEstimator(Estimator):
         cols = [self.treatment]
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
-        outcome_col = reduced_df[[self.outcome]]
         for col in treatment_and_adjustments_cols:
             if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
                 treatment_and_adjustments_cols = pd.get_dummies(
                     treatment_and_adjustments_cols, columns=[col], drop_first=True
                 )
-        # model = sm.OLS(outcome_col, treatment_and_adjustments_cols).fit()
         model = smf.ols(formula=self.formula, data=self.df).fit()
         return model
 
