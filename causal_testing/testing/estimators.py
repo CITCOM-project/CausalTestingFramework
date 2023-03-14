@@ -59,7 +59,7 @@ class Estimator(ABC):
         if effect_modifiers is None:
             self.effect_modifiers = {}
         elif isinstance(effect_modifiers, dict):
-            self.effect_modifiers = {k: v for k, v in effect_modifiers.items()}
+            self.effect_modifiers = effect_modifiers
         else:
             raise ValueError(f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable")
         self.modelling_assumptions = []
