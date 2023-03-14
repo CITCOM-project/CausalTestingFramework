@@ -76,19 +76,21 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.scarf_df = pd.DataFrame([
-            { 'length_in': 55, 'large_gauge': 1, 'color': 'orange', 'completed': 1 },
-            { 'length_in': 55, 'large_gauge': 0, 'color': 'orange', 'completed': 1 },
-            { 'length_in': 55, 'large_gauge': 0, 'color': 'brown', 'completed': 1 },
-            { 'length_in': 60, 'large_gauge': 0, 'color': 'brown', 'completed': 1 },
-            { 'length_in': 60, 'large_gauge': 0, 'color': 'grey', 'completed': 0 },
-            { 'length_in': 70, 'large_gauge': 0, 'color': 'grey', 'completed': 1 },
-            { 'length_in': 70, 'large_gauge': 0, 'color': 'orange', 'completed': 0 },
-            { 'length_in': 82, 'large_gauge': 1, 'color': 'grey', 'completed': 1 },
-            { 'length_in': 82, 'large_gauge': 0, 'color': 'brown', 'completed': 0 },
-            { 'length_in': 82, 'large_gauge': 0, 'color': 'orange', 'completed': 0 },
-            { 'length_in': 82, 'large_gauge': 1, 'color': 'brown', 'completed': 0 },
-        ])
+        cls.scarf_df = pd.DataFrame(
+            [
+                {"length_in": 55, "large_gauge": 1, "color": "orange", "completed": 1},
+                {"length_in": 55, "large_gauge": 0, "color": "orange", "completed": 1},
+                {"length_in": 55, "large_gauge": 0, "color": "brown", "completed": 1},
+                {"length_in": 60, "large_gauge": 0, "color": "brown", "completed": 1},
+                {"length_in": 60, "large_gauge": 0, "color": "grey", "completed": 0},
+                {"length_in": 70, "large_gauge": 0, "color": "grey", "completed": 1},
+                {"length_in": 70, "large_gauge": 0, "color": "orange", "completed": 0},
+                {"length_in": 82, "large_gauge": 1, "color": "grey", "completed": 1},
+                {"length_in": 82, "large_gauge": 0, "color": "brown", "completed": 0},
+                {"length_in": 82, "large_gauge": 0, "color": "orange", "completed": 0},
+                {"length_in": 82, "large_gauge": 1, "color": "brown", "completed": 0},
+            ]
+        )
 
     def test_ate(self):
         df = self.scarf_df.copy()
@@ -110,7 +112,9 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     def test_ate_effect_modifiers(self):
         df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df, effect_modifiers={"large_gauge": 0})
+        logistic_regression_estimator = LogisticRegressionEstimator(
+            "length_in", 65, 55, set(), "completed", df, effect_modifiers={"large_gauge": 0}
+        )
         ate, _ = logistic_regression_estimator.estimate_ate()
         self.assertEqual(round(ate, 4), -0.3388)
 
@@ -371,9 +375,7 @@ class TestCausalForestEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        causal_forest = CausalForestEstimator(
-            "qsmk", 1, 0, covariates, "wt82_71", df, {"smokeintensity": 40}
-        )
+        causal_forest = CausalForestEstimator("qsmk", 1, 0, covariates, "wt82_71", df, {"smokeintensity": 40})
         ate, _ = causal_forest.estimate_ate()
         self.assertGreater(round(ate, 1), 2.5)
         self.assertLess(round(ate, 1), 4.5)

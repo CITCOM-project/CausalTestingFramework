@@ -209,9 +209,7 @@ class LogisticRegressionEstimator(Estimator):
             )
             return (y.iloc[1], None), (y.iloc[0], None)
         except np.linalg.LinAlgError:
-            logger.warning(
-                "Singular matrix detected. Confidence intervals not available. Try with a larger data set"
-            )
+            logger.warning("Singular matrix detected. Confidence intervals not available. Try with a larger data set")
             return (y.iloc[1], None), (y.iloc[0], None)
 
         # Delta method confidence intervals from
