@@ -76,39 +76,43 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.scarf_df = pd.DataFrame(
-            [
-                {"length_in": 55, "completed": 1},
-                {"length_in": 55, "completed": 1},
-                {"length_in": 55, "completed": 1},
-                {"length_in": 60, "completed": 1},
-                {"length_in": 60, "completed": 0},
-                {"length_in": 70, "completed": 1},
-                {"length_in": 70, "completed": 0},
-                {"length_in": 82, "completed": 1},
-                {"length_in": 82, "completed": 0},
-                {"length_in": 82, "completed": 0},
-                {"length_in": 82, "completed": 0},
-            ]
-        )
+        cls.scarf_df = pd.DataFrame([
+            { 'length_in': 55, 'large_gauge': 1, 'color': 'orange', 'completed': 1 },
+            { 'length_in': 55, 'large_gauge': 0, 'color': 'orange', 'completed': 1 },
+            { 'length_in': 55, 'large_gauge': 0, 'color': 'brown', 'completed': 1 },
+            { 'length_in': 60, 'large_gauge': 0, 'color': 'brown', 'completed': 1 },
+            { 'length_in': 60, 'large_gauge': 0, 'color': 'grey', 'completed': 0 },
+            { 'length_in': 70, 'large_gauge': 0, 'color': 'grey', 'completed': 1 },
+            { 'length_in': 70, 'large_gauge': 0, 'color': 'orange', 'completed': 0 },
+            { 'length_in': 82, 'large_gauge': 1, 'color': 'grey', 'completed': 1 },
+            { 'length_in': 82, 'large_gauge': 0, 'color': 'brown', 'completed': 0 },
+            { 'length_in': 82, 'large_gauge': 0, 'color': 'orange', 'completed': 0 },
+            { 'length_in': 82, 'large_gauge': 1, 'color': 'brown', 'completed': 0 },
+        ])
 
     def test_ate(self):
-        df = self.scarf_df
+        df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         ate, _ = logistic_regression_estimator.estimate_ate()
         self.assertEqual(round(ate, 4), -0.1987)
 
     def test_risk_ratio(self):
-        df = self.scarf_df
+        df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         rr, _ = logistic_regression_estimator.estimate_risk_ratio()
         self.assertEqual(round(rr, 4), 0.7664)
 
     def test_odds_ratio(self):
-        df = self.scarf_df
+        df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         odds = logistic_regression_estimator.estimate_unit_odds_ratio()
         self.assertEqual(round(odds, 4), 0.8948)
+
+    def test_ate_effect_modifiers(self):
+        df = self.scarf_df.copy()
+        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df, effect_modifiers={"large_gauge": 0})
+        ate, _ = logistic_regression_estimator.estimate_ate()
+        self.assertEqual(round(ate, 4), -0.3388)
 
 
 class TestInstrumentalVariableEstimator(unittest.TestCase):
@@ -368,7 +372,7 @@ class TestCausalForestEstimator(unittest.TestCase):
             "smokeyrs",
         }
         causal_forest = CausalForestEstimator(
-            "qsmk", 1, 0, covariates, "wt82_71", df, {Input("smokeintensity", int): 40}
+            "qsmk", 1, 0, covariates, "wt82_71", df, {"smokeintensity": 40}
         )
         ate, _ = causal_forest.estimate_ate()
         self.assertGreater(round(ate, 1), 2.5)
@@ -395,7 +399,7 @@ class TestCausalForestEstimator(unittest.TestCase):
             "smokeyrs",
         }
         causal_forest = CausalForestEstimator(
-            "qsmk", 1, 0, covariates, "wt82_71", smoking_intensity_5_and_40_df, {Input("smokeintensity", int): 40}
+            "qsmk", 1, 0, covariates, "wt82_71", smoking_intensity_5_and_40_df, {"smokeintensity": 40}
         )
         cates_df, _ = causal_forest.estimate_cates()
         self.assertGreater(cates_df["cate"].mean(), 0)
@@ -415,7 +419,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
         x2 = Input("X2", float)
         lr_model = LinearRegressionEstimator(
-            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={x2: 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
+            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={x2.name: 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
         )
         test_results = lr_model.estimate_ate()
         ate = test_results[0]

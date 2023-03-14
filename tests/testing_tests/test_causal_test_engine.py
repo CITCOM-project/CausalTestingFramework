@@ -240,7 +240,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.minimal_adjustment_set,
             "C",
             self.causal_test_engine.scenario_execution_data_df,
-            effect_modifiers={Input("M", int): None},
+            effect_modifiers={"M": None},
         )
         causal_test_result = self.causal_test_engine.execute_test(
             estimation_model, self.causal_test_case, estimate_type="cate"

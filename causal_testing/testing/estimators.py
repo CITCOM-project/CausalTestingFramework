@@ -48,7 +48,7 @@ class Estimator(ABC):
         adjustment_set: set,
         outcome: str,
         df: pd.DataFrame = None,
-        effect_modifiers: dict[Variable:Any] = None,
+        effect_modifiers: dict[str:Any] = None,
     ):
         self.treatment = treatment
         self.treatment_value = treatment_value
@@ -59,9 +59,9 @@ class Estimator(ABC):
         if effect_modifiers is None:
             self.effect_modifiers = {}
         elif isinstance(effect_modifiers, (list, set)):
-            self.effect_modifiers = {k.name for k in effect_modifiers}
+            self.effect_modifiers = {k for k in effect_modifiers}
         elif isinstance(effect_modifiers, dict):
-            self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()}
+            self.effect_modifiers = {k: v for k, v in effect_modifiers.items()}
         else:
             raise ValueError(f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable")
         self.modelling_assumptions = []
@@ -106,19 +106,17 @@ class LogisticRegressionEstimator(Estimator):
         adjustment_set: set,
         outcome: str,
         df: pd.DataFrame = None,
-        effect_modifiers: dict[Variable:Any] = None,
+        effect_modifiers: dict[str:Any] = None,
         formula: str = None,
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
         self.model = None
-        if effect_modifiers is None:
-            effect_modifiers = []
 
         if formula is not None:
             self.formula = formula
         else:
-            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(self.effect_modifiers))
             self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
 
         for term in self.effect_modifiers:
@@ -170,7 +168,6 @@ class LogisticRegressionEstimator(Estimator):
         :param data: A pandas dataframe containing execution data from the system-under-test.
 
         """
-        print(data)
         if adjustment_config is None:
             adjustment_config = {}
 
@@ -209,6 +206,11 @@ class LogisticRegressionEstimator(Estimator):
             logger.warning(
                 "Perfect separation detected, results not available. Cannot calculate confidence intervals for such "
                 "a small dataset."
+            )
+            return (y.iloc[1], None), (y.iloc[0], None)
+        except np.linalg.LinAlgError:
+            logger.warning(
+                "Singular matrix detected. Confidence intervals not available. Try with a larger data set"
             )
             return (y.iloc[1], None), (y.iloc[0], None)
 
@@ -272,8 +274,6 @@ class LogisticRegressionEstimator(Estimator):
 
         bootstraps = sorted(list(treatment_bootstraps / control_bootstraps))
         bound = ceil((bootstrap_size * 0.05) / 2)
-        print("bootstraps", bootstraps)
-        print("bound", bound)
         ci_low = bootstraps[bound]
         ci_high = bootstraps[bootstrap_size - bound]
 
