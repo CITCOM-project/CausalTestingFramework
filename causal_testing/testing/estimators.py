@@ -58,8 +58,6 @@ class Estimator(ABC):
         self.df = df
         if effect_modifiers is None:
             self.effect_modifiers = {}
-        elif isinstance(effect_modifiers, (list, set)):
-            self.effect_modifiers = {k for k in effect_modifiers}
         elif isinstance(effect_modifiers, dict):
             self.effect_modifiers = {k: v for k, v in effect_modifiers.items()}
         else:
@@ -119,9 +117,6 @@ class LogisticRegressionEstimator(Estimator):
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(self.effect_modifiers))
             self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
 
-        for term in self.effect_modifiers:
-            self.adjustment_set.add(term)
-
     def add_modelling_assumptions(self):
         """
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
@@ -170,6 +165,10 @@ class LogisticRegressionEstimator(Estimator):
         """
         if adjustment_config is None:
             adjustment_config = {}
+        if set(self.adjustment_set) != set(adjustment_config):
+            raise ValueError(
+                f"Invalid adjustment configuration {adjustment_config}. Must specify values for {self.adjustment_set}"
+            )
 
         model = self._run_logistic_regression(data)
         self.model = model
@@ -188,18 +187,19 @@ class LogisticRegressionEstimator(Estimator):
         # x = x[model.params.index]
         return model.predict(x)
 
-    def estimate_control_treatment(self, bootstrap_size=100) -> tuple[pd.Series, pd.Series]:
+    def estimate_control_treatment(self, bootstrap_size=100, adjustment_config=None) -> tuple[pd.Series, pd.Series]:
         """Estimate the outcomes under control and treatment.
 
         :return: The estimated control and treatment values and their confidence
         intervals in the form ((ci_low, control, ci_high), (ci_low, treatment, ci_high)).
         """
 
-        y = self.estimate(self.df)
+        y = self.estimate(self.df, adjustment_config=adjustment_config)
 
         try:
             bootstrap_samples = [
-                self.estimate(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)
+                self.estimate(self.df.sample(len(self.df), replace=True), adjustment_config=adjustment_config)
+                for _ in range(bootstrap_size)
             ]
             control, treatment = zip(*[(x.iloc[1], x.iloc[0]) for x in bootstrap_samples])
         except PerfectSeparationError:
@@ -223,7 +223,7 @@ class LogisticRegressionEstimator(Estimator):
 
         return (y.iloc[1], np.array(control)), (y.iloc[0], np.array(treatment))
 
-    def estimate_ate(self, bootstrap_size=100) -> float:
+    def estimate_ate(self, bootstrap_size=100, adjustment_config=None) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and take one away from the other. This
@@ -234,7 +234,7 @@ class LogisticRegressionEstimator(Estimator):
         (control_outcome, control_bootstraps), (
             treatment_outcome,
             treatment_bootstraps,
-        ) = self.estimate_control_treatment(bootstrap_size=bootstrap_size)
+        ) = self.estimate_control_treatment(bootstrap_size=bootstrap_size, adjustment_config=adjustment_config)
         estimate = treatment_outcome - control_outcome
 
         if control_bootstraps is None or treatment_bootstraps is None:
@@ -253,7 +253,7 @@ class LogisticRegressionEstimator(Estimator):
 
         return estimate, (ci_low, ci_high)
 
-    def estimate_risk_ratio(self, bootstrap_size=100) -> float:
+    def estimate_risk_ratio(self, bootstrap_size=100, adjustment_config=None) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
@@ -264,7 +264,7 @@ class LogisticRegressionEstimator(Estimator):
         (control_outcome, control_bootstraps), (
             treatment_outcome,
             treatment_bootstraps,
-        ) = self.estimate_control_treatment(bootstrap_size=bootstrap_size)
+        ) = self.estimate_control_treatment(bootstrap_size=bootstrap_size, adjustment_config=adjustment_config)
         estimate = treatment_outcome / control_outcome
 
         if control_bootstraps is None or treatment_bootstraps is None:
