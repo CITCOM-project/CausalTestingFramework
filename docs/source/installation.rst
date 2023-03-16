@@ -20,15 +20,29 @@ Alternatively, on Linux systems, this can be done with `sudo apt install graphvi
 
 Install from source
 -------------------
-.. code-block:: console
+
+In future it will be possible to install from PyPI, but for now::
 
     git clone https://github.com/CITCOM-project/CausalTestingFramework
     cd CausalTestingFramework
+
+then, to install a specific release::
+
+    git fetch --all --tags --prune
+    git checkout tags/<tag> -b <branch>
     pip install -e .
 
-Use 
+e.g. version `1.0.0`::
 
-.. code-block:: console
+    git fetch --all --tags --prune
+    git checkout tags/1.0.0 -b version
+    pip install -e .
+
+or to install the latest development version::
+
+    pip install -e .
+
+Use::
 
     pip install -e .[dev]
 

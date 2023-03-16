@@ -29,6 +29,38 @@ class TestCausalDAGIssue90(unittest.TestCase):
         remove_temp_dir_if_existent()
 
 
+class TestIVAssumptions(unittest.TestCase):
+    def setUp(self) -> None:
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = """digraph G { I -> X; X -> Y; U -> X; U -> Y;}"""
+        f = open(self.dag_dot_path, "w")
+        f.write(dag_dot)
+        f.close()
+
+    def test_valid_iv(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        self.assertTrue(causal_dag.check_iv_assumptions("X", "Y", "I"))
+
+    def test_unrelated_instrument(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.graph.remove_edge("I", "X")
+        with self.assertRaises(ValueError):
+            causal_dag.check_iv_assumptions("X", "Y", "I")
+
+    def test_direct_cause(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.graph.add_edge("I", "Y")
+        with self.assertRaises(ValueError):
+            causal_dag.check_iv_assumptions("X", "Y", "I")
+
+    def test_common_cause(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.graph.add_edge("U", "I")
+        with self.assertRaises(ValueError):
+            causal_dag.check_iv_assumptions("X", "Y", "I")
+
+
 class TestCausalDAG(unittest.TestCase):
 
     """
@@ -50,9 +82,12 @@ class TestCausalDAG(unittest.TestCase):
         """Test whether the Causal DAG is valid."""
         causal_dag = CausalDAG(self.dag_dot_path)
         print(causal_dag)
-        assert list(causal_dag.graph.nodes) == ["A", "B", "C", "D"] and list(
-            causal_dag.graph.edges
-        ) == [("A", "B"), ("B", "C"), ("D", "A"), ("D", "C")]
+        assert list(causal_dag.graph.nodes) == ["A", "B", "C", "D"] and list(causal_dag.graph.edges) == [
+            ("A", "B"),
+            ("B", "C"),
+            ("D", "A"),
+            ("D", "C"),
+        ]
 
     def test_invalid_causal_dag(self):
         """Test whether a cycle-containing directed graph is an invalid causal DAG."""
@@ -96,9 +131,7 @@ class TestDAGDirectEffectIdentification(unittest.TestCase):
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
-        dag_dot = (
-            """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
-        )
+        dag_dot = """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
         f.close()
@@ -106,7 +139,7 @@ class TestDAGDirectEffectIdentification(unittest.TestCase):
     def test_direct_effect_adjustment_sets(self):
         causal_dag = CausalDAG(self.dag_dot_path)
         adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X1"], ["Y"])
-        self.assertEqual(list(adjustment_sets), [{"Y"}, {"D1", "Z"}, {"X2", "Z"}])
+        self.assertEqual(list(adjustment_sets), [{"D1", "Z"}, {"X2", "Z"}])
 
     def test_direct_effect_adjustment_sets_no_adjustment(self):
         causal_dag = CausalDAG(self.dag_dot_path)
@@ -122,9 +155,7 @@ class TestDAGIdentification(unittest.TestCase):
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
-        dag_dot = (
-            """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
-        )
+        dag_dot = """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
         f.close()
@@ -137,13 +168,10 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertEqual(list(indirect_graph.graph.edges), original_edges)
         self.assertEqual(indirect_graph.graph.nodes, causal_dag.graph.nodes)
 
-
     def test_proper_backdoor_graph(self):
         """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
         causal_dag = CausalDAG(self.dag_dot_path)
-        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(
-            ["X1", "X2"], ["Y"]
-        )
+        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(["X1", "X2"], ["Y"])
         self.assertEqual(
             list(proper_backdoor_graph.graph.edges),
             [
@@ -163,11 +191,7 @@ class TestDAGIdentification(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ["X1", "X2"], ["Y"], ["Z"]
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
-        self.assertTrue(
-            causal_dag.constructive_backdoor_criterion(
-                proper_backdoor_graph, xs, ys, zs
-            )
-        )
+        self.assertTrue(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_proper_backdoor_graph(
         self,
@@ -176,11 +200,7 @@ class TestDAGIdentification(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ["X1", "X2"], ["Y"], ["V"]
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
-        self.assertFalse(
-            causal_dag.constructive_backdoor_criterion(
-                proper_backdoor_graph, xs, ys, zs
-            )
-        )
+        self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_causal_path(
         self,
@@ -190,11 +210,7 @@ class TestDAGIdentification(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys, zs = ["X1", "X2"], ["Y"], ["D1"]
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
-        self.assertFalse(
-            causal_dag.constructive_backdoor_criterion(
-                proper_backdoor_graph, xs, ys, zs
-            )
-        )
+        self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_is_min_adjustment_for_min_adjustment(self):
         """Test whether is_min_adjustment can correctly test whether the minimum adjustment set is minimal."""
@@ -262,9 +278,7 @@ class TestDAGIdentification(unittest.TestCase):
         )
         xs, ys = ["X1", "X2"], ["Y"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        set_of_adjustment_sets = set(
-            frozenset(min_separator) for min_separator in adjustment_sets
-        )
+        set_of_adjustment_sets = set(frozenset(min_separator) for min_separator in adjustment_sets)
         self.assertEqual(
             {frozenset({"Z1"}), frozenset({"Z2"}), frozenset({"Z3"})},
             set_of_adjustment_sets,
@@ -291,9 +305,7 @@ class TestDAGIdentification(unittest.TestCase):
         )
         xs, ys = ["X1", "X2"], ["Y"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        set_of_adjustment_sets = set(
-            frozenset(min_separator) for min_separator in adjustment_sets
-        )
+        set_of_adjustment_sets = set(frozenset(min_separator) for min_separator in adjustment_sets)
         self.assertEqual(
             {frozenset({"Z1", "Z4"}), frozenset({"Z2", "Z4"}), frozenset({"Z3", "Z4"})},
             set_of_adjustment_sets,
@@ -304,20 +316,20 @@ class TestDAGIdentification(unittest.TestCase):
         causal_dag = CausalDAG()
         causal_dag.graph.add_edges_from(
             [
-                ('va', 'ba'),
-                ('ba', 'ia'),
-                ('ba', 'da'),
-                ('ba', 'ra'),
-                ('la', 'va'),
-                ('la', 'aa'),
-                ('aa', 'ia'),
-                ('aa', 'da'),
-                ('aa', 'ra'),
+                ("va", "ba"),
+                ("ba", "ia"),
+                ("ba", "da"),
+                ("ba", "ra"),
+                ("la", "va"),
+                ("la", "aa"),
+                ("aa", "ia"),
+                ("aa", "da"),
+                ("aa", "ra"),
             ]
         )
-        xs, ys = ['ba'], ['da']
+        xs, ys = ["ba"], ["da"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual(adjustment_sets, [{'aa'}, {'la'}, {'va'}])
+        self.assertEqual(adjustment_sets, [{"aa"}, {"la"}, {"va"}])
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
@@ -385,9 +397,7 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
 
     def setUp(self) -> None:
         self.graph = nx.Graph()
-        self.graph.add_edges_from(
-            [("a", 2), ("a", 3), (2, 4), (3, 5), (3, 4), (4, "b"), (5, "b")]
-        )
+        self.graph.add_edges_from([("a", 2), ("a", 3), (2, 4), (3, 5), (3, 4), (4, "b"), (5, "b")])
         self.treatment_node = "a"
         self.outcome_node = "b"
         self.treatment_node_set = {"a"}
@@ -396,9 +406,7 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
 
     def test_close_separator(self):
         """Test whether close_separator correctly identifies the close separator of {2,3} in the undirected graph."""
-        result = close_separator(
-            self.graph, self.treatment_node, self.outcome_node, self.treatment_node_set
-        )
+        result = close_separator(self.graph, self.treatment_node, self.outcome_node, self.treatment_node_set)
         self.assertEqual({2, 3}, result)
 
     def test_list_all_min_sep(self):
@@ -414,12 +422,8 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         )
 
         # Convert list of sets to set of frozen sets for comparison
-        min_separators = set(
-            frozenset(min_separator) for min_separator in min_separators
-        )
-        self.assertEqual(
-            {frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators
-        )
+        min_separators = set(frozenset(min_separator) for min_separator in min_separators)
+        self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

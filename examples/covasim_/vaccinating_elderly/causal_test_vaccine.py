@@ -11,6 +11,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.testing.base_test_case import BaseTestCase
 
 
 def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 30, verbose: bool = False):
@@ -69,29 +70,30 @@ def experimental_causal_test_vaccinate_elderly(runs_per_test_per_config: int = 3
                     'max_doses': {}
                     }
 
+    # 7. Create an instance of the causal test engine
     causal_test_engine = CausalTestEngine(causal_specification, data_collector, index_col=0)
+
     for outcome_variable, expected_effect in expected_outcome_effects.items():
-        causal_test_case = CausalTestCase(control_input_configuration={vaccine: 0},
+        base_test_case = BaseTestCase(treatment_variable=vaccine,
+                                      outcome_variable=outcome_variable)
+        causal_test_case = CausalTestCase(base_test_case=base_test_case,
                                           expected_causal_effect=expected_effect,
-                                          treatment_input_configuration={vaccine: 1},
-                                          outcome_variables={outcome_variable})
-
-        # 7. Create an instance of the causal test engine
-
+                                          control_value=0,
+                                          treatment_value=1)
 
         # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
-        causal_test_engine.identification(causal_test_case)
+        minimal_adjustment_set = causal_dag.identification(base_test_case)
 
         # 9. Build statistical model
-        linear_regression_estimator = LinearRegressionEstimator((vaccine.name,), 1, 0,
-                                                                causal_test_engine.minimal_adjustment_set,
-                                                                (outcome_variable.name,))
+        linear_regression_estimator = LinearRegressionEstimator(vaccine.name, 1, 0,
+                                                                minimal_adjustment_set,
+                                                                outcome_variable.name)
 
         # 10. Execute test and save results in dict
         causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
         if verbose:
             print(f"Causation:\n{causal_test_result}")
-        results_dict[outcome_variable.name]['ate'] = causal_test_result.ate
+        results_dict[outcome_variable.name]['ate'] = causal_test_result.test_value.value
         results_dict[outcome_variable.name]['cis'] = causal_test_result.confidence_intervals
         results_dict[outcome_variable.name]['test_passes'] = causal_test_case.expected_causal_effect.apply(
             causal_test_result)

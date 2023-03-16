@@ -1,0 +1,33 @@
+name: Publish python PyPI
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build-release:
+    name: Build and publish PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9
+      - name: Installing package
+        run: |
+          pip3 install .
+          pip3 install .[pypi]
+          pip3 install build
+          pip3 install setuptools --upgrade
+          pip3 install setuptools_scm
+      - name: Build Package
+        run: |
+          python -m build --no-isolation
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

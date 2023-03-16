@@ -7,6 +7,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue, Positive
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator
+from causal_testing.testing.base_test_case import BaseTestCase
 
 import pandas as pd
 
@@ -26,10 +27,10 @@ class EmpiricalMeanEstimator(Estimator):
         :return: The empirical average treatment effect.
         """
         control_results = self.df.where(
-            self.df[self.treatment[0]] == self.control_values
+            self.df[self.treatment[0]] == self.control_value
         )[self.outcome].dropna()
         treatment_results = self.df.where(
-            self.df[self.treatment[0]] == self.treatment_values
+            self.df[self.treatment[0]] == self.treatment_value
         )[self.outcome].dropna()
         return treatment_results.mean()[0] - control_results.mean()[0], None
 
@@ -38,10 +39,10 @@ class EmpiricalMeanEstimator(Estimator):
         :return: The empirical average treatment effect.
         """
         control_results = self.df.where(
-            self.df[self.treatment[0]] == self.control_values
+            self.df[self.treatment[0]] == self.control_value
         )[self.outcome].dropna()
         treatment_results = self.df.where(
-            self.df[self.treatment[0]] == self.treatment_values
+            self.df[self.treatment[0]] == self.treatment_value
         )[self.outcome].dropna()
         return treatment_results.mean()[0] / control_results.mean()[0], None
 
@@ -75,6 +76,10 @@ scenario = Scenario(
 # 4. Construct a causal specification from the scenario and causal DAG
 causal_specification = CausalSpecification(scenario, causal_dag)
 
+observational_data_path = "data/random/data_random_1000.csv"
+
+intensity_num_shapes_results = []
+
 
 def test_intensity_num_shapes(
     observational_data_path,
@@ -92,48 +97,38 @@ def test_intensity_num_shapes(
     )
 
     # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
-    causal_test_engine.identification(causal_test_case)
+    minimal_adjustment_set = causal_dag.identification(causal_test_case.base_test_case)
 
     # 9. Set up an estimator
     data = pd.read_csv(observational_data_path)
 
-    treatment = list(causal_test_case.control_input_configuration)[0].name
-    outcome = list(causal_test_case.outcome_variables)[0].name
+    treatment = causal_test_case.get_treatment_variable()
+    outcome = causal_test_case.get_outcome_variable()
 
     estimator = None
     if empirical:
         estimator = EmpiricalMeanEstimator(
             treatment=[treatment],
-            control_values=list(causal_test_case.control_input_configuration.values())[
-                0
-            ],
-            treatment_values=list(
-                causal_test_case.treatment_input_configuration.values()
-            )[0],
+            control_value=causal_test_case.control_value,
+            treatment_value=causal_test_case.treatment_value,
             adjustment_set=set(),
             outcome=[outcome],
             df=data,
             effect_modifiers=causal_test_case.effect_modifier_configuration,
         )
     else:
+        square_terms = [f"np.power({t}, 2)" for t in square_terms]
+        inverse_terms = [f"np.float_power({t}, -1)" for t in inverse_terms]
         estimator = LinearRegressionEstimator(
-            treatment=[treatment],
-            control_values=list(causal_test_case.control_input_configuration.values())[
-                0
-            ],
-            treatment_values=list(
-                causal_test_case.treatment_input_configuration.values()
-            )[0],
+            treatment=treatment,
+            control_value=causal_test_case.control_value,
+            treatment_value=causal_test_case.treatment_value,
             adjustment_set=set(),
-            outcome=[outcome],
+            outcome=outcome,
             df=data,
-            intercept=0,
             effect_modifiers=causal_test_case.effect_modifier_configuration,
+            formula=f"{outcome} ~ {treatment} + {'+'.join(square_terms + inverse_terms + list([e.name for e in causal_test_case.effect_modifier_configuration]))} -1"
         )
-        for t in square_terms:
-            estimator.add_squared_term_to_df(t)
-        for t in inverse_terms:
-            estimator.add_inverse_term_to_df(t)
 
     # 10. Execute the test
     causal_test_result = causal_test_engine.execute_test(
@@ -143,9 +138,6 @@ def test_intensity_num_shapes(
     return causal_test_result
 
 
-observational_data_path = "data/random/data_random_1000.csv"
-
-intensity_num_shapes_results = []
 
 for wh in range(1, 11):
     smt_data_path = f"data/smt_100/data_smt_wh{wh}_100.csv"
@@ -154,14 +146,14 @@ for wh in range(1, 11):
         print(f"WIDTH = HEIGHT = {wh}")
 
         print("Identifying")
-        # 5. Create a causal test case
+        base_test_case = BaseTestCase(treatment_variable=intensity,
+                                      outcome_variable=num_shapes_unit)
         causal_test_case = CausalTestCase(
-            control_input_configuration={intensity: control_value},
-            treatment_input_configuration={intensity: treatment_value},
+            base_test_case=base_test_case,
             expected_causal_effect=ExactValue(4, tolerance=0.5),
-            outcome_variables={num_shapes_unit},
-            estimate_type="risk_ratio",
-            # effect_modifier_configuration={width: wh, height: wh}
+            treatment_value=treatment_value,
+            control_value=control_value,
+            estimate_type="risk_ratio"
         )
         obs_causal_test_result = test_intensity_num_shapes(
             observational_data_path,
@@ -182,8 +174,8 @@ for wh in range(1, 11):
             "height": wh,
             "control": control_value,
             "treatment": treatment_value,
-            "smt_risk_ratio": smt_causal_test_result.ate,
-            "obs_risk_ratio": obs_causal_test_result.ate,
+            "smt_risk_ratio": smt_causal_test_result.test_value.value,
+            "obs_risk_ratio": obs_causal_test_result.test_value.value,
         }
         intensity_num_shapes_results.append(results)
 
@@ -199,13 +191,17 @@ for i in range(17):
         # 5. Create a causal test case
         control_value = w
         treatment_value = w + 1
+        base_test_case = BaseTestCase(
+            treatment_variable=width,
+            outcome_variable=num_shapes_unit
+        )
         causal_test_case = CausalTestCase(
-            control_input_configuration={width: control_value},
-            treatment_input_configuration={width: treatment_value},
+            base_test_case=base_test_case,
             expected_causal_effect=Positive(),
-            outcome_variables={num_shapes_unit},
+            control_value=control_value,
+            treatment_value=treatment_value,
             estimate_type="ate_calculated",
-            effect_modifier_configuration={intensity: i},
+            effect_modifier_configuration={intensity: i}
         )
         causal_test_result = test_intensity_num_shapes(
             observational_data_path,
@@ -218,7 +214,7 @@ for i in range(17):
             "control": control_value,
             "treatment": treatment_value,
             "intensity": i,
-            "ate": causal_test_result.ate,
+            "ate": causal_test_result.test_value.value,
             "ci_low": min(causal_test_result.confidence_intervals),
             "ci_high": max(causal_test_result.confidence_intervals),
         }

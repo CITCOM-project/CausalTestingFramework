@@ -1,15 +1,22 @@
+"""This module contains the Estimator abstract class, as well as its concrete extensions: LogisticRegressionEstimator,
+LinearRegressionEstimator and CausalForestEstimator"""
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
+from math import ceil
 
 import math
 from scipy.stats import t
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+import statsmodels.formula.api as smf
 from econml.dml import CausalForestDML
+from patsy import dmatrix
+
 from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
+from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
 from causal_testing.specification.variable import Variable
 
@@ -17,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class Estimator(ABC):
+    # pylint: disable=too-many-instance-attributes
     """An estimator contains all of the information necessary to compute a causal estimate for the effect of changing
     a set of treatment variables to a set of values.
 
@@ -34,30 +42,30 @@ class Estimator(ABC):
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
-        treatment: tuple,
-        treatment_values: float,
-        control_values: float,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
         adjustment_set: set,
-        outcome: tuple,
+        outcome: str,
         df: pd.DataFrame = None,
-        effect_modifiers: dict[Variable:Any] = None,
+        effect_modifiers: dict[str:Any] = None,
     ):
         self.treatment = treatment
-        self.treatment_values = treatment_values
-        self.control_values = control_values
+        self.treatment_value = treatment_value
+        self.control_value = control_value
         self.adjustment_set = adjustment_set
         self.outcome = outcome
         self.df = df
         if effect_modifiers is None:
             self.effect_modifiers = {}
-        elif isinstance(effect_modifiers, set) or isinstance(effect_modifiers, list):
-            self.effect_modifiers = {k.name for k in effect_modifiers}
         elif isinstance(effect_modifiers, dict):
-            self.effect_modifiers = {k.name: v for k, v in effect_modifiers.items()}
+            self.effect_modifiers = effect_modifiers
         else:
             raise ValueError(f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable")
         self.modelling_assumptions = []
+        self.add_modelling_assumptions()
         logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
     @abstractmethod
@@ -90,25 +98,26 @@ class LogisticRegressionEstimator(Estimator):
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
-        treatment: tuple,
-        treatment_values: float,
-        control_values: float,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
         adjustment_set: set,
-        outcome: tuple,
+        outcome: str,
         df: pd.DataFrame = None,
-        effect_modifiers: dict[Variable:Any] = None,
-        intercept: int = 1,
+        effect_modifiers: dict[str:Any] = None,
+        formula: str = None,
     ):
-        super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
-        for term in self.effect_modifiers:
-            self.adjustment_set.add(term)
+        self.model = None
 
-        self.product_terms = []
-        self.square_terms = []
-        self.inverse_terms = []
-        self.intercept = intercept
+        if formula is not None:
+            self.formula = formula
+        else:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(self.effect_modifiers))
+            self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
 
     def add_modelling_assumptions(self):
         """
@@ -123,78 +132,158 @@ class LogisticRegressionEstimator(Estimator):
         self.modelling_assumptions += "The outcome must be binary."
         self.modelling_assumptions += "Independently and identically distributed errors."
 
-    def _run_logistic_regression(self) -> RegressionResultsWrapper:
+    def _run_logistic_regression(self, data) -> RegressionResultsWrapper:
         """Run logistic regression of the treatment and adjustment set against the outcome and return the model.
 
         :return: The model after fitting to data.
         """
         # 1. Reduce dataframe to contain only the necessary columns
-        reduced_df = self.df.copy()
-        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
+        reduced_df = data.copy()
+        necessary_cols = [self.treatment] + list(self.adjustment_set) + [self.outcome]
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
-        reduced_df = reduced_df.sort_values(list(self.treatment))
+        reduced_df = reduced_df.sort_values([self.treatment])
         logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
-        reduced_df["Intercept"] = self.intercept
+        reduced_df["Intercept"] = 1  # self.intercept
 
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
-        cols = list(self.treatment)
+        cols = [self.treatment]
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
-        outcome_col = reduced_df[list(self.outcome)]
-        regression = sm.Logit(outcome_col, treatment_and_adjustments_cols)
-        model = regression.fit()
+        for col in treatment_and_adjustments_cols:
+            if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
+                treatment_and_adjustments_cols = pd.get_dummies(
+                    treatment_and_adjustments_cols, columns=[col], drop_first=True
+                )
+        model = smf.logit(formula=self.formula, data=data).fit(disp=0)
         return model
 
-    def estimate_control_treatment(self) -> tuple[pd.Series, pd.Series]:
-        """Estimate the outcomes under control and treatment.
+    def estimate(self, data: pd.DataFrame, adjustment_config=None) -> RegressionResultsWrapper:
+        """add terms to the dataframe and estimate the outcome from the data
+        :param data: A pandas dataframe containing execution data from the system-under-test.
 
-        :return: The average treatment effect and the 95% Wald confidence intervals.
         """
-        model = self._run_logistic_regression()
+        if adjustment_config is None:
+            adjustment_config = {}
+        if set(self.adjustment_set) != set(adjustment_config):
+            raise ValueError(
+                f"Invalid adjustment configuration {adjustment_config}. Must specify values for {self.adjustment_set}"
+            )
+
+        model = self._run_logistic_regression(data)
         self.model = model
 
-        x = pd.DataFrame()
-        x[self.treatment[0]] = [self.treatment_values, self.control_values]
-        x["Intercept"] = self.intercept
+        x = pd.DataFrame(columns=self.df.columns)
+        x["Intercept"] = 1  # self.intercept
+        x[self.treatment] = [self.treatment_value, self.control_value]
+        for k, v in adjustment_config.items():
+            x[k] = v
         for k, v in self.effect_modifiers.items():
             x[k] = v
-        for t in self.square_terms:
-            x[t + "^2"] = x[t] ** 2
-        for t in self.inverse_terms:
-            x["1/" + t] = 1 / x[t]
-        for a, b in self.product_terms:
-            x[f"{a}*{b}"] = x[a] * x[b]
-        x = x[model.params.index]
+        x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
+        for col in x:
+            if str(x.dtypes[col]) == "object":
+                x = pd.get_dummies(x, columns=[col], drop_first=True)
+        # x = x[model.params.index]
+        return model.predict(x)
 
-        y = model.predict(x)
-        return y.iloc[1], y.iloc[0]
+    def estimate_control_treatment(self, bootstrap_size=100, adjustment_config=None) -> tuple[pd.Series, pd.Series]:
+        """Estimate the outcomes under control and treatment.
 
-    def estimate_ate(self) -> float:
+        :return: The estimated control and treatment values and their confidence
+        intervals in the form ((ci_low, control, ci_high), (ci_low, treatment, ci_high)).
+        """
+
+        y = self.estimate(self.df, adjustment_config=adjustment_config)
+
+        try:
+            bootstrap_samples = [
+                self.estimate(self.df.sample(len(self.df), replace=True), adjustment_config=adjustment_config)
+                for _ in range(bootstrap_size)
+            ]
+            control, treatment = zip(*[(x.iloc[1], x.iloc[0]) for x in bootstrap_samples])
+        except PerfectSeparationError:
+            logger.warning(
+                "Perfect separation detected, results not available. Cannot calculate confidence intervals for such "
+                "a small dataset."
+            )
+            return (y.iloc[1], None), (y.iloc[0], None)
+        except np.linalg.LinAlgError:
+            logger.warning("Singular matrix detected. Confidence intervals not available. Try with a larger data set")
+            return (y.iloc[1], None), (y.iloc[0], None)
+
+        # Delta method confidence intervals from
+        # https://stackoverflow.com/questions/47414842/confidence-interval-of-probability-prediction-from-logistic-regression-statsmode
+        # cov = model.cov_params()
+        # gradient = (y * (1 - y) * x.T).T  # matrix of gradients for each observation
+        # std_errors = np.array([np.sqrt(np.dot(np.dot(g, cov), g)) for g in gradient.to_numpy()])
+        # c = 1.96  # multiplier for confidence interval
+        # upper = np.maximum(0, np.minimum(1, y + std_errors * c))
+        # lower = np.maximum(0, np.minimum(1, y - std_errors * c))
+
+        return (y.iloc[1], np.array(control)), (y.iloc[0], np.array(treatment))
+
+    def estimate_ate(self, bootstrap_size=100, adjustment_config=None) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and take one away from the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
-        :return: The average treatment effect. Confidence intervals are not yet supported.
+        :return: The estimated average treatment effect and 95% confidence intervals
         """
-        control_outcome, treatment_outcome = self.estimate_control_treatment()
+        (control_outcome, control_bootstraps), (
+            treatment_outcome,
+            treatment_bootstraps,
+        ) = self.estimate_control_treatment(bootstrap_size=bootstrap_size, adjustment_config=adjustment_config)
+        estimate = treatment_outcome - control_outcome
 
-        return treatment_outcome - control_outcome
+        if control_bootstraps is None or treatment_bootstraps is None:
+            return estimate, (None, None)
 
-    def estimate_risk_ratio(self) -> float:
+        bootstraps = sorted(list(treatment_bootstraps - control_bootstraps))
+        bound = int((bootstrap_size * 0.05) / 2)
+        ci_low = bootstraps[bound]
+        ci_high = bootstraps[bootstrap_size - bound]
+
+        logger.info(
+            f"Changing {self.treatment} from {self.control_value} to {self.treatment_value} gives an estimated "
+            f"ATE of {ci_low} < {estimate} < {ci_high}"
+        )
+        assert ci_low < estimate < ci_high, f"Expecting {ci_low} < {estimate} < {ci_high}"
+
+        return estimate, (ci_low, ci_high)
+
+    def estimate_risk_ratio(self, bootstrap_size=100, adjustment_config=None) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
-        :return: The average treatment effect. Confidence intervals are not yet supported.
+        :return: The estimated risk ratio and 95% confidence intervals.
         """
-        control_outcome, treatment_outcome = self.estimate_control_treatment()
+        (control_outcome, control_bootstraps), (
+            treatment_outcome,
+            treatment_bootstraps,
+        ) = self.estimate_control_treatment(bootstrap_size=bootstrap_size, adjustment_config=adjustment_config)
+        estimate = treatment_outcome / control_outcome
 
-        return treatment_outcome / control_outcome
+        if control_bootstraps is None or treatment_bootstraps is None:
+            return estimate, (None, None)
+
+        bootstraps = sorted(list(treatment_bootstraps / control_bootstraps))
+        bound = ceil((bootstrap_size * 0.05) / 2)
+        ci_low = bootstraps[bound]
+        ci_high = bootstraps[bootstrap_size - bound]
+
+        logger.info(
+            f"Changing {self.treatment} from {self.control_value} to {self.treatment_value} gives an estimated "
+            f"risk ratio of {ci_low} < {estimate} < {ci_high}"
+        )
+        assert ci_low < estimate < ci_high, f"Expecting {ci_low} < {estimate} < {ci_high}"
+
+        return estimate, (ci_low, ci_high)
 
     def estimate_unit_odds_ratio(self) -> float:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
@@ -202,8 +291,8 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The odds ratio. Confidence intervals are not yet supported.
         """
-        model = self._run_logistic_regression()
-        return np.exp(model.params[self.treatment[0]])
+        model = self._run_logistic_regression(self.df)
+        return np.exp(model.params[self.treatment])
 
 
 class LinearRegressionEstimator(Estimator):
@@ -212,30 +301,31 @@ class LinearRegressionEstimator(Estimator):
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
-        treatment: tuple,
-        treatment_values: float,
-        control_values: float,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
         adjustment_set: set,
-        outcome: tuple,
+        outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
-        product_terms: list[tuple[Variable, Variable]] = None,
-        intercept: int = 1,
+        formula: str = None,
     ):
-        super().__init__(treatment, treatment_values, control_values, adjustment_set, outcome, df, effect_modifiers)
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
-        if product_terms is None:
-            product_terms = []
-        for (term_a, term_b) in product_terms:
-            self.add_product_term_to_df(term_a, term_b)
+        self.model = None
+        if effect_modifiers is None:
+            effect_modifiers = []
+
+        if formula is not None:
+            self.formula = formula
+        else:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
+
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
-
-        self.product_terms = product_terms
-        self.square_terms = []
-        self.inverse_terms = []
-        self.intercept = intercept
 
     def add_modelling_assumptions(self):
         """
@@ -248,54 +338,6 @@ class LinearRegressionEstimator(Estimator):
             "do not need to be linear."
         )
 
-    def add_squared_term_to_df(self, term_to_square: str):
-        """Add a squared term to the linear regression model and df.
-
-        This enables the user to capture curvilinear relationships with a linear regression model, not just straight
-        lines, while automatically adding the modelling assumption imposed by the addition of this term.
-
-        :param term_to_square: The term (column in data and variable in DAG) which is to be squared.
-        """
-        new_term = str(term_to_square) + "^2"
-        self.df[new_term] = self.df[term_to_square] ** 2
-        self.adjustment_set.add(new_term)
-        self.modelling_assumptions += (
-            f"Relationship between {self.treatment} and {self.outcome} varies quadratically" f"with {term_to_square}."
-        )
-        self.square_terms.append(term_to_square)
-
-    def add_inverse_term_to_df(self, term_to_invert: str):
-        """Add an inverse term to the linear regression model and df.
-
-        This enables the user to capture curvilinear relationships with a linear regression model, not just straight
-        lines, while automatically adding the modelling assumption imposed by the addition of this term.
-
-        :param term_to_square: The term (column in data and variable in DAG) which is to be squared.
-        """
-        new_term = "1/" + str(term_to_invert)
-        self.df[new_term] = 1 / self.df[term_to_invert]
-        self.adjustment_set.add(new_term)
-        self.modelling_assumptions += (
-            f"Relationship between {self.treatment} and {self.outcome} varies inversely" f"with {term_to_invert}."
-        )
-        self.inverse_terms.append(term_to_invert)
-
-    def add_product_term_to_df(self, term_a: str, term_b: str):
-        """Add a product term to the linear regression model and df.
-
-        This enables the user to capture interaction between a pair of variables in the model. In other words, while
-        each covariate's contribution to the mean is assumed to be independent of the other covariates, the pair of
-        product terms term_a*term_b a are restricted to vary linearly with each other.
-
-        :param term_a: The first term of the product term.
-        :param term_b: The second term of the product term.
-        """
-        new_term = str(term_a) + "*" + str(term_b)
-        self.df[new_term] = self.df[term_a] * self.df[term_b]
-        self.adjustment_set.add(new_term)
-        self.modelling_assumptions += f"{term_a} and {term_b} vary linearly with each other."
-        self.product_terms.append((term_a, term_b))
-
     def estimate_unit_ate(self) -> float:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
         caused by a unit change in treatment.
@@ -303,10 +345,10 @@ class LinearRegressionEstimator(Estimator):
         :return: The unit average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
-        unit_effect = model.params[list(self.treatment)].values[0]  # Unit effect is the coefficient of the treatment
+        unit_effect = model.params[[self.treatment]].values[0]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model)
 
-        return unit_effect * self.treatment_values - unit_effect * self.control_values, [ci_low, ci_high]
+        return unit_effect * self.treatment_value - unit_effect * self.control_value, [ci_low, ci_high]
 
     def estimate_ate(self) -> tuple[float, list[float, float], float]:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
@@ -316,15 +358,20 @@ class LinearRegressionEstimator(Estimator):
         """
         model = self._run_linear_regression()
         self.model = model
+
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
-        individuals.loc["control", list(self.treatment)] = self.control_values
-        individuals.loc["treated", list(self.treatment)] = self.treatment_values
+
         # This is a temporary hack
-        for t in self.square_terms:
-            individuals[t + "^2"] = individuals[t] ** 2
-        for a, b in self.product_terms:
-            individuals[f"{a}*{b}"] = individuals[a] * individuals[b]
+        # for t in self.square_terms:
+        #     individuals[t + "^2"] = individuals[t] ** 2
+        # for a, b in self.product_terms:
+        #     individuals[f"{a}*{b}"] = individuals[a] * individuals[b]
+
+        # It is ABSOLUTELY CRITICAL that these go last, otherwise we can't index
+        # the effect with "ate = t_test_results.effect[0]"
+        individuals.loc["control", [self.treatment]] = self.control_value
+        individuals.loc["treated", [self.treatment]] = self.treatment_value
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
@@ -332,28 +379,32 @@ class LinearRegressionEstimator(Estimator):
         confidence_intervals = list(t_test_results.conf_int().flatten())
         return ate, confidence_intervals
 
-    def estimate_control_treatment(self) -> tuple[pd.Series, pd.Series]:
+    def estimate_control_treatment(self, adjustment_config: dict = None) -> tuple[pd.Series, pd.Series]:
         """Estimate the outcomes under control and treatment.
 
-        :return: The average treatment effect and the 95% Wald confidence intervals.
+        :return: The estimated outcome under control and treatment in the form
+        (control_outcome, treatment_outcome).
         """
+        if adjustment_config is None:
+            adjustment_config = {}
+
         model = self._run_linear_regression()
         self.model = model
 
-        x = pd.DataFrame()
-        x[self.treatment[0]] = [self.treatment_values, self.control_values]
-        x["Intercept"] = self.intercept
+        x = pd.DataFrame(columns=self.df.columns)
+        x[self.treatment] = [self.treatment_value, self.control_value]
+        x["Intercept"] = 1  # self.intercept
+        for k, v in adjustment_config.items():
+            x[k] = v
         for k, v in self.effect_modifiers.items():
             x[k] = v
-        for t in self.square_terms:
-            x[t + "^2"] = x[t] ** 2
-        for t in self.inverse_terms:
-            x["1/" + t] = 1 / x[t]
-        for a, b in self.product_terms:
-            x[f"{a}*{b}"] = x[a] * x[b]
+        x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
+        for col in x:
+            if str(x.dtypes[col]) == "object":
+                x = pd.get_dummies(x, columns=[col], drop_first=True)
         x = x[model.params.index]
-
         y = model.get_prediction(x).summary_frame()
+
         return y.iloc[1], y.iloc[0]
 
     def estimate_risk_ratio(self) -> tuple[float, list[float, float]]:
@@ -368,7 +419,7 @@ class LinearRegressionEstimator(Estimator):
 
         return (treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
 
-    def estimate_ate_calculated(self) -> tuple[float, list[float, float]]:
+    def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[float, list[float, float]]:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
@@ -376,7 +427,7 @@ class LinearRegressionEstimator(Estimator):
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
-        control_outcome, treatment_outcome = self.estimate_control_treatment()
+        control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
         ci_low = treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"]
         ci_high = treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"]
 
@@ -392,8 +443,8 @@ class LinearRegressionEstimator(Estimator):
             self.effect_modifiers
         ), f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
         x = pd.DataFrame()
-        x[self.treatment[0]] = [self.treatment_values, self.control_values]
-        x["Intercept"] = self.intercept
+        x[self.treatment] = [self.treatment_value, self.control_value]
+        x["Intercept"] = 1  # self.intercept
         for k, v in self.effect_modifiers.items():
             self.adjustment_set.add(k)
             x[k] = v
@@ -418,79 +469,88 @@ class LinearRegressionEstimator(Estimator):
         """
         # 1. Reduce dataframe to contain only the necessary columns
         reduced_df = self.df.copy()
-        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
+        necessary_cols = [self.treatment] + list(self.adjustment_set) + [self.outcome]
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
-        reduced_df = reduced_df.sort_values(list(self.treatment))
+        reduced_df = reduced_df.sort_values([self.treatment])
         logger.debug(reduced_df[necessary_cols])
 
         # 2. Add intercept
-        reduced_df["Intercept"] = self.intercept
+        reduced_df["Intercept"] = 1  # self.intercept
 
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
-        cols = list(self.treatment)
+        cols = [self.treatment]
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
-        outcome_col = reduced_df[list(self.outcome)]
-        regression = sm.OLS(outcome_col, treatment_and_adjustments_cols)
-        model = regression.fit()
+        for col in treatment_and_adjustments_cols:
+            if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
+                treatment_and_adjustments_cols = pd.get_dummies(
+                    treatment_and_adjustments_cols, columns=[col], drop_first=True
+                )
+        model = smf.ols(formula=self.formula, data=self.df).fit()
         return model
 
     def _get_confidence_intervals(self, model):
         confidence_intervals = model.conf_int(alpha=0.05, cols=None)
         ci_low, ci_high = (
-            confidence_intervals[0][list(self.treatment)],
-            confidence_intervals[1][list(self.treatment)],
+            confidence_intervals[0][[self.treatment]],
+            confidence_intervals[1][[self.treatment]],
         )
         return [ci_low.values[0], ci_high.values[0]]
 
-    def estimate_robustness(self, model, q=1, alpha=1):
-        """Calculate the robustness of a linear regression model. This allow
-        the user to identify how large an unidentified confounding variable
-        would need to be to nullify the causal relationship under test."""
 
-        dof = model.df_resid
-        t_values = model.tvalues
+class InstrumentalVariableEstimator(Estimator):
+    """
+    Carry out estimation using instrumental variable adjustment rather than conventional adjustment. This means we do
+    not need to observe all confounders in order to adjust for them. A key assumption here is linearity.
+    """
 
-        fq = q * abs(t_values / math.sqrt(dof))
-        f_crit = abs(t.ppf(alpha / 2, dof - 1)) / math.sqrt(dof - 1)
-        fqa = fq - f_crit
+    def __init__(
+        # pylint: disable=too-many-arguments
+        self,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: str,
+        instrument: str,
+        df: pd.DataFrame = None,
+        intercept: int = 1,
+        effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
+    ):
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, None)
+        self.intercept = intercept
+        self.model = None
+        self.instrument = instrument
 
-        rv = 0.5 * (np.sqrt(fqa**4 + (4 * fqa**2)) - fqa**2)
+    def add_modelling_assumptions(self):
+        """
+        Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
+        must hold if the resulting causal inference is to be considered valid.
+        """
+        self.modelling_assumptions += """The instrument and the treatment, and the treatment and the outcome must be
+        related linearly in the form Y = aX + b."""
+        self.modelling_assumptions += """The three IV conditions must hold
+            (i) Instrument is associated with treatment
+            (ii) Instrument does not affect outcome except through its potential effect on treatment
+            (iii) Instrument and outcome do not share causes
+        """
 
-        return rv
+    def estimate_coefficient(self):
+        """
+        Estimate the linear regression coefficient of the treatment on the outcome.
+        """
+        # Estimate the total effect of instrument I on outcome Y = abI + c1
+        ab = sm.OLS(self.df[self.outcome], self.df[[self.instrument]]).fit().params[self.instrument]
 
-    def estimate_e_value(
-        self, risk_ratio, confidence_intervals: tuple[float, float]
-    ) -> tuple[float, tuple[float, float]]:
-        """Calculate the E value from a risk ratio. This allow
-        the user to identify how large a risk an unidentified confounding
-        variable would need to be to nullify the causal relationship
-        under test."""
+        # Estimate the direct effect of instrument I on treatment X = aI + c1
+        a = sm.OLS(self.df[self.treatment], self.df[[self.instrument]]).fit().params[self.instrument]
 
-        if risk_ratio >= 1:
-            e = risk_ratio + math.sqrt(risk_ratio * (risk_ratio - 1))
+        # Estimate the coefficient of I on X by cancelling
+        return ab / a
 
-            lower_limit = confidence_intervals[0]
-            if lower_limit <= 1:
-                lower_limit = 1
-            else:
-                lower_limit = lower_limit + math.sqrt(lower_limit * (lower_limit - 1))
-
-            return (e, (lower_limit, 1))
-
-        else:
-            risk_ratio_prime = 1 / risk_ratio
-            e = risk_ratio_prime + math.sqrt(risk_ratio_prime * (risk_ratio_prime - 1))
-
-            upper_limit = confidence_intervals[1]
-            if upper_limit >= 1:
-                upper_limit = 1
-            else:
-                upper_limit_prime = 1 / upper_limit
-                upper_limit = upper_limit_prime + math.sqrt(upper_limit_prime * (upper_limit_prime - 1))
-
-            return (e, (1, upper_limit))
+    def estimate_ate(self):
+        return (self.treatment_value - self.control_value) * self.estimate_coefficient(), (None, None)
 
 
 class CausalForestEstimator(Estimator):
@@ -514,19 +574,18 @@ class CausalForestEstimator(Estimator):
         """
         # Remove any NA containing rows
         reduced_df = self.df.copy()
-        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
+        necessary_cols = [self.treatment] + list(self.adjustment_set) + [self.outcome]
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
         # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
-        # TODO: Is it right to ignore the adjustment set if we have effect modifiers?
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
             effect_modifier_df = reduced_df[list(self.adjustment_set)]
         confounders_df = reduced_df[list(self.adjustment_set)]
-        treatment_df = np.ravel(reduced_df[list(self.treatment)])
-        outcome_df = np.ravel(reduced_df[list(self.outcome)])
+        treatment_df = np.ravel(reduced_df[[self.treatment]])
+        outcome_df = np.ravel(reduced_df[[self.outcome]])
 
         # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
         model = CausalForestDML(
@@ -536,8 +595,8 @@ class CausalForestEstimator(Estimator):
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
-        ate = model.ate(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
-        ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_values, T1=self.treatment_values)
+        ate = model.ate(effect_modifier_df, T0=self.control_value, T1=self.treatment_value)
+        ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_value, T1=self.treatment_value)
         ci_low, ci_high = ate_interval[0], ate_interval[1]
         return ate, [ci_low, ci_high]
 
@@ -554,7 +613,7 @@ class CausalForestEstimator(Estimator):
 
         # Remove any NA containing rows
         reduced_df = self.df.copy()
-        necessary_cols = list(self.treatment) + list(self.adjustment_set) + list(self.outcome)
+        necessary_cols = [self.treatment] + list(self.adjustment_set) + [self.outcome]
         missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
         reduced_df = reduced_df[~missing_rows]
 
@@ -562,23 +621,23 @@ class CausalForestEstimator(Estimator):
         if self.effect_modifiers:
             effect_modifier_df = reduced_df[list(self.effect_modifiers)]
         else:
-            raise Exception("CATE requires the user to define a set of effect modifiers.")
+            raise ValueError("CATE requires the user to define a set of effect modifiers.")
 
         if self.adjustment_set:
             confounders_df = reduced_df[list(self.adjustment_set)]
         else:
             confounders_df = None
-        treatment_df = reduced_df[list(self.treatment)]
-        outcome_df = reduced_df[list(self.outcome)]
+        treatment_df = reduced_df[[self.treatment]]
+        outcome_df = reduced_df[[self.outcome]]
 
         # Fit a model to the data
         model = CausalForestDML(model_y=GradientBoostingRegressor(), model_t=GradientBoostingRegressor())
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain CATES and confidence intervals
-        conditional_ates = model.effect(effect_modifier_df, T0=self.control_values, T1=self.treatment_values).flatten()
+        conditional_ates = model.effect(effect_modifier_df, T0=self.control_value, T1=self.treatment_value).flatten()
         [ci_low, ci_high] = model.effect_interval(
-            effect_modifier_df, T0=self.control_values, T1=self.treatment_values, alpha=0.05
+            effect_modifier_df, T0=self.control_value, T1=self.treatment_value, alpha=0.05
         )
 
         # Merge results into a dataframe (CATE, confidence intervals, and effect modifier values)
