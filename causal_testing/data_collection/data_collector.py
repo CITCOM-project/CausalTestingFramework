@@ -127,14 +127,15 @@ class ExperimentalDataCollector(DataCollector):
 
 
 class ObservationalDataCollector(DataCollector):
-    """A data collector that extracts data that is relevant to the specified scenario from a csv of execution data."""
+    """A data collector that extracts data that is relevant to the specified scenario from a dataframe of execution
+    data."""
 
-    def __init__(self, scenario: Scenario, csv_path: str):
+    def __init__(self, scenario: Scenario, data: pd.DataFrame):
         super().__init__(scenario)
-        self.csv_path = csv_path
+        self.data = data
 
     def collect_data(self, **kwargs) -> pd.DataFrame:
-        """Read a csv containing execution data for the system-under-test into a pandas dataframe and filter to remove
+        """Read a pandas dataframe and filter to remove
         any data which is invalid for the scenario-under-test.
 
         Data is invalid if it does not meet the constraints outlined in the scenario-under-test (Scenario).
@@ -142,7 +143,7 @@ class ObservationalDataCollector(DataCollector):
         :return: A pandas dataframe containing execution data that is valid for the scenario-under-test.
         """
 
-        execution_data_df = pd.read_csv(self.csv_path, **kwargs)
+        execution_data_df = self.data
         for meta in self.scenario.metas():
             meta.populate(execution_data_df)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
