@@ -25,6 +25,7 @@ jobs:
           conda install -c conda-forge pygraphviz
           python --version
           pip install -e .
+          pip install -e .[test]
           pip install pytest pytest-cov
         shell: bash -l {0}
       - name: Test with pytest
