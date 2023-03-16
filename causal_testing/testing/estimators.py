@@ -5,8 +5,6 @@ from abc import ABC, abstractmethod
 from typing import Any
 from math import ceil
 
-import math
-from scipy.stats import t
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
