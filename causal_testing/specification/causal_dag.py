@@ -1,7 +1,11 @@
+"""This module contains the CausalDAG class, as well as the functions list_all_min_sep and close_seperator"""
+
+from __future__ import annotations
+
 import logging
 from itertools import combinations
 from random import sample
-from typing import TypeVar, Union
+from typing import Union
 
 import networkx as nx
 
@@ -9,7 +13,6 @@ from .scenario import Scenario
 from .variable import Output
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
-CausalDAG = TypeVar("CausalDAG")
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +137,36 @@ class CausalDAG(nx.DiGraph):
 
         if not self.is_acyclic():
             raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
+
+    def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
+        """
+        Checks the three instrumental variable assumptions, raising a
+        ValueError if any are violated.
+
+        :return Boolean True if the three IV assumptions hold.
+        """
+        # (i) Instrument is associated with treatment
+        if nx.d_separated(self.graph, {instrument}, {treatment}, set()):
+            raise ValueError(f"Instrument {instrument} is not associated with treatment {treatment} in the DAG")
+
+        # (ii) Instrument does not affect outcome except through its potential effect on treatment
+        if not all((treatment in path for path in nx.all_simple_paths(self.graph, source=instrument, target=outcome))):
+            raise ValueError(
+                f"Instrument {instrument} affects the outcome {outcome} other than through the treatment {treatment}"
+            )
+
+        # (iii) Instrument and outcome do not share causes
+        if any(
+            (
+                cause
+                for cause in self.graph.nodes
+                if list(nx.all_simple_paths(self.graph, source=cause, target=instrument))
+                and list(nx.all_simple_paths(self.graph, source=cause, target=outcome))
+            )
+        ):
+            raise ValueError(f"Instrument {instrument} and outcome {outcome} share common causes")
+
+        return True
 
     def add_edge(self, u_of_edge: Node, v_of_edge: Node, **attr):
         """Add an edge to the causal DAG.
@@ -349,10 +382,8 @@ class CausalDAG(nx.DiGraph):
                 proper_backdoor_graph, treatments, outcomes, smaller_adjustment_set
             ):
                 logger.info(
-                    "Z=%s is not minimal because Z'=Z\\{{'%s'}}=" "%s is also a valid adjustment set.",
-                    adjustment_set,
-                    variable,
-                    smaller_adjustment_set,
+                    f"Z={adjustment_set} is not minimal because Z'=Z\\{variable} = {smaller_adjustment_set} is also a"
+                    f"valid adjustment set.",
                 )
                 return False
 
@@ -463,7 +494,7 @@ class CausalDAG(nx.DiGraph):
         """
         if isinstance(scenario.variables[node], Output):
             return True
-        return any([self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)])
+        return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
 
     def identification(self, base_test_case):
         """Identify and return the minimum adjustment set

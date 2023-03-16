@@ -1,3 +1,4 @@
+"""This module contains the CausalTestCase class, a class that holds the information required for a causal test"""
 import logging
 from typing import Any
 
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class CausalTestCase:
+    # pylint: disable=too-many-instance-attributes
     """
     A CausalTestCase extends the information held in a BaseTestCase. As well as storing the treatment and outcome
     variables, a CausalTestCase stores the values of these variables. Also the outcome variable and value are
@@ -21,6 +23,7 @@ class CausalTestCase:
     """
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         base_test_case: BaseTestCase,
         expected_causal_effect: CausalTestOutcome,
@@ -49,7 +52,7 @@ class CausalTestCase:
         if effect_modifier_configuration:
             self.effect_modifier_configuration = effect_modifier_configuration
         else:
-            self.effect_modifier_configuration = dict()
+            self.effect_modifier_configuration = {}
 
     def get_treatment_variable(self):
         """Return the treatment variable name (as string) for this causal test case"""

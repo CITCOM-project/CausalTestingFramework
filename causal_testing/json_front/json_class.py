@@ -1,8 +1,12 @@
+"""This module contains the JsonUtility class, details of using this class can be found here:
+https://causal-testing-framework.readthedocs.io/en/latest/json_front_end.html"""
+
 import argparse
 import json
 import logging
 
 from abc import ABC
+from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
@@ -40,49 +44,38 @@ class JsonUtility(ABC):
     """
 
     def __init__(self, log_path):
-        self.json_path = None
-        self.dag_path = None
-        self.data_path = None
-        self.inputs = None
-        self.outputs = None
-        self.metas = None
-        self.data = None
+        self.paths = None
+        self.variables = None
+        self.data = []
         self.test_plan = None
         self.modelling_scenario = None
         self.causal_specification = None
         self.setup_logger(log_path)
 
-    def set_path(self, json_path: str, dag_path: str, data_path: str):
+    def set_paths(self, json_path: str, dag_path: str, data_paths: str):
         """
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
         :param json_path: string path representation to .json file containing test specifications
         :param dag_path: string path representation to the .dot file containing the Causal DAG
         :param data_path: string path representation to the data file
-        :returns:
-            - json_path -
-            - dag_path -
-            - data_path -
         """
-        self.json_path = Path(json_path)
-        self.dag_path = Path(dag_path)
-        self.data_path = Path(data_path)
+        self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
-    def set_variables(self, inputs: dict, outputs: dict, metas: dict):
+    def set_variables(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
         """Populate the Causal Variables
         :param inputs:
         :param outputs:
         :param metas:
         """
-        self.inputs = [Input(i["name"], i["type"], i["distribution"]) for i in inputs]
-        self.outputs = [Output(i["name"], i["type"], i.get("distribution", None)) for i in outputs]
-        self.metas = [Meta(i["name"], i["type"], i["populate"]) for i in metas] if metas else []
+
+        self.variables = CausalVariables(inputs=inputs, outputs=outputs, metas=metas)
 
     def setup(self):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
-        self.modelling_scenario = Scenario(self.inputs + self.outputs + self.metas, None)
+        self.modelling_scenario = Scenario(self.variables.inputs + self.variables.outputs + self.variables.metas, None)
         self.modelling_scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(
-            scenario=self.modelling_scenario, causal_dag=CausalDAG(self.dag_path)
+            scenario=self.modelling_scenario, causal_dag=CausalDAG(self.paths.dag_path)
         )
         self._json_parse()
         self._populate_metas()
@@ -137,20 +130,21 @@ class JsonUtility(ABC):
 
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
-        with open(self.json_path) as f:
+        with open(self.paths.json_path, encoding="utf-8") as f:
             self.test_plan = json.load(f)
-
-        self.data = pd.read_csv(self.data_path)
+        for data_file in self.paths.data_paths:
+            df = pd.read_csv(data_file, header=0)
+            self.data.append(df)
+        self.data = pd.concat(self.data)
 
     def _populate_metas(self):
         """
         Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
         """
-
-        for meta in self.metas:
+        for meta in self.variables.metas:
             meta.populate(self.data)
 
-        for var in self.metas + self.outputs:
+        for var in self.variables.metas + self.variables.outputs:
             if not var.distribution:
                 fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
                 fitter.fit()
@@ -177,7 +171,10 @@ class JsonUtility(ABC):
 
         result_string = str()
         if causal_test_result.ci_low() and causal_test_result.ci_high():
-            result_string = f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  {causal_test_result.ci_high()}"
+            result_string = (
+                f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  "
+                f"{causal_test_result.ci_high()}"
+            )
         else:
             result_string = f"{causal_test_result.test_value.value} no confidence intervals"
         if f_flag:
@@ -197,18 +194,20 @@ class JsonUtility(ABC):
                 - causal_test_engine - Test Engine instance for the test being run
                 - estimation_model - Estimator instance for the test being run
         """
-        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data_path)
+
+        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data)
         causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
+
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
         treatment_var = causal_test_case.treatment_variable
         minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
         estimation_model = estimator(
-            (treatment_var.name,),
-            causal_test_case.treatment_value,
-            causal_test_case.control_value,
-            minimal_adjustment_set,
-            (causal_test_case.outcome_variable.name,),
-            causal_test_engine.scenario_execution_data_df,
+            treatment=treatment_var.name,
+            treatment_value=causal_test_case.treatment_value,
+            control_value=causal_test_case.control_value,
+            adjustment_set=minimal_adjustment_set,
+            outcome=causal_test_case.outcome_variable.name,
+            df=causal_test_engine.scenario_execution_data_df,
             effect_modifiers=causal_test_case.effect_modifier_configuration,
         )
 
@@ -216,7 +215,7 @@ class JsonUtility(ABC):
 
         return causal_test_engine, estimation_model
 
-    def add_modelling_assumptions(self, estimation_model: Estimator):
+    def add_modelling_assumptions(self, estimation_model: Estimator):  # pylint: disable=unused-argument
         """Optional abstract method where user functionality can be written to determine what assumptions are required
         for specific test cases
         :param estimation_model: estimator model instance for the current running test.
@@ -256,6 +255,7 @@ class JsonUtility(ABC):
             "--data_path",
             help="Specify path to file containing runtime data",
             required=True,
+            nargs="+",
         )
         parser.add_argument(
             "--dag_path",
@@ -268,3 +268,38 @@ class JsonUtility(ABC):
             required=True,
         )
         return parser.parse_args(test_args)
+
+
+@dataclass
+class JsonClassPaths:
+    """
+    A dataclass that converts strings of paths to Path objects for use in the JsonUtility class
+    :param json_path: string path representation to .json file containing test specifications
+    :param dag_path: string path representation to the .dot file containing the Causal DAG
+    :param data_path: string path representation to the data file
+    """
+
+    json_path: Path
+    dag_path: Path
+    data_paths: list[Path]
+
+    def __init__(self, json_path: str, dag_path: str, data_paths: str):
+        self.json_path = Path(json_path)
+        self.dag_path = Path(dag_path)
+        self.data_paths = [Path(path) for path in data_paths]
+
+
+@dataclass()
+class CausalVariables:
+    """
+    A dataclass that converts
+    """
+
+    inputs: list[Input]
+    outputs: list[Output]
+    metas: list[Meta]
+
+    def __init__(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
+        self.inputs = [Input(**i) for i in inputs]
+        self.outputs = [Output(**o) for o in outputs]
+        self.metas = [Meta(**m) for m in metas] if metas else []

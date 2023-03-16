@@ -1,19 +1,20 @@
 [build-system]
 requires = [
-    "setuptools>=45",
+    "setuptools>=64",
     "setuptools_scm[toml]>=6.2",
     "wheel"
-    ]
+]
 build-backend = "setuptools.build_meta"
+
 [project]
-    name="causal_testing_framework"
-    authors=[{name = "The CITCOM team"}]
-    description="A framework for causal testing using causal directed acyclic graphs."
-    readme = "README.md"
-    requires-python = ">=3.9"
-    license = {text = "MIT"}
-    keywords = ["causal inference", "verification"]
-    dependencies = [
+name = "causal_testing_framework"
+authors = [{ name = "The CITCOM team" }]
+description = "A framework for causal testing using causal directed acyclic graphs."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["causal inference", "verification"]
+dependencies = [
     "econml~=0.12",
     "fitter~=1.4",
     "lhsmdu~=1.1",
@@ -25,29 +26,29 @@ build-backend = "setuptools.build_meta"
     "statsmodels~=0.13",
     "tabulate~=0.8",
     "z3_solver~=4.11.2",
-    ] # z3_solver does not follow semantic versioning and tying to 4.11 introduces problems
-    dynamic = ["version"]
+] # z3_solver does not follow semantic versioning and tying to 4.11 introduces problems
+dynamic = ["version"]
 
 [project.optional-dependencies]
-    dev = [
-        "autopep8",
-        "isort",
-        "pytest",
-        "pylint",
-        "black",
-        "autoapi",
-        "myst-parser",
-        "sphinx-autoapi",
-        "sphinx_rtd_theme",
-    ]
+dev = [
+    "autopep8",
+    "isort",
+    "pytest",
+    "pylint",
+    "black",
+    "autoapi",
+    "myst-parser",
+    "sphinx-autoapi",
+    "sphinx_rtd_theme",
+]
 
 [project.urls]
-        Bug_Tracker = "https://github.com/CITCOM-project/CausalTestingFramework/issues"
-        Documentation = "https://causal-testing-framework.readthedocs.io/"
-        Source = "https://github.com/CITCOM-project/CausalTestingFramework"
+Bug_Tracker = "https://github.com/CITCOM-project/CausalTestingFramework/issues"
+Documentation = "https://causal-testing-framework.readthedocs.io/"
+Source = "https://github.com/CITCOM-project/CausalTestingFramework"
 
-[tool.setuptools.packages.find]
-where = ["causal_testing"]
+[tool.setuptools.packages]
+find = { }
 
 [tool.setuptools_scm]
 

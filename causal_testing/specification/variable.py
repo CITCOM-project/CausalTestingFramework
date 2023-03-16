@@ -1,4 +1,8 @@
-from abc import ABC, abstractmethod
+"""This module contains the Variable abstract class, as well as its concrete extensions: Input, Output and Meta. The
+function z3_types and the private function _coerce are also in this module."""
+
+from __future__ import annotations
+from abc import ABC
 from collections.abc import Callable
 from enum import Enum
 from typing import Any, TypeVar
@@ -6,18 +10,18 @@ from typing import Any, TypeVar
 import lhsmdu
 from pandas import DataFrame
 from scipy.stats._distn_infrastructure import rv_generic
-from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String, DatatypeRef
+from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String
 
 # Declare type variable
-# Is there a better way? I'd really like to do Variable[T](ExprRef)
 T = TypeVar("T")
-Variable = TypeVar("Variable")
-Input = TypeVar("Input")
-Output = TypeVar("Output")
-Meta = TypeVar("Meta")
+z3 = TypeVar("Z3")
 
 
-def z3_types(datatype):
+def z3_types(datatype: T) -> z3:
+    """Cast datatype to Z3 datatype
+    :param datatype: python datatype to be cast
+    :return: Type name compatible with Z3 library
+    """
     types = {int: Int, str: String, float: Real, bool: Bool}
     if datatype in types:
         return types[datatype]
@@ -56,23 +60,23 @@ class Variable(ABC):
     :attr name:
     :attr datatype:
     :attr distribution:
-
+    :attr hidden:
     """
 
     name: str
     datatype: T
     distribution: rv_generic
 
-    def __init__(self, name: str, datatype: T, distribution: rv_generic = None):
+    def __init__(self, name: str, datatype: T, distribution: rv_generic = None, hidden: bool = False):
         self.name = name
         self.datatype = datatype
         self.z3 = z3_types(datatype)(name)
         self.distribution = distribution
+        self.hidden = hidden
 
     def __repr__(self):
         return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
 
-    # TODO: We're going to need to implement all the supported Z3 operations like this
     def __ge__(self, other: Any) -> BoolRef:
         """Create the Z3 expression `other >= self`.
 
@@ -161,15 +165,12 @@ class Variable(ABC):
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
-        if (isinstance(val, float) or isinstance(val, int) or isinstance(val, bool)) and (
-            self.datatype == int or self.datatype == float or self.datatype == bool
-        ):
+        if (isinstance(val, (float, int, bool))) and (self.datatype in (float, int, bool)):
             return self.datatype(val)
-        if issubclass(self.datatype, Enum) and isinstance(val, DatatypeRef):
-            return self.datatype(str(val))
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
+        """Cast value to Z3 value"""
         native_val = self.cast(val)
         if isinstance(native_val, Enum):
             values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]

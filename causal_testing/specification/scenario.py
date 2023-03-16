@@ -1,3 +1,4 @@
+"""This module holds the Scenario Class"""
 from collections.abc import Iterable, Mapping
 
 from tabulate import tabulate
@@ -30,11 +31,15 @@ class Scenario:
         if variables is not None:
             self.variables = {v.name: v for v in variables}
         else:
-            self.variables = dict()
+            self.variables = {}
         if constraints is not None:
             self.constraints = set(constraints)
         else:
             self.constraints = set()
+
+        self.prime = {}
+        self.unprime = {}
+        self.treatment_variables = {}
 
     def __str__(self):
         """Returns a printable string of a scenario, e.g.
@@ -94,9 +99,6 @@ class Scenario:
         to the contraint set such that the "primed" variables are constrained in
         the same way as their unprimed counterparts.
         """
-        self.prime = {}
-        self.unprime = {}
-        self.treatment_variables = {}
         for k, v in self.variables.items():
             v_prime = self._fresh(v)
             self.treatment_variables[k] = v_prime
@@ -140,5 +142,16 @@ class Scenario:
         """
         return self.variables_of_type(Meta)
 
+    def hidden_variables(self) -> set[Variable]:
+        """Get the set of hidden variables
+
+        :return The variables marked as hidden.
+        :rtype: {Variable}
+        """
+        return {v for v in self.variables.values() if v.hidden}
+
     def add_variable(self, v: Variable) -> None:
+        """Add variable to variables attribute
+        :param v: Variable to be added
+        """
         self.variables[v.name]: v
