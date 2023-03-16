@@ -59,7 +59,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
 
         # 5. Create observational data collector
         # Obsolete?
-        self.data_collector = ObservationalDataCollector(self.scenario, self.observational_data_csv_path)
+        self.data_collector = ObservationalDataCollector(self.scenario, df)
 
         # 5. Create causal test engine
         self.causal_test_engine = CausalTestEngine(self.causal_specification, self.data_collector)

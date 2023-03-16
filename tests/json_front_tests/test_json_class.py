@@ -26,9 +26,9 @@ class TestJsonClass(unittest.TestCase):
         dag_file_name = "dag.dot"
         data_file_name = "data.csv"
         test_data_dir_path = Path("tests/resources/data")
-        self.json_path = test_data_dir_path / json_file_name
-        self.dag_path = test_data_dir_path / dag_file_name
-        self.data_path = test_data_dir_path / data_file_name
+        self.json_path = str(test_data_dir_path / json_file_name)
+        self.dag_path = str(test_data_dir_path / dag_file_name)
+        self.data_path = [str(test_data_dir_path / data_file_name)]
         self.json_class = JsonUtility("logs.log")
         self.example_distribution = scipy.stats.uniform(1, 10)
         self.input_dict_list = [{"name": "test_input", "datatype": float, "distribution": self.example_distribution}]
@@ -40,7 +40,7 @@ class TestJsonClass(unittest.TestCase):
     def test_setting_paths(self):
         self.assertEqual(self.json_class.paths.json_path, Path(self.json_path))
         self.assertEqual(self.json_class.paths.dag_path, Path(self.dag_path))
-        self.assertEqual(self.json_class.paths.data_path, Path(self.data_path))
+        self.assertEqual(self.json_class.paths.data_paths, [Path(self.data_path[0])])  # Needs to be list of Paths
 
     def test_set_inputs(self):
         ctf_input = [Input("test_input", float, self.example_distribution)]
@@ -61,7 +61,7 @@ class TestJsonClass(unittest.TestCase):
 
     def test_argparse(self):
         args = self.json_class.get_args(["--data_path=data.csv", "--dag_path=dag.dot", "--json_path=tests.json"])
-        self.assertEqual(args.data_path, "data.csv")
+        self.assertEqual(args.data_path, ["data.csv"])
         self.assertEqual(args.dag_path, "dag.dot")
         self.assertEqual(args.json_path, "tests.json")
 
