@@ -48,67 +48,56 @@ def doubling_beta_CATE_on_csv(
     :return results_dict: A nested dictionary containing results (ate and confidence intervals)
                           for association, causation, and counterfactual (if completed).
     """
-    results_dict = {"association": {}, "causation": {}}
+    results_dict = {'association': {},
+                    'causation': {}}
 
     # Read in the observational data, perform identification, and setup the causal_test_engine
     past_execution_df = pd.read_csv(observational_data_path)
     _, causal_test_engine, causal_test_case = engine_setup(observational_data_path)
 
-    linear_regression_estimator = LinearRegressionEstimator(
-        "beta",
-        0.032,
-        0.016,
-        {"avg_age", "contacts"},  # We use custom adjustment set
-        "cum_infections",
-        df=past_execution_df,
-    )
+    linear_regression_estimator = LinearRegressionEstimator('beta', 0.032, 0.016,
+                                                            {'avg_age', 'contacts'},  # We use custom adjustment set
+                                                            'cum_infections',
+                                                            df=past_execution_df,
+                                                            formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts")
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    linear_regression_estimator.add_squared_term_to_df("beta")
-    causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, "ate")
+    causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
 
     # Repeat for association estimate (no adjustment)
-    no_adjustment_linear_regression_estimator = LinearRegressionEstimator(
-        "beta", 0.032, 0.016, set(), "cum_infections", df=past_execution_df
-    )
-    no_adjustment_linear_regression_estimator.add_squared_term_to_df("beta")
-    association_test_result = causal_test_engine.execute_test(
-        no_adjustment_linear_regression_estimator, causal_test_case, "ate"
-    )
+    no_adjustment_linear_regression_estimator = LinearRegressionEstimator('beta', 0.032, 0.016,
+                                                                          set(),
+                                                                          'cum_infections',
+                                                                          df=past_execution_df,
+                                                                          formula="cum_infections ~ beta + np.power(beta, 2)")
+    association_test_result = causal_test_engine.execute_test(no_adjustment_linear_regression_estimator, causal_test_case, 'ate')
 
     # Store results for plotting
-    results_dict["association"] = {
-        "ate": association_test_result.test_value.value,
-        "cis": association_test_result.confidence_intervals,
-        "df": past_execution_df,
-    }
-    results_dict["causation"] = {
-        "ate": causal_test_result.test_value.value,
-        "cis": causal_test_result.confidence_intervals,
-        "df": past_execution_df,
-    }
+    results_dict['association'] = {'ate': association_test_result.test_value.value,
+                                   'cis': association_test_result.confidence_intervals,
+                                   'df': past_execution_df}
+    results_dict['causation'] = {'ate': causal_test_result.test_value.value,
+                                 'cis': causal_test_result.confidence_intervals,
+                                 'df': past_execution_df}
 
     if verbose:
-        logger.info("Association:\n%s", association_test_result)
-        logger.info("Causation:\n%s", causal_test_result)
+        print(f"Association:\n{association_test_result}")
+        print(f"Causation:\n{causal_test_result}")
 
     # Repeat causal inference after deleting all rows with treatment value to obtain counterfactual inferences
     if simulate_counterfactuals:
-        counterfactual_past_execution_df = past_execution_df[past_execution_df["beta"] != 0.032]
-        counterfactual_linear_regression_estimator = LinearRegressionEstimator(
-            "beta", 0.032, 0.016, {"avg_age", "contacts"}, "cum_infections", df=counterfactual_past_execution_df
-        )
-        counterfactual_linear_regression_estimator.add_squared_term_to_df("beta")
-        counterfactual_causal_test_result = causal_test_engine.execute_test(
-            linear_regression_estimator, causal_test_case, "ate"
-        )
-        results_dict["counterfactual"] = {
-            "ate": counterfactual_causal_test_result.test_value.value,
-            "cis": counterfactual_causal_test_result.confidence_intervals,
-            "df": counterfactual_past_execution_df,
-        }
+        counterfactual_past_execution_df = past_execution_df[past_execution_df['beta'] != 0.032]
+        counterfactual_linear_regression_estimator = LinearRegressionEstimator('beta', 0.032, 0.016,
+                                                                               {'avg_age', 'contacts'},
+                                                                               'cum_infections',
+                                                                               df=counterfactual_past_execution_df,
+                                                                               formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts")
+        counterfactual_causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, 'ate')
+        results_dict['counterfactual'] = {'ate': counterfactual_causal_test_result.test_value.value,
+                                          'cis': counterfactual_causal_test_result.confidence_intervals,
+                                          'df': counterfactual_past_execution_df}
         if verbose:
-            logger.info("Counterfactual:\n%s", counterfactual_causal_test_result)
+            print(f"Counterfactual:\n{counterfactual_causal_test_result}")
 
     return results_dict
 

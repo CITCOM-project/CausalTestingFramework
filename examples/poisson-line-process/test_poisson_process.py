@@ -86,7 +86,9 @@ def causal_test_intensity_num_shapes(
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
 
     # 7. Create an instance of the causal test engine
-    causal_test_engine = CausalTestEngine(causal_specification, data_collector)
+    causal_test_engine = CausalTestEngine(
+        causal_specification, data_collector
+    )
 
     # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
     minimal_adjustment_set = causal_dag.identification(causal_test_case.base_test_case)
@@ -109,6 +111,8 @@ def causal_test_intensity_num_shapes(
             effect_modifiers=causal_test_case.effect_modifier_configuration,
         )
     else:
+        square_terms = [f"np.power({t}, 2)" for t in square_terms]
+        inverse_terms = [f"np.float_power({t}, -1)" for t in inverse_terms]
         estimator = LinearRegressionEstimator(
             treatment=treatment,
             control_value=causal_test_case.control_value,
@@ -116,16 +120,14 @@ def causal_test_intensity_num_shapes(
             adjustment_set=set(),
             outcome=outcome,
             df=data,
-            intercept=0,
             effect_modifiers=causal_test_case.effect_modifier_configuration,
+            formula=f"{outcome} ~ {treatment} + {'+'.join(square_terms + inverse_terms + list([e for e in causal_test_case.effect_modifier_configuration]))} -1"
         )
-        for t in square_terms:
-            estimator.add_squared_term_to_df(t)
-        for t in inverse_terms:
-            estimator.add_inverse_term_to_df(t)
 
     # 10. Execute the test
-    causal_test_result = causal_test_engine.execute_test(estimator, causal_test_case, causal_test_case.estimate_type)
+    causal_test_result = causal_test_engine.execute_test(
+        estimator, causal_test_case, causal_test_case.estimate_type
+    )
 
     return causal_test_result
 
@@ -190,7 +192,7 @@ def test_poisson_width_num_shapes(save=False):
                 control_value=control_value,
                 treatment_value=treatment_value,
                 estimate_type="ate_calculated",
-                effect_modifier_configuration={intensity: i},
+                effect_modifier_configuration={"intensity": i},
             )
             causal_test_result = causal_test_intensity_num_shapes(
                 observational_data_path,
@@ -215,5 +217,5 @@ def test_poisson_width_num_shapes(save=False):
 
 
 if __name__ == "__main__":
-    test_poisson_intensity_num_shapes(save=True)
+    # test_poisson_intensity_num_shapes(save=True)
     test_poisson_width_num_shapes(save=True)
