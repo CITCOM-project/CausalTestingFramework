@@ -2,8 +2,9 @@
 Usage
 -----
 
-There are currently two methods of using the Causal Testing Framework, through
-the `JSON Front End <https://causal-testing-framework.readthedocs.io/en/latest/json_front_end.html>`_ or directly as
+There are currently three methods of using the Causal Testing Framework, through
+the :doc:`JSON Front End </frontends/json_front_end>`\, using
+:doc:`Test Suites </frontends/test_suite>`\, or directly as
 described below.
 
 The causal testing framework is made up of three main components: Specification, Testing, and Data Collection. The first
