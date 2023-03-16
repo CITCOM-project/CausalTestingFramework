@@ -41,6 +41,9 @@ dev = [
     "sphinx-autoapi",
     "sphinx_rtd_theme",
 ]
+test = [
+  "covasim~=3.0.7",
+]
 
 [project.urls]
 Bug_Tracker = "https://github.com/CITCOM-project/CausalTestingFramework/issues"
