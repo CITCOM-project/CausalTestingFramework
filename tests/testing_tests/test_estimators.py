@@ -78,37 +78,74 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.scarf_df = pd.DataFrame(
             [
-                {"length_in": 55, "completed": 1},
-                {"length_in": 55, "completed": 1},
-                {"length_in": 55, "completed": 1},
-                {"length_in": 60, "completed": 1},
-                {"length_in": 60, "completed": 0},
-                {"length_in": 70, "completed": 1},
-                {"length_in": 70, "completed": 0},
-                {"length_in": 82, "completed": 1},
-                {"length_in": 82, "completed": 0},
-                {"length_in": 82, "completed": 0},
-                {"length_in": 82, "completed": 0},
+                {"length_in": 55, "large_gauge": 1, "color": "orange", "completed": 1},
+                {"length_in": 55, "large_gauge": 0, "color": "orange", "completed": 1},
+                {"length_in": 55, "large_gauge": 0, "color": "brown", "completed": 1},
+                {"length_in": 60, "large_gauge": 0, "color": "brown", "completed": 1},
+                {"length_in": 60, "large_gauge": 0, "color": "grey", "completed": 0},
+                {"length_in": 70, "large_gauge": 0, "color": "grey", "completed": 1},
+                {"length_in": 70, "large_gauge": 0, "color": "orange", "completed": 0},
+                {"length_in": 82, "large_gauge": 1, "color": "grey", "completed": 1},
+                {"length_in": 82, "large_gauge": 0, "color": "brown", "completed": 0},
+                {"length_in": 82, "large_gauge": 0, "color": "orange", "completed": 0},
+                {"length_in": 82, "large_gauge": 1, "color": "brown", "completed": 0},
             ]
         )
 
     def test_ate(self):
-        df = self.scarf_df
+        df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         ate, _ = logistic_regression_estimator.estimate_ate()
         self.assertEqual(round(ate, 4), -0.1987)
 
     def test_risk_ratio(self):
-        df = self.scarf_df
+        df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         rr, _ = logistic_regression_estimator.estimate_risk_ratio()
         self.assertEqual(round(rr, 4), 0.7664)
 
     def test_odds_ratio(self):
-        df = self.scarf_df
+        df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
         odds = logistic_regression_estimator.estimate_unit_odds_ratio()
         self.assertEqual(round(odds, 4), 0.8948)
+
+    def test_ate_adjustment(self):
+        df = self.scarf_df.copy()
+        logistic_regression_estimator = LogisticRegressionEstimator(
+            "length_in", 65, 55, {"large_gauge"}, "completed", df
+        )
+        ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
+        self.assertEqual(round(ate, 4), -0.3388)
+
+    def test_ate_invalid_adjustment(self):
+        df = self.scarf_df.copy()
+        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, {}, "completed", df)
+        with self.assertRaises(ValueError):
+            ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
+
+    def test_ate_effect_modifiers(self):
+        df = self.scarf_df.copy()
+        logistic_regression_estimator = LogisticRegressionEstimator(
+            "length_in", 65, 55, set(), "completed", df, effect_modifiers={"large_gauge": 0}
+        )
+        ate, _ = logistic_regression_estimator.estimate_ate()
+        self.assertEqual(round(ate, 4), -0.3388)
+
+    def test_ate_effect_modifiers_formula(self):
+        df = self.scarf_df.copy()
+        logistic_regression_estimator = LogisticRegressionEstimator(
+            "length_in",
+            65,
+            55,
+            set(),
+            "completed",
+            df,
+            effect_modifiers={"large_gauge": 0},
+            formula="completed ~ length_in + large_gauge",
+        )
+        ate, _ = logistic_regression_estimator.estimate_ate()
+        self.assertEqual(round(ate, 4), -0.3388)
 
 
 class TestInstrumentalVariableEstimator(unittest.TestCase):
@@ -158,6 +195,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
 
+        print(model.summary())
         self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
@@ -166,13 +204,17 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
-        linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df)
-        linear_regression_estimator.add_squared_term_to_df("treatments")
+        linear_regression_estimator = LinearRegressionEstimator(
+            "treatments", 100, 90, set(), "outcomes", df, formula="outcomes ~ treatments + np.power(treatments, 2)"
+        )
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
         self.assertEqual(
             round(
-                model.params["Intercept"] + 90 * model.params["treatments"] + 90 * 90 * model.params["treatments^2"], 1
+                model.params["Intercept"]
+                + 90 * model.params["treatments"]
+                + 90 * 90 * model.params["np.power(treatments, 2)"],
+                1,
             ),
             197.1,
         )
@@ -198,17 +240,30 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df)
-        terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
-        terms_to_product = [("qsmk", "smokeintensity")]
-        for term_to_square in terms_to_square:
-            linear_regression_estimator.add_squared_term_to_df(term_to_square)
-        for term_a, term_b in terms_to_product:
-            linear_regression_estimator.add_product_term_to_df(term_a, term_b)
+        linear_regression_estimator = LinearRegressionEstimator(
+            "qsmk",
+            1,
+            0,
+            covariates,
+            "wt82_71",
+            df,
+            formula=f"""wt82_71 ~ qsmk +
+                             {'+'.join(sorted(list(covariates)))} +
+                             np.power(age, 2) +
+                             np.power(wt71, 2) +
+                             np.power(smokeintensity, 2) +
+                             np.power(smokeyrs, 2) +
+                             (qsmk * smokeintensity)""",
+        )
+        # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
+        # terms_to_product = [("qsmk", "smokeintensity")]
+        # for term_to_square in terms_to_square:
+        # for term_a, term_b in terms_to_product:
+        #     linear_regression_estimator.add_product_term_to_df(term_a, term_b)
 
         model = linear_regression_estimator._run_linear_regression()
         self.assertEqual(round(model.params["qsmk"], 1), 2.6)
-        self.assertEqual(round(model.params["qsmk*smokeintensity"], 2), 0.05)
+        self.assertEqual(round(model.params["qsmk:smokeintensity"], 2), 0.05)
 
     def test_program_15_no_interaction(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -230,10 +285,17 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df)
-        terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
-        for term_to_square in terms_to_square:
-            linear_regression_estimator.add_squared_term_to_df(term_to_square)
+        linear_regression_estimator = LinearRegressionEstimator(
+            "qsmk",
+            1,
+            0,
+            covariates,
+            "wt82_71",
+            df,
+            formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)",
+        )
+        # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
+        # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_unit_ate()
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
@@ -258,10 +320,17 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df)
-        terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
-        for term_to_square in terms_to_square:
-            linear_regression_estimator.add_squared_term_to_df(term_to_square)
+        linear_regression_estimator = LinearRegressionEstimator(
+            "qsmk",
+            1,
+            0,
+            covariates,
+            "wt82_71",
+            df,
+            formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)",
+        )
+        # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
+        # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate()
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
@@ -286,10 +355,17 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        linear_regression_estimator = LinearRegressionEstimator("qsmk", 1, 0, covariates, "wt82_71", df)
-        terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
-        for term_to_square in terms_to_square:
-            linear_regression_estimator.add_squared_term_to_df(term_to_square)
+        linear_regression_estimator = LinearRegressionEstimator(
+            "qsmk",
+            1,
+            0,
+            covariates,
+            "wt82_71",
+            df,
+            formula="wt82_71 ~ qsmk + age + np.power(age, 2) + wt71 + np.power(wt71, 2) + smokeintensity + np.power(smokeintensity, 2) + smokeyrs + np.power(smokeyrs, 2)",
+        )
+        # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
+        # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
             {k: self.nhefs_df.mean()[k] for k in covariates}
         )
@@ -328,9 +404,7 @@ class TestCausalForestEstimator(unittest.TestCase):
             "smokeintensity",
             "smokeyrs",
         }
-        causal_forest = CausalForestEstimator(
-            "qsmk", 1, 0, covariates, "wt82_71", df, {Input("smokeintensity", int): 40}
-        )
+        causal_forest = CausalForestEstimator("qsmk", 1, 0, covariates, "wt82_71", df, {"smokeintensity": 40})
         ate, _ = causal_forest.estimate_ate()
         self.assertGreater(round(ate, 1), 2.5)
         self.assertLess(round(ate, 1), 4.5)
@@ -356,7 +430,7 @@ class TestCausalForestEstimator(unittest.TestCase):
             "smokeyrs",
         }
         causal_forest = CausalForestEstimator(
-            "qsmk", 1, 0, covariates, "wt82_71", smoking_intensity_5_and_40_df, {Input("smokeintensity", int): 40}
+            "qsmk", 1, 0, covariates, "wt82_71", smoking_intensity_5_and_40_df, {"smokeintensity": 40}
         )
         cates_df, _ = causal_forest.estimate_cates()
         self.assertGreater(cates_df["cate"].mean(), 0)
@@ -376,7 +450,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
         x2 = Input("X2", float)
         lr_model = LinearRegressionEstimator(
-            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={x2: 0}, product_terms=[("X1", "X2")], df=self.df
+            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={x2.name: 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
         )
         test_results = lr_model.estimate_ate()
         ate = test_results[0]

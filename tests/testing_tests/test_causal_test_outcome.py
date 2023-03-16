@@ -1,5 +1,5 @@
 import unittest
-from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect
+from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect, Positive, Negative
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.testing.estimators import LinearRegressionEstimator
 
@@ -62,6 +62,50 @@ class TestCausalTestOutcome(unittest.TestCase):
                 "ate: 0\n"
             ),
         )
+
+    def test_Positive_pass(self):
+        test_value = TestValue(type="ate", value=5.05)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        ev = Positive()
+        self.assertTrue(ev.apply(ctr))
+
+    def test_Positive_fail(self):
+        test_value = TestValue(type="ate", value=0)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        ev = Positive()
+        self.assertFalse(ev.apply(ctr))
+
+    def test_Negative_pass(self):
+        test_value = TestValue(type="ate", value=-5.05)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        ev = Negative()
+        self.assertTrue(ev.apply(ctr))
+
+    def test_Negative_fail(self):
+        test_value = TestValue(type="ate", value=0)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        ev = Negative()
+        self.assertFalse(ev.apply(ctr))
 
     def test_exactValue_pass(self):
         test_value = TestValue(type="ate", value=5.05)

@@ -218,8 +218,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.minimal_adjustment_set,
             "C",
             self.causal_test_engine.scenario_execution_data_df,
+            formula=f"C ~ A + {'+'.join(self.minimal_adjustment_set)} + (D ** 2)",
         )
-        estimation_model.add_squared_term_to_df("D")
         causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
         self.assertAlmostEqual(round(causal_test_result.test_value.value, 1), 4, delta=1)
 
@@ -240,7 +240,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.minimal_adjustment_set,
             "C",
             self.causal_test_engine.scenario_execution_data_df,
-            effect_modifiers={Input("M", int): None},
+            effect_modifiers={"M": None},
         )
         causal_test_result = self.causal_test_engine.execute_test(
             estimation_model, self.causal_test_case, estimate_type="cate"

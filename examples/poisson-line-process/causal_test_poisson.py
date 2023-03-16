@@ -117,6 +117,8 @@ def test_intensity_num_shapes(
             effect_modifiers=causal_test_case.effect_modifier_configuration,
         )
     else:
+        square_terms = [f"np.power({t}, 2)" for t in square_terms]
+        inverse_terms = [f"np.float_power({t}, -1)" for t in inverse_terms]
         estimator = LinearRegressionEstimator(
             treatment=treatment,
             control_value=causal_test_case.control_value,
@@ -124,13 +126,9 @@ def test_intensity_num_shapes(
             adjustment_set=set(),
             outcome=outcome,
             df=data,
-            intercept=0,
             effect_modifiers=causal_test_case.effect_modifier_configuration,
+            formula=f"{outcome} ~ {treatment} + {'+'.join(square_terms + inverse_terms + list([e.name for e in causal_test_case.effect_modifier_configuration]))} -1"
         )
-        for t in square_terms:
-            estimator.add_squared_term_to_df(t)
-        for t in inverse_terms:
-            estimator.add_inverse_term_to_df(t)
 
     # 10. Execute the test
     causal_test_result = causal_test_engine.execute_test(
