@@ -63,7 +63,7 @@ class TestCausalTestOutcome(unittest.TestCase):
             ),
         )
 
-def test_Positive_pass(self):
+    def test_Positive_pass(self):
         test_value = TestValue(type="ate", value=5.05)
         ctr = CausalTestResult(
             estimator=self.estimator,
