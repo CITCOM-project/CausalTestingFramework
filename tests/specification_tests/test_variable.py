@@ -155,6 +155,12 @@ class TestZ3Methods(unittest.TestCase):
     def test_ge_add(self):
         self.assertEqual(str(self.i1 + 1 >= 5), "i1 + 1 >= 5")
 
+    def test_ne_mod(self):
+        self.assertEqual(str(self.i1 % 2 != 5), "i1%2 != 5")
+
+    def test_neg_pow(self):
+        self.assertEqual(str(-self.i1 ** 5), "-i1**5")
+
     def test_le_mul(self):
         self.assertEqual(str(self.i1 * 2 <= 5), "i1*2 <= 5")
 
