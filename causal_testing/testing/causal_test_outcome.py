@@ -22,45 +22,6 @@ class CausalTestOutcome(ABC):
         return type(self).__name__
 
 
-class ExactValue(CausalTestOutcome):
-    """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
-
-    def __init__(self, value: float, tolerance: float = None):
-        self.value = value
-        if tolerance is None:
-            self.tolerance = value * 0.05
-        else:
-            self.tolerance = tolerance
-
-    def apply(self, res: CausalTestResult) -> bool:
-        return np.isclose(res.test_value.value, self.value, atol=self.tolerance)
-
-    def __str__(self):
-        return f"ExactValue: {self.value}±{self.tolerance}"
-
-
-class Positive(CausalTestOutcome):
-    """An extension of TestOutcome representing that the expected causal effect should be positive."""
-
-    def apply(self, res: CausalTestResult) -> bool:
-        if res.test_value.type == "ate":
-            return res.test_value.value > 0
-        if res.test_value.type == "risk_ratio":
-            return res.test_value.value > 1
-        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
-
-
-class Negative(CausalTestOutcome):
-    """An extension of TestOutcome representing that the expected causal effect should be negative."""
-
-    def apply(self, res: CausalTestResult) -> bool:
-        if res.test_value.type == "ate":
-            return res.test_value.value < 0
-        if res.test_value.type == "risk_ratio":
-            return res.test_value.value < 1
-        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
-
-
 class SomeEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should not be zero."""
 
@@ -87,3 +48,45 @@ class NoEffect(CausalTestOutcome):
 
     def __str__(self):
         return "Unchanged"
+
+
+class ExactValue(SomeEffect):
+    """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
+
+    def __init__(self, value: float, tolerance: float = None):
+        self.value = value
+        if tolerance is None:
+            self.tolerance = value * 0.05
+        else:
+            self.tolerance = tolerance
+
+    def apply(self, res: CausalTestResult) -> bool:
+        super().apply()
+        return np.isclose(res.test_value.value, self.value, atol=self.tolerance)
+
+    def __str__(self):
+        return f"ExactValue: {self.value}±{self.tolerance}"
+
+
+class Positive(SomeEffect):
+    """An extension of TestOutcome representing that the expected causal effect should be positive."""
+
+    def apply(self, res: CausalTestResult) -> bool:
+        super().apply()
+        if res.test_value.type == "ate":
+            return res.test_value.value > 0
+        if res.test_value.type == "risk_ratio":
+            return res.test_value.value > 1
+        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
+
+
+class Negative(SomeEffect):
+    """An extension of TestOutcome representing that the expected causal effect should be negative."""
+
+    def apply(self, res: CausalTestResult) -> bool:
+        super().apply()
+        if res.test_value.type == "ate":
+            return res.test_value.value < 0
+        if res.test_value.type == "risk_ratio":
+            return res.test_value.value < 1
+        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
