@@ -124,7 +124,6 @@ class Variable(ABC):
         """
         return self.z3.__lt__(_coerce(other))
 
-
     def __mod__(self, other: Any) -> BoolRef:
         """Create the Z3 expression `self % other`.
 
