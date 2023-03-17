@@ -1,3 +1,8 @@
+"""
+This module contains the ShouldCause and ShouldNotCause metamorphic relations as
+defined in our ICST paper [https://eprints.whiterose.ac.uk/195317/].
+"""
+
 from dataclasses import dataclass
 from abc import abstractmethod
 from typing import Iterable
