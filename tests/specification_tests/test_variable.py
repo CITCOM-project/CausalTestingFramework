@@ -135,7 +135,7 @@ class TestVariable(unittest.TestCase):
 
     def test_copy(self):
         ip = Input("ip", float, norm)
-        self.assertNotEqual(ip.copy(), ip)
+        self.assertTrue(ip.copy() is not ip)
         self.assertEqual(ip.copy().name, ip.name)
         self.assertEqual(ip.copy().datatype, ip.datatype)
         self.assertEqual(ip.copy().distribution, ip.distribution)
