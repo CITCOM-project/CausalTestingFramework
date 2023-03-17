@@ -1,7 +1,11 @@
+"""This module contains the CausalDAG class, as well as the functions list_all_min_sep and close_seperator"""
+
+from __future__ import annotations
+
 import logging
 from itertools import combinations
 from random import sample
-from typing import TypeVar, Union
+from typing import Union
 
 import networkx as nx
 
@@ -9,7 +13,6 @@ from .scenario import Scenario
 from .variable import Output
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
-CausalDAG = TypeVar("CausalDAG")
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +52,6 @@ def list_all_min_sep(
 
     # 4. Confirm that the connected component containing the treatment node is disjoint with the outcome node set
     if not treatment_connected_component_node_set.intersection(outcome_node_set):
-
         # 5. Update the treatment node set to the set of nodes in the connected component containing the treatment node
         treatment_node_set = treatment_connected_component_node_set
 
@@ -60,7 +62,6 @@ def list_all_min_sep(
 
         # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
         if treatment_node_set_neighbours.difference(outcome_node_set):
-
             # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
             node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
 
@@ -82,7 +83,6 @@ def list_all_min_sep(
                 outcome_node_set.union(node),
             )
         else:
-
             # 8. If all neighbours of the treatments nodes are in the outcome node set, return the set of treatment
             # node neighbours
             yield treatment_node_set_neighbours
@@ -137,6 +137,36 @@ class CausalDAG(nx.DiGraph):
 
         if not self.is_acyclic():
             raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
+
+    def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
+        """
+        Checks the three instrumental variable assumptions, raising a
+        ValueError if any are violated.
+
+        :return Boolean True if the three IV assumptions hold.
+        """
+        # (i) Instrument is associated with treatment
+        if nx.d_separated(self.graph, {instrument}, {treatment}, set()):
+            raise ValueError(f"Instrument {instrument} is not associated with treatment {treatment} in the DAG")
+
+        # (ii) Instrument does not affect outcome except through its potential effect on treatment
+        if not all((treatment in path for path in nx.all_simple_paths(self.graph, source=instrument, target=outcome))):
+            raise ValueError(
+                f"Instrument {instrument} affects the outcome {outcome} other than through the treatment {treatment}"
+            )
+
+        # (iii) Instrument and outcome do not share causes
+        if any(
+            (
+                cause
+                for cause in self.graph.nodes
+                if list(nx.all_simple_paths(self.graph, source=cause, target=instrument))
+                and list(nx.all_simple_paths(self.graph, source=cause, target=outcome))
+            )
+        ):
+            raise ValueError(f"Instrument {instrument} and outcome {outcome} share common causes")
+
+        return True
 
     def add_edge(self, u_of_edge: Node, v_of_edge: Node, **attr):
         """Add an edge to the causal DAG.
@@ -279,6 +309,7 @@ class CausalDAG(nx.DiGraph):
         :param outcomes: A list of strings representing outcomes.
         :return: A list of strings representing the minimal adjustment set.
         """
+
         # 1. Construct the proper back-door graph's ancestor moral graph
         proper_backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
         ancestor_proper_backdoor_graph = proper_backdoor_graph.get_ancestor_graph(treatments, outcomes)
@@ -317,6 +348,7 @@ class CausalDAG(nx.DiGraph):
             for adj in minimum_adjustment_sets
             if self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes, adj)
         ]
+
         return valid_minimum_adjustment_sets
 
     def adjustment_set_is_minimal(self, treatments: list[str], outcomes: list[str], adjustment_set: set[str]) -> bool:
@@ -350,10 +382,8 @@ class CausalDAG(nx.DiGraph):
                 proper_backdoor_graph, treatments, outcomes, smaller_adjustment_set
             ):
                 logger.info(
-                    "Z=%s is not minimal because Z'=Z\\{{'%s'}}=" "%s is also a valid adjustment set.",
-                    adjustment_set,
-                    variable,
-                    smaller_adjustment_set,
+                    f"Z={adjustment_set} is not minimal because Z'=Z\\{variable} = {smaller_adjustment_set} is also a"
+                    f"valid adjustment set.",
                 )
                 return False
 
@@ -464,7 +494,30 @@ class CausalDAG(nx.DiGraph):
         """
         if isinstance(scenario.variables[node], Output):
             return True
-        return any([self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)])
+        return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
+
+    def identification(self, base_test_case):
+        """Identify and return the minimum adjustment set
+
+        :param base_test_case: A base test case instance containing the outcome_variable and the
+        treatment_variable required for identification.
+        :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
+        estimate as opposed to a purely associational estimate.
+        """
+        minimal_adjustment_sets = []
+        if base_test_case.effect == "total":
+            minimal_adjustment_sets = self.enumerate_minimal_adjustment_sets(
+                [base_test_case.treatment_variable.name], [base_test_case.outcome_variable.name]
+            )
+        elif base_test_case.effect == "direct":
+            minimal_adjustment_sets = self.direct_effect_adjustment_sets(
+                [base_test_case.treatment_variable.name], [base_test_case.outcome_variable.name]
+            )
+        else:
+            raise ValueError("Causal effect should be 'total' or 'direct'")
+
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
+        return minimal_adjustment_set
 
     def __str__(self):
         return f"Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}"

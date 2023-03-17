@@ -1,4 +1,8 @@
-from abc import ABC, abstractmethod
+"""This module contains the Variable abstract class, as well as its concrete extensions: Input, Output and Meta. The
+function z3_types and the private function _coerce are also in this module."""
+
+from __future__ import annotations
+from abc import ABC
 from collections.abc import Callable
 from enum import Enum
 from typing import Any, TypeVar
@@ -9,20 +13,20 @@ from scipy.stats._distn_infrastructure import rv_generic
 from z3 import Bool, BoolRef, Const, EnumSort, Int, RatNumRef, Real, String
 
 # Declare type variable
-# Is there a better way? I'd really like to do Variable[T](ExprRef)
 T = TypeVar("T")
-Variable = TypeVar("Variable")
-Input = TypeVar("Input")
-Output = TypeVar("Output")
-Meta = TypeVar("Meta")
+z3 = TypeVar("Z3")
 
 
-def z3_types(datatype):
+def z3_types(datatype: T) -> z3:
+    """Cast datatype to Z3 datatype
+    :param datatype: python datatype to be cast
+    :return: Type name compatible with Z3 library
+    """
     types = {int: Int, str: String, float: Real, bool: Bool}
     if datatype in types:
         return types[datatype]
     if issubclass(datatype, Enum):
-        dtype, _ = EnumSort(datatype.__name__, [x.name for x in datatype])
+        dtype, _ = EnumSort(datatype.__name__, [str(x.value) for x in datatype])
         return lambda x: Const(x, dtype)
     if hasattr(datatype, "to_z3"):
         return datatype.to_z3()
@@ -56,23 +60,23 @@ class Variable(ABC):
     :attr name:
     :attr datatype:
     :attr distribution:
-
+    :attr hidden:
     """
 
     name: str
     datatype: T
     distribution: rv_generic
 
-    def __init__(self, name: str, datatype: T, distribution: rv_generic = None):
+    def __init__(self, name: str, datatype: T, distribution: rv_generic = None, hidden: bool = False):
         self.name = name
         self.datatype = datatype
         self.z3 = z3_types(datatype)(name)
         self.distribution = distribution
+        self.hidden = hidden
 
     def __repr__(self):
         return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
 
-    # TODO: We're going to need to implement all the supported Z3 operations like this
     def __ge__(self, other: Any) -> BoolRef:
         """Create the Z3 expression `other >= self`.
 
@@ -153,19 +157,24 @@ class Variable(ABC):
         :rtype: T
         """
         assert val is not None, f"Invalid value None for variable {self}"
+        if isinstance(val, self.datatype):
+            return val
+        if isinstance(val, BoolRef) and self.datatype == bool:
+            return str(val) == "True"
         if isinstance(val, RatNumRef) and self.datatype == float:
             return float(val.numerator().as_long() / val.denominator().as_long())
         if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
             return val.as_string()
-        if (isinstance(val, float) or isinstance(val, int)) and (self.datatype == int or self.datatype == float):
+        if (isinstance(val, (float, int, bool))) and (self.datatype in (float, int, bool)):
             return self.datatype(val)
         return self.datatype(str(val))
 
     def z3_val(self, z3_var, val: Any) -> T:
+        """Cast value to Z3 value"""
         native_val = self.cast(val)
         if isinstance(native_val, Enum):
             values = [z3_var.sort().constructor(c)() for c in range(z3_var.sort().num_constructors())]
-            values = [v for v in values if str(v) == str(val)]
+            values = [v for v in values if val.__class__(str(v)) == val]
             assert len(values) == 1, f"Expected {values} to be length 1"
             return values[0]
         return native_val
@@ -193,7 +202,6 @@ class Variable(ABC):
         """
         return type(self).__name__
 
-    @abstractmethod
     def copy(self, name: str = None) -> Variable:
         """Return a new instance of the Variable with the given name, or with
         the original name if no name is supplied.
@@ -203,25 +211,17 @@ class Variable(ABC):
         :rtype: Variable
 
         """
-        raise NotImplementedError("Method `copy` must be instantiated.")
+        if name:
+            return self.__class__(name, self.datatype, self.distribution)
+        return self.__class__(self.name, self.datatype, self.distribution)
 
 
 class Input(Variable):
     """An extension of the Variable class representing inputs."""
 
-    def copy(self, name=None) -> Input:
-        if name:
-            return Input(name, self.datatype, self.distribution)
-        return Input(self.name, self.datatype, self.distribution)
-
 
 class Output(Variable):
     """An extension of the Variable class representing outputs."""
-
-    def copy(self, name=None) -> Output:
-        if name:
-            return Output(name, self.datatype, self.distribution)
-        return Output(self.name, self.datatype, self.distribution)
 
 
 class Meta(Variable):
@@ -242,8 +242,3 @@ class Meta(Variable):
     def __init__(self, name: str, datatype: T, populate: Callable[[DataFrame], DataFrame]):
         super().__init__(name, datatype)
         self.populate = populate
-
-    def copy(self, name=None) -> Meta:
-        if name:
-            return Meta(name, self.datatype, self.distribution)
-        return Meta(self.name, self.datatype, self.distribution)
