@@ -155,7 +155,7 @@ def effects_on_APD90(observational_data_path, test_suite):
     return causal_test_results
 
 
-def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = True, show=False):
+def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = False, show=False):
     """Plot the average treatment effects for a given treatment against a list of x-values with confidence intervals.
 
     :param results_dict: A dictionary containing results for sensitivity analysis of each input parameter.
@@ -200,4 +200,4 @@ def normalise_data(df, columns=None):
 
 
 if __name__ == "__main__":
-    test_sensitivity_analysis(show=True)
+    test_sensitivity_analysis(show=True, save=True)
