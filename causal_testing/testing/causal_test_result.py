@@ -85,6 +85,10 @@ class CausalTestResult:
             return max(self.confidence_intervals)
         return None
 
+    def ci_valid(self) -> bool:
+        """Return whether or not the result has valid confidence invervals"""
+        return self.ci_low() and self.ci_high()
+
     def summary(self):
         """Summarise the causal test result as an intuitive sentence."""
         print(

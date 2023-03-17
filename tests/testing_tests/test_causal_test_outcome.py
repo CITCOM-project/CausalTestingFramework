@@ -85,6 +85,17 @@ class TestCausalTestOutcome(unittest.TestCase):
         ev = Positive()
         self.assertFalse(ev.apply(ctr))
 
+    def test_Positive_fail_ci(self):
+        test_value = TestValue(type="ate", value=0)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=[-1, 1],
+            effect_modifier_configuration=None,
+        )
+        ev = Positive()
+        self.assertFalse(ev.apply(ctr))
+
     def test_Negative_pass(self):
         test_value = TestValue(type="ate", value=-5.05)
         ctr = CausalTestResult(
@@ -102,6 +113,17 @@ class TestCausalTestOutcome(unittest.TestCase):
             estimator=self.estimator,
             test_value=test_value,
             confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        ev = Negative()
+        self.assertFalse(ev.apply(ctr))
+
+    def test_Negative_fail_ci(self):
+        test_value = TestValue(type="ate", value=0)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=[-1, 1],
             effect_modifier_configuration=None,
         )
         ev = Negative()
