@@ -30,7 +30,7 @@ class MetamorphicRelation:
         np.random.seed(seed)
 
         # Get set of variables to change, excluding the treatment itself
-        variables_to_change = set([node for node in self.dag.graph.nodes if self.dag.graph.in_degree(node) == 0])
+        variables_to_change = {node for node in self.dag.graph.nodes if self.dag.graph.in_degree(node) == 0}
         if self.adjustment_vars:
             variables_to_change |= set(self.adjustment_vars)
         if self.treatment_var in variables_to_change:
@@ -55,26 +55,24 @@ class MetamorphicRelation:
             candidate_source_follow_up_pairs[sampled_source_follow_up_indices],
             columns=sorted([self.treatment_var] + [follow_up_input]),
         )
-        source_test_inputs = source_follow_up_test_inputs[[self.treatment_var]]
-        follow_up_test_inputs = source_follow_up_test_inputs[[follow_up_input]]
-        follow_up_test_inputs = follow_up_test_inputs.rename(columns={follow_up_input: self.treatment_var})
-        source_test_inputs_record = source_test_inputs.to_dict(orient="records")
-        follow_up_test_inputs_record = follow_up_test_inputs.to_dict(orient="records")
-        if not test_inputs.empty:
-            other_test_inputs_record = test_inputs.to_dict(orient="records")
-        else:
-            other_test_inputs_record = [{}] * len(source_test_inputs)
-        metamorphic_tests = []
-        for i in range(len(source_test_inputs_record)):
-            metamorphic_test = MetamorphicTest(
-                source_test_inputs_record[i],
-                follow_up_test_inputs_record[i],
-                other_test_inputs_record[i],
+        self.tests = [
+            MetamorphicTest(
+                source_inputs,
+                follow_up_inputs,
+                other_inputs,
                 self.output_var,
                 str(self),
             )
-            metamorphic_tests.append(metamorphic_test)
-        self.tests = metamorphic_tests
+            for source_inputs, follow_up_inputs, other_inputs in zip(
+                source_follow_up_test_inputs[[self.treatment_var]].to_dict(orient="records"),
+                source_follow_up_test_inputs[[follow_up_input]]
+                .rename(columns={follow_up_input: self.treatment_var})
+                .to_dict(orient="records"),
+                test_inputs.to_dict(orient="records")
+                if not test_inputs.empty
+                else [{}] * len(source_follow_up_test_inputs),
+            )
+        ]
 
     def execute_tests(self, data_collector: ExperimentalDataCollector):
         """Execute the generated list of metamorphic tests, returning a dictionary of tests that pass and fail.
