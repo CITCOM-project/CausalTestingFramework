@@ -2,6 +2,7 @@ import unittest
 from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect, Positive, Negative
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.testing.validation import CausalValidator
 
 
 class TestCausalTestOutcome(unittest.TestCase):
@@ -176,3 +177,33 @@ class TestCausalTestOutcome(unittest.TestCase):
                 "ci_high": 0.2,
             },
         )
+
+    def test_positive_risk_ratio_e_value(self):
+        test_value = TestValue("risk_ratio", 1.5)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=[1.2, 1.8],
+            effect_modifier_configuration=None,
+        )
+
+        cv = CausalValidator()
+        e_value, e_confidence_intervals = cv.estimate_e_value(ctr.test_value.value, ctr.confidence_intervals)
+        self.assertEqual(round(e_value, 4), 2.366)
+        self.assertEqual(round(e_confidence_intervals[0], 4), 1.6899)
+        self.assertEqual(e_confidence_intervals[1], 1)
+
+    def test_negative_risk_ratio_e_value(self):
+        test_value = TestValue("risk_ratio", 0.8)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=[0.2, 0.9],
+            effect_modifier_configuration=None,
+        )
+
+        cv = CausalValidator()
+        e_value, e_confidence_intervals = cv.estimate_e_value(ctr.test_value.value, ctr.confidence_intervals)
+        self.assertEqual(round(e_value, 4), 1.809)
+        self.assertEqual(e_confidence_intervals[0], 1)
+        self.assertEqual(round(e_confidence_intervals[1], 4), 1.4625)
