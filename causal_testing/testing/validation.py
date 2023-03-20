@@ -4,8 +4,8 @@ import numpy as np
 from scipy.stats import t
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
-class CausalValidator:
 
+class CausalValidator:
     def estimate_robustness(self, model: RegressionResultsWrapper, q=1, alpha=1):
         """Calculate the robustness of a linear regression model. This allow
         the user to identify how large an unidentified confounding variable
