@@ -6,6 +6,8 @@ from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 
 class CausalValidator:
+    """A suite of validation tools to perform Quantitive Bias Analysis to back up causal claims"""
+
     def estimate_robustness(self, model: RegressionResultsWrapper, q=1, alpha=1):
         """Calculate the robustness of a linear regression model. This allow
         the user to identify how large an unidentified confounding variable
@@ -41,15 +43,14 @@ class CausalValidator:
 
             return (e, (lower_limit, 1))
 
+        risk_ratio_prime = 1 / risk_ratio
+        e = risk_ratio_prime + math.sqrt(risk_ratio_prime * (risk_ratio_prime - 1))
+
+        upper_limit = confidence_intervals[1]
+        if upper_limit >= 1:
+            upper_limit = 1
         else:
-            risk_ratio_prime = 1 / risk_ratio
-            e = risk_ratio_prime + math.sqrt(risk_ratio_prime * (risk_ratio_prime - 1))
+            upper_limit_prime = 1 / upper_limit
+            upper_limit = upper_limit_prime + math.sqrt(upper_limit_prime * (upper_limit_prime - 1))
 
-            upper_limit = confidence_intervals[1]
-            if upper_limit >= 1:
-                upper_limit = 1
-            else:
-                upper_limit_prime = 1 / upper_limit
-                upper_limit = upper_limit_prime + math.sqrt(upper_limit_prime * (upper_limit_prime - 1))
-
-            return (e, (1, upper_limit))
+        return (e, (1, upper_limit))
