@@ -355,6 +355,7 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
+        self.model = model
 
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
