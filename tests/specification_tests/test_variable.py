@@ -133,12 +133,14 @@ class TestVariable(unittest.TestCase):
         var = Var("v", int)
         self.assertEqual(var.typestring(), "Var")
 
+
     def test_copy(self):
         ip = Input("ip", float, norm)
-        self.assertNotEqual(ip.copy(), ip)
+        self.assertTrue(ip.copy() is not ip)
         self.assertEqual(ip.copy().name, ip.name)
         self.assertEqual(ip.copy().datatype, ip.datatype)
         self.assertEqual(ip.copy().distribution, ip.distribution)
+        self.assertEqual(repr(ip), repr(ip.copy()))
 
 
 class TestZ3Methods(unittest.TestCase):
@@ -152,14 +154,41 @@ class TestZ3Methods(unittest.TestCase):
     def setUp(self) -> None:
         self.i1 = Input("i1", int)
 
-    def test_ge_add(self):
-        self.assertEqual(str(self.i1 + 1 >= 5), "i1 + 1 >= 5")
+    def test_ge_self(self):
+        self.assertEqual(str(self.i1 >= self.i1), "i1 >= i1")
 
-    def test_le_mul(self):
-        self.assertEqual(str(self.i1 * 2 <= 5), "i1*2 <= 5")
+    def test_add(self):
+        self.assertEqual(str(self.i1 + 1), "i1 + 1")
 
-    def test_gt_truediv(self):
-        self.assertEqual(str(self.i1 / 3 > 5), "i1/3 > 5")
+    def test_ge(self):
+        self.assertEqual(str(self.i1 >= 5), "i1 >= 5")
 
-    def test_lt_sub(self):
-        self.assertEqual(str(self.i1 - 4 < 5), "i1 - 4 < 5")
+    def test_mod(self):
+        self.assertEqual(str(self.i1 % 2), "i1%2")
+
+    def test_ne(self):
+        self.assertEqual(str(self.i1 != 5), "i1 != 5")
+
+    def test_neg(self):
+        self.assertEqual(str(-self.i1), "-i1")
+
+    def test_pow(self):
+        self.assertEqual(str(self.i1 ** 5), "i1**5")
+
+    def test_le(self):
+        self.assertEqual(str(self.i1 <= 5), "i1 <= 5")
+
+    def test_mul(self):
+        self.assertEqual(str(self.i1 * 2), "i1*2")
+
+    def test_gt(self):
+        self.assertEqual(str(self.i1 > 5), "i1 > 5")
+
+    def test_truediv(self):
+        self.assertEqual(str(self.i1 / 3), "i1/3")
+
+    def test_sub(self):
+        self.assertEqual(str(self.i1 - 4), "i1 - 4")
+
+    def test_lt(self):
+        self.assertEqual(str(self.i1 < 5), "i1 < 5")
