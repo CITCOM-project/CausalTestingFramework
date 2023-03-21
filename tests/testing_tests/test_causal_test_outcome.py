@@ -2,6 +2,7 @@ import unittest
 from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect, Positive, Negative
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.testing.validation import CausalValidator
 
 
 class TestCausalTestOutcome(unittest.TestCase):
@@ -176,3 +177,23 @@ class TestCausalTestOutcome(unittest.TestCase):
                 "ci_high": 0.2,
             },
         )
+
+    def test_positive_risk_ratio_e_value(self):
+        cv = CausalValidator()
+        e_value = cv.estimate_e_value(1.5)
+        self.assertEqual(round(e_value, 4), 2.366)
+
+    def test_positive_risk_ratio_e_value_using_ci(self):
+        cv = CausalValidator()
+        e_value = cv.estimate_e_value_using_ci(1.5, [1.2, 1.8])
+        self.assertEqual(round(e_value, 4), 1.6899)
+
+    def test_negative_risk_ratio_e_value(self):
+        cv = CausalValidator()
+        e_value = cv.estimate_e_value(0.8)
+        self.assertEqual(round(e_value, 4), 1.809)
+
+    def test_negative_risk_ratio_e_value_using_ci(self):
+        cv = CausalValidator()
+        e_value = cv.estimate_e_value_using_ci(0.8, [0.2, 0.9])
+        self.assertEqual(round(e_value, 4), 1.4625)
