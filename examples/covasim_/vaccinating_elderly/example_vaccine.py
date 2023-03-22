@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import covasim as cv  # Version used in our study is 3.07
@@ -200,7 +201,7 @@ class CovasimVaccineDataCollector(ExperimentalDataCollector):
             logger.info("Rand Seed: %s", rand_seed)
             sim = cv.Sim(pars=pars_dict)
             m_sim = cv.MultiSim(sim)
-            m_sim.run(n_runs=1, verbose=verbose, n_cpus=1)
+            m_sim.run(n_runs=1, verbose=False, n_cpus=1)
 
             for run in m_sim.sims:
                 results = run.results
