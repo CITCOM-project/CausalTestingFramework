@@ -77,77 +77,117 @@ class Variable(ABC):
     def __repr__(self):
         return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
 
-    def __ge__(self, other: Any) -> BoolRef:
-        """Create the Z3 expression `other >= self`.
-
-        :param any other: The object to compare against.
-        :return: The Z3 expression `other >= self`.
-        :rtype: BoolRef
-        """
-        return self.z3.__ge__(_coerce(other))
-
-    def __le__(self, other: Any) -> BoolRef:
-        """Create the Z3 expression `other <= self`.
-
-        :param any other: The object to compare against.
-        :return: The Z3 expression `other >= self`.
-        :rtype: BoolRef
-        """
-        return self.z3.__le__(_coerce(other))
-
-    def __gt__(self, other: Any) -> BoolRef:
-        """Create the Z3 expression `other > self`.
-
-        :param any other: The object to compare against.
-        :return: The Z3 expression `other >= self`.
-        :rtype: BoolRef
-        """
-        return self.z3.__gt__(_coerce(other))
-
-    def __lt__(self, other: Any) -> BoolRef:
-        """Create the Z3 expression `other < self`.
-
-        :param any other: The object to compare against.
-        :return: The Z3 expression `other >= self`.
-        :rtype: BoolRef
-        """
-        return self.z3.__lt__(_coerce(other))
-
-    def __mul__(self, other: Any) -> BoolRef:
-        """Create the Z3 expression `other * self`.
-
-        :param any other: The object to compare against.
-        :return: The Z3 expression `other >= self`.
-        :rtype: BoolRef
-        """
-        return self.z3.__mul__(_coerce(other))
-
-    def __sub__(self, other: Any) -> BoolRef:
-        """Create the Z3 expression `other * self`.
-
-        :param any other: The object to compare against.
-        :return: The Z3 expression `other >= self`.
-        :rtype: BoolRef
-        """
-        return self.z3.__sub__(_coerce(other))
+    # Thin wrapper for Z1 functions
 
     def __add__(self, other: Any) -> BoolRef:
-        """Create the Z3 expression `other * self`.
+        """Create the Z3 expression `self + other`.
 
         :param any other: The object to compare against.
-        :return: The Z3 expression `other >= self`.
+        :return: The Z3 expression `self + other`.
         :rtype: BoolRef
         """
         return self.z3.__add__(_coerce(other))
 
-    def __truediv__(self, other: Any) -> BoolRef:
-        """Create the Z3 expression `other * self`.
+    def __ge__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self >= other`.
 
         :param any other: The object to compare against.
-        :return: The Z3 expression `other >= self`.
+        :return: The Z3 expression `self >= other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__ge__(_coerce(other))
+
+    def __gt__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self > other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self > other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__gt__(_coerce(other))
+
+    def __le__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self <= other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self <= other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__le__(_coerce(other))
+
+    def __lt__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self < other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self < other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__lt__(_coerce(other))
+
+    def __mod__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self % other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self % other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__mod__(_coerce(other))
+
+    def __mul__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self * other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self * other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__mul__(_coerce(other))
+
+    def __ne__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self != other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self != other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__ne__(_coerce(other))
+
+    def __neg__(self) -> BoolRef:
+        """Create the Z3 expression `-self`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `-self`.
+        :rtype: BoolRef
+        """
+        return self.z3.__neg__()
+
+    def __pow__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self ^ other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self ^ other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__pow__(_coerce(other))
+
+    def __sub__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self - other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self - other`.
+        :rtype: BoolRef
+        """
+        return self.z3.__sub__(_coerce(other))
+
+    def __truediv__(self, other: Any) -> BoolRef:
+        """Create the Z3 expression `self / other`.
+
+        :param any other: The object to compare against.
+        :return: The Z3 expression `self / other`.
         :rtype: BoolRef
         """
         return self.z3.__truediv__(_coerce(other))
+
+    # End thin wrapper
 
     def cast(self, val: Any) -> T:
         """Cast the supplied value to the datatype T of the variable.
