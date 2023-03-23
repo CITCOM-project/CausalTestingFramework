@@ -5,7 +5,6 @@ import argparse
 import json
 import logging
 
-from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -278,7 +277,7 @@ class JsonClassPaths:
         self.dag_path = Path(dag_path)
         self.data_paths = [Path(path) for path in data_paths]
 
-
+@dataclass
 class CausalVariables:
     """
     A dataclass that converts
