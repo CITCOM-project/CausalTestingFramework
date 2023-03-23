@@ -277,6 +277,7 @@ class JsonClassPaths:
         self.dag_path = Path(dag_path)
         self.data_paths = [Path(path) for path in data_paths]
 
+
 @dataclass
 class CausalVariables:
     """
