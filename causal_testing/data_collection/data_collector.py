@@ -112,8 +112,10 @@ class ExperimentalDataCollector(DataCollector):
         executions.
         """
         control_results_df = self.run_system_with_input_configuration(self.control_input_configuration)
+        control_results_df.rename(lambda x: f"control_{x}", inplace=True)
         treatment_results_df = self.run_system_with_input_configuration(self.treatment_input_configuration)
-        results_df = pd.concat([control_results_df, treatment_results_df], ignore_index=True)
+        treatment_results_df.rename(lambda x: f"treatment_{x}", inplace=True)
+        results_df = pd.concat([control_results_df, treatment_results_df], ignore_index=False)
         return results_df
 
     @abstractmethod

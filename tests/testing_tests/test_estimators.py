@@ -9,6 +9,7 @@ from causal_testing.testing.estimators import (
     InstrumentalVariableEstimator,
 )
 from causal_testing.specification.variable import Input
+from causal_testing.testing.validation import CausalValidator
 
 
 def plot_results_df(df):
@@ -371,6 +372,15 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [1.9, 5])
+
+    def test_program_11_2_with_robustness_validation(self):
+        """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
+        df = self.chapter_11_df.copy()
+        linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df)
+        model = linear_regression_estimator._run_linear_regression()
+
+        cv = CausalValidator()
+        self.assertEqual(round(cv.estimate_robustness(model)["treatments"], 4), 0.7353)
 
 
 class TestCausalForestEstimator(unittest.TestCase):

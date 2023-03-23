@@ -41,6 +41,9 @@ dev = [
     "sphinx-autoapi",
     "sphinx_rtd_theme",
 ]
+test = [
+  "covasim~=3.0.7",
+]
 
 [project.urls]
 Bug_Tracker = "https://github.com/CITCOM-project/CausalTestingFramework/issues"
@@ -62,3 +65,9 @@ max_line_length = 120
 in-place = true
 recursive = true
 aggressive = 3
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+python_files=[
+    "test_*.py",
+    "example_*.py"]
