@@ -280,7 +280,7 @@ class JsonClassPaths:
 @dataclass
 class CausalVariables:
     """
-    A dataclass that converts
+    A dataclass that converts lists of dictionaries into lists of Causal Variables
     """
 
     def __init__(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
