@@ -135,9 +135,7 @@ estimators = {
 modelling_inputs = (
     [Input(i["name"], i["datatype"], i["distribution"]) for i in inputs]
     + [Output(i["name"], i["datatype"]) for i in outputs]
-    + [Meta(i["name"], i["datatype"], i["populate"]) for i in metas]
-    if metas
-    else list()
+    + ([Meta(i["name"], i["datatype"], i["populate"]) for i in metas] if metas else list())
 )
 
 # Create modelling scenario to access z3 variable mirrors
