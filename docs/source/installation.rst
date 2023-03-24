@@ -36,6 +36,8 @@ To install from source::
 
 then, to install a specific release::
 
+.. code-block:: console
+
     git fetch --all --tags --prune
     git checkout tags/<tag> -b <branch>
     pip install . # For core API only
@@ -43,15 +45,22 @@ then, to install a specific release::
 
 e.g. version `1.0.0`::
 
+.. code-block:: console
+
     git fetch --all --tags --prune
     git checkout tags/1.0.0 -b version
     pip install .
 
 or to install the latest development version::
 
-    pip install .
+.. code-block:: console
 
-To also install developer tools::
+    pip install -e .
+
+Use
+
+.. code-block:: console
 
     pip install -e .[dev]
 
+to also install developer tools.

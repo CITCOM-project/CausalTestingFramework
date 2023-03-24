@@ -54,3 +54,9 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Glossary
+
+   glossary
