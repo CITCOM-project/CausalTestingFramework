@@ -56,7 +56,7 @@ class JsonUtility:
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
         :param json_path: string path representation to .json file containing test specifications
         :param dag_path: string path representation to the .dot file containing the Causal DAG
-        :param data_path: string path representation to the data file
+        :param data_paths: string path representation to the data files
         """
         self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
