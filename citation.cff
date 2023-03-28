@@ -1,0 +1,20 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Clark
+    given-names: Andrew
+  - family-names: Foster
+    given-names: Michael
+    orcid: https://orcid.org/0000-0001-8233-9873
+  - family-names: Somers
+    given-names: Richard
+  - family-names: Turner
+    given-names: Robert
+  - family-names: Walkinshaw
+    given-names: Neil
+  - family-names: Wild
+    given-names: Christopher
+title: "Causal Testing Framework"
+version: 3.1.0
+doi: https://doi.org/10.48550/arXiv.2209.00357
+date-released: 2023-03-30
