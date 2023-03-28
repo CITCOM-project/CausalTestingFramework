@@ -9,6 +9,8 @@ from typing import Union
 
 import networkx as nx
 
+from causal_testing.testing.base_test_case import BaseTestCase
+
 from .scenario import Scenario
 from .variable import Output
 
@@ -496,7 +498,7 @@ class CausalDAG(nx.DiGraph):
             return True
         return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
 
-    def identification(self, base_test_case):
+    def identification(self, base_test_case: BaseTestCase):
         """Identify and return the minimum adjustment set
 
         :param base_test_case: A base test case instance containing the outcome_variable and the

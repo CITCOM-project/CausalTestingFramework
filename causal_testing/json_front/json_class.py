@@ -5,7 +5,6 @@ import argparse
 import json
 import logging
 
-from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,7 +25,7 @@ from causal_testing.testing.estimators import Estimator
 logger = logging.getLogger(__name__)
 
 
-class JsonUtility(ABC):
+class JsonUtility:
     """
     The JsonUtility Class provides the functionality to use structured JSON to setup and run causal tests on the
     CausalTestingFramework.
@@ -48,7 +47,7 @@ class JsonUtility(ABC):
         self.variables = None
         self.data = []
         self.test_plan = None
-        self.modelling_scenario = None
+        self.scenario = None
         self.causal_specification = None
         self.setup_logger(log_path)
 
@@ -57,25 +56,16 @@ class JsonUtility(ABC):
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
         :param json_path: string path representation to .json file containing test specifications
         :param dag_path: string path representation to the .dot file containing the Causal DAG
-        :param data_path: string path representation to the data file
+        :param data_paths: string path representation to the data files
         """
         self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
-    def set_variables(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
-        """Populate the Causal Variables
-        :param inputs:
-        :param outputs:
-        :param metas:
-        """
-
-        self.variables = CausalVariables(inputs=inputs, outputs=outputs, metas=metas)
-
-    def setup(self):
+    def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
-        self.modelling_scenario = Scenario(self.variables.inputs + self.variables.outputs + self.variables.metas, None)
-        self.modelling_scenario.setup_treatment_variables()
+        self.scenario = scenario
+        self.scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(
-            scenario=self.modelling_scenario, causal_dag=CausalDAG(self.paths.dag_path)
+            scenario=self.scenario, causal_dag=CausalDAG(self.paths.dag_path)
         )
         self._json_parse()
         self._populate_metas()
@@ -83,14 +73,14 @@ class JsonUtility(ABC):
     def _create_abstract_test_case(self, test, mutates, effects):
         assert len(test["mutations"]) == 1
         abstract_test = AbstractCausalTestCase(
-            scenario=self.modelling_scenario,
+            scenario=self.scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-            treatment_variable=next(self.modelling_scenario.variables[v] for v in test["mutations"]),
+            treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
             expected_causal_effect={
-                self.modelling_scenario.variables[variable]: effects[effect]
+                self.scenario.variables[variable]: effects[effect]
                 for variable, effect in test["expectedEffect"].items()
             },
-            effect_modifiers={self.modelling_scenario.variables[v] for v in test["effect_modifiers"]}
+            effect_modifiers={self.scenario.variables[v] for v in test["effect_modifiers"]}
             if "effect_modifiers" in test
             else {},
             estimate_type=test["estimate_type"],
@@ -141,10 +131,9 @@ class JsonUtility(ABC):
         """
         Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
         """
-        for meta in self.variables.metas:
+        for meta in self.scenario.variables_of_type(Meta):
             meta.populate(self.data)
-
-        for var in self.variables.metas + self.variables.outputs:
+        for var in self.scenario.variables_of_type(Meta).union(self.scenario.variables_of_type(Output)):
             if not var.distribution:
                 fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
                 fitter.fit()
@@ -195,7 +184,7 @@ class JsonUtility(ABC):
                 - estimation_model - Estimator instance for the test being run
         """
 
-        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data)
+        data_collector = ObservationalDataCollector(self.scenario, self.data)
         causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
 
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
@@ -289,17 +278,17 @@ class JsonClassPaths:
         self.data_paths = [Path(path) for path in data_paths]
 
 
-@dataclass()
+@dataclass
 class CausalVariables:
     """
-    A dataclass that converts
+    A dataclass that converts lists of dictionaries into lists of Causal Variables
     """
-
-    inputs: list[Input]
-    outputs: list[Output]
-    metas: list[Meta]
 
     def __init__(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
         self.inputs = [Input(**i) for i in inputs]
         self.outputs = [Output(**o) for o in outputs]
         self.metas = [Meta(**m) for m in metas] if metas else []
+
+    def __iter__(self):
+        for var in self.inputs + self.outputs + self.metas:
+            yield var

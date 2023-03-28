@@ -7,7 +7,7 @@ import json
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.causal_test_outcome import NoEffect
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
-from causal_testing.json_front.json_class import JsonUtility
+from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_specification import CausalSpecification
@@ -24,7 +24,7 @@ class TestJsonClass(unittest.TestCase):
     def setUp(self) -> None:
         json_file_name = "tests.json"
         dag_file_name = "dag.dot"
-        data_file_name = "data.csv"
+        data_file_name = "data_with_meta.csv"
         test_data_dir_path = Path("tests/resources/data")
         self.json_path = str(test_data_dir_path / json_file_name)
         self.dag_path = str(test_data_dir_path / dag_file_name)
@@ -34,8 +34,11 @@ class TestJsonClass(unittest.TestCase):
         self.input_dict_list = [{"name": "test_input", "datatype": float, "distribution": self.example_distribution}]
         self.output_dict_list = [{"name": "test_output", "datatype": float}]
         self.meta_dict_list = [{"name": "test_meta", "datatype": float, "populate": populate_example}]
-        self.json_class.set_variables(self.input_dict_list, self.output_dict_list, None)
+        variables = CausalVariables(inputs=self.input_dict_list, outputs=self.output_dict_list,
+                                    metas=self.meta_dict_list)
+        self.scenario = Scenario(variables=variables, constraints=None)
         self.json_class.set_paths(self.json_path, self.dag_path, self.data_path)
+        self.json_class.setup(self.scenario)
 
     def test_setting_paths(self):
         self.assertEqual(self.json_class.paths.json_path, Path(self.json_path))
@@ -44,20 +47,19 @@ class TestJsonClass(unittest.TestCase):
 
     def test_set_inputs(self):
         ctf_input = [Input("test_input", float, self.example_distribution)]
-        self.assertEqual(ctf_input[0].name, self.json_class.variables.inputs[0].name)
-        self.assertEqual(ctf_input[0].datatype, self.json_class.variables.inputs[0].datatype)
-        self.assertEqual(ctf_input[0].distribution, self.json_class.variables.inputs[0].distribution)
+        self.assertEqual(ctf_input[0].name, self.json_class.scenario.variables['test_input'].name)
+        self.assertEqual(ctf_input[0].datatype, self.json_class.scenario.variables['test_input'].datatype)
+        self.assertEqual(ctf_input[0].distribution, self.json_class.scenario.variables['test_input'].distribution)
 
     def test_set_outputs(self):
         ctf_output = [Output("test_output", float)]
-        self.assertEqual(ctf_output[0].name, self.json_class.variables.outputs[0].name)
-        self.assertEqual(ctf_output[0].datatype, self.json_class.variables.outputs[0].datatype)
+        self.assertEqual(ctf_output[0].name, self.json_class.scenario.variables['test_output'].name)
+        self.assertEqual(ctf_output[0].datatype, self.json_class.scenario.variables['test_output'].datatype)
 
     def test_set_metas(self):
-        self.json_class.set_variables(self.input_dict_list, self.output_dict_list, self.meta_dict_list)
         ctf_meta = [Meta("test_meta", float, populate_example)]
-        self.assertEqual(ctf_meta[0].name, self.json_class.variables.metas[0].name)
-        self.assertEqual(ctf_meta[0].datatype, self.json_class.variables.metas[0].datatype)
+        self.assertEqual(ctf_meta[0].name, self.json_class.scenario.variables['test_meta'].name)
+        self.assertEqual(ctf_meta[0].datatype, self.json_class.scenario.variables['test_meta'].datatype)
 
     def test_argparse(self):
         args = self.json_class.get_args(["--data_path=data.csv", "--dag_path=dag.dot", "--json_path=tests.json"])
@@ -65,12 +67,10 @@ class TestJsonClass(unittest.TestCase):
         self.assertEqual(args.dag_path, "dag.dot")
         self.assertEqual(args.json_path, "tests.json")
 
-    def test_setup_modelling_scenario(self):
-        self.json_class.setup()
-        self.assertIsInstance(self.json_class.modelling_scenario, Scenario)
+    def test_setup_scenario(self):
+        self.assertIsInstance(self.json_class.scenario, Scenario)
 
     def test_setup_causal_specification(self):
-        self.json_class.setup()
         self.assertIsInstance(self.json_class.causal_specification, CausalSpecification)
 
     def test_generate_tests_from_json(self):
@@ -87,12 +87,11 @@ class TestJsonClass(unittest.TestCase):
                 }
             ]
         }
-        self.json_class.setup()
         self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
         mutates = {
-            "Increase": lambda x: self.json_class.modelling_scenario.treatment_variables[x].z3
-            > self.json_class.modelling_scenario.variables[x].z3
+            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
