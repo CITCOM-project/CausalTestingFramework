@@ -133,7 +133,6 @@ class TestVariable(unittest.TestCase):
         var = Var("v", int)
         self.assertEqual(var.typestring(), "Var")
 
-
     def test_copy(self):
         ip = Input("ip", float, norm)
         self.assertTrue(ip.copy() is not ip)
@@ -173,7 +172,7 @@ class TestZ3Methods(unittest.TestCase):
         self.assertEqual(str(-self.i1), "-i1")
 
     def test_pow(self):
-        self.assertEqual(str(self.i1 ** 5), "i1**5")
+        self.assertEqual(str(self.i1**5), "i1**5")
 
     def test_le(self):
         self.assertEqual(str(self.i1 <= 5), "i1 <= 5")
