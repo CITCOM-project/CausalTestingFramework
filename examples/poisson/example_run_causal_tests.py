@@ -179,11 +179,7 @@ def test_run_causal_tests():
 
 if __name__ == "__main__":
     args = MyJsonUtility.get_args()
-    json_utility = MyJsonUtility(args.log_path)  # Create an instance of the extended JsonUtility class
-    json_utility.set_paths(
-        args.json_path, args.dag_path, args.data_path
-    )  # Set the path to the data.csv, dag.dot and causal_tests.json file
-
+    json_utility = MyJsonUtility()  # Create an instance of the extended JsonUtility class
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
     json_utility.setup(scenario=modelling_scenario)  # Sets up all the necessary parts of the json_class needed to execute tests
 
