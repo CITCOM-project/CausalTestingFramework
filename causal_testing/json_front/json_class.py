@@ -89,13 +89,12 @@ class JsonUtility:
         )
         return abstract_test
 
-    def generate_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
+    def generate_tests(self, effects: dict, mutates: dict, estimators: dict):
         """Runs and evaluates each test case specified in the JSON input
 
         :param effects: Dictionary mapping effect class instances to string representations.
         :param mutates: Dictionary mapping mutation functions to string representations.
         :param estimators: Dictionary mapping estimator classes to string representations.
-        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         """
         failures = 0
         for test in self.test_plan["tests"]:
@@ -108,7 +107,7 @@ class JsonUtility:
             logger.info(abstract_test)
             logger.info([abstract_test.treatment_variable.name, abstract_test.treatment_variable.distribution])
             logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
-            failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+            failures = self._execute_tests(concrete_tests, estimators, test, self.args.f_flag)
             logger.info("%s/%s failed for %s\n", failures, len(concrete_tests), test["name"])
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
