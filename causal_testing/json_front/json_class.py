@@ -6,6 +6,7 @@ import json
 import logging
 
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 import pandas as pd
@@ -42,14 +43,15 @@ class JsonUtility:
     :attr {CausalSpecification} causal_specification:
     """
 
-    def __init__(self, output_path):
-        self.paths = None
+    def __init__(self, output_path: str, output_overwrite: bool = False):
+        self.input_paths = None
         self.variables = None
         self.data = []
         self.test_plan = None
         self.scenario = None
         self.causal_specification = None
-        self.check_file_exists(Path(output_path))
+        self.output_path = Path(output_path)
+        self.check_file_exists(self.output_path, output_overwrite)
 
     def set_paths(self, json_path: str, dag_path: str, data_paths: str):
         """
@@ -58,14 +60,14 @@ class JsonUtility:
         :param dag_path: string path representation to the .dot file containing the Causal DAG
         :param data_paths: string path representation to the data files
         """
-        self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
+        self.input_paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
     def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
         self.scenario = scenario
         self.scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(
-            scenario=self.scenario, causal_dag=CausalDAG(self.paths.dag_path)
+            scenario=self.scenario, causal_dag=CausalDAG(self.input_paths.dag_path)
         )
         self._json_parse()
         self._populate_metas()
@@ -120,9 +122,9 @@ class JsonUtility:
 
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
-        with open(self.paths.json_path, encoding="utf-8") as f:
+        with open(self.input_paths.json_path, encoding="utf-8") as f:
             self.test_plan = json.load(f)
-        for data_file in self.paths.data_paths:
+        for data_file in self.input_paths.data_paths:
             df = pd.read_csv(data_file, header=0)
             self.data.append(df)
         self.data = pd.concat(self.data)
@@ -173,7 +175,7 @@ class JsonUtility:
             )
         if not test_passes:
             failed = True
-            logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
+            self.append_to_file(f"FAILED- expected {causal_test_case.expected_causal_effect}, got {result_string}", logging.WARNING)
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
@@ -210,11 +212,16 @@ class JsonUtility:
         :param estimation_model: estimator model instance for the current running test.
         """
         return
+    def append_to_file(self, line: str, log_level: int = None):
+        with open(self.output_path, "a") as f:
+            f.write('\n'.join(line))
+        if log_level:
+            logger.log(level=log_level, msg=line)
 
     @staticmethod
-    def check_file_exists(output_path: Path):
-        if output_path.is_file():
-            raise FileExistsError("Chosen file output already exists")
+    def check_file_exists(output_path: Path, overwrite: bool):
+        if not overwrite and output_path.is_file():
+            raise FileExistsError(f"Chosen file output ({output_path}) already exists")
 
     @staticmethod
     def get_args(test_args=None) -> argparse.Namespace:
