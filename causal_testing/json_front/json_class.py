@@ -42,14 +42,14 @@ class JsonUtility:
     :attr {CausalSpecification} causal_specification:
     """
 
-    def __init__(self, log_path):
+    def __init__(self, output_path):
         self.paths = None
         self.variables = None
         self.data = []
         self.test_plan = None
         self.scenario = None
         self.causal_specification = None
-        self.setup_logger(log_path)
+        self.check_file_exists(Path(output_path))
 
     def set_paths(self, json_path: str, dag_path: str, data_paths: str):
         """
@@ -212,14 +212,9 @@ class JsonUtility:
         return
 
     @staticmethod
-    def setup_logger(log_path: str):
-        """Setups up logging instance for the module and adds a FileHandler stream so all stdout prints are also
-        sent to the logfile
-        :param log_path: Path specifying location and name of the logging file to be used
-        """
-        setup_log = logging.getLogger(__name__)
-        file_handler = logging.FileHandler(Path(log_path))
-        setup_log.addHandler(file_handler)
+    def check_file_exists(output_path: Path):
+        if output_path.is_file():
+            raise FileExistsError("Chosen file output already exists")
 
     @staticmethod
     def get_args(test_args=None) -> argparse.Namespace:
@@ -234,6 +229,11 @@ class JsonUtility:
             "-f",
             help="if included, the script will stop if a test fails",
             action="store_true",
+        )
+        parser.add_argument(
+            "-w",
+            help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not careful",
+            action="store_true"
         )
         parser.add_argument(
             "--log_path",
