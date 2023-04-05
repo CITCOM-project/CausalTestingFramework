@@ -52,12 +52,14 @@ class JsonUtility:
         self.args = self.get_args()
         self.setup_logger(self.args.log_path)
         self._set_paths()
+
     def _set_paths(self):
         """
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
         """
-        self.paths = JsonClassPaths(json_path=self.args.json_path, dag_path=self.args.json_path,
-                                    data_paths=self.args.json_path)
+        self.paths = JsonClassPaths(
+            json_path=self.args.json_path, dag_path=self.args.dag_path, data_paths=self.args.data_path
+        )
 
     def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
