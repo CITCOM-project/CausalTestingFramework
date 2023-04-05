@@ -42,23 +42,22 @@ class JsonUtility:
     :attr {CausalSpecification} causal_specification:
     """
 
-    def __init__(self, log_path):
+    def __init__(self):
         self.paths = None
         self.variables = None
         self.data = []
         self.test_plan = None
         self.scenario = None
         self.causal_specification = None
-        self.setup_logger(log_path)
-
-    def set_paths(self, json_path: str, dag_path: str, data_paths: str):
+        self.args = self.get_args()
+        self.setup_logger(self.args.log_path)
+        self._set_paths()
+    def _set_paths(self):
         """
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
-        :param json_path: string path representation to .json file containing test specifications
-        :param dag_path: string path representation to the .dot file containing the Causal DAG
-        :param data_paths: string path representation to the data files
         """
-        self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
+        self.paths = JsonClassPaths(json_path=self.args.json_path, dag_path=self.args.json_path,
+                                    data_paths=self.args.json_path)
 
     def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
