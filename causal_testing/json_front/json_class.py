@@ -204,13 +204,6 @@ class JsonUtility:
 
         return causal_test_engine, estimation_model
 
-    def add_modelling_assumptions(self, estimation_model: Estimator):  # pylint: disable=unused-argument
-        """Optional abstract method where user functionality can be written to determine what assumptions are required
-        for specific test cases
-        :param estimation_model: estimator model instance for the current running test.
-        """
-        return
-
     @staticmethod
     def setup_logger(log_path: str):
         """Setups up logging instance for the module and adds a FileHandler stream so all stdout prints are also
