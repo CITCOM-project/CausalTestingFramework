@@ -29,7 +29,7 @@ class TestJsonClass(unittest.TestCase):
         self.json_path = str(test_data_dir_path / json_file_name)
         self.dag_path = str(test_data_dir_path / dag_file_name)
         self.data_path = [str(test_data_dir_path / data_file_name)]
-        self.json_class = JsonUtility("logs.log")
+        self.json_class = JsonUtility("temp_out.txt", True)
         self.example_distribution = scipy.stats.uniform(1, 10)
         self.input_dict_list = [{"name": "test_input", "datatype": float, "distribution": self.example_distribution}]
         self.output_dict_list = [{"name": "test_output", "datatype": float}]
@@ -95,11 +95,12 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        with self.assertLogs() as captured:
-            self.json_class.generate_tests(effects, mutates, estimators, False)
+        self.json_class.generate_tests(effects, mutates, estimators, False)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
-        self.assertIn("failed", captured.records[-1].getMessage())
+        with open("temp_out.txt", 'r') as reader:
+            temp_out = reader.readlines()
+        self.assertIn("failed", temp_out[-1])
 
     def tearDown(self) -> None:
         pass

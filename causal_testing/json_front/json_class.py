@@ -110,10 +110,9 @@ class JsonUtility:
                   f"abstract_test \n" + \
                   f"{abstract_test} \n" + \
                   f"{abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution} \n" + \
-                  f"Number of concrete tests for test case: {str(len(concrete_tests))}"
-
-        self.append_to_file(msg, logging.INFO)
-
+                  f"Number of concrete tests for test case: {str(len(concrete_tests))} \n" + \
+                  f"{failures}/{len(concrete_tests)} failed for {test['name']}"
+            self._append_to_file(msg, logging.INFO)
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
@@ -123,7 +122,6 @@ class JsonUtility:
                 failures += 1
         return failures
 
-
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
         with open(self.input_paths.json_path, encoding="utf-8") as f:
@@ -132,7 +130,6 @@ class JsonUtility:
             df = pd.read_csv(data_file, header=0)
             self.data.append(df)
         self.data = pd.concat(self.data)
-
 
     def _populate_metas(self):
         """
@@ -146,8 +143,7 @@ class JsonUtility:
                 fitter.fit()
                 (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
                 var.distribution = getattr(scipy.stats, dist)(**params)
-                self.append_to_file(var.name + f" {dist}({params})", logging.INFO)
-
+                self._append_to_file(var.name + f" {dist}({params})", logging.INFO)
 
     def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
         """Executes a singular test case, prints the results and returns the test case result
@@ -181,10 +177,9 @@ class JsonUtility:
             )
         if not test_passes:
             failed = True
-            self.append_to_file(f"FAILED- expected {causal_test_case.expected_causal_effect}, got {result_string}",
-                                logging.WARNING)
+            self._append_to_file(f"FAILED- expected {causal_test_case.expected_causal_effect}, got {result_string}",
+                                 logging.WARNING)
         return failed
-
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
@@ -214,7 +209,6 @@ class JsonUtility:
 
         return causal_test_engine, estimation_model
 
-
     def add_modelling_assumptions(self, estimation_model: Estimator):  # pylint: disable=unused-argument
         """Optional abstract method where user functionality can be written to determine what assumptions are required
         for specific test cases
@@ -222,19 +216,16 @@ class JsonUtility:
         """
         return
 
-
-    def append_to_file(self, line: str, log_level: int = None):
+    def _append_to_file(self, line: str, log_level: int = None):
         with open(self.output_path, "a") as f:
-            f.write(line+"\n")
+            f.write(line + "\n")
         if log_level:
             logger.log(level=log_level, msg=line)
-
 
     @staticmethod
     def check_file_exists(output_path: Path, overwrite: bool):
         if not overwrite and output_path.is_file():
             raise FileExistsError(f"Chosen file output ({output_path}) already exists")
-
 
     @staticmethod
     def get_args(test_args=None) -> argparse.Namespace:
