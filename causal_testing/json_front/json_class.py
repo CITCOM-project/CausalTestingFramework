@@ -239,11 +239,11 @@ class JsonUtility:
         :param output_path: File path for the output file of the JSON Frontend
         :param overwrite: bool that if true, the current file can be overwritten
         """
-        if overwrite:
-            file = open(output_path, "w", encoding="utf-8")
-            file.close()
-        elif output_path.is_file():
-            raise FileExistsError(f"Chosen file output ({output_path}) already exists")
+        if output_path.is_file():
+            if overwrite:
+                output_path.unlink()
+            else:
+                raise FileExistsError(f"Chosen file output ({output_path}) already exists")
 
     @staticmethod
     def get_args(test_args=None) -> argparse.Namespace:
