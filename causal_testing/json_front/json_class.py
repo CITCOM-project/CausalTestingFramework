@@ -219,25 +219,30 @@ class JsonUtility:
         return
 
     def _append_to_file(self, line: str, log_level: int = None):
-        """ Appends given line(s) to the current output file. If log_level is specified it also logs that message to the
+        """Appends given line(s) to the current output file. If log_level is specified it also logs that message to the
         logging level.
         :param line: The line or lines of text to be appended to the file
         :param log_level: An integer representing the logging level as specified by pythons inbuilt logging module. It
         is possible to use the inbuilt logging level variables such as logging.INFO and logging.WARNING
         """
-        with open(self.output_path, "a", encoding='utf-8') as f:
-            f.write(line + "\n", )
+        with open(self.output_path, "a", encoding="utf-8") as f:
+            f.write(
+                line + "\n",
+            )
         if log_level:
             logger.log(level=log_level, msg=line)
 
     @staticmethod
     def check_file_exists(output_path: Path, overwrite: bool):
-        """ Method that checks if the given path to an output file already exists. If overwrite is true the check is
+        """Method that checks if the given path to an output file already exists. If overwrite is true the check is
         passed.
         :param output_path: File path for the output file of the JSON Frontend
         :param overwrite: bool that if true, the current file can be overwritten
         """
-        if not overwrite and output_path.is_file():
+        if overwrite:
+            file = open(output_path, "w", encoding="utf-8")
+            file.close()
+        elif output_path.is_file():
             raise FileExistsError(f"Chosen file output ({output_path}) already exists")
 
     @staticmethod
@@ -257,7 +262,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-                 "careful",
+            "careful",
             action="store_true",
         )
         parser.add_argument(

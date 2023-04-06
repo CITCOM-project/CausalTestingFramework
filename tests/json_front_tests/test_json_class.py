@@ -41,9 +41,9 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.setup(self.scenario)
 
     def test_setting_paths(self):
-        self.assertEqual(self.json_class.paths.json_path, Path(self.json_path))
-        self.assertEqual(self.json_class.paths.dag_path, Path(self.dag_path))
-        self.assertEqual(self.json_class.paths.data_paths, [Path(self.data_path[0])])  # Needs to be list of Paths
+        self.assertEqual(self.json_class.input_paths.json_path, Path(self.json_path))
+        self.assertEqual(self.json_class.input_paths.dag_path, Path(self.dag_path))
+        self.assertEqual(self.json_class.input_paths.data_paths, [Path(self.data_path[0])])  # Needs to be list of Paths
 
     def test_set_inputs(self):
         ctf_input = [Input("test_input", float, self.example_distribution)]
