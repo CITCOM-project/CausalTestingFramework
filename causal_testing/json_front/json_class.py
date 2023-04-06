@@ -6,7 +6,6 @@ import json
 import logging
 
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 
 import pandas as pd
@@ -106,12 +105,14 @@ class JsonUtility:
 
             concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
             failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
-            msg = f"Executing test: {test['name']} \n" + \
-                  f"abstract_test \n" + \
-                  f"{abstract_test} \n" + \
-                  f"{abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution} \n" + \
-                  f"Number of concrete tests for test case: {str(len(concrete_tests))} \n" + \
-                  f"{failures}/{len(concrete_tests)} failed for {test['name']}"
+            msg = (
+                f"Executing test: {test['name']} \n"
+                + "abstract_test \n"
+                + f"{abstract_test} \n"
+                + f"{abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution} \n"
+                + f"Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+                + f"{failures}/{len(concrete_tests)} failed for {test['name']}"
+            )
             self._append_to_file(msg, logging.INFO)
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
@@ -177,8 +178,9 @@ class JsonUtility:
             )
         if not test_passes:
             failed = True
-            self._append_to_file(f"FAILED- expected {causal_test_case.expected_causal_effect}, got {result_string}",
-                                 logging.WARNING)
+            self._append_to_file(
+                f"FAILED- expected {causal_test_case.expected_causal_effect}, got {result_string}", logging.WARNING
+            )
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
@@ -217,13 +219,24 @@ class JsonUtility:
         return
 
     def _append_to_file(self, line: str, log_level: int = None):
-        with open(self.output_path, "a") as f:
-            f.write(line + "\n")
+        """ Appends given line(s) to the current output file. If log_level is specified it also logs that message to the
+        logging level.
+        :param line: The line or lines of text to be appended to the file
+        :param log_level: An integer representing the logging level as specified by pythons inbuilt logging module. It
+        is possible to use the inbuilt logging level variables such as logging.INFO and logging.WARNING
+        """
+        with open(self.output_path, "a", encoding='utf-8') as f:
+            f.write(line + "\n", )
         if log_level:
             logger.log(level=log_level, msg=line)
 
     @staticmethod
     def check_file_exists(output_path: Path, overwrite: bool):
+        """ Method that checks if the given path to an output file already exists. If overwrite is true the check is
+        passed.
+        :param output_path: File path for the output file of the JSON Frontend
+        :param overwrite: bool that if true, the current file can be overwritten
+        """
         if not overwrite and output_path.is_file():
             raise FileExistsError(f"Chosen file output ({output_path}) already exists")
 
@@ -243,8 +256,9 @@ class JsonUtility:
         )
         parser.add_argument(
             "-w",
-            help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not careful",
-            action="store_true"
+            help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
+                 "careful",
+            action="store_true",
         )
         parser.add_argument(
             "--log_path",
