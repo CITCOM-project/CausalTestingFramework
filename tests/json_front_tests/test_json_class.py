@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+from statistics import StatisticsError
 import scipy
 import csv
 import json
@@ -29,7 +30,7 @@ class TestJsonClass(unittest.TestCase):
         self.json_path = str(test_data_dir_path / json_file_name)
         self.dag_path = str(test_data_dir_path / dag_file_name)
         self.data_path = [str(test_data_dir_path / data_file_name)]
-        self.json_class = JsonUtility("logs.log")
+        self.json_class = JsonUtility("temp_out.txt", True)
         self.example_distribution = scipy.stats.uniform(1, 10)
         self.input_dict_list = [{"name": "test_input", "datatype": float, "distribution": self.example_distribution}]
         self.output_dict_list = [{"name": "test_output", "datatype": float}]
@@ -41,9 +42,9 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.setup(self.scenario)
 
     def test_setting_paths(self):
-        self.assertEqual(self.json_class.paths.json_path, Path(self.json_path))
-        self.assertEqual(self.json_class.paths.dag_path, Path(self.dag_path))
-        self.assertEqual(self.json_class.paths.data_paths, [Path(self.data_path[0])])  # Needs to be list of Paths
+        self.assertEqual(self.json_class.input_paths.json_path, Path(self.json_path))
+        self.assertEqual(self.json_class.input_paths.dag_path, Path(self.dag_path))
+        self.assertEqual(self.json_class.input_paths.data_paths, [Path(self.data_path[0])])  # Needs to be list of Paths
 
     def test_set_inputs(self):
         ctf_input = [Input("test_input", float, self.example_distribution)]
@@ -73,6 +74,30 @@ class TestJsonClass(unittest.TestCase):
     def test_setup_causal_specification(self):
         self.assertIsInstance(self.json_class.causal_specification, CausalSpecification)
 
+    def test_f_flag(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "mutations": {"test_input": "Increase"},
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "ate",
+                    "effect_modifiers": [],
+                    "expectedEffect": {"test_output": "NoEffect"},
+                    "skip": False,
+                }
+            ]
+        }
+        self.json_class.test_plan = example_test
+        effects = {"NoEffect": NoEffect()}
+        mutates = {
+            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
+        }
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+        with self.assertRaises(StatisticsError):
+            self.json_class.generate_tests(effects, mutates, estimators, True)
+
     def test_generate_tests_from_json(self):
         example_test = {
             "tests": [
@@ -95,11 +120,12 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        with self.assertLogs() as captured:
-            self.json_class.generate_tests(effects, mutates, estimators, False)
+        self.json_class.generate_tests(effects, mutates, estimators, False)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
-        self.assertIn("failed", captured.records[-1].getMessage())
+        with open("temp_out.txt", 'r') as reader:
+            temp_out = reader.readlines()
+        self.assertIn("failed", temp_out[-1])
 
     def tearDown(self) -> None:
         pass
