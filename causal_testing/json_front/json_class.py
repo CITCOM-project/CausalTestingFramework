@@ -177,7 +177,8 @@ class JsonUtility:
             if f_flag:
                 raise StatisticsError(
                     f"{causal_test_case}\n    FAILED - expected {causal_test_case.expected_causal_effect}, "
-                    f"got {result_string}")
+                    f"got {result_string}"
+                )
             failed = True
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
