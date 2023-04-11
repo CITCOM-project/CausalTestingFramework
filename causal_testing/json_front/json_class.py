@@ -146,6 +146,7 @@ class JsonUtility:
     def _execute_test_case(self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool) -> bool:
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
+        :param test: Single JSON test definition stored in a mapping (dict)
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         :return: A boolean that if True indicates the causal test case passed and if false indicates the test case
          failed.
@@ -178,9 +179,10 @@ class JsonUtility:
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
 
-    def _setup_test(self, causal_test_case: CausalTestCase, test) -> tuple[CausalTestEngine, Estimator]:
+    def _setup_test(self, causal_test_case: CausalTestCase, test: Mapping) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
+        :param test: Single JSON test definition stored in a mapping (dict)
         :returns:
                 - causal_test_engine - Test Engine instance for the test being run
                 - estimation_model - Estimator instance for the test being run
@@ -201,7 +203,7 @@ class JsonUtility:
                 outcome=causal_test_case.outcome_variable.name,
                 df=causal_test_engine.scenario_execution_data_df,
                 effect_modifiers=causal_test_case.effect_modifier_configuration,
-                formula=test["formula"]
+                formula=test["formula"],
             )
         else:
             estimation_model = test["estimator"](
