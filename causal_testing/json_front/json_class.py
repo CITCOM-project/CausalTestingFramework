@@ -7,6 +7,7 @@ import logging
 
 from dataclasses import dataclass
 from pathlib import Path
+from statistics import StatisticsError
 
 import pandas as pd
 import scipy
@@ -171,16 +172,14 @@ class JsonUtility:
             )
         else:
             result_string = f"{causal_test_result.test_value.value} no confidence intervals"
-        if f_flag:
-            assert test_passes, (
-                f"{causal_test_case}\n    FAILED - expected {causal_test_case.expected_causal_effect}, "
-                f"got {result_string}"
-            )
+
         if not test_passes:
+            if f_flag:
+                raise StatisticsError(
+                    f"{causal_test_case}\n    FAILED - expected {causal_test_case.expected_causal_effect}, "
+                    f"got {result_string}")
             failed = True
-            self._append_to_file(
-                f"FAILED- expected {causal_test_case.expected_causal_effect}, got {result_string}", logging.WARNING
-            )
+            logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
 
     def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
