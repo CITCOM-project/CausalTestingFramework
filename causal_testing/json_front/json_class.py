@@ -5,6 +5,7 @@ import argparse
 import json
 import logging
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -112,8 +113,9 @@ class JsonUtility:
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
+        test["estimator"] = estimators[test["estimator"]]
         for concrete_test in concrete_tests:
-            failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
+            failed = self._execute_test_case(concrete_test, test, f_flag)
             if failed:
                 failures += 1
         return failures
@@ -141,7 +143,7 @@ class JsonUtility:
                 var.distribution = getattr(scipy.stats, dist)(**params)
                 logger.info(var.name + f" {dist}({params})")
 
-    def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
+    def _execute_test_case(self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool) -> bool:
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
@@ -151,7 +153,7 @@ class JsonUtility:
         """
         failed = False
 
-        causal_test_engine, estimation_model = self._setup_test(causal_test_case, estimator)
+        causal_test_engine, estimation_model = self._setup_test(causal_test_case, test)
         causal_test_result = causal_test_engine.execute_test(
             estimation_model, causal_test_case, estimate_type=causal_test_case.estimate_type
         )
@@ -176,7 +178,7 @@ class JsonUtility:
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
 
-    def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
+    def _setup_test(self, causal_test_case: CausalTestCase, test) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :returns:
@@ -190,17 +192,27 @@ class JsonUtility:
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
         treatment_var = causal_test_case.treatment_variable
         minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
-        estimation_model = estimator(
-            treatment=treatment_var.name,
-            treatment_value=causal_test_case.treatment_value,
-            control_value=causal_test_case.control_value,
-            adjustment_set=minimal_adjustment_set,
-            outcome=causal_test_case.outcome_variable.name,
-            df=causal_test_engine.scenario_execution_data_df,
-            effect_modifiers=causal_test_case.effect_modifier_configuration,
-        )
-
-        self.add_modelling_assumptions(estimation_model)
+        if "formula" in test:
+            estimation_model = test["estimator"](
+                treatment=treatment_var.name,
+                treatment_value=causal_test_case.treatment_value,
+                control_value=causal_test_case.control_value,
+                adjustment_set=minimal_adjustment_set,
+                outcome=causal_test_case.outcome_variable.name,
+                df=causal_test_engine.scenario_execution_data_df,
+                effect_modifiers=causal_test_case.effect_modifier_configuration,
+                formula=test["formula"]
+            )
+        else:
+            estimation_model = test["estimator"](
+                treatment=treatment_var.name,
+                treatment_value=causal_test_case.treatment_value,
+                control_value=causal_test_case.control_value,
+                adjustment_set=minimal_adjustment_set,
+                outcome=causal_test_case.outcome_variable.name,
+                df=causal_test_engine.scenario_execution_data_df,
+                effect_modifiers=causal_test_case.effect_modifier_configuration,
+            )
 
         return causal_test_engine, estimation_model
 
