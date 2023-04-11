@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+from statistics import StatisticsError
 import scipy
 import csv
 import json
@@ -72,6 +73,30 @@ class TestJsonClass(unittest.TestCase):
 
     def test_setup_causal_specification(self):
         self.assertIsInstance(self.json_class.causal_specification, CausalSpecification)
+
+    def test_f_flag(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "mutations": {"test_input": "Increase"},
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "ate",
+                    "effect_modifiers": [],
+                    "expectedEffect": {"test_output": "NoEffect"},
+                    "skip": False,
+                }
+            ]
+        }
+        self.json_class.test_plan = example_test
+        effects = {"NoEffect": NoEffect()}
+        mutates = {
+            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
+        }
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+        with self.assertRaises(StatisticsError):
+            self.json_class.generate_tests(effects, mutates, estimators, True)
 
     def test_generate_tests_from_json(self):
         example_test = {
