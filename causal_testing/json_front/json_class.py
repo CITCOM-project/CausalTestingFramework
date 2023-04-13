@@ -225,8 +225,6 @@ class JsonUtility:
 
         return causal_test_engine, estimation_model
 
-
-
     def _append_to_file(self, line: str, log_level: int = None):
         """Appends given line(s) to the current output file. If log_level is specified it also logs that message to the
         logging level.
