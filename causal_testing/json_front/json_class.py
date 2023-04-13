@@ -22,6 +22,7 @@ from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
+from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -110,20 +111,43 @@ class JsonUtility(ABC):
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
-            abstract_test = self._create_abstract_test_case(test, mutates, effects)
 
-            concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-            logger.info("Executing test: %s", test["name"])
-            logger.info(abstract_test)
-            logger.info([abstract_test.treatment_variable.name, abstract_test.treatment_variable.distribution])
-            logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
+            if test["estimate_type"] == "coefficient":
+                base_test_case = BaseTestCase(
+                    treatment_variable=next(self.modelling_scenario.variables[v] for v in test["mutations"]),
+                    outcome_variable=next(self.modelling_scenario.variables[v] for v in test["expectedEffect"]),
+                    effect=test["effect"],
+                )
+                assert len(test["expectedEffect"]) == 1, "Can only have one expected effect."
+                concrete_tests = [
+                    CausalTestCase(
+                        base_test_case=base_test_case,
+                        expected_causal_effect=next(
+                            effects[effect] for variable, effect in test["expectedEffect"].items()
+                        ),
+                        estimate_type="coefficient",
+                        effect_modifier_configuration={
+                            self.modelling_scenario.variables[v] for v in test.get("effect_modifiers", [])
+                        },
+                    )
+                ]
+            else:
+                abstract_test = self._create_abstract_test_case(test, mutates, effects)
+
+                concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
+                logger.info("Executing test: %s", test["name"])
+                logger.info(abstract_test)
+                logger.info([abstract_test.treatment_variable.name, abstract_test.treatment_variable.distribution])
+                logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
             failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
             logger.info("%s/%s failed for %s\n", failures, len(concrete_tests), test["name"])
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
         for concrete_test in concrete_tests:
-            failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
+            failed = self._execute_test_case(
+                concrete_test, estimators[test["estimator"]], f_flag, test.get("conditions", [])
+            )
             if failed:
                 failures += 1
         return failures
@@ -152,7 +176,9 @@ class JsonUtility(ABC):
                 var.distribution = getattr(scipy.stats, dist)(**params)
                 logger.info(var.name + f" {dist}({params})")
 
-    def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
+    def _execute_test_case(
+        self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool, conditions: list[str]
+    ) -> bool:
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
@@ -162,7 +188,8 @@ class JsonUtility(ABC):
         """
         failed = False
 
-        causal_test_engine, estimation_model = self._setup_test(causal_test_case, estimator)
+        print(causal_test_case)
+        causal_test_engine, estimation_model = self._setup_test(causal_test_case, estimator, conditions)
         causal_test_result = causal_test_engine.execute_test(
             estimation_model, causal_test_case, estimate_type=causal_test_case.estimate_type
         )
@@ -187,7 +214,9 @@ class JsonUtility(ABC):
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
 
-    def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
+    def _setup_test(
+        self, causal_test_case: CausalTestCase, estimator: Estimator, conditions: list[str]
+    ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :returns:
@@ -195,7 +224,7 @@ class JsonUtility(ABC):
                 - estimation_model - Estimator instance for the test being run
         """
 
-        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data)
+        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data.query(" & ".join(conditions)))
         causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
 
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)

@@ -106,9 +106,9 @@ class TestMetamorphicRelation(unittest.TestCase):
         self.data_collector = SingleInputProgramUnderTestEDC(
             self.scenario, self.default_control_input_config, self.default_treatment_input_config
         )
-        causal_dag.graph.remove_nodes_from(['X2', 'X3'])
-        adj_set = list(causal_dag.direct_effect_adjustment_sets(['X1'], ['Z'])[0])
-        should_cause_MR = ShouldCause('X1', 'Z', adj_set, causal_dag)
+        causal_dag.graph.remove_nodes_from(["X2", "X3"])
+        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
+        should_cause_MR = ShouldCause("X1", "Z", adj_set, causal_dag)
         should_cause_MR.generate_follow_up(10, -10.0, 10.0, 1)
         test_results = should_cause_MR.execute_tests(self.data_collector)
         should_cause_MR.test_oracle(test_results)

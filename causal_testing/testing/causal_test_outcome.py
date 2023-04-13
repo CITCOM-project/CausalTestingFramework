@@ -26,7 +26,7 @@ class SomeEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should not be zero."""
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.test_value.type == "ate":
+        if res.test_value.type == "ate" or res.test_value.type == "coefficient":
             return (0 < res.ci_low() < res.ci_high()) or (res.ci_low() < res.ci_high() < 0)
         if res.test_value.type == "risk_ratio":
             return (1 < res.ci_low() < res.ci_high()) or (res.ci_low() < res.ci_high() < 1)

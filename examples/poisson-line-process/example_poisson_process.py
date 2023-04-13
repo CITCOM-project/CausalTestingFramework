@@ -86,9 +86,7 @@ def causal_test_intensity_num_shapes(
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
 
     # 7. Create an instance of the causal test engine
-    causal_test_engine = CausalTestEngine(
-        causal_specification, data_collector
-    )
+    causal_test_engine = CausalTestEngine(causal_specification, data_collector)
 
     # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
     minimal_adjustment_set = causal_dag.identification(causal_test_case.base_test_case)
@@ -121,13 +119,11 @@ def causal_test_intensity_num_shapes(
             outcome=outcome,
             df=data,
             effect_modifiers=causal_test_case.effect_modifier_configuration,
-            formula=f"{outcome} ~ {treatment} + {'+'.join(square_terms + inverse_terms + list([e for e in causal_test_case.effect_modifier_configuration]))} -1"
+            formula=f"{outcome} ~ {treatment} + {'+'.join(square_terms + inverse_terms + list([e for e in causal_test_case.effect_modifier_configuration]))} -1",
         )
 
     # 10. Execute the test
-    causal_test_result = causal_test_engine.execute_test(
-        estimator, causal_test_case, causal_test_case.estimate_type
-    )
+    causal_test_result = causal_test_engine.execute_test(estimator, causal_test_case, causal_test_case.estimate_type)
 
     return causal_test_result
 

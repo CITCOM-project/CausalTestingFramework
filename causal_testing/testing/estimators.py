@@ -343,10 +343,11 @@ class LinearRegressionEstimator(Estimator):
         :return: The unit average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
+        assert self.treatment in model.params, f"{self.treatment} not in {model.params}"
         unit_effect = model.params[[self.treatment]].values[0]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model)
 
-        return unit_effect * self.treatment_value - unit_effect * self.control_value, [ci_low, ci_high]
+        return unit_effect, [ci_low, ci_high]
 
     def estimate_ate(self) -> tuple[float, list[float, float], float]:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
