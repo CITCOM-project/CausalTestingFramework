@@ -156,8 +156,7 @@ class TestJsonClass(unittest.TestCase):
         self.assertIn("test_output ~ test_input", ''.join(temp_out))
 
     def tearDown(self) -> None:
-        pass
-        # remove_temp_dir_if_existent()
+        remove_temp_dir_if_existent()
 
 
 def populate_example(*args, **kwargs):

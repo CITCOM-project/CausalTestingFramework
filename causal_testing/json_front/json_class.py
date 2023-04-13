@@ -203,28 +203,19 @@ class JsonUtility:
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
         treatment_var = causal_test_case.treatment_variable
         minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
+        estimator_kwargs = {
+            "treatment": treatment_var.name,
+            "treatment_value": causal_test_case.treatment_value,
+            "control_value": causal_test_case.control_value,
+            "adjustment_set": minimal_adjustment_set,
+            "outcome": causal_test_case.outcome_variable.name,
+            "df": causal_test_engine.scenario_execution_data_df,
+            "effect_modifiers": causal_test_case.effect_modifier_configuration,
+        }
         if "formula" in test:
-            estimation_model = test["estimator"](
-                treatment=treatment_var.name,
-                treatment_value=causal_test_case.treatment_value,
-                control_value=causal_test_case.control_value,
-                adjustment_set=minimal_adjustment_set,
-                outcome=causal_test_case.outcome_variable.name,
-                df=causal_test_engine.scenario_execution_data_df,
-                effect_modifiers=causal_test_case.effect_modifier_configuration,
-                formula=test["formula"],
-            )
-        else:
-            estimation_model = test["estimator"](
-                treatment=treatment_var.name,
-                treatment_value=causal_test_case.treatment_value,
-                control_value=causal_test_case.control_value,
-                adjustment_set=minimal_adjustment_set,
-                outcome=causal_test_case.outcome_variable.name,
-                df=causal_test_engine.scenario_execution_data_df,
-                effect_modifiers=causal_test_case.effect_modifier_configuration,
-            )
+            estimator_kwargs["formula"] = test["formula"]
 
+        estimation_model = test["estimator"](**estimator_kwargs)
         return causal_test_engine, estimation_model
 
     def _append_to_file(self, line: str, log_level: int = None):
@@ -235,9 +226,7 @@ class JsonUtility:
         is possible to use the inbuilt logging level variables such as logging.INFO and logging.WARNING
         """
         with open(self.output_path, "a", encoding="utf-8") as f:
-            f.write(
-                line
-            )
+            f.write(line)
         if log_level:
             logger.log(level=log_level, msg=line)
 
