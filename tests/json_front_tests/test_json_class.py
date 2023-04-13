@@ -6,7 +6,7 @@ import csv
 import json
 
 from causal_testing.testing.estimators import LinearRegressionEstimator
-from causal_testing.testing.causal_test_outcome import NoEffect
+from causal_testing.testing.causal_test_outcome import NoEffect, Positive
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
@@ -126,6 +126,34 @@ class TestJsonClass(unittest.TestCase):
         with open("temp_out.txt", 'r') as reader:
             temp_out = reader.readlines()
         self.assertIn("failed", temp_out[-1])
+
+    def test_formula_in_json_test(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "mutations": {"test_input": "Increase"},
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "ate",
+                    "effect_modifiers": [],
+                    "expectedEffect": {"test_output": "Positive"},
+                    "skip": False,
+                    "formula": "test_output ~ test_input"
+                }
+            ]
+        }
+        self.json_class.test_plan = example_test
+        effects = {"Positive": Positive()}
+        mutates = {
+            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
+        }
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+
+        self.json_class.generate_tests(effects, mutates, estimators, False)
+        with open("temp_out.txt", 'r') as reader:
+            temp_out = reader.readlines()
+        self.assertIn("test_output ~ test_input", ''.join(temp_out))
 
     def tearDown(self) -> None:
         pass

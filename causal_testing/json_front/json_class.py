@@ -120,6 +120,8 @@ class JsonUtility:
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
         test["estimator"] = estimators[test["estimator"]]
+        if "formula" in test:
+            self._append_to_file(f"Estimator formula used for test: {test['formula']}")
         for concrete_test in concrete_tests:
             failed = self._execute_test_case(concrete_test, test, f_flag)
             if failed:
@@ -234,7 +236,7 @@ class JsonUtility:
         """
         with open(self.output_path, "a", encoding="utf-8") as f:
             f.write(
-                line + "\n",
+                line
             )
         if log_level:
             logger.log(level=log_level, msg=line)
