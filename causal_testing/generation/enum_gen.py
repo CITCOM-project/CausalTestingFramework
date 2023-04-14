@@ -1,4 +1,5 @@
-"""This module contains the class EnumGen, which allows us to easily create generating uniform distributions from enums."""
+"""This module contains the class EnumGen, which allows us to easily create
+generating uniform distributions from enums."""
 
 from enum import Enum
 from scipy.stats import rv_discrete
