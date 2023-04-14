@@ -77,11 +77,11 @@ class JsonUtility:
         assert len(test["mutations"]) == 1
         treatment_var = next(self.scenario.variables[v] for v in test["mutations"])
         if not treatment_var.distribution:
-            fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
+            fitter = Fitter(self.data[treatment_var.name], distributions=get_common_distributions())
             fitter.fit()
             (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
-            var.distribution = getattr(scipy.stats, dist)(**params)
-            self._append_to_file(var.name + f" {dist}({params})", logging.INFO)
+            treatment_var.distribution = getattr(scipy.stats, dist)(**params)
+            self._append_to_file(treatment_var.name + f" {dist}({params})", logging.INFO)
 
         abstract_test = AbstractCausalTestCase(
             scenario=self.scenario,
