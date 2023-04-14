@@ -45,7 +45,7 @@ class JsonUtility:
 
     def __init__(self, output_path: str, output_overwrite: bool = False):
         self.input_paths = None
-        self.variables = None
+        self.variables = {"inputs": {}, "outputs": {}, "metas": {}}
         self.data = []
         self.test_plan = None
         self.scenario = None
@@ -65,6 +65,7 @@ class JsonUtility:
     def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
         self.scenario = scenario
+        self._get_scenario_variables()
         self.scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(
             scenario=self.scenario, causal_dag=CausalDAG(self.input_paths.dag_path)
@@ -232,6 +233,14 @@ class JsonUtility:
         if log_level:
             logger.log(level=log_level, msg=line)
 
+    def _get_scenario_variables(self):
+        for input in self.scenario.inputs():
+            self.variables["inputs"][input.name] = input
+        for output in self.scenario.outputs():
+            self.variables["outputs"][output.name] = output
+        for meta in self.scenario.metas():
+            self.variables["metas"][meta.name] = meta
+
     @staticmethod
     def check_file_exists(output_path: Path, overwrite: bool):
         """Method that checks if the given path to an output file already exists. If overwrite is true the check is
@@ -262,7 +271,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-            "careful",
+                 "careful",
             action="store_true",
         )
         parser.add_argument(
