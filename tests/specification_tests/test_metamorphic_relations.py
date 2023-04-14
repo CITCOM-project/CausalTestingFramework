@@ -99,6 +99,52 @@ class TestMetamorphicRelation(unittest.TestCase):
             test_results = should_cause_MR.execute_tests(self.data_collector)
             should_cause_MR.test_oracle(test_results)
 
+    def test_should_not_cause_json_stub(self):
+        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
+        and there is only a single input."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        self.data_collector = SingleInputProgramUnderTestEDC(
+            self.scenario, self.default_control_input_config, self.default_treatment_input_config
+        )
+        causal_dag.graph.remove_nodes_from(["X2", "X3"])
+        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
+        should_not_cause_MR = ShouldNotCause("X1", "Z", adj_set, causal_dag)
+        self.assertEqual(
+            should_not_cause_MR.to_json_stub(),
+            {
+                "effect": "direct",
+                "estimate_type": "coefficient",
+                "estimator": "LinearRegressionEstimator",
+                "expectedEffect": {"Z": "NoEffect"},
+                "mutations": ["X1"],
+                "name": "X1 _||_ Z",
+                "skip": True,
+            },
+        )
+
+    def test_should_cause_json_stub(self):
+        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
+        and there is only a single input."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        self.data_collector = SingleInputProgramUnderTestEDC(
+            self.scenario, self.default_control_input_config, self.default_treatment_input_config
+        )
+        causal_dag.graph.remove_nodes_from(["X2", "X3"])
+        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
+        should_cause_MR = ShouldCause("X1", "Z", adj_set, causal_dag)
+        self.assertEqual(
+            should_cause_MR.to_json_stub(),
+            {
+                "effect": "direct",
+                "estimate_type": "coefficient",
+                "estimator": "LinearRegressionEstimator",
+                "expectedEffect": {"Z": "SomeEffect"},
+                "mutations": ["X1"],
+                "name": "X1 --> Z",
+                "skip": True,
+            },
+        )
+
     def test_should_cause_metamorphic_relations_correct_spec_one_input(self):
         """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
         and there is only a single input."""

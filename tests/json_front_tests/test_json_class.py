@@ -131,7 +131,6 @@ class TestJsonClass(unittest.TestCase):
             temp_out = reader.readlines()
         self.assertIn("failed", temp_out[-1])
 
-
     def test_generate_tests_from_json_no_dist(self):
         example_test = {
             "tests": [
