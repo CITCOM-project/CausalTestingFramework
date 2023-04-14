@@ -5,9 +5,9 @@ import argparse
 import json
 import logging
 
-from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
+from statistics import StatisticsError
 
 import pandas as pd
 import scipy
@@ -27,7 +27,7 @@ from causal_testing.testing.base_test_case import BaseTestCase
 logger = logging.getLogger(__name__)
 
 
-class JsonUtility(ABC):
+class JsonUtility:
     """
     The JsonUtility Class provides the functionality to use structured JSON to setup and run causal tests on the
     CausalTestingFramework.
@@ -40,58 +40,58 @@ class JsonUtility(ABC):
     :attr {Meta} metas: Causal variables representing metavariables.
     :attr {pd.DataFrame}: Pandas DataFrame containing runtime data.
     :attr {dict} test_plan: Dictionary containing the key value pairs from the loaded json test plan.
-    :attr {Scenario} modelling_scenario:
+    :attr {Scenario} scenario:
     :attr {CausalSpecification} causal_specification:
     """
 
-    def __init__(self, log_path):
-        self.paths = None
+    def __init__(self, output_path: str, output_overwrite: bool = False):
+        self.input_paths = None
         self.variables = None
         self.data = []
         self.test_plan = None
-        self.modelling_scenario = None
+        self.scenario = None
         self.causal_specification = None
-        self.setup_logger(log_path)
+        self.output_path = Path(output_path)
+        self.check_file_exists(self.output_path, output_overwrite)
 
     def set_paths(self, json_path: str, dag_path: str, data_paths: str):
         """
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
         :param json_path: string path representation to .json file containing test specifications
         :param dag_path: string path representation to the .dot file containing the Causal DAG
-        :param data_path: string path representation to the data file
+        :param data_paths: string path representation to the data files
         """
-        self.paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
+        self.input_paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
-    def set_variables(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
-        """Populate the Causal Variables
-        :param inputs:
-        :param outputs:
-        :param metas:
-        """
-
-        self.variables = CausalVariables(inputs=inputs, outputs=outputs, metas=metas)
-
-    def setup(self):
+    def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
-        self.modelling_scenario = Scenario(self.variables.inputs + self.variables.outputs + self.variables.metas, None)
-        self.modelling_scenario.setup_treatment_variables()
+        self.scenario = scenario
+        self.scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(
-            scenario=self.modelling_scenario, causal_dag=CausalDAG(self.paths.dag_path)
+            scenario=self.scenario, causal_dag=CausalDAG(self.input_paths.dag_path)
         )
         self._json_parse()
         self._populate_metas()
 
     def _create_abstract_test_case(self, test, mutates, effects):
         assert len(test["mutations"]) == 1
+        treatment_var = next(self.scenario.variables[v] for v in test["mutations"])
+        if not treatment_var.distribution:
+            fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
+            fitter.fit()
+            (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
+            var.distribution = getattr(scipy.stats, dist)(**params)
+            self._append_to_file(var.name + f" {dist}({params})", logging.INFO)
+
         abstract_test = AbstractCausalTestCase(
-            scenario=self.modelling_scenario,
+            scenario=self.scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-            treatment_variable=next(self.modelling_scenario.variables[v] for v in test["mutations"]),
+            treatment_variable=treatment_var,
             expected_causal_effect={
-                self.modelling_scenario.variables[variable]: effects[effect]
+                self.scenario.variables[variable]: effects[effect]
                 for variable, effect in test["expectedEffect"].items()
             },
-            effect_modifiers={self.modelling_scenario.variables[v] for v in test["effect_modifiers"]}
+            effect_modifiers={self.scenario.variables[v] for v in test["effect_modifiers"]}
             if "effect_modifiers" in test
             else {},
             estimate_type=test["estimate_type"],
@@ -108,14 +108,15 @@ class JsonUtility(ABC):
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         """
         failures = 0
+        msg = ""
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
 
             if test["estimate_type"] == "coefficient":
                 base_test_case = BaseTestCase(
-                    treatment_variable=next(self.modelling_scenario.variables[v] for v in test["mutations"]),
-                    outcome_variable=next(self.modelling_scenario.variables[v] for v in test["expectedEffect"]),
+                    treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
+                    outcome_variable=next(self.scenario.variables[v] for v in test["expectedEffect"]),
                     effect=test["effect"],
                 )
                 assert len(test["expectedEffect"]) == 1, "Can only have one expected effect."
@@ -127,20 +128,29 @@ class JsonUtility(ABC):
                         ),
                         estimate_type="coefficient",
                         effect_modifier_configuration={
-                            self.modelling_scenario.variables[v] for v in test.get("effect_modifiers", [])
+                            self.scenario.variables[v] for v in test.get("effect_modifiers", [])
                         },
                     )
                 ]
+                failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+                msg = (
+                    f"Executing test: {test['name']} \n"
+                    + f"  {concrete_tests[0]} \n"
+                    + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                )
             else:
                 abstract_test = self._create_abstract_test_case(test, mutates, effects)
-
                 concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-                logger.info("Executing test: %s", test["name"])
-                logger.info(abstract_test)
-                logger.info([abstract_test.treatment_variable.name, abstract_test.treatment_variable.distribution])
-                logger.info("Number of concrete tests for test case: %s", str(len(concrete_tests)))
-            failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
-            logger.info("%s/%s failed for %s\n", failures, len(concrete_tests), test["name"])
+                failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+                msg = (
+                    f"Executing test: {test['name']} \n"
+                    + "  abstract_test \n"
+                    + f"  {abstract_test} \n"
+                    + f"  {abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution} \n"
+                    + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+                    + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                )
+            self._append_to_file(msg, logging.INFO)
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
@@ -154,9 +164,9 @@ class JsonUtility(ABC):
 
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
-        with open(self.paths.json_path, encoding="utf-8") as f:
+        with open(self.input_paths.json_path, encoding="utf-8") as f:
             self.test_plan = json.load(f)
-        for data_file in self.paths.data_paths:
+        for data_file in self.input_paths.data_paths:
             df = pd.read_csv(data_file, header=0)
             self.data.append(df)
         self.data = pd.concat(self.data)
@@ -165,19 +175,8 @@ class JsonUtility(ABC):
         """
         Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
         """
-        for meta in self.variables.metas:
+        for meta in self.scenario.variables_of_type(Meta):
             meta.populate(self.data)
-
-        for var in self.variables.metas + self.variables.outputs:
-            if not var.distribution:
-                try:
-                    fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
-                    fitter.fit()
-                    (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
-                    var.distribution = getattr(scipy.stats, dist)(**params)
-                    logger.info(var.name + f" {dist}({params})")
-                except:
-                    logger.warn(f"Could not fit distriubtion for {var.name}.")
 
     def _execute_test_case(
         self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool, conditions: list[str]
@@ -191,7 +190,6 @@ class JsonUtility(ABC):
         """
         failed = False
 
-        print(causal_test_case)
         causal_test_engine, estimation_model = self._setup_test(causal_test_case, estimator, conditions)
         causal_test_result = causal_test_engine.execute_test(
             estimation_model, causal_test_case, estimate_type=causal_test_case.estimate_type
@@ -207,12 +205,13 @@ class JsonUtility(ABC):
             )
         else:
             result_string = f"{causal_test_result.test_value.value} no confidence intervals"
-        if f_flag:
-            assert test_passes, (
-                f"{causal_test_case}\n    FAILED - expected {causal_test_case.expected_causal_effect}, "
-                f"got {result_string}"
-            )
+
         if not test_passes:
+            if f_flag:
+                raise StatisticsError(
+                    f"{causal_test_case}\n    FAILED - expected {causal_test_case.expected_causal_effect}, "
+                    f"got {result_string}"
+                )
             failed = True
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
@@ -228,7 +227,7 @@ class JsonUtility(ABC):
         """
 
         data_collector = ObservationalDataCollector(
-            self.modelling_scenario, self.data.query(" & ".join(conditions)) if conditions else self.data
+            self.scenario, self.data.query(" & ".join(conditions)) if conditions else self.data
         )
         causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
 
@@ -256,15 +255,32 @@ class JsonUtility(ABC):
         """
         return
 
-    @staticmethod
-    def setup_logger(log_path: str):
-        """Setups up logging instance for the module and adds a FileHandler stream so all stdout prints are also
-        sent to the logfile
-        :param log_path: Path specifying location and name of the logging file to be used
+    def _append_to_file(self, line: str, log_level: int = None):
+        """Appends given line(s) to the current output file. If log_level is specified it also logs that message to the
+        logging level.
+        :param line: The line or lines of text to be appended to the file
+        :param log_level: An integer representing the logging level as specified by pythons inbuilt logging module. It
+        is possible to use the inbuilt logging level variables such as logging.INFO and logging.WARNING
         """
-        setup_log = logging.getLogger(__name__)
-        file_handler = logging.FileHandler(Path(log_path))
-        setup_log.addHandler(file_handler)
+        with open(self.output_path, "a", encoding="utf-8") as f:
+            f.write(
+                line + "\n",
+            )
+        if log_level:
+            logger.log(level=log_level, msg=line)
+
+    @staticmethod
+    def check_file_exists(output_path: Path, overwrite: bool):
+        """Method that checks if the given path to an output file already exists. If overwrite is true the check is
+        passed.
+        :param output_path: File path for the output file of the JSON Frontend
+        :param overwrite: bool that if true, the current file can be overwritten
+        """
+        if output_path.is_file():
+            if overwrite:
+                output_path.unlink()
+            else:
+                raise FileExistsError(f"Chosen file output ({output_path}) already exists")
 
     @staticmethod
     def get_args(test_args=None) -> argparse.Namespace:
@@ -278,6 +294,12 @@ class JsonUtility(ABC):
         parser.add_argument(
             "-f",
             help="if included, the script will stop if a test fails",
+            action="store_true",
+        )
+        parser.add_argument(
+            "-w",
+            help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
+            "careful",
             action="store_true",
         )
         parser.add_argument(
@@ -323,17 +345,17 @@ class JsonClassPaths:
         self.data_paths = [Path(path) for path in data_paths]
 
 
-@dataclass()
+@dataclass
 class CausalVariables:
     """
-    A dataclass that converts
+    A dataclass that converts lists of dictionaries into lists of Causal Variables
     """
-
-    inputs: list[Input]
-    outputs: list[Output]
-    metas: list[Meta]
 
     def __init__(self, inputs: list[dict], outputs: list[dict], metas: list[dict]):
         self.inputs = [Input(**i) for i in inputs]
         self.outputs = [Output(**o) for o in outputs]
         self.metas = [Meta(**m) for m in metas] if metas else []
+
+    def __iter__(self):
+        for var in self.inputs + self.outputs + self.metas:
+            yield var

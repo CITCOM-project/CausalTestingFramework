@@ -135,7 +135,7 @@ estimators = {
 modelling_inputs = (
     [Input(i["name"], i["datatype"], i["distribution"]) for i in inputs]
     + [Output(i["name"], i["datatype"]) for i in outputs]
-    + ([Meta(i["name"], i["datatype"], [i["populate"]]) for i in metas] if metas else list())
+    + ([Meta(i["name"], i["datatype"], i["populate"]) for i in metas] if metas else list())
 )
 
 # Create modelling scenario to access z3 variable mirrors
@@ -172,8 +172,7 @@ def test_run_causal_tests():
     )  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
-    json_utility.set_variables(inputs, outputs, metas)
-    json_utility.setup()  # Sets up all the necessary parts of the json_class needed to execute tests
+    json_utility.setup(scenario=modelling_scenario)  # Sets up all the necessary parts of the json_class needed to execute tests
 
     json_utility.generate_tests(effects, mutates, estimators, False)
 
@@ -186,7 +185,6 @@ if __name__ == "__main__":
     )  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
-    json_utility.set_variables(inputs, outputs, metas)
-    json_utility.setup()  # Sets up all the necessary parts of the json_class needed to execute tests
+    json_utility.setup(scenario=modelling_scenario)  # Sets up all the necessary parts of the json_class needed to execute tests
 
     json_utility.generate_tests(effects, mutates, estimators, args.f)

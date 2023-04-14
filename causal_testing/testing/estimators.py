@@ -150,10 +150,10 @@ class LogisticRegressionEstimator(Estimator):
         model = smf.logit(formula=self.formula, data=data).fit(disp=0)
         return model
 
-    def estimate(self, data: pd.DataFrame, adjustment_config=None) -> RegressionResultsWrapper:
+    def estimate(self, data: pd.DataFrame, adjustment_config: dict = None) -> RegressionResultsWrapper:
         """add terms to the dataframe and estimate the outcome from the data
         :param data: A pandas dataframe containing execution data from the system-under-test.
-
+        :param adjustment_config: Dictionary containing the adjustment configuration of the adjustment set
         """
         if adjustment_config is None:
             adjustment_config = {}

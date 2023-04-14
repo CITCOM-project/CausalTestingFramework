@@ -219,7 +219,6 @@ def generate_metamorphic_relations(dag: CausalDAG) -> list[MetamorphicRelation]:
 
         # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
         if ((u, v) not in dag.graph.edges) and ((v, u) not in dag.graph.edges):
-
             # Case 1: U --> ... --> V
             if u in nx.ancestors(dag.graph, v):
                 adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
