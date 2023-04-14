@@ -127,9 +127,31 @@ class TestJsonClass(unittest.TestCase):
             temp_out = reader.readlines()
         self.assertIn("failed", temp_out[-1])
 
+    def test_values_not_mutates(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "treatment_variable": "test_input",
+                    "control_value": 0,
+                    "treatment_value": 1,
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "ate",
+                    "expectedEffect": {"test_output": "NoEffect"},
+                    "skip": False,
+                }
+            ]
+        }
+        self.json_class.test_plan = example_test
+        effects = {"NoEffect": NoEffect()}
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+
+        self.json_class.run_json_tests(effects, estimators, False)
+        with open("temp_out.txt", 'r') as reader:
+            temp_out = reader.readlines()
+        self.assertIn("failed", temp_out[-1])
     def tearDown(self) -> None:
-        pass
-        # remove_temp_dir_if_existent()
+        remove_temp_dir_if_existent()
 
 
 def populate_example(*args, **kwargs):
