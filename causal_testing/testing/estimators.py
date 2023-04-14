@@ -529,7 +529,8 @@ class InstrumentalVariableEstimator(Estimator):
 
     def estimate_coefficient(self, df):
         """
-        Estimate the linear regression coefficient of the treatment on the outcome.
+        Estimate the linear regression coefficient of the treatment on the
+        outcome.
         """
         # Estimate the total effect of instrument I on outcome Y = abI + c1
         ab = sm.OLS(df[self.outcome], df[[self.instrument]]).fit().params[self.instrument]
@@ -541,6 +542,10 @@ class InstrumentalVariableEstimator(Estimator):
         return ab / a
 
     def estimate_unit_ate(self, bootstrap_size=100):
+        """
+        Estimate the unit ate (i.e. coefficient) of the treatment on the
+        outcome.
+        """
         bootstraps = sorted(
             [self.estimate_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
         )
