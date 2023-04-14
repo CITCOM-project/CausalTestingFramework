@@ -121,7 +121,7 @@ class JsonUtility:
                     result = "passed"
 
                 msg = (
-                        f"Executing test: {test['name']} \n"
+                        f"Executing concrete test: {test['name']} \n"
                         + f"treatment variable: {test['treatment_variable']} \n"
                         + f"outcome_variable = {outcome_variable} \n"
                         + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"

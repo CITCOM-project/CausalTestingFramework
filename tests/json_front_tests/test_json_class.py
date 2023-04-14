@@ -127,7 +127,7 @@ class TestJsonClass(unittest.TestCase):
             temp_out = reader.readlines()
         self.assertIn("failed", temp_out[-1])
 
-    def test_values_not_mutates(self):
+    def test_run_concrete_json_testcase(self):
         example_test = {
             "tests": [
                 {
