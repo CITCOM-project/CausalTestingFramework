@@ -541,7 +541,9 @@ class InstrumentalVariableEstimator(Estimator):
         return ab / a
 
     def estimate_unit_ate(self, bootstrap_size=100):
-        bootstraps = sorted([self.estimate_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)])
+        bootstraps = sorted(
+            [self.estimate_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
+        )
         bound = ceil((bootstrap_size * 0.05) / 2)
         ci_low = bootstraps[bound]
         ci_high = bootstraps[bootstrap_size - bound]

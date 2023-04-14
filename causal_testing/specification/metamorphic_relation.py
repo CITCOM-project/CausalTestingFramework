@@ -136,14 +136,14 @@ class ShouldCause(MetamorphicRelation):
     def to_json_stub(self, skip=True) -> dict:
         """Convert to a JSON frontend stub string for user customisation"""
         return {
-                "name": str(self),
-                "estimator": "LinearRegressionEstimator",
-                "estimate_type": "coefficient",
-                "effect": "direct",
-                "mutations": [self.treatment_var],
-                "expectedEffect": {self.output_var: "SomeEffect"},
-                "skip": skip
-              }
+            "name": str(self),
+            "estimator": "LinearRegressionEstimator",
+            "estimate_type": "coefficient",
+            "effect": "direct",
+            "mutations": [self.treatment_var],
+            "expectedEffect": {self.output_var: "SomeEffect"},
+            "skip": skip,
+        }
 
     def __str__(self):
         formatted_str = f"{self.treatment_var} --> {self.output_var}"
@@ -165,18 +165,17 @@ class ShouldNotCause(MetamorphicRelation):
             len(test_results["fail"]) == 0
         ), f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
 
-
     def to_json_stub(self, skip=True) -> dict:
         """Convert to a JSON frontend stub string for user customisation"""
         return {
-                "name": str(self),
-                "estimator": "LinearRegressionEstimator",
-                "estimate_type": "coefficient",
-                "effect": "direct",
-                "mutations": [self.treatment_var],
-                "expectedEffect": {self.output_var: "NoEffect"},
-                "skip": skip
-              }
+            "name": str(self),
+            "estimator": "LinearRegressionEstimator",
+            "estimate_type": "coefficient",
+            "effect": "direct",
+            "mutations": [self.treatment_var],
+            "expectedEffect": {self.output_var: "NoEffect"},
+            "skip": skip,
+        }
 
     def __str__(self):
         formatted_str = f"{self.treatment_var} _||_ {self.output_var}"
