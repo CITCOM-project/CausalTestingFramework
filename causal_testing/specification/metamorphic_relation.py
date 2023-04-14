@@ -103,6 +103,10 @@ class MetamorphicRelation:
         """An assertion that should be applied to an individual metamorphic test run."""
 
     @abstractmethod
+    def to_json_stub(self, skip=True) -> dict:
+        """Convert to a JSON frontend stub string for user customisation"""
+
+    @abstractmethod
     def test_oracle(self, test_results):
         """A test oracle that assert whether the MR holds or not based on ALL test results.
 
@@ -129,6 +133,18 @@ class ShouldCause(MetamorphicRelation):
             self.tests
         ), f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
 
+    def to_json_stub(self, skip=True) -> dict:
+        """Convert to a JSON frontend stub string for user customisation"""
+        return {
+                "name": str(self),
+                "estimator": "LinearRegressionEstimator",
+                "estimate_type": "coefficient",
+                "effect": "direct",
+                "mutations": [self.treatment_var],
+                "expectedEffect": {self.output_var: "SomeEffect"},
+                "skip": skip
+              }
+
     def __str__(self):
         formatted_str = f"{self.treatment_var} --> {self.output_var}"
         if self.adjustment_vars:
@@ -148,6 +164,19 @@ class ShouldNotCause(MetamorphicRelation):
         assert (
             len(test_results["fail"]) == 0
         ), f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
+
+
+    def to_json_stub(self, skip=True) -> dict:
+        """Convert to a JSON frontend stub string for user customisation"""
+        return {
+                "name": str(self),
+                "estimator": "LinearRegressionEstimator",
+                "estimate_type": "coefficient",
+                "effect": "direct",
+                "mutations": [self.treatment_var],
+                "expectedEffect": {self.output_var: "NoEffect"},
+                "skip": skip
+              }
 
     def __str__(self):
         formatted_str = f"{self.treatment_var} _||_ {self.output_var}"

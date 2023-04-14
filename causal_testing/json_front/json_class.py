@@ -170,11 +170,14 @@ class JsonUtility(ABC):
 
         for var in self.variables.metas + self.variables.outputs:
             if not var.distribution:
-                fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
-                fitter.fit()
-                (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
-                var.distribution = getattr(scipy.stats, dist)(**params)
-                logger.info(var.name + f" {dist}({params})")
+                try:
+                    fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
+                    fitter.fit()
+                    (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
+                    var.distribution = getattr(scipy.stats, dist)(**params)
+                    logger.info(var.name + f" {dist}({params})")
+                except:
+                    logger.warn(f"Could not fit distriubtion for {var.name}.")
 
     def _execute_test_case(
         self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool, conditions: list[str]
@@ -224,7 +227,7 @@ class JsonUtility(ABC):
                 - estimation_model - Estimator instance for the test being run
         """
 
-        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data.query(" & ".join(conditions)))
+        data_collector = ObservationalDataCollector(self.modelling_scenario, self.data.query(" & ".join(conditions)) if conditions else self.data)
         causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
 
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)

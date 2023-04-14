@@ -37,7 +37,8 @@ class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.test_value.type == "ate":
+        print("RESULT", res)
+        if res.test_value.type == "ate" or res.test_value.type == "coefficient":
             return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < 1e-10)
         if res.test_value.type == "risk_ratio":
             return (res.ci_low() < 1 < res.ci_high()) or np.isclose(res.test_value.value, 1.0, atol=1e-10)

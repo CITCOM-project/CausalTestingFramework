@@ -44,10 +44,10 @@ class CausalTestResult:
     def __str__(self):
         base_str = (
             f"Causal Test Result\n==============\n"
-            f"Treatment: {self.estimator.treatment[0]}\n"
+            f"Treatment: {self.estimator.treatment}\n"
             f"Control value: {self.estimator.control_value}\n"
             f"Treatment value: {self.estimator.treatment_value}\n"
-            f"Outcome: {self.estimator.outcome[0]}\n"
+            f"Outcome: {self.estimator.outcome}\n"
             f"Adjustment set: {self.adjustment_set}\n"
             f"{self.test_value.type}: {self.test_value.value}\n"
         )

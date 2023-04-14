@@ -73,14 +73,6 @@ class Estimator(ABC):
         must hold if the resulting causal inference is to be considered valid.
         """
 
-    @abstractmethod
-    def estimate_ate(self) -> float:
-        """
-        Estimate the unit effect of the treatment on the outcome. That is, the coefficient of the treatment variable
-        in the linear regression equation.
-        :return: The intercept and coefficient of the linear regression equation
-        """
-
     def compute_confidence_intervals(self) -> list[float, float]:
         """
         Estimate the 95% Wald confidence intervals for the effect of changing the treatment from control values to
@@ -535,21 +527,26 @@ class InstrumentalVariableEstimator(Estimator):
             (iii) Instrument and outcome do not share causes
         """
 
-    def estimate_coefficient(self):
+    def estimate_coefficient(self, df):
         """
         Estimate the linear regression coefficient of the treatment on the outcome.
         """
         # Estimate the total effect of instrument I on outcome Y = abI + c1
-        ab = sm.OLS(self.df[self.outcome], self.df[[self.instrument]]).fit().params[self.instrument]
+        ab = sm.OLS(df[self.outcome], df[[self.instrument]]).fit().params[self.instrument]
 
         # Estimate the direct effect of instrument I on treatment X = aI + c1
-        a = sm.OLS(self.df[self.treatment], self.df[[self.instrument]]).fit().params[self.instrument]
+        a = sm.OLS(df[self.treatment], df[[self.instrument]]).fit().params[self.instrument]
 
         # Estimate the coefficient of I on X by cancelling
         return ab / a
 
-    def estimate_ate(self):
-        return (self.treatment_value - self.control_value) * self.estimate_coefficient(), (None, None)
+    def estimate_unit_ate(self, bootstrap_size=100):
+        bootstraps = sorted([self.estimate_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)])
+        bound = ceil((bootstrap_size * 0.05) / 2)
+        ci_low = bootstraps[bound]
+        ci_high = bootstraps[bootstrap_size - bound]
+
+        return self.estimate_coefficient(self.df), (ci_low, ci_high)
 
 
 class CausalForestEstimator(Estimator):
