@@ -153,7 +153,7 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     return causal_test_result.test_value.value, causal_test_result.confidence_intervals
 
 
-def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = True, show: bool = False):
+def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = False, show: bool = False):
     """Plot the average treatment effects for a given treatment against a list of x-values with confidence intervals.
 
     :param results_dict: A dictionary containing results for sensitivity analysis of each input parameter.

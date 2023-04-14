@@ -64,26 +64,26 @@ class ExactValue(SomeEffect):
         return f"ExactValue: {self.value}±{self.tolerance}"
 
 
-class Positive(CausalTestOutcome):
+class Positive(SomeEffect):
     """An extension of TestOutcome representing that the expected causal effect should be positive."""
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_valid() and not super().apply(res):
             return False
-        if res.test_value.type == "ate":
+        if res.test_value.type in {"ate", "coefficient"}:
             return res.test_value.value > 0
-        if res.test_value.type == "risk_ratio":
+        elif res.test_value.type == "risk_ratio":
             return res.test_value.value > 1
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
 
-class Negative(CausalTestOutcome):
+class Negative(SomeEffect):
     """An extension of TestOutcome representing that the expected causal effect should be negative."""
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_valid() and not super().apply(res):
             return False
-        if res.test_value.type == "ate":
+        if res.test_value.type in {"ate", "coefficient"}:
             return res.test_value.value < 0
         if res.test_value.type == "risk_ratio":
             return res.test_value.value < 1
