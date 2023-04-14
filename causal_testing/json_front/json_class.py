@@ -19,6 +19,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
+from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
@@ -73,6 +74,60 @@ class JsonUtility:
         self._json_parse()
         self._populate_metas()
 
+    def run_json_tests(self, effects: dict, estimators: dict, f_flag: bool = False, mutates: dict = None):
+        """Runs and evaluates each test case specified in the JSON input
+
+        :param effects: Dictionary mapping effect class instances to string representations.
+        :param mutates: Dictionary mapping mutation functions to string representations.
+        :param estimators: Dictionary mapping estimator classes to string representations.
+        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        """
+        failures = 0
+        for test in self.test_plan["tests"]:
+            if "skip" in test and test["skip"]:
+                continue
+            if "mutates" in test:
+                abstract_test = self._create_abstract_test_case(test, mutates, effects)
+
+                concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
+                failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+                msg = (
+                        f"Executing test: {test['name']}\n"
+                        + "abstract_test\n"
+                        + f"{abstract_test}\n"
+                        + f"{abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution}\n"
+                        + f"Number of concrete tests for test case: {str(len(concrete_tests))}\n"
+                        + f"{failures}/{len(concrete_tests)} failed for {test['name']}"
+                )
+                self._append_to_file(msg, logging.INFO)
+            else:
+                outcome_variable = next(iter(test['expectedEffect'])) # Take first key from dictionary of expected effect
+                expected_effect = effects[test['expectedEffect'][outcome_variable]]
+                base_test_case = BaseTestCase(treatment_variable=self.variables["inputs"][test["treatment_variable"]],
+                                              outcome_variable=self.variables["outputs"][outcome_variable])
+
+                causal_test_case = CausalTestCase(base_test_case=base_test_case,
+                                                  expected_causal_effect=expected_effect,
+                                                  control_value=test["control_value"],
+                                                  treatment_value=test["treatment_value"],
+                                                  estimate_type=test["estimate_type"])
+
+
+                if self._execute_test_case(causal_test_case=causal_test_case,
+                                        estimator=estimators[test["estimator"]],
+                                        f_flag=f_flag):
+                    result = "failed"
+                else:
+                    result = "passed"
+
+                msg = (
+                        f"Executing test: {test['name']} \n"
+                        + f"treatment variable: {test['treatment_variable']} \n"
+                        + f"outcome_variable = {outcome_variable} \n"
+                        + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                        + f"result - {result} \n"
+                )
+                self._append_to_file(msg, logging.INFO)
     def _create_abstract_test_case(self, test, mutates, effects):
         assert len(test["mutations"]) == 1
         abstract_test = AbstractCausalTestCase(
@@ -90,32 +145,6 @@ class JsonUtility:
             effect=test.get("effect", "total"),
         )
         return abstract_test
-
-    def generate_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
-        """Runs and evaluates each test case specified in the JSON input
-
-        :param effects: Dictionary mapping effect class instances to string representations.
-        :param mutates: Dictionary mapping mutation functions to string representations.
-        :param estimators: Dictionary mapping estimator classes to string representations.
-        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
-        """
-        failures = 0
-        for test in self.test_plan["tests"]:
-            if "skip" in test and test["skip"]:
-                continue
-            abstract_test = self._create_abstract_test_case(test, mutates, effects)
-
-            concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-            failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
-            msg = (
-                f"Executing test: {test['name']} \n"
-                + "abstract_test \n"
-                + f"{abstract_test} \n"
-                + f"{abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution} \n"
-                + f"Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-                + f"{failures}/{len(concrete_tests)} failed for {test['name']}"
-            )
-            self._append_to_file(msg, logging.INFO)
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
@@ -157,7 +186,6 @@ class JsonUtility:
         :rtype: bool
         """
         failed = False
-
         causal_test_engine, estimation_model = self._setup_test(causal_test_case, estimator)
         causal_test_result = causal_test_engine.execute_test(
             estimation_model, causal_test_case, estimate_type=causal_test_case.estimate_type
@@ -228,7 +256,7 @@ class JsonUtility:
         """
         with open(self.output_path, "a", encoding="utf-8") as f:
             f.write(
-                line + "\n",
+                line,
             )
         if log_level:
             logger.log(level=log_level, msg=line)

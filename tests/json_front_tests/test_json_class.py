@@ -96,9 +96,9 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
         with self.assertRaises(StatisticsError):
-            self.json_class.generate_tests(effects, mutates, estimators, True)
+            self.json_class.run_json_tests(effects, mutates, estimators, True)
 
-    def test_generate_tests_from_json(self):
+    def test_run_json_tests_from_json(self):
         example_test = {
             "tests": [
                 {
@@ -120,7 +120,7 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.generate_tests(effects, mutates, estimators, False)
+        self.json_class.run_json_tests(effects, mutates, estimators, False)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
         with open("temp_out.txt", 'r') as reader:
