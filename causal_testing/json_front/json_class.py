@@ -102,7 +102,7 @@ class JsonUtility:
                 self._append_to_file(msg, logging.INFO)
             else:
                 outcome_variable = next(
-                    iter(test["expectedEffect"])
+                    iter(test["expected_effect"])
                 )  # Take first key from dictionary of expected effect
                 base_test_case = BaseTestCase(
                     treatment_variable=self.variables["inputs"][test["treatment_variable"]],
@@ -111,7 +111,7 @@ class JsonUtility:
 
                 causal_test_case = CausalTestCase(
                     base_test_case=base_test_case,
-                    expected_causal_effect=effects[test["expectedEffect"][outcome_variable]],
+                    expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
                     control_value=test["control_value"],
                     treatment_value=test["treatment_value"],
                     estimate_type=test["estimate_type"],
@@ -141,7 +141,7 @@ class JsonUtility:
             treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
             expected_causal_effect={
                 self.scenario.variables[variable]: effects[effect]
-                for variable, effect in test["expectedEffect"].items()
+                for variable, effect in test["expected_effect"].items()
             },
             effect_modifiers={self.scenario.variables[v] for v in test["effect_modifiers"]}
             if "effect_modifiers" in test

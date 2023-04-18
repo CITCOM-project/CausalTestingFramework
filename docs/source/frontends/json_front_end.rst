@@ -21,17 +21,28 @@ Use case specific information is also declared here such as the paths to the rel
 
 causal_tests.json
 -----------------
-`examples/poisson/causal_tests.json <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/causal_tests.json>`_ contains python code written by the user to implement scenario specific features
-is the JSON file that allows for the easy specification of multiple causal tests.
+`examples/poisson/causal_tests.json <https://github.c#om/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/causal_tests.json>`_ contains python code written by the user to implement scenario specific features
+is the JSON file that allows for the easy specification of multiple causal tests. Tests can be specified two ways; firstly by specifying a mutation lke in the example tests with the following structure:
 Each test requires:
-1. Test name
-2. Mutations
-3. Estimator
-4. Estimate_type
-5. Effect modifiers
-6. Expected effects
-7. Skip: boolean that if set true the test won't be executed and will be skipped
 
+#. name
+#. mutations
+#. estimator
+#. estimate_type
+#. effect_modifiers
+#. expected_effects
+#. skip: boolean that if set true the test won't be executed and will be skipped
+
+The second method of specifying a test is to specify the test in a concrete form with the following structure:
+
+#. name
+#. treatment_variable
+#. control_value
+#. treatment_value
+#. estimator
+#. estimate_type
+#. expected_effect
+#. skip
 
 Run Commands
 ------------

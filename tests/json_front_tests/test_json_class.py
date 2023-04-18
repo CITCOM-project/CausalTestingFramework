@@ -83,7 +83,7 @@ class TestJsonClass(unittest.TestCase):
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "ate",
                     "effect_modifiers": [],
-                    "expectedEffect": {"test_output": "NoEffect"},
+                    "expected_effect": {"test_output": "NoEffect"},
                     "skip": False,
                 }
             ]
@@ -107,7 +107,7 @@ class TestJsonClass(unittest.TestCase):
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "ate",
                     "effect_modifiers": [],
-                    "expectedEffect": {"test_output": "NoEffect"},
+                    "expected_effect": {"test_output": "NoEffect"},
                     "skip": False,
                 }
             ]
@@ -137,7 +137,7 @@ class TestJsonClass(unittest.TestCase):
                     "treatment_value": 1,
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "ate",
-                    "expectedEffect": {"test_output": "NoEffect"},
+                    "expected_effect": {"test_output": "NoEffect"},
                     "skip": False,
                 }
             ]
