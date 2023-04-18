@@ -92,7 +92,7 @@ class JsonUtility:
                 abstract_test = self._create_abstract_test_case(test, mutates, effects)
 
                 concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-                failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+                failures = self._execute_tests(concrete_tests, test, f_flag)
                 msg = (
                     f"Executing test: {test['name']}\n"
                     + "abstract_test\n"
