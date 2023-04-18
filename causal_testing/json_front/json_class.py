@@ -87,6 +87,7 @@ class JsonUtility:
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
+            test["estimator"] = estimators[test["estimator"]]
             if "mutations" in test:
                 abstract_test = self._create_abstract_test_case(test, mutates, effects)
 
@@ -117,9 +118,8 @@ class JsonUtility:
                     treatment_value=test["treatment_value"],
                     estimate_type=test["estimate_type"],
                 )
-
                 if self._execute_test_case(
-                    causal_test_case=causal_test_case, estimator=estimators[test["estimator"]], f_flag=f_flag
+                    causal_test_case=causal_test_case, test=test, f_flag=f_flag
                 ):
                     result = "failed"
                 else:
@@ -130,7 +130,7 @@ class JsonUtility:
                     + f"treatment variable: {test['treatment_variable']} \n"
                     + f"outcome_variable = {outcome_variable} \n"
                     + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                    + f"result - {result} \n"
+                    + f"result - {result}"
                 )
                 self._append_to_file(msg, logging.INFO)
 
@@ -154,7 +154,6 @@ class JsonUtility:
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
-        test["estimator"] = estimators[test["estimator"]]
         if "formula" in test:
             self._append_to_file(f"Estimator formula used for test: {test['formula']}")
         for concrete_test in concrete_tests:
@@ -203,7 +202,6 @@ class JsonUtility:
 
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
-        result_string = str()
         if causal_test_result.ci_low() and causal_test_result.ci_high():
             result_string = (
                 f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  "
@@ -248,7 +246,6 @@ class JsonUtility:
         }
         if "formula" in test:
             estimator_kwargs["formula"] = test["formula"]
-
         estimation_model = test["estimator"](**estimator_kwargs)
         return causal_test_engine, estimation_model
 
@@ -261,7 +258,7 @@ class JsonUtility:
         """
         with open(self.output_path, "a", encoding="utf-8") as f:
             f.write(
-                line + "\n",
+                line + "\n"
             )
         if log_level:
             logger.log(level=log_level, msg=line)
