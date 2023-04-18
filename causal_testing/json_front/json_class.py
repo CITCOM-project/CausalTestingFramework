@@ -118,9 +118,7 @@ class JsonUtility:
                     treatment_value=test["treatment_value"],
                     estimate_type=test["estimate_type"],
                 )
-                if self._execute_test_case(
-                    causal_test_case=causal_test_case, test=test, f_flag=f_flag
-                ):
+                if self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag):
                     result = "failed"
                 else:
                     result = "passed"
@@ -152,7 +150,7 @@ class JsonUtility:
         )
         return abstract_test
 
-    def _execute_tests(self, concrete_tests, estimators, test, f_flag):
+    def _execute_tests(self, concrete_tests, test, f_flag):
         failures = 0
         if "formula" in test:
             self._append_to_file(f"Estimator formula used for test: {test['formula']}")
@@ -257,9 +255,7 @@ class JsonUtility:
         is possible to use the inbuilt logging level variables such as logging.INFO and logging.WARNING
         """
         with open(self.output_path, "a", encoding="utf-8") as f:
-            f.write(
-                line + "\n"
-            )
+            f.write(line + "\n")
         if log_level:
             logger.log(level=log_level, msg=line)
 
