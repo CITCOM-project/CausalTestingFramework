@@ -5,6 +5,7 @@ import argparse
 import json
 import logging
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import StatisticsError
@@ -153,8 +154,11 @@ class JsonUtility:
 
     def _execute_tests(self, concrete_tests, estimators, test, f_flag):
         failures = 0
+        test["estimator"] = estimators[test["estimator"]]
+        if "formula" in test:
+            self._append_to_file(f"Estimator formula used for test: {test['formula']}")
         for concrete_test in concrete_tests:
-            failed = self._execute_test_case(concrete_test, estimators[test["estimator"]], f_flag)
+            failed = self._execute_test_case(concrete_test, test, f_flag)
             if failed:
                 failures += 1
         return failures
@@ -182,16 +186,17 @@ class JsonUtility:
                 var.distribution = getattr(scipy.stats, dist)(**params)
                 self._append_to_file(var.name + f" {dist}({params})", logging.INFO)
 
-    def _execute_test_case(self, causal_test_case: CausalTestCase, estimator: Estimator, f_flag: bool) -> bool:
+    def _execute_test_case(self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool) -> bool:
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
+        :param test: Single JSON test definition stored in a mapping (dict)
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         :return: A boolean that if True indicates the causal test case passed and if false indicates the test case
          failed.
         :rtype: bool
         """
         failed = False
-        causal_test_engine, estimation_model = self._setup_test(causal_test_case, estimator)
+        causal_test_engine, estimation_model = self._setup_test(causal_test_case, test)
         causal_test_result = causal_test_engine.execute_test(
             estimation_model, causal_test_case, estimate_type=causal_test_case.estimate_type
         )
@@ -217,9 +222,10 @@ class JsonUtility:
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
 
-    def _setup_test(self, causal_test_case: CausalTestCase, estimator: Estimator) -> tuple[CausalTestEngine, Estimator]:
+    def _setup_test(self, causal_test_case: CausalTestCase, test: Mapping) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
+        :param test: Single JSON test definition stored in a mapping (dict)
         :returns:
                 - causal_test_engine - Test Engine instance for the test being run
                 - estimation_model - Estimator instance for the test being run
@@ -231,26 +237,20 @@ class JsonUtility:
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
         treatment_var = causal_test_case.treatment_variable
         minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
-        estimation_model = estimator(
-            treatment=treatment_var.name,
-            treatment_value=causal_test_case.treatment_value,
-            control_value=causal_test_case.control_value,
-            adjustment_set=minimal_adjustment_set,
-            outcome=causal_test_case.outcome_variable.name,
-            df=causal_test_engine.scenario_execution_data_df,
-            effect_modifiers=causal_test_case.effect_modifier_configuration,
-        )
+        estimator_kwargs = {
+            "treatment": treatment_var.name,
+            "treatment_value": causal_test_case.treatment_value,
+            "control_value": causal_test_case.control_value,
+            "adjustment_set": minimal_adjustment_set,
+            "outcome": causal_test_case.outcome_variable.name,
+            "df": causal_test_engine.scenario_execution_data_df,
+            "effect_modifiers": causal_test_case.effect_modifier_configuration,
+        }
+        if "formula" in test:
+            estimator_kwargs["formula"] = test["formula"]
 
-        self.add_modelling_assumptions(estimation_model)
-
+        estimation_model = test["estimator"](**estimator_kwargs)
         return causal_test_engine, estimation_model
-
-    def add_modelling_assumptions(self, estimation_model: Estimator):  # pylint: disable=unused-argument
-        """Optional abstract method where user functionality can be written to determine what assumptions are required
-        for specific test cases
-        :param estimation_model: estimator model instance for the current running test.
-        """
-        return
 
     def _append_to_file(self, line: str, log_level: int = None):
         """Appends given line(s) to the current output file. If log_level is specified it also logs that message to the
@@ -261,7 +261,7 @@ class JsonUtility:
         """
         with open(self.output_path, "a", encoding="utf-8") as f:
             f.write(
-                line,
+                line + "\n",
             )
         if log_level:
             logger.log(level=log_level, msg=line)

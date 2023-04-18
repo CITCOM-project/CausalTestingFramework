@@ -149,15 +149,6 @@ mutates = {
 }
 
 
-class MyJsonUtility(JsonUtility):
-    """Extension of JsonUtility class to add modelling assumptions to the estimator instance"""
-
-    def add_modelling_assumptions(self, estimation_model: Estimator):
-        # Add squared intensity term as a modelling assumption if intensity is the treatment of the test
-        if "intensity" in estimation_model.treatment[0]:
-            estimation_model.intercept = 0
-
-
 def test_run_causal_tests():
     ROOT = os.path.realpath(os.path.dirname(__file__))
 
@@ -166,7 +157,7 @@ def test_run_causal_tests():
     dag_path = f"{ROOT}/dag.dot"
     data_path = f"{ROOT}/data.csv"
 
-    json_utility = MyJsonUtility(log_path)  # Create an instance of the extended JsonUtility class
+    json_utility = JsonUtility(log_path)  # Create an instance of the extended JsonUtility class
     json_utility.set_paths(
         json_path, dag_path, [data_path]
     )  # Set the path to the data.csv, dag.dot and causal_tests.json file
@@ -178,8 +169,8 @@ def test_run_causal_tests():
 
 
 if __name__ == "__main__":
-    args = MyJsonUtility.get_args()
-    json_utility = MyJsonUtility(args.log_path)  # Create an instance of the extended JsonUtility class
+    args = JsonUtility.get_args()
+    json_utility = JsonUtility(args.log_path)  # Create an instance of the extended JsonUtility class
     json_utility.set_paths(
         args.json_path, args.dag_path, args.data_path
     )  # Set the path to the data.csv, dag.dot and causal_tests.json file
