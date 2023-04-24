@@ -197,7 +197,7 @@ class TestJsonClass(unittest.TestCase):
                     "effect_modifiers": [],
                     "expectedEffect": {"test_output": "Positive"},
                     "skip": False,
-                    "formula": "test_output ~ test_input"
+                    "formula": "test_output ~ test_input",
                 }
             ]
         }
@@ -205,14 +205,14 @@ class TestJsonClass(unittest.TestCase):
         effects = {"Positive": Positive()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-                                  > self.json_class.scenario.variables[x].z3
+            > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
         self.json_class.generate_tests(effects, mutates, estimators, False)
-        with open("temp_out.txt", 'r') as reader:
+        with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
-        self.assertIn("test_output ~ test_input", ''.join(temp_out))
+        self.assertIn("test_output ~ test_input", "".join(temp_out))
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

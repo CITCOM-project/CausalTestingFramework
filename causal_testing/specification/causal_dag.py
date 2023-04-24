@@ -521,7 +521,10 @@ class CausalDAG(nx.DiGraph):
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
 
-    def to_dot(self):
+    def to_dot(self) -> str:
+        """Return a string of the DOT representation of the causal DAG.
+        :return DOT string of the DAG.
+        """
         return str(nx.nx_pydot.to_pydot(self.graph))
 
     def __str__(self):

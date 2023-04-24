@@ -225,7 +225,9 @@ class JsonUtility:
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed
 
-    def _setup_test(self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str]=None) -> tuple[CausalTestEngine, Estimator]:
+    def _setup_test(
+        self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
+    ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :param test: Single JSON test definition stored in a mapping (dict)
