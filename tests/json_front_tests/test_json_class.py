@@ -102,6 +102,32 @@ class TestJsonClass(unittest.TestCase):
         with self.assertRaises(StatisticsError):
             self.json_class.generate_tests(effects, mutates, estimators, True)
 
+    def test_generate_coefficient_tests_from_json(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "mutations": ["test_input"],
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "coefficient",
+                    "effect_modifiers": [],
+                    "expectedEffect": {"test_output": "NoEffect"},
+                    "skip": False,
+                }
+            ]
+        }
+        print(self.json_class.causal_specification.causal_dag.to_dot())
+        self.json_class.test_plan = example_test
+        effects = {"NoEffect": NoEffect()}
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+
+        self.json_class.generate_tests(effects, {}, estimators, False)
+
+        # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
+        with open("temp_out.txt", "r") as reader:
+            temp_out = reader.readlines()
+        self.assertIn("failed", temp_out[-1])
+
     def test_generate_tests_from_json(self):
         example_test = {
             "tests": [

@@ -1,1 +1,1 @@
-digraph G { test_input_no_dist; est_input -> B; B -> C; test_output -> test_input; test_output -> C}
+digraph G { test_input_no_dist; test_input -> B; B -> C; test_input -> test_output; test_output -> C}

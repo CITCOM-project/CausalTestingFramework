@@ -176,6 +176,22 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         )
         self.assertEqual(iv_estimator.estimate_coefficient(self.df), 2)
 
+    def test_estimate_unit_ate(self):
+        """
+        Test we get the correct coefficient.
+        """
+        iv_estimator = InstrumentalVariableEstimator(
+            df=self.df,
+            treatment="X",
+            treatment_value=None,
+            control_value=None,
+            adjustment_set=set(),
+            outcome="Y",
+            instrument="Z",
+        )
+        unit_ate, [low, high] = iv_estimator.estimate_unit_ate()
+        self.assertEqual(unit_ate, 2)
+
 
 class TestLinearRegressionEstimator(unittest.TestCase):
     """Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].

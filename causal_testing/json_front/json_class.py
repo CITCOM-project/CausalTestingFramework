@@ -117,7 +117,7 @@ class JsonUtility:
                 base_test_case = BaseTestCase(
                     treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
                     outcome_variable=next(self.scenario.variables[v] for v in test["expectedEffect"]),
-                    effect=test["effect"],
+                    effect=test.get("effect", "direct"),
                 )
                 assert len(test["expectedEffect"]) == 1, "Can only have one expected effect."
                 concrete_tests = [
