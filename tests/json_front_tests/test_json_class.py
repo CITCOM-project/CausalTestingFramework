@@ -116,7 +116,6 @@ class TestJsonClass(unittest.TestCase):
                 }
             ]
         }
-        print(self.json_class.causal_specification.causal_dag.to_dot())
         self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}

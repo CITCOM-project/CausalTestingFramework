@@ -73,7 +73,7 @@ class TestCausalDAG(unittest.TestCase):
     def setUp(self) -> None:
         temp_dir_path = create_temp_dir_if_non_existent()
         self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
-        dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C}"""
+        dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C;}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
         f.close()
@@ -98,6 +98,10 @@ class TestCausalDAG(unittest.TestCase):
         """Test whether an empty dag can be created."""
         causal_dag = CausalDAG()
         assert list(causal_dag.graph.nodes) == [] and list(causal_dag.graph.edges) == []
+
+    def test_to_dot(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        self.assertEqual(causal_dag.to_dot(), """digraph G {\nA -> B;\nB -> C;\nD -> A;\nD -> C;\n}""")
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
