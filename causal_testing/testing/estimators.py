@@ -312,7 +312,7 @@ class LinearRegressionEstimator(Estimator):
             self.formula = formula
         else:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
+            self.formula = f"{outcome} ~ {'+'.join(terms)}"
 
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
