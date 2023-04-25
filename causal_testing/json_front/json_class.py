@@ -20,6 +20,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
+from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
@@ -47,7 +48,7 @@ class JsonUtility:
 
     def __init__(self, output_path: str, output_overwrite: bool = False):
         self.input_paths = None
-        self.variables = None
+        self.variables = {"inputs": {}, "outputs": {}, "metas": {}}
         self.data = []
         self.test_plan = None
         self.scenario = None
@@ -67,6 +68,7 @@ class JsonUtility:
     def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
         self.scenario = scenario
+        self._get_scenario_variables()
         self.scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(
             scenario=self.scenario, causal_dag=CausalDAG(self.input_paths.dag_path)
@@ -100,7 +102,7 @@ class JsonUtility:
         )
         return abstract_test
 
-    def generate_tests(self, effects: dict, mutates: dict, estimators: dict, f_flag: bool):
+    def run_json_tests(self, effects: dict, estimators: dict, f_flag: bool = False, mutates: dict = None):
         """Runs and evaluates each test case specified in the JSON input
 
         :param effects: Dictionary mapping effect class instances to string representations.
@@ -113,49 +115,96 @@ class JsonUtility:
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
-
-            if test["estimate_type"] == "coefficient":
-                base_test_case = BaseTestCase(
-                    treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
-                    outcome_variable=next(self.scenario.variables[v] for v in test["expectedEffect"]),
-                    effect=test.get("effect", "direct"),
-                )
-                assert len(test["expectedEffect"]) == 1, "Can only have one expected effect."
-                concrete_tests = [
-                    CausalTestCase(
-                        base_test_case=base_test_case,
-                        expected_causal_effect=next(
-                            effects[effect] for variable, effect in test["expectedEffect"].items()
-                        ),
-                        estimate_type="coefficient",
-                        effect_modifier_configuration={
-                            self.scenario.variables[v] for v in test.get("effect_modifiers", [])
-                        },
+            test["estimator"] = estimators[test["estimator"]]
+            if "mutations" in test:
+                if test["estimate_type"] == "coefficient":
+                    base_test_case = BaseTestCase(
+                        treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
+                        outcome_variable=next(self.scenario.variables[v] for v in test["expectedEffect"]),
+                        effect=test.get("effect", "direct"),
                     )
-                ]
-                failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
-                msg = (
-                    f"Executing test: {test['name']} \n"
-                    + f"  {concrete_tests[0]} \n"
-                    + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
-                )
-            else:
-                abstract_test = self._create_abstract_test_case(test, mutates, effects)
-                concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-                failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
-                msg = (
-                    f"Executing test: {test['name']} \n"
-                    + "  abstract_test \n"
-                    + f"  {abstract_test} \n"
-                    + f"  {abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution} \n"
-                    + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-                    + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
-                )
-            self._append_to_file(msg, logging.INFO)
+                    assert len(test["expectedEffect"]) == 1, "Can only have one expected effect."
+                    concrete_tests = [
+                        CausalTestCase(
+                            base_test_case=base_test_case,
+                            expected_causal_effect=next(
+                                effects[effect] for variable, effect in test["expectedEffect"].items()
+                            ),
+                            estimate_type="coefficient",
+                            effect_modifier_configuration={
+                                self.scenario.variables[v] for v in test.get("effect_modifiers", [])
+                            },
+                        )
+                    ]
+                    failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+                    msg = (
+                            f"Executing test: {test['name']} \n"
+                            + f"  {concrete_tests[0]} \n"
+                            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                    )
+                else:
+                    abstract_test = self._create_abstract_test_case(test, mutates, effects)
+                    concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
+                    failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+                    msg = (
+                            f"Executing test: {test['name']} \n"
+                            + "  abstract_test \n"
+                            + f"  {abstract_test} \n"
+                            + f"  {abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution} \n"
+                            + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+                            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                    )
+                self._append_to_file(msg, logging.INFO)
+                else:
+                    outcome_variable = next(
+                        iter(test["expected_effect"])
+                    )  # Take first key from dictionary of expected effect
+                    base_test_case = BaseTestCase(
+                        treatment_variable=self.variables["inputs"][test["treatment_variable"]],
+                        outcome_variable=self.variables["outputs"][outcome_variable],
+                    )
 
-    def _execute_tests(self, concrete_tests, estimators, test, f_flag):
+                    causal_test_case = CausalTestCase(
+                        base_test_case=base_test_case,
+                        expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
+                        control_value=test["control_value"],
+                        treatment_value=test["treatment_value"],
+                        estimate_type=test["estimate_type"],
+                    )
+                    if self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag):
+                        result = "failed"
+                    else:
+                        result = "passed"
+
+                    msg = (
+                            f"Executing concrete test: {test['name']} \n"
+                            + f"treatment variable: {test['treatment_variable']} \n"
+                            + f"outcome_variable = {outcome_variable} \n"
+                            + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                            + f"result - {result}"
+                    )
+                    self._append_to_file(msg, logging.INFO)
+
+    def _create_abstract_test_case(self, test, mutates, effects):
+        assert len(test["mutations"]) == 1
+        abstract_test = AbstractCausalTestCase(
+            scenario=self.scenario,
+            intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
+            treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
+            expected_causal_effect={
+                self.scenario.variables[variable]: effects[effect]
+                for variable, effect in test["expected_effect"].items()
+            },
+            effect_modifiers={self.scenario.variables[v] for v in test["effect_modifiers"]}
+            if "effect_modifiers" in test
+            else {},
+            estimate_type=test["estimate_type"],
+            effect=test.get("effect", "total"),
+        )
+        return abstract_test
+
+    def _execute_tests(self, concrete_tests, test, f_flag):
         failures = 0
-        test["estimator"] = estimators[test["estimator"]]
         if "formula" in test:
             self._append_to_file(f"Estimator formula used for test: {test['formula']}")
         for concrete_test in concrete_tests:
@@ -206,7 +255,6 @@ class JsonUtility:
 
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
-        result_string = str()
         if causal_test_result.ci_low() and causal_test_result.ci_high():
             result_string = (
                 f"{causal_test_result.ci_low()} < {causal_test_result.test_value.value} <  "
@@ -226,7 +274,7 @@ class JsonUtility:
         return failed
 
     def _setup_test(
-        self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
+            self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
     ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
@@ -258,7 +306,6 @@ class JsonUtility:
         }
         if "formula" in test:
             estimator_kwargs["formula"] = test["formula"]
-
         estimation_model = test["estimator"](**estimator_kwargs)
         return causal_test_engine, estimation_model
 
@@ -270,9 +317,17 @@ class JsonUtility:
         is possible to use the inbuilt logging level variables such as logging.INFO and logging.WARNING
         """
         with open(self.output_path, "a", encoding="utf-8") as f:
-            f.write(line)
+            f.write(line + "\n")
         if log_level:
             logger.log(level=log_level, msg=line)
+
+    def _get_scenario_variables(self):
+        for input_var in self.scenario.inputs():
+            self.variables["inputs"][input_var.name] = input_var
+        for output_var in self.scenario.outputs():
+            self.variables["outputs"][output_var.name] = output_var
+        for meta_var in self.scenario.metas():
+            self.variables["metas"][meta_var.name] = meta_var
 
     @staticmethod
     def check_file_exists(output_path: Path, overwrite: bool):
@@ -304,7 +359,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-            "careful",
+                 "careful",
             action="store_true",
         )
         parser.add_argument(
