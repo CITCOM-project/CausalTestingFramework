@@ -99,9 +99,9 @@ class TestCausalDAG(unittest.TestCase):
         causal_dag = CausalDAG()
         assert list(causal_dag.graph.nodes) == [] and list(causal_dag.graph.edges) == []
 
-    def test_to_dot(self):
+    def test_to_dot_string(self):
         causal_dag = CausalDAG(self.dag_dot_path)
-        self.assertEqual(causal_dag.to_dot(), """digraph G {\nA -> B;\nB -> C;\nD -> A;\nD -> C;\n}""")
+        self.assertEqual(causal_dag.to_dot_string(), """digraph G {\nA -> B;\nB -> C;\nD -> A;\nD -> C;\n}""")
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
