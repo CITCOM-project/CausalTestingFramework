@@ -111,7 +111,7 @@ class TestJsonClass(unittest.TestCase):
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "coefficient",
                     "effect_modifiers": [],
-                    "expectedEffect": {"test_output": "NoEffect"},
+                    "expected_effect": {"test_output": "NoEffect"},
                     "skip": False,
                 }
             ]
@@ -120,7 +120,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"NoEffect": NoEffect()}
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.generate_tests(effects, {}, estimators, False)
+        self.json_class.run_json_tests(effects=effects, mutates={}, estimators=estimators, f_flag=False)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
         with open("temp_out.txt", "r") as reader:
@@ -149,7 +149,7 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.run_json_tests(effects, estimators, False, mutates)
+        self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False, mutates=mutates)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
         with open("temp_out.txt", "r") as reader:
@@ -165,7 +165,7 @@ class TestJsonClass(unittest.TestCase):
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "ate",
                     "effect_modifiers": [],
-                    "expectedEffect": {"test_output": "NoEffect"},
+                    "expected_effect": {"test_output": "NoEffect"},
                     "skip": False,
                 }
             ]
@@ -178,7 +178,7 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.generate_tests(effects, mutates, estimators, False)
+        self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
         with open("temp_out.txt", "r") as reader:

@@ -141,7 +141,7 @@ class ShouldCause(MetamorphicRelation):
             "estimate_type": "coefficient",
             "effect": "direct",
             "mutations": [self.treatment_var],
-            "expectedEffect": {self.output_var: "SomeEffect"},
+            "expected_effect": {self.output_var: "SomeEffect"},
             "skip": skip,
         }
 
@@ -173,7 +173,7 @@ class ShouldNotCause(MetamorphicRelation):
             "estimate_type": "coefficient",
             "effect": "direct",
             "mutations": [self.treatment_var],
-            "expectedEffect": {self.output_var: "NoEffect"},
+            "expected_effect": {self.output_var: "NoEffect"},
             "skip": skip,
         }
 

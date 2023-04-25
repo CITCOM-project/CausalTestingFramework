@@ -92,7 +92,7 @@ class JsonUtility:
             treatment_variable=treatment_var,
             expected_causal_effect={
                 self.scenario.variables[variable]: effects[effect]
-                for variable, effect in test["expectedEffect"].items()
+                for variable, effect in test["expected_effect"].items()
             },
             effect_modifiers={self.scenario.variables[v] for v in test["effect_modifiers"]}
             if "effect_modifiers" in test
@@ -120,15 +120,15 @@ class JsonUtility:
                 if test["estimate_type"] == "coefficient":
                     base_test_case = BaseTestCase(
                         treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
-                        outcome_variable=next(self.scenario.variables[v] for v in test["expectedEffect"]),
+                        outcome_variable=next(self.scenario.variables[v] for v in test["expected_effect"]),
                         effect=test.get("effect", "direct"),
                     )
-                    assert len(test["expectedEffect"]) == 1, "Can only have one expected effect."
+                    assert len(test["expected_effect"]) == 1, "Can only have one expected effect."
                     concrete_tests = [
                         CausalTestCase(
                             base_test_case=base_test_case,
                             expected_causal_effect=next(
-                                effects[effect] for variable, effect in test["expectedEffect"].items()
+                                effects[effect] for variable, effect in test["expected_effect"].items()
                             ),
                             estimate_type="coefficient",
                             effect_modifier_configuration={
@@ -136,7 +136,7 @@ class JsonUtility:
                             },
                         )
                     ]
-                    failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+                    failures = self._execute_tests(concrete_tests, test, f_flag)
                     msg = (
                             f"Executing test: {test['name']} \n"
                             + f"  {concrete_tests[0]} \n"
@@ -145,7 +145,8 @@ class JsonUtility:
                 else:
                     abstract_test = self._create_abstract_test_case(test, mutates, effects)
                     concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-                    failures = self._execute_tests(concrete_tests, estimators, test, f_flag)
+                    failures = self._execute_tests(concrete_tests, test, f_flag)
+
                     msg = (
                             f"Executing test: {test['name']} \n"
                             + "  abstract_test \n"
@@ -155,35 +156,35 @@ class JsonUtility:
                             + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
                     )
                 self._append_to_file(msg, logging.INFO)
+            else:
+                outcome_variable = next(
+                    iter(test["expected_effect"])
+                )  # Take first key from dictionary of expected effect
+                base_test_case = BaseTestCase(
+                    treatment_variable=self.variables["inputs"][test["treatment_variable"]],
+                    outcome_variable=self.variables["outputs"][outcome_variable],
+                )
+
+                causal_test_case = CausalTestCase(
+                    base_test_case=base_test_case,
+                    expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
+                    control_value=test["control_value"],
+                    treatment_value=test["treatment_value"],
+                    estimate_type=test["estimate_type"],
+                )
+                if self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag):
+                    result = "failed"
                 else:
-                    outcome_variable = next(
-                        iter(test["expected_effect"])
-                    )  # Take first key from dictionary of expected effect
-                    base_test_case = BaseTestCase(
-                        treatment_variable=self.variables["inputs"][test["treatment_variable"]],
-                        outcome_variable=self.variables["outputs"][outcome_variable],
-                    )
+                    result = "passed"
 
-                    causal_test_case = CausalTestCase(
-                        base_test_case=base_test_case,
-                        expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
-                        control_value=test["control_value"],
-                        treatment_value=test["treatment_value"],
-                        estimate_type=test["estimate_type"],
-                    )
-                    if self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag):
-                        result = "failed"
-                    else:
-                        result = "passed"
-
-                    msg = (
-                            f"Executing concrete test: {test['name']} \n"
-                            + f"treatment variable: {test['treatment_variable']} \n"
-                            + f"outcome_variable = {outcome_variable} \n"
-                            + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                            + f"result - {result}"
-                    )
-                    self._append_to_file(msg, logging.INFO)
+                msg = (
+                        f"Executing concrete test: {test['name']} \n"
+                        + f"treatment variable: {test['treatment_variable']} \n"
+                        + f"outcome_variable = {outcome_variable} \n"
+                        + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                        + f"result - {result}"
+                )
+                self._append_to_file(msg, logging.INFO)
 
     def _create_abstract_test_case(self, test, mutates, effects):
         assert len(test["mutations"]) == 1
