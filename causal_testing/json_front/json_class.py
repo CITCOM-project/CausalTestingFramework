@@ -86,6 +86,7 @@ class JsonUtility:
             treatment_var.distribution = getattr(scipy.stats, dist)(**params)
             self._append_to_file(treatment_var.name + f" {dist}({params})", logging.INFO)
 
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         abstract_test = AbstractCausalTestCase(
             scenario=self.scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
@@ -185,24 +186,6 @@ class JsonUtility:
                         + f"result - {result}"
                 )
                 self._append_to_file(msg, logging.INFO)
-
-    def _create_abstract_test_case(self, test, mutates, effects):
-        assert len(test["mutations"]) == 1
-        abstract_test = AbstractCausalTestCase(
-            scenario=self.scenario,
-            intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-            treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
-            expected_causal_effect={
-                self.scenario.variables[variable]: effects[effect]
-                for variable, effect in test["expected_effect"].items()
-            },
-            effect_modifiers={self.scenario.variables[v] for v in test["effect_modifiers"]}
-            if "effect_modifiers" in test
-            else {},
-            estimate_type=test["estimate_type"],
-            effect=test.get("effect", "total"),
-        )
-        return abstract_test
 
     def _execute_tests(self, concrete_tests, test, f_flag):
         failures = 0
