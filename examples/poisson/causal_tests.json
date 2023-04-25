@@ -6,7 +6,7 @@
       "estimator": "WidthHeightEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "height"],
-      "expectedEffect": {"num_lines_abs": "PoissonWidthHeight"},
+      "expected_effect": {"num_lines_abs": "PoissonWidthHeight"},
       "skip": true
     },
     {
@@ -15,7 +15,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "height"],
-      "expectedEffect": {"num_shapes_abs": "Positive"},
+      "expected_effect": {"num_shapes_abs": "Positive"},
       "skip": true
     },
     {
@@ -24,7 +24,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "height"],
-      "expectedEffect": {"num_lines_unit": "Negative"},
+      "expected_effect": {"num_lines_unit": "Negative"},
       "skip": true
     },
     {
@@ -33,7 +33,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "height"],
-      "expectedEffect": {"num_shapes_unit": "Negative"},
+      "expected_effect": {"num_shapes_unit": "Negative"},
       "skip": true
     },
     {
@@ -42,7 +42,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"height": "NoEffect"},
+      "expected_effect": {"height": "NoEffect"},
       "skip": true
     },
     {
@@ -51,7 +51,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"intensity": "NoEffect"},
+      "expected_effect": {"intensity": "NoEffect"},
       "skip": true
     },
     {
@@ -60,7 +60,7 @@
       "estimator": "CausalForestEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "width"],
-      "expectedEffect": {"num_shapes_abs": "Positive"},
+      "expected_effect": {"num_shapes_abs": "Positive"},
       "skip": true
     },
     {
@@ -69,7 +69,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"num_lines_unit": "Positive"},
+      "expected_effect": {"num_lines_unit": "Positive"},
       "skip": true
     },
     {
@@ -78,7 +78,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"num_shapes_unit": "NoEffect"},
+      "expected_effect": {"num_shapes_unit": "NoEffect"},
       "skip": true
     },
     {
@@ -87,7 +87,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"num_lines_unit": "NoEffect"},
+      "expected_effect": {"num_lines_unit": "NoEffect"},
       "skip": true
     },
     {
@@ -96,7 +96,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"num_shapes_unit": "Positive"},
+      "expected_effect": {"num_shapes_unit": "Positive"},
       "skip": true
     },
     {
@@ -105,7 +105,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"num_shapes_abs": "NoEffect"},
+      "expected_effect": {"num_shapes_abs": "NoEffect"},
       "skip": true
     },
     {
@@ -114,7 +114,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"num_shapes_unit": "NoEffect"},
+      "expected_effect": {"num_shapes_unit": "NoEffect"},
       "skip": true
     },
     {
@@ -123,7 +123,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"num_lines_unit": "NoEffect"},
+      "expected_effect": {"num_lines_unit": "NoEffect"},
       "skip": true
     },
     {
@@ -132,7 +132,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"width": "NoEffect"},
+      "expected_effect": {"width": "NoEffect"},
       "skip": true
     },
     {
@@ -141,7 +141,7 @@
       "estimator": "WidthHeightEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "width"],
-      "expectedEffect": {"num_lines_abs": "PoissonWidthHeight"},
+      "expected_effect": {"num_lines_abs": "PoissonWidthHeight"},
       "skip": true
     },
     {
@@ -150,7 +150,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "width"],
-      "expectedEffect": {"num_shapes_abs": "Positive"},
+      "expected_effect": {"num_shapes_abs": "Positive"},
       "skip": true
     },
     {
@@ -159,7 +159,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "width"],
-      "expectedEffect": {"num_lines_unit": "Negative"},
+      "expected_effect": {"num_lines_unit": "Negative"},
       "skip": true
     },
     {
@@ -168,7 +168,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "width"],
-      "expectedEffect": {"num_shapes_unit": "Negative"},
+      "expected_effect": {"num_shapes_unit": "Negative"},
       "skip": true
     },
     {
@@ -177,7 +177,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"intensity": "NoEffect"},
+      "expected_effect": {"intensity": "NoEffect"},
       "skip": true
     },
     {
@@ -186,7 +186,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"width": "NoEffect"},
+      "expected_effect": {"width": "NoEffect"},
       "skip": true
     },
     {
@@ -195,7 +195,7 @@
       "estimator": "WidthHeightEstimator",
       "effect_modifiers": ["height", "width"],
       "estimate_type": "ate",
-      "expectedEffect": {"num_lines_abs": "PoissonIntensity"},
+      "expected_effect": {"num_lines_abs": "PoissonIntensity"},
       "skip": true
     },
     {
@@ -204,7 +204,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["height", "width"],
-      "expectedEffect": {"num_shapes_abs": "Positive"},
+      "expected_effect": {"num_shapes_abs": "Positive"},
       "skip": true
     },
     {
@@ -213,7 +213,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": ["height", "width"],
-      "expectedEffect": {"num_lines_unit": "NoEffect"},
+      "expected_effect": {"num_lines_unit": "NoEffect"},
       "skip": true
     },
     {
@@ -221,7 +221,7 @@
       "mutations": {"intensity": "ChangeByFactor(2)"},
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "risk_ratio",
-      "expectedEffect": {"num_shapes_unit": "ExactValue4_05"},
+      "expected_effect": {"num_shapes_unit": "ExactValue4_05"},
       "skip": false
     },
     {
@@ -230,7 +230,7 @@
       "estimator": "LinearRegressionEstimator",
       "estimate_type": "ate",
       "effect_modifiers": [],
-      "expectedEffect": {"height": "NoEffect"},
+      "expected_effect": {"height": "NoEffect"},
       "skip": true
     }
   ]

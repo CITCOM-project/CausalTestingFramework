@@ -83,7 +83,7 @@ class TestJsonClass(unittest.TestCase):
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "ate",
                     "effect_modifiers": [],
-                    "expectedEffect": {"test_output": "NoEffect"},
+                    "expected_effect": {"test_output": "NoEffect"},
                     "skip": False,
                 }
             ]
@@ -96,9 +96,9 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
         with self.assertRaises(StatisticsError):
-            self.json_class.generate_tests(effects, mutates, estimators, True)
+            self.json_class.run_json_tests(effects, estimators, True, mutates)
 
-    def test_generate_tests_from_json(self):
+    def test_run_json_tests_from_json(self):
         example_test = {
             "tests": [
                 {
@@ -107,7 +107,7 @@ class TestJsonClass(unittest.TestCase):
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "ate",
                     "effect_modifiers": [],
-                    "expectedEffect": {"test_output": "NoEffect"},
+                    "expected_effect": {"test_output": "NoEffect"},
                     "skip": False,
                 }
             ]
@@ -120,7 +120,7 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.generate_tests(effects, mutates, estimators, False)
+        self.json_class.run_json_tests(effects, estimators, False, mutates)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
         with open("temp_out.txt", 'r') as reader:
@@ -136,7 +136,7 @@ class TestJsonClass(unittest.TestCase):
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "ate",
                     "effect_modifiers": [],
-                    "expectedEffect": {"test_output": "Positive"},
+                    "expected_effect": {"test_output": "Positive"},
                     "skip": False,
                     "formula": "test_output ~ test_input"
                 }
@@ -150,10 +150,34 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.generate_tests(effects, mutates, estimators, False)
+        self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
         with open("temp_out.txt", 'r') as reader:
             temp_out = reader.readlines()
         self.assertIn("test_output ~ test_input", ''.join(temp_out))
+
+    def test_run_concrete_json_testcase(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "treatment_variable": "test_input",
+                    "control_value": 0,
+                    "treatment_value": 1,
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "ate",
+                    "expected_effect": {"test_output": "NoEffect"},
+                    "skip": False,
+                }
+            ]
+        }
+        self.json_class.test_plan = example_test
+        effects = {"NoEffect": NoEffect()}
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+
+        self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
+        with open("temp_out.txt", 'r') as reader:
+            temp_out = reader.readlines()
+        self.assertIn("failed", temp_out[-1])
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
