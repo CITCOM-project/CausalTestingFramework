@@ -12,6 +12,7 @@ class EnumGen(rv_discrete):
     abstract test cases."""
 
     def __init__(self, datatype: Enum):
+        super().__init__()
         self.datatype = dict(enumerate(datatype, 1))
         self.inverse_dt = {v: k for k, v in self.datatype.items()}
 
@@ -28,16 +29,16 @@ class EnumGen(rv_discrete):
         """
         return np.vectorize(self.datatype.get)(np.ceil(len(self.datatype) * q))
 
-    def cdf(self, q):
+    def cdf(self, k):
         """
         Cumulative distribution function of the given RV.
         Parameters
         ----------
-        q : array_like
+        k : array_like
             quantiles
         Returns
         -------
         cdf : ndarray
             Cumulative distribution function evaluated at `x`
         """
-        return np.vectorize(self.inverse_dt.get)(q) / len(self.datatype)
+        return np.vectorize(self.inverse_dt.get)(k) / len(self.datatype)

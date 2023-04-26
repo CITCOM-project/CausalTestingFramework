@@ -20,7 +20,6 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
-from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
@@ -86,7 +85,6 @@ class JsonUtility:
             treatment_var.distribution = getattr(scipy.stats, dist)(**params)
             self._append_to_file(treatment_var.name + f" {dist}({params})", logging.INFO)
 
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         abstract_test = AbstractCausalTestCase(
             scenario=self.scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
@@ -139,9 +137,9 @@ class JsonUtility:
                     ]
                     failures = self._execute_tests(concrete_tests, test, f_flag)
                     msg = (
-                            f"Executing test: {test['name']} \n"
-                            + f"  {concrete_tests[0]} \n"
-                            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                        f"Executing test: {test['name']} \n"
+                        + f"  {concrete_tests[0]} \n"
+                        + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
                     )
                 else:
                     abstract_test = self._create_abstract_test_case(test, mutates, effects)
@@ -149,12 +147,13 @@ class JsonUtility:
                     failures = self._execute_tests(concrete_tests, test, f_flag)
 
                     msg = (
-                            f"Executing test: {test['name']} \n"
-                            + "  abstract_test \n"
-                            + f"  {abstract_test} \n"
-                            + f"  {abstract_test.treatment_variable.name},{abstract_test.treatment_variable.distribution} \n"
-                            + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-                            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                        f"Executing test: {test['name']} \n"
+                        + "  abstract_test \n"
+                        + f"  {abstract_test} \n"
+                        + f"  {abstract_test.treatment_variable.name},"
+                        + f"  {abstract_test.treatment_variable.distribution} \n"
+                        + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+                        + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
                     )
                 self._append_to_file(msg, logging.INFO)
             else:
@@ -179,11 +178,11 @@ class JsonUtility:
                     result = "passed"
 
                 msg = (
-                        f"Executing concrete test: {test['name']} \n"
-                        + f"treatment variable: {test['treatment_variable']} \n"
-                        + f"outcome_variable = {outcome_variable} \n"
-                        + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                        + f"result - {result}"
+                    f"Executing concrete test: {test['name']} \n"
+                    + f"treatment variable: {test['treatment_variable']} \n"
+                    + f"outcome_variable = {outcome_variable} \n"
+                    + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                    + f"result - {result}"
                 )
                 self._append_to_file(msg, logging.INFO)
 
@@ -258,7 +257,7 @@ class JsonUtility:
         return failed
 
     def _setup_test(
-            self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
+        self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
     ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
@@ -343,7 +342,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-                 "careful",
+            "careful",
             action="store_true",
         )
         parser.add_argument(

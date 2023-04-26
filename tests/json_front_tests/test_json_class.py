@@ -2,17 +2,15 @@ import unittest
 from pathlib import Path
 from statistics import StatisticsError
 import scipy
-import csv
-import json
+
 
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
-from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
+from tests.test_helpers import remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 
 
 class TestJsonClass(unittest.TestCase):
@@ -151,7 +149,8 @@ class TestJsonClass(unittest.TestCase):
 
         self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False, mutates=mutates)
 
-        # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
+        # Test that the final log message prints that failed tests are printed, which is expected behaviour for this
+        # scenario
         with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("failed", temp_out[-1])
