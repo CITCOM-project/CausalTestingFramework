@@ -78,12 +78,6 @@ class JsonUtility:
     def _create_abstract_test_case(self, test, mutates, effects):
         assert len(test["mutations"]) == 1
         treatment_var = next(self.scenario.variables[v] for v in test["mutations"])
-        if not treatment_var.distribution:
-            fitter = Fitter(self.data[treatment_var.name], distributions=get_common_distributions())
-            fitter.fit()
-            (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
-            treatment_var.distribution = getattr(scipy.stats, dist)(**params)
-            self._append_to_file(treatment_var.name + f" {dist}({params})", logging.INFO)
 
         if not treatment_var.distribution:
             fitter = Fitter(self.data[treatment_var.name], distributions=get_common_distributions())
