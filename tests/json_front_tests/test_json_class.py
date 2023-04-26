@@ -232,7 +232,7 @@ class TestJsonClass(unittest.TestCase):
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
         self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
-        with open("temp_out.txt", 'r') as reader:
+        with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("failed", temp_out[-1])
 

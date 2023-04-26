@@ -85,6 +85,13 @@ class JsonUtility:
             treatment_var.distribution = getattr(scipy.stats, dist)(**params)
             self._append_to_file(treatment_var.name + f" {dist}({params})", logging.INFO)
 
+        if not treatment_var.distribution:
+            fitter = Fitter(self.data[treatment_var.name], distributions=get_common_distributions())
+            fitter.fit()
+            (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
+            treatment_var.distribution = getattr(scipy.stats, dist)(**params)
+            self._append_to_file(treatment_var.name + f" {dist}({params})", logging.INFO)
+
         abstract_test = AbstractCausalTestCase(
             scenario=self.scenario,
             intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
@@ -223,15 +230,9 @@ class JsonUtility:
         """
         failed = False
 
-        for var in self.scenario.variables_of_type(Meta).union(self.scenario.variables_of_type(Output)):
-            if not var.distribution:
-                fitter = Fitter(self.data[var.name], distributions=get_common_distributions())
-                fitter.fit()
-                (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
-                var.distribution = getattr(scipy.stats, dist)(**params)
-                self._append_to_file(var.name + f" {dist}({params})", logging.INFO)
-
-        causal_test_engine, estimation_model = self._setup_test(causal_test_case, test)
+        causal_test_engine, estimation_model = self._setup_test(
+            causal_test_case, test, test["conditions"] if "conditions" in test else None
+        )
         causal_test_result = causal_test_engine.execute_test(
             estimation_model, causal_test_case, estimate_type=causal_test_case.estimate_type
         )
