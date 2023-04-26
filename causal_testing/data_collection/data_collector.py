@@ -61,7 +61,7 @@ class DataCollector(ABC):
                 self.scenario.variables[var].z3
                 == self.scenario.variables[var].z3_val(self.scenario.variables[var].z3, row[var])
                 for var in self.scenario.variables
-                if var in row
+                if var in row and not pd.isnull(row[var])
             ]
             for c in model:
                 solver.assert_and_track(c, f"model: {c}")
@@ -147,7 +147,8 @@ class ObservationalDataCollector(DataCollector):
 
         execution_data_df = self.data
         for meta in self.scenario.metas():
-            meta.populate(execution_data_df)
+            if meta.name not in self.data:
+                meta.populate(execution_data_df)
         scenario_execution_data_df = self.filter_valid_data(execution_data_df)
         for var_name, var in self.scenario.variables.items():
             if issubclass(var.datatype, Enum):

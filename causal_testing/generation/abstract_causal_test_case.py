@@ -131,7 +131,7 @@ class AbstractCausalTestCase:
             )
 
             for v in self.scenario.inputs():
-                if row[v.name] != v.cast(model[v.z3]):
+                if v.name in row and row[v.name] != v.cast(model[v.z3]):
                     constraints = "\n  ".join([str(c) for c in self.scenario.constraints if v.name in str(c)])
                     logger.warning(
                         f"Unable to set variable {v.name} to {row[v.name]} because of constraints\n"

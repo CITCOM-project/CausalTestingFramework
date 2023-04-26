@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
+from causal_testing.generation.enum_gen import EnumGen
 from causal_testing.specification.causal_specification import Scenario
 from causal_testing.specification.variable import Input, Output
 from scipy.stats import uniform, rv_discrete
@@ -20,17 +21,6 @@ class Car(Enum):
         if self.__class__ is other.__class__:
             return self.value > other.value
         return NotImplemented
-
-
-class CarGen(rv_discrete):
-    cars = dict(enumerate(Car, 1))
-    inverse_cars = {v: k for k, v in cars.items()}
-
-    def ppf(self, q, *args, **kwds):
-        return np.vectorize(self.cars.get)(np.ceil(len(self.cars) * q))
-
-    def cdf(self, q, *args, **kwds):
-        return np.vectorize(self.inverse_cars.get)(q) / len(Car)
 
 
 class TestAbstractTestCase(unittest.TestCase):
@@ -53,7 +43,7 @@ class TestAbstractTestCase(unittest.TestCase):
         self.X3 = Input("X3", float, uniform(10, 40))
         self.X4 = Input("X4", int, rv_discrete(values=([10], [1])))
         self.X5 = Input("X5", bool, rv_discrete(values=(range(2), [0.5, 0.5])))
-        self.Car = Input("Car", Car, CarGen())
+        self.Car = Input("Car", Car, EnumGen(Car))
         self.Y = Output("Y", int)
 
     def test_generate_concrete_test_cases(self):
