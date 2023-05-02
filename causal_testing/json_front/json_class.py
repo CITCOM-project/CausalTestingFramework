@@ -135,14 +135,12 @@ class JsonUtility:
                             self.scenario.variables[v] for v in test.get("effect_modifiers", [])
                         },
                     )
-                    result = self._execute_test_case(
-                        causal_test_case=causal_test_case, test=test, f_flag=f_flag
-                    )
-                    result = ("\n  ").join(str(result).split("\n"))
-                    msg = (
-                        f"Executing test: {test['name']} \n"
-                        + f"  {causal_test_case} \n"
-                        + f"  {result[1]}==============\n"
+                    msg = f"Executing test: {test['name']} \n" + f"  {causal_test_case} \n"
+                    result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+                    msg += (
+                        "  "
+                        + ("\n  ").join(str(result[1]).split("\n"))
+                        + f"==============\n"
                         + f"  Result: {'FAILED' if result[0] else 'Passed'}"
                     )
                 else:
