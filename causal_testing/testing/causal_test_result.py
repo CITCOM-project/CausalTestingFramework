@@ -93,7 +93,7 @@ class CausalTestResult:
     def summary(self):
         """Summarise the causal test result as an intuitive sentence."""
         print(
-            f"The causal effect of changing {self.estimator.treatment[0]} = {self.estimator.control_value} to "
-            f"{self.estimator.treatment[0]}' = {self.estimator.treatment_value} is {self.test_value.value}"
+            f"The causal effect of changing {self.estimator.treatment} = {self.estimator.control_value} to "
+            f"{self.estimator.treatment}' = {self.estimator.treatment_value} is {self.test_value.value}"
             f"(95% confidence intervals: {self.confidence_intervals})."
         )
