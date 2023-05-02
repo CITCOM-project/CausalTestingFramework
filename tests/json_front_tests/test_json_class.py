@@ -123,7 +123,7 @@ class TestJsonClass(unittest.TestCase):
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
         with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
-        self.assertIn("failed", temp_out[-1])
+        self.assertIn("FAILED", temp_out[-1])
 
     def test_run_json_tests_from_json(self):
         example_test = {
