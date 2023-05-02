@@ -135,8 +135,10 @@ class JsonUtility:
                             self.scenario.variables[v] for v in test.get("effect_modifiers", [])
                         },
                     )
-                    failed, result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
-                    result = ('\n  ').join(str(result).split("\n"))
+                    failed, result = self._execute_test_case(
+                        causal_test_case=causal_test_case, test=test, f_flag=f_flag
+                    )
+                    result = ("\n  ").join(str(result).split("\n"))
                     msg = (
                         f"Executing test: {test['name']} \n"
                         + f"  {causal_test_case} \n"
@@ -217,7 +219,9 @@ class JsonUtility:
         for meta in self.scenario.variables_of_type(Meta):
             meta.populate(self.data)
 
-    def _execute_test_case(self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool) -> (bool, CausalTestResult):
+    def _execute_test_case(
+        self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool
+    ) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
         :param test: Single JSON test definition stored in a mapping (dict)
