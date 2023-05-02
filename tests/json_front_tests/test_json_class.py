@@ -234,7 +234,7 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
         with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
-        self.assertIn("failed", temp_out[-1])
+        self.assertIn("FAILED", temp_out[-1])
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

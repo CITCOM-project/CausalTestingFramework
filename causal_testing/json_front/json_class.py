@@ -146,7 +146,7 @@ class JsonUtility:
                     )
                 else:
                     abstract_test = self._create_abstract_test_case(test, mutates, effects)
-                    concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
+                    concrete_tests, _ = abstract_test.generate_concrete_tests(5, 0.05)
                     failures, _ = self._execute_tests(concrete_tests, test, f_flag)
 
                     msg = (
@@ -176,17 +176,13 @@ class JsonUtility:
                     estimate_type=test["estimate_type"],
                 )
                 failed, _ = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
-                if failed:
-                    result = "failed"
-                else:
-                    result = "passed"
 
                 msg = (
                     f"Executing concrete test: {test['name']} \n"
                     + f"treatment variable: {test['treatment_variable']} \n"
                     + f"outcome_variable = {outcome_variable} \n"
                     + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                    + f"result - {result}"
+                    + f"Result: {'FAILED' if failed else 'Passed'}"
                 )
                 self._append_to_file(msg, logging.INFO)
 
