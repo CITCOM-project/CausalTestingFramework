@@ -21,6 +21,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
@@ -124,28 +125,28 @@ class JsonUtility:
                         effect=test.get("effect", "direct"),
                     )
                     assert len(test["expected_effect"]) == 1, "Can only have one expected effect."
-                    concrete_tests = [
-                        CausalTestCase(
-                            base_test_case=base_test_case,
-                            expected_causal_effect=next(
-                                effects[effect] for variable, effect in test["expected_effect"].items()
-                            ),
-                            estimate_type="coefficient",
-                            effect_modifier_configuration={
-                                self.scenario.variables[v] for v in test.get("effect_modifiers", [])
-                            },
-                        )
-                    ]
-                    failures = self._execute_tests(concrete_tests, test, f_flag)
+                    causal_test_case = CausalTestCase(
+                        base_test_case=base_test_case,
+                        expected_causal_effect=next(
+                            effects[effect] for variable, effect in test["expected_effect"].items()
+                        ),
+                        estimate_type="coefficient",
+                        effect_modifier_configuration={
+                            self.scenario.variables[v] for v in test.get("effect_modifiers", [])
+                        },
+                    )
+                    failed, result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+                    result = ('\n  ').join(str(result).split("\n"))
                     msg = (
                         f"Executing test: {test['name']} \n"
-                        + f"  {concrete_tests[0]} \n"
-                        + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                        + f"  {causal_test_case} \n"
+                        + f"  {result}==============\n"
+                        + f"  Result: {'FAILED' if failed else 'Passed'}"
                     )
                 else:
                     abstract_test = self._create_abstract_test_case(test, mutates, effects)
                     concrete_tests, dummy = abstract_test.generate_concrete_tests(5, 0.05)
-                    failures = self._execute_tests(concrete_tests, test, f_flag)
+                    failures, details = self._execute_tests(concrete_tests, test, f_flag)
 
                     msg = (
                         f"Executing test: {test['name']} \n"
@@ -173,7 +174,8 @@ class JsonUtility:
                     treatment_value=test["treatment_value"],
                     estimate_type=test["estimate_type"],
                 )
-                if self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag):
+                failed, result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+                if failed:
                     result = "failed"
                 else:
                     result = "passed"
@@ -189,13 +191,15 @@ class JsonUtility:
 
     def _execute_tests(self, concrete_tests, test, f_flag):
         failures = 0
+        details = []
         if "formula" in test:
             self._append_to_file(f"Estimator formula used for test: {test['formula']}")
         for concrete_test in concrete_tests:
-            failed = self._execute_test_case(concrete_test, test, f_flag)
+            failed, result = self._execute_test_case(concrete_test, test, f_flag)
+            details.append(result)
             if failed:
                 failures += 1
-        return failures
+        return failures, details
 
     def _json_parse(self):
         """Parse a JSON input file into inputs, outputs, metas and a test plan"""
@@ -213,7 +217,7 @@ class JsonUtility:
         for meta in self.scenario.variables_of_type(Meta):
             meta.populate(self.data)
 
-    def _execute_test_case(self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool) -> bool:
+    def _execute_test_case(self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
         :param test: Single JSON test definition stored in a mapping (dict)
@@ -249,7 +253,7 @@ class JsonUtility:
                 )
             failed = True
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
-        return failed
+        return failed, causal_test_result
 
     def _setup_test(
         self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
