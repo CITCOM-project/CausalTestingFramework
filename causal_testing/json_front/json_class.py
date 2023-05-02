@@ -143,7 +143,7 @@ class JsonUtility:
                         f"Executing test: {test['name']} \n"
                         + f"  {causal_test_case} \n"
                         + f"  {result[1]}==============\n"
-                        + f"  Result: {'FAILED' if failed[0] else 'Passed'}"
+                        + f"  Result: {'FAILED' if result[0] else 'Passed'}"
                     )
                 else:
                     abstract_test = self._create_abstract_test_case(test, mutates, effects)
@@ -176,7 +176,7 @@ class JsonUtility:
                     treatment_value=test["treatment_value"],
                     estimate_type=test["estimate_type"],
                 )
-                failed, result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+                failed, _ = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
                 if failed:
                     result = "failed"
                 else:
