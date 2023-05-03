@@ -12,8 +12,7 @@ A new release should follow each successful PR merge, or group of related PR mer
 How to release
 --------------
 
-#. Once your PR(s) are merged, navigate to https://github.com/CITCOM-project/CausalTestingFramework/releases, which can be
-found on the right hand side of the projects Github main page by clicking on 'Releases'
+#. Once your PR(s) are merged, navigate to https://github.com/CITCOM-project/CausalTestingFramework/releases, which can be found on the right hand side of the projects Github main page by clicking on 'Releases'
 
 #. Press the **Draft a new release** button in the top right of the releases page
 
