@@ -3,6 +3,7 @@ TestValue dataclass.
 """
 from typing import Any
 from dataclasses import dataclass
+import pandas as pd
 
 from causal_testing.testing.estimators import Estimator
 from causal_testing.specification.variable import Variable
@@ -44,10 +45,10 @@ class CausalTestResult:
     def __str__(self):
         base_str = (
             f"Causal Test Result\n==============\n"
-            f"Treatment: {self.estimator.treatment[0]}\n"
+            f"Treatment: {self.estimator.treatment}\n"
             f"Control value: {self.estimator.control_value}\n"
             f"Treatment value: {self.estimator.treatment_value}\n"
-            f"Outcome: {self.estimator.outcome[0]}\n"
+            f"Outcome: {self.estimator.outcome}\n"
             f"Adjustment set: {self.adjustment_set}\n"
             f"{self.test_value.type}: {self.test_value.value}\n"
         )
@@ -87,12 +88,12 @@ class CausalTestResult:
 
     def ci_valid(self) -> bool:
         """Return whether or not the result has valid confidence invervals"""
-        return self.ci_low() and self.ci_high()
+        return self.ci_low() and (not pd.isnull(self.ci_low())) and self.ci_high() and (not pd.isnull(self.ci_high()))
 
     def summary(self):
         """Summarise the causal test result as an intuitive sentence."""
         print(
-            f"The causal effect of changing {self.estimator.treatment[0]} = {self.estimator.control_value} to "
-            f"{self.estimator.treatment[0]}' = {self.estimator.treatment_value} is {self.test_value.value}"
+            f"The causal effect of changing {self.estimator.treatment} = {self.estimator.control_value} to "
+            f"{self.estimator.treatment}' = {self.estimator.treatment_value} is {self.test_value.value}"
             f"(95% confidence intervals: {self.confidence_intervals})."
         )

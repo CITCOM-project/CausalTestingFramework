@@ -521,5 +521,14 @@ class CausalDAG(nx.DiGraph):
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
 
+    def to_dot_string(self) -> str:
+        """Return a string of the DOT representation of the causal DAG.
+        :return DOT string of the DAG.
+        """
+        dotstring = "digraph G {\n"
+        dotstring += "".join([f"{a} -> {b};\n" for a, b in self.graph.edges])
+        dotstring += "}"
+        return dotstring
+
     def __str__(self):
         return f"Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}"

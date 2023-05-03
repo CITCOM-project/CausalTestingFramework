@@ -26,7 +26,7 @@ class SomeEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should not be zero."""
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.test_value.type == "ate":
+        if res.test_value.type in {"ate", "coefficient"}:
             return (0 < res.ci_low() < res.ci_high()) or (res.ci_low() < res.ci_high() < 0)
         if res.test_value.type == "risk_ratio":
             return (1 < res.ci_low() < res.ci_high()) or (res.ci_low() < res.ci_high() < 1)
@@ -37,7 +37,8 @@ class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.test_value.type == "ate":
+        print("RESULT", res)
+        if res.test_value.type in {"ate", "coefficient"}:
             return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < 1e-10)
         if res.test_value.type == "risk_ratio":
             return (res.ci_low() < 1 < res.ci_high()) or np.isclose(res.test_value.value, 1.0, atol=1e-10)
@@ -63,26 +64,26 @@ class ExactValue(SomeEffect):
         return f"ExactValue: {self.value}±{self.tolerance}"
 
 
-class Positive(CausalTestOutcome):
+class Positive(SomeEffect):
     """An extension of TestOutcome representing that the expected causal effect should be positive."""
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_valid() and not super().apply(res):
             return False
-        if res.test_value.type == "ate":
+        if res.test_value.type in {"ate", "coefficient"}:
             return res.test_value.value > 0
         if res.test_value.type == "risk_ratio":
             return res.test_value.value > 1
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
 
-class Negative(CausalTestOutcome):
+class Negative(SomeEffect):
     """An extension of TestOutcome representing that the expected causal effect should be negative."""
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_valid() and not super().apply(res):
             return False
-        if res.test_value.type == "ate":
+        if res.test_value.type in {"ate", "coefficient"}:
             return res.test_value.value < 0
         if res.test_value.type == "risk_ratio":
             return res.test_value.value < 1

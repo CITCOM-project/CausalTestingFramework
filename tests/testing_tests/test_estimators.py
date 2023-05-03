@@ -166,15 +166,31 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         Test we get the correct coefficient.
         """
         iv_estimator = InstrumentalVariableEstimator(
+            df=self.df,
             treatment="X",
             treatment_value=None,
             control_value=None,
             adjustment_set=set(),
             outcome="Y",
             instrument="Z",
-            df=self.df,
         )
-        self.assertEqual(iv_estimator.estimate_coefficient(), 2)
+        self.assertEqual(iv_estimator.estimate_coefficient(self.df), 2)
+
+    def test_estimate_unit_ate(self):
+        """
+        Test we get the correct coefficient.
+        """
+        iv_estimator = InstrumentalVariableEstimator(
+            df=self.df,
+            treatment="X",
+            treatment_value=None,
+            control_value=None,
+            adjustment_set=set(),
+            outcome="Y",
+            instrument="Z",
+        )
+        unit_ate, [low, high] = iv_estimator.estimate_unit_ate()
+        self.assertEqual(unit_ate, 2)
 
 
 class TestLinearRegressionEstimator(unittest.TestCase):
@@ -192,7 +208,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df)
+        linear_regression_estimator = LinearRegressionEstimator("treatments", None, None, set(), "outcomes", df)
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
 
@@ -200,13 +216,13 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(10 * model.params["treatments"], 1), round(ate, 1))
+        self.assertEqual(round(model.params["treatments"], 1), round(ate, 1))
 
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator(
-            "treatments", 100, 90, set(), "outcomes", df, formula="outcomes ~ treatments + np.power(treatments, 2)"
+            "treatments", None, None, set(), "outcomes", df, formula="outcomes ~ treatments + np.power(treatments, 2)"
         )
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
@@ -220,7 +236,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             197.1,
         )
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(10 * model.params["treatments"], 3), round(ate, 3))
+        self.assertEqual(round(model.params["treatments"], 3), round(ate, 3))
 
     def test_program_15_1A(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
