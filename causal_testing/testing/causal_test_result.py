@@ -3,6 +3,7 @@ TestValue dataclass.
 """
 from typing import Any
 from dataclasses import dataclass
+import pandas as pd
 
 from causal_testing.testing.estimators import Estimator
 from causal_testing.specification.variable import Variable
@@ -87,7 +88,7 @@ class CausalTestResult:
 
     def ci_valid(self) -> bool:
         """Return whether or not the result has valid confidence invervals"""
-        return self.ci_low() and self.ci_high()
+        return self.ci_low() and (not pd.isnull(self.ci_low())) and self.ci_high() and (not pd.isnull(self.ci_high()))
 
     def summary(self):
         """Summarise the causal test result as an intuitive sentence."""
