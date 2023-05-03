@@ -49,6 +49,12 @@ system-under-test that is expected to cause a change to some output(s).
 
    glossary
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Development Documentation
+
+   /dev/version_release
+
 Indices and tables
 ==================
 
