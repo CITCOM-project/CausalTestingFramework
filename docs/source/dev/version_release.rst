@@ -4,11 +4,6 @@ Version Releases
 This project follows the `Semantic Versioning 2.0.0 <https://semver.org/>`_ style for code releases.
 This page aims to describe the release process for a new code version on the `Project Github <https://github.com/CITCOM-project/CausalTestingFramework>`_
 
-When to release
----------------
-
-A new release should follow each successful PR merge, or group of related PR merges.
-
 How to release
 --------------
 
