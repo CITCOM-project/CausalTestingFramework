@@ -23,4 +23,8 @@ How to release
 
 #. Press publish release
 
-From here, a `Github action <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/.github/workflows/publish-to-pypi.yaml>`_ will then push this release to PyPI where it can be installed using the usual pip version commands. e.g. ``pip install causal-testing-framework==0.0.0``
+#. Check that the Github Action worker, found in the `Actions tab <https://github.com/CITCOM-project/CausalTestingFramework/actions>`_ on the github, has successfully completed. Typical time to publish to PyPI is around 2 minutes.
+
+#. Check on the projects `PyPI page <https://pypi.org/project/causal-testing-framework/>`_ that the latest release is ready!
+
+From here the latest version can be installed using the common pip version commands. e.g. ``pip install causal-testing-framework==0.0.0``
