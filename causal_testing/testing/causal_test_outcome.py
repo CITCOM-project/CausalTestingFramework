@@ -85,8 +85,8 @@ class Positive(SomeEffect):
             return res.test_value.value > 0
         if res.test_value.type == "risk_ratio":
             return res.test_value.value > 1
-        # Dead code?
-        # raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
+        # Dead code but necessary for pylint
+        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
 
 class Negative(SomeEffect):
@@ -99,5 +99,5 @@ class Negative(SomeEffect):
             return res.test_value.value < 0
         if res.test_value.type == "risk_ratio":
             return res.test_value.value < 1
-        # Dead code?
-        # raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
+        # Dead code but necessary for pylint
+        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
