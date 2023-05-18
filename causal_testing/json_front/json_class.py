@@ -56,13 +56,15 @@ class JsonUtility:
         self.output_path = Path(output_path)
         self.check_file_exists(self.output_path, output_overwrite)
 
-    def set_paths(self, json_path: str, dag_path: str, data_paths: str = []):
+    def set_paths(self, json_path: str, dag_path: str, data_paths: list[str] = None):
         """
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
         :param json_path: string path representation to .json file containing test specifications
         :param dag_path: string path representation to the .dot file containing the Causal DAG
         :param data_paths: string path representation to the data files
         """
+        if data_paths is None:
+            data_paths = []
         self.input_paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
     def setup(self, scenario: Scenario):

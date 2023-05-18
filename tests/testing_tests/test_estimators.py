@@ -93,6 +93,14 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
             ]
         )
 
+    # Yes, this probably shouldn't be in here, but it uses the scarf data so it makes more sense to put it
+    # here than duplicating the scarf data for a single test
+    def test_linear_regression_categorical_ate(self):
+        df = self.scarf_df.copy()
+        logistic_regression_estimator = LinearRegressionEstimator("color", None, None, set(), "completed", df)
+        ate, confidence = logistic_regression_estimator.estimate_unit_ate()
+        self.assertTrue(all([ci_low < 0 < ci_high for ci_low, ci_high in zip(confidence[0], confidence[1])]))
+
     def test_ate(self):
         df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
@@ -212,11 +220,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
 
-        print(model.summary())
         self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        print("ATE", ate)
         self.assertEqual(round(model.params["treatments"], 1), round(ate, 1))
 
     def test_program_11_3(self):

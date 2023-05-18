@@ -434,35 +434,6 @@ class LinearRegressionEstimator(Estimator):
 
         return (treatment_outcome["mean"] - control_outcome["mean"]), [ci_low, ci_high]
 
-    def estimate_cates(self) -> tuple[float, list[float, float]]:
-        """Estimate the conditional average treatment effect of the treatment on the outcome. That is, the change
-        in outcome caused by changing the treatment variable from the control value to the treatment value.
-
-        :return: The conditional average treatment effect and the 95% Wald confidence intervals.
-        """
-        assert (
-            self.effect_modifiers
-        ), f"Must have at least one effect modifier to compute CATE - {self.effect_modifiers}."
-        x = pd.DataFrame()
-        x[self.treatment] = [self.treatment_value, self.control_value]
-        x["Intercept"] = 1  # self.intercept
-        for k, v in self.effect_modifiers.items():
-            self.adjustment_set.add(k)
-            x[k] = v
-        if hasattr(self, "square_terms"):
-            for t in self.square_terms:
-                x[t + "^2"] = x[t] ** 2
-        if hasattr(self, "product_terms"):
-            for a, b in self.product_terms:
-                x[f"{a}*{b}"] = x[a] * x[b]
-
-        model = self._run_linear_regression()
-        y = model.predict(x)
-        treatment_outcome = y.iloc[0]
-        control_outcome = y.iloc[1]
-
-        return treatment_outcome - control_outcome, None
-
     def _run_linear_regression(self) -> RegressionResultsWrapper:
         """Run linear regression of the treatment and adjustment set against the outcome and return the model.
 
@@ -482,7 +453,6 @@ class LinearRegressionEstimator(Estimator):
         # 3. Estimate the unit difference in outcome caused by unit difference in treatment
         cols = [self.treatment]
         cols += [x for x in self.adjustment_set if x not in cols]
-        treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
         model = smf.ols(formula=self.formula, data=self.df).fit()
         return model
 
