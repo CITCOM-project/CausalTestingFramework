@@ -216,6 +216,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
+        print("ATE", ate)
         self.assertEqual(round(model.params["treatments"], 1), round(ate, 1))
 
     def test_program_11_3(self):

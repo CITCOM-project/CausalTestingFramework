@@ -339,11 +339,22 @@ class LinearRegressionEstimator(Estimator):
         print(model.conf_int())
         treatment = [self.treatment]
         if str(self.df.dtypes[self.treatment]) == "object":
-                reference = min(self.df[self.treatment])
-                treatment = [x.replace("[", "[T.") for x in dmatrix(f"{self.treatment}-1", self.df.query(f"{self.treatment} != '{reference}'"), return_type="dataframe").columns]
-        assert set(treatment).issubset(model.params.index.tolist()), f"{treatment} not in\n{'  '+str(model.params.index).replace(newline, newline+'  ')}"
+            reference = min(self.df[self.treatment])
+            treatment = [
+                x.replace("[", "[T.")
+                for x in dmatrix(
+                    f"{self.treatment}-1", self.df.query(f"{self.treatment} != '{reference}'"), return_type="dataframe"
+                ).columns
+            ]
+        assert set(treatment).issubset(
+            model.params.index.tolist()
+        ), f"{treatment} not in\n{'  '+str(model.params.index).replace(newline, newline+'  ')}"
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
+        if str(self.df.dtypes[self.treatment]) != "object":
+            unit_effect = unit_effect[0]
+            ci_low = ci_low[0]
+            ci_high = ci_high[0]
         return unit_effect, [ci_low, ci_high]
 
     def estimate_ate(self) -> tuple[float, list[float, float], float]:
@@ -365,7 +376,6 @@ class LinearRegressionEstimator(Estimator):
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
-        print("t_test_results", t_test_results.effect)
         ate = t_test_results.effect[0]
         confidence_intervals = list(t_test_results.conf_int().flatten())
         return ate, confidence_intervals

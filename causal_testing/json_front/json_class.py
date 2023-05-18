@@ -56,7 +56,7 @@ class JsonUtility:
         self.output_path = Path(output_path)
         self.check_file_exists(self.output_path, output_overwrite)
 
-    def set_paths(self, json_path: str, dag_path: str, data_paths: str=[]):
+    def set_paths(self, json_path: str, dag_path: str, data_paths: str = []):
         """
         Takes a path of the directory containing all scenario specific files and creates individual paths for each file
         :param json_path: string path representation to .json file containing test specifications
