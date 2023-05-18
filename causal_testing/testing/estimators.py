@@ -335,10 +335,15 @@ class LinearRegressionEstimator(Estimator):
         :return: The unit average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
-        assert self.treatment in model.params, f"{self.treatment} not in {model.params}"
-        unit_effect = model.params[[self.treatment]].values[0]  # Unit effect is the coefficient of the treatment
-        [ci_low, ci_high] = self._get_confidence_intervals(model)
-
+        newline = "\n"
+        print(model.conf_int())
+        treatment = [self.treatment]
+        if str(self.df.dtypes[self.treatment]) == "object":
+                reference = min(self.df[self.treatment])
+                treatment = [x.replace("[", "[T.") for x in dmatrix(f"{self.treatment}-1", self.df.query(f"{self.treatment} != '{reference}'"), return_type="dataframe").columns]
+        assert set(treatment).issubset(model.params.index.tolist()), f"{treatment} not in\n{'  '+str(model.params.index).replace(newline, newline+'  ')}"
+        unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
+        [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
         return unit_effect, [ci_low, ci_high]
 
     def estimate_ate(self) -> tuple[float, list[float, float], float]:
@@ -353,12 +358,6 @@ class LinearRegressionEstimator(Estimator):
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
 
-        # This is a temporary hack
-        # for t in self.square_terms:
-        #     individuals[t + "^2"] = individuals[t] ** 2
-        # for a, b in self.product_terms:
-        #     individuals[f"{a}*{b}"] = individuals[a] * individuals[b]
-
         # It is ABSOLUTELY CRITICAL that these go last, otherwise we can't index
         # the effect with "ate = t_test_results.effect[0]"
         individuals.loc["control", [self.treatment]] = self.control_value
@@ -366,6 +365,7 @@ class LinearRegressionEstimator(Estimator):
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
+        print("t_test_results", t_test_results.effect)
         ate = t_test_results.effect[0]
         confidence_intervals = list(t_test_results.conf_int().flatten())
         return ate, confidence_intervals
@@ -473,21 +473,16 @@ class LinearRegressionEstimator(Estimator):
         cols = [self.treatment]
         cols += [x for x in self.adjustment_set if x not in cols]
         treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
-        for col in treatment_and_adjustments_cols:
-            if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
-                treatment_and_adjustments_cols = pd.get_dummies(
-                    treatment_and_adjustments_cols, columns=[col], drop_first=True
-                )
         model = smf.ols(formula=self.formula, data=self.df).fit()
         return model
 
-    def _get_confidence_intervals(self, model):
+    def _get_confidence_intervals(self, model, treatment):
         confidence_intervals = model.conf_int(alpha=0.05, cols=None)
         ci_low, ci_high = (
-            confidence_intervals[0][[self.treatment]],
-            confidence_intervals[1][[self.treatment]],
+            confidence_intervals[0].loc[treatment],
+            confidence_intervals[1].loc[treatment],
         )
-        return [ci_low.values[0], ci_high.values[0]]
+        return [ci_low, ci_high]
 
 
 class InstrumentalVariableEstimator(Estimator):

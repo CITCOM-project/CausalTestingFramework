@@ -27,7 +27,8 @@ class SomeEffect(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.test_value.type in {"ate", "coefficient"}:
-            return (0 < res.ci_low() < res.ci_high()) or (res.ci_low() < res.ci_high() < 0)
+            return any([0 < ci_low < ci_high or ci_low < ci_high < 0 for ci_low, ci_high in zip(res.ci_low(), res.ci_high())])
+            # return (0 < res.ci_low() < res.ci_high()) or (res.ci_low() < res.ci_high() < 0)
         if res.test_value.type == "risk_ratio":
             return (1 < res.ci_low() < res.ci_high()) or (res.ci_low() < res.ci_high() < 1)
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
@@ -36,10 +37,11 @@ class SomeEffect(CausalTestOutcome):
 class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
-    def apply(self, res: CausalTestResult) -> bool:
+    def apply(self, res: CausalTestResult, threshold: float = 1e-10) -> bool:
         print("RESULT", res)
         if res.test_value.type in {"ate", "coefficient"}:
-            return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < 1e-10)
+            return all([ci_low < 0< ci_high for ci_low, ci_high in zip(res.ci_low(), res.ci_high())]) or all([abs(v) < 1e-10 for v in res.test_value.value])
+            # return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < 1e-10)
         if res.test_value.type == "risk_ratio":
             return (res.ci_low() < 1 < res.ci_high()) or np.isclose(res.test_value.value, 1.0, atol=1e-10)
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
