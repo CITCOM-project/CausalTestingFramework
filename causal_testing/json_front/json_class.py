@@ -144,15 +144,21 @@ class JsonUtility:
                 failed, _ = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
 
                 msg = (
-                        f"Executing concrete test: {test['name']} \n"
-                        + f"treatment variable: {test['treatment_variable']} \n"
-                        + f"outcome_variable = {outcome_variable} \n"
-                        + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                        + f"Result: {'FAILED' if failed else 'Passed'}"
+                    f"Executing concrete test: {test['name']} \n"
+                    + f"treatment variable: {test['treatment_variable']} \n"
+                    + f"outcome_variable = {outcome_variable} \n"
+                    + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                    + f"Result: {'FAILED' if failed else 'Passed'}"
                 )
                 self._append_to_file(msg, logging.INFO)
 
-    def run_coefficient_test(self, test, f_flag):
+    def run_coefficient_test(self, test: dict, f_flag: bool):
+        """Builds structures and runs test case for tests with an estimate_type of 'coefficient'.
+
+        :param test: Single JSON test definition stored in a mapping (dict)
+        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        :return: String containing the message to be outputted
+        """
         base_test_case = BaseTestCase(
             treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
             outcome_variable=next(self.scenario.variables[v] for v in test["expected_effect"]),
@@ -161,26 +167,28 @@ class JsonUtility:
         assert len(test["expected_effect"]) == 1, "Can only have one expected effect."
         causal_test_case = CausalTestCase(
             base_test_case=base_test_case,
-            expected_causal_effect=next(
-                self.effects[effect] for variable, effect in test["expected_effect"].items()
-            ),
+            expected_causal_effect=next(self.effects[effect] for variable, effect in test["expected_effect"].items()),
             estimate_type="coefficient",
-            effect_modifier_configuration={
-                self.scenario.variables[v] for v in test.get("effect_modifiers", [])
-            },
+            effect_modifier_configuration={self.scenario.variables[v] for v in test.get("effect_modifiers", [])},
         )
         result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
         msg = (
-                f"Executing test: {test['name']} \n"
-                + f"  {causal_test_case} \n"
-                + "  "
-                + ("\n  ").join(str(result[1]).split("\n"))
-                + "==============\n"
-                + f"  Result: {'FAILED' if result[0] else 'Passed'}"
+            f"Executing test: {test['name']} \n"
+            + f"  {causal_test_case} \n"
+            + "  "
+            + ("\n  ").join(str(result[1]).split("\n"))
+            + "==============\n"
+            + f"  Result: {'FAILED' if result[0] else 'Passed'}"
         )
         return msg
 
-    def run_ate_test(self, test, f_flag):
+    def run_ate_test(self, test: dict, f_flag: bool):
+        """Builds structures and runs test case for tests with an estimate_type of 'ate'.
+
+        :param test: Single JSON test definition stored in a mapping (dict)
+        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        :return: String containing the message to be outputted
+        """
         if "sample_size" in test:
             sample_size = test["sample_size"]
         else:
@@ -190,17 +198,19 @@ class JsonUtility:
         else:
             target_ks_score = 0.05
         abstract_test = self._create_abstract_test_case(test, self.mutates, self.effects)
-        concrete_tests, _ = abstract_test.generate_concrete_tests(sample_size=sample_size, target_ks_score=target_ks_score)
+        concrete_tests, _ = abstract_test.generate_concrete_tests(
+            sample_size=sample_size, target_ks_score=target_ks_score
+        )
         failures, _ = self._execute_tests(concrete_tests, test, f_flag)
 
         msg = (
-                f"Executing test: {test['name']} \n"
-                + "  abstract_test \n"
-                + f"  {abstract_test} \n"
-                + f"  {abstract_test.treatment_variable.name},"
-                + f"  {abstract_test.treatment_variable.distribution} \n"
-                + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-                + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+            f"Executing test: {test['name']} \n"
+            + "  abstract_test \n"
+            + f"  {abstract_test} \n"
+            + f"  {abstract_test.treatment_variable.name},"
+            + f"  {abstract_test.treatment_variable.distribution} \n"
+            + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
         )
         return msg
 
@@ -233,7 +243,7 @@ class JsonUtility:
             meta.populate(self.data)
 
     def _execute_test_case(
-            self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool
+        self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool
     ) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
@@ -273,11 +283,11 @@ class JsonUtility:
         return failed, causal_test_result
 
     def _setup_test(
-            self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
+        self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
     ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
-        :param test: Single JSON test definition stored in a mapping (dict)
+        `:param test: Single JSON test definition stored in a mapping (dict)`
         :param conditions: A list of conditions which should be applied to the
         data. Conditions should be in the query format detailed at
         https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html
@@ -358,7 +368,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-                 "careful",
+            "careful",
             action="store_true",
         )
         parser.add_argument(
