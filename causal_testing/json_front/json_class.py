@@ -104,6 +104,54 @@ class JsonUtility:
             effect=test.get("effect", "total"),
         )
         return abstract_test
+
+    def run_json_tests(self, effects: dict, estimators: dict, f_flag: bool = False, mutates: dict = None):
+        """Runs and evaluates each test case specified in the JSON input
+
+        :param effects: Dictionary mapping effect class instances to string representations.
+        :param mutates: Dictionary mapping mutation functions to string representations.
+        :param estimators: Dictionary mapping estimator classes to string representations.
+        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        """
+        self.effects = effects
+        self.mutates = mutates
+        for test in self.test_plan["tests"]:
+            if "skip" in test and test["skip"]:
+                continue
+            test["estimator"] = estimators[test["estimator"]]
+            if "mutations" in test:
+                if test["estimate_type"] == "coefficient":
+                    msg = self.run_coefficient_test(test=test, f_flag=f_flag)
+                else:
+                    msg = self.run_ate_test(test=test, f_flag=f_flag)
+                self._append_to_file(msg, logging.INFO)
+            else:
+                outcome_variable = next(
+                    iter(test["expected_effect"])
+                )  # Take first key from dictionary of expected effect
+                base_test_case = BaseTestCase(
+                    treatment_variable=self.variables["inputs"][test["treatment_variable"]],
+                    outcome_variable=self.variables["outputs"][outcome_variable],
+                )
+
+                causal_test_case = CausalTestCase(
+                    base_test_case=base_test_case,
+                    expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
+                    control_value=test["control_value"],
+                    treatment_value=test["treatment_value"],
+                    estimate_type=test["estimate_type"],
+                )
+                failed, _ = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+
+                msg = (
+                        f"Executing concrete test: {test['name']} \n"
+                        + f"treatment variable: {test['treatment_variable']} \n"
+                        + f"outcome_variable = {outcome_variable} \n"
+                        + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                        + f"Result: {'FAILED' if failed else 'Passed'}"
+                )
+                self._append_to_file(msg, logging.INFO)
+
     def run_coefficient_test(self, test, f_flag):
         base_test_case = BaseTestCase(
             treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
@@ -131,9 +179,18 @@ class JsonUtility:
                 + f"  Result: {'FAILED' if result[0] else 'Passed'}"
         )
         return msg
+
     def run_ate_test(self, test, f_flag):
+        if "sample_size" in test:
+            sample_size = test["sample_size"]
+        else:
+            sample_size = 5
+        if "target_ks_score" in test:
+            target_ks_score = test["target_ks_score"]
+        else:
+            target_ks_score = 0.05
         abstract_test = self._create_abstract_test_case(test, self.mutates, self.effects)
-        concrete_tests, _ = abstract_test.generate_concrete_tests(sample_size=5, target_ks_score=0.05)
+        concrete_tests, _ = abstract_test.generate_concrete_tests(sample_size=sample_size, target_ks_score=target_ks_score)
         failures, _ = self._execute_tests(concrete_tests, test, f_flag)
 
         msg = (
@@ -146,52 +203,6 @@ class JsonUtility:
                 + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
         )
         return msg
-    def run_json_tests(self, effects: dict, estimators: dict, f_flag: bool = False, mutates: dict = None):
-        """Runs and evaluates each test case specified in the JSON input
-
-        :param effects: Dictionary mapping effect class instances to string representations.
-        :param mutates: Dictionary mapping mutation functions to string representations.
-        :param estimators: Dictionary mapping estimator classes to string representations.
-        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
-        """
-        self.effects = effects
-        self.mutates = mutates
-        for test in self.test_plan["tests"]:
-            if "skip" in test and test["skip"]:
-                continue
-            test["estimator"] = estimators[test["estimator"]]
-            if "mutations" in test:
-                if test["estimate_type"] == "coefficient":
-                    msg = self.run_coefficient_test(test=test, f_flag=f_flag)
-                else:
-                    msg =  self.run_ate_test(test=test, f_flag=f_flag)
-                self._append_to_file(msg, logging.INFO)
-            else:
-                outcome_variable = next(
-                    iter(test["expected_effect"])
-                )  # Take first key from dictionary of expected effect
-                base_test_case = BaseTestCase(
-                    treatment_variable=self.variables["inputs"][test["treatment_variable"]],
-                    outcome_variable=self.variables["outputs"][outcome_variable],
-                )
-
-                causal_test_case = CausalTestCase(
-                    base_test_case=base_test_case,
-                    expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
-                    control_value=test["control_value"],
-                    treatment_value=test["treatment_value"],
-                    estimate_type=test["estimate_type"],
-                )
-                failed, _ = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
-
-                msg = (
-                    f"Executing concrete test: {test['name']} \n"
-                    + f"treatment variable: {test['treatment_variable']} \n"
-                    + f"outcome_variable = {outcome_variable} \n"
-                    + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                    + f"Result: {'FAILED' if failed else 'Passed'}"
-                )
-                self._append_to_file(msg, logging.INFO)
 
     def _execute_tests(self, concrete_tests, test, f_flag):
         failures = 0
@@ -222,7 +233,7 @@ class JsonUtility:
             meta.populate(self.data)
 
     def _execute_test_case(
-        self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool
+            self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool
     ) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
@@ -262,7 +273,7 @@ class JsonUtility:
         return failed, causal_test_result
 
     def _setup_test(
-        self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
+            self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
     ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
@@ -347,7 +358,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-            "careful",
+                 "careful",
             action="store_true",
         )
         parser.add_argument(
