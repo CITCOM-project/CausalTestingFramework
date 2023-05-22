@@ -9,7 +9,7 @@ from causal_testing.testing.estimators import (
     InstrumentalVariableEstimator,
 )
 from causal_testing.specification.variable import Input
-from causal_testing.testing.validation import CausalValidator
+from causal_testing.utils.validation import CausalValidator
 
 
 def plot_results_df(df):
