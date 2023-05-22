@@ -55,8 +55,6 @@ class JsonUtility:
         self.causal_specification = None
         self.output_path = Path(output_path)
         self.check_file_exists(self.output_path, output_overwrite)
-        self.effects = None
-        self.mutates = None
 
     def set_paths(self, json_path: str, dag_path: str, data_paths: str):
         """
@@ -113,17 +111,15 @@ class JsonUtility:
         :param estimators: Dictionary mapping estimator classes to string representations.
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         """
-        self.effects = effects
-        self.mutates = mutates
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
             test["estimator"] = estimators[test["estimator"]]
             if "mutations" in test:
                 if test["estimate_type"] == "coefficient":
-                    msg = self.run_coefficient_test(test=test, f_flag=f_flag)
+                    msg = self._run_coefficient_test(test=test, f_flag=f_flag, effects=effects)
                 else:
-                    msg = self.run_ate_test(test=test, f_flag=f_flag)
+                    msg = self._run_ate_test(test=test, f_flag=f_flag, effects=effects, mutates=mutates)
                 self._append_to_file(msg, logging.INFO)
             else:
                 outcome_variable = next(
@@ -152,11 +148,12 @@ class JsonUtility:
                 )
                 self._append_to_file(msg, logging.INFO)
 
-    def run_coefficient_test(self, test: dict, f_flag: bool):
+    def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict):
         """Builds structures and runs test case for tests with an estimate_type of 'coefficient'.
 
         :param test: Single JSON test definition stored in a mapping (dict)
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        :param effects: Dictionary mapping effect class instances to string representations.
         :return: String containing the message to be outputted
         """
         base_test_case = BaseTestCase(
@@ -167,7 +164,7 @@ class JsonUtility:
         assert len(test["expected_effect"]) == 1, "Can only have one expected effect."
         causal_test_case = CausalTestCase(
             base_test_case=base_test_case,
-            expected_causal_effect=next(self.effects[effect] for variable, effect in test["expected_effect"].items()),
+            expected_causal_effect=next(effects[effect] for variable, effect in test["expected_effect"].items()),
             estimate_type="coefficient",
             effect_modifier_configuration={self.scenario.variables[v] for v in test.get("effect_modifiers", [])},
         )
@@ -182,11 +179,13 @@ class JsonUtility:
         )
         return msg
 
-    def run_ate_test(self, test: dict, f_flag: bool):
+    def _run_ate_test(self, test: dict, f_flag: bool, effects: dict, mutates: dict):
         """Builds structures and runs test case for tests with an estimate_type of 'ate'.
 
         :param test: Single JSON test definition stored in a mapping (dict)
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        :param effects: Dictionary mapping effect class instances to string representations.
+        :param mutates: Dictionary mapping mutation functions to string representations.
         :return: String containing the message to be outputted
         """
         if "sample_size" in test:
@@ -197,7 +196,7 @@ class JsonUtility:
             target_ks_score = test["target_ks_score"]
         else:
             target_ks_score = 0.05
-        abstract_test = self._create_abstract_test_case(test, self.mutates, self.effects)
+        abstract_test = self._create_abstract_test_case(test, mutates, effects)
         concrete_tests, _ = abstract_test.generate_concrete_tests(
             sample_size=sample_size, target_ks_score=target_ks_score
         )
