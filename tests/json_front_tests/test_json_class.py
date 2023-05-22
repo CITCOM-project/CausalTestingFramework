@@ -235,6 +235,33 @@ class TestJsonClass(unittest.TestCase):
         with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("FAILED", temp_out[-1])
+    def test_concrete_generate_params(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "treatment_variable": "test_input",
+                    "control_value": 0,
+                    "treatment_value": 1,
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "ate",
+                    "expected_effect": {"test_output": "NoEffect"},
+                    "sample_size": 5,
+                    "target_ks_score": 0.05,
+                    "skip": False,
+
+                }
+            ]
+        }
+        self.json_class.test_plan = example_test
+        effects = {"NoEffect": NoEffect()}
+        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+
+        self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
+
+        with open("temp_out.txt", "r") as reader:
+            temp_out = reader.readlines()
+        self.assertIn("FAILED", temp_out[-1])
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
