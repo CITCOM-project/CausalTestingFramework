@@ -240,28 +240,32 @@ class TestJsonClass(unittest.TestCase):
             "tests": [
                 {
                     "name": "test1",
-                    "treatment_variable": "test_input",
-                    "control_value": 0,
-                    "treatment_value": 1,
+                    "mutations": {"test_input": "Increase"},
                     "estimator": "LinearRegressionEstimator",
                     "estimate_type": "ate",
+                    "effect_modifiers": [],
                     "expected_effect": {"test_output": "NoEffect"},
                     "sample_size": 5,
                     "target_ks_score": 0.05,
                     "skip": False,
-
                 }
             ]
         }
         self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
+        mutates = {
+            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
+        }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
+        self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False, mutates=mutates)
 
+        # Test that the final log message prints that failed tests are printed, which is expected behaviour for this
+        # scenario
         with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
-        self.assertIn("FAILED", temp_out[-1])
+        self.assertIn("failed", temp_out[-1])
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
