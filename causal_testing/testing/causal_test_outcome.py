@@ -59,20 +59,20 @@ class NoEffect(CausalTestOutcome):
 class ExactValue(SomeEffect):
     """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
 
-    def __init__(self, value: float, tolerance: float = None):
+    def __init__(self, value: float, atol: float = None):
         self.value = value
-        if tolerance is None:
-            self.tolerance = value * 0.05
+        if atol is None:
+            self.atol = value * 0.05
         else:
-            self.tolerance = tolerance
+            self.atol = atol
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_valid():
-            return super().apply(res) and np.isclose(res.test_value.value, self.value, atol=self.tolerance)
-        return np.isclose(res.test_value.value, self.value, atol=self.tolerance)
+            return super().apply(res) and np.isclose(res.test_value.value, self.value, atol=self.atol)
+        return np.isclose(res.test_value.value, self.value, atol=self.atol)
 
     def __str__(self):
-        return f"ExactValue: {self.value}±{self.tolerance}"
+        return f"ExactValue: {self.value}±{self.atol}"
 
 
 class Positive(SomeEffect):
