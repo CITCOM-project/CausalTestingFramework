@@ -6,7 +6,7 @@ import scipy
 
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
-from tests.test_helpers import remove_temp_dir_if_existent
+from tests.test_helpers import remove_temp_dir_if_existent, create_temp_dir_if_non_existent
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
@@ -25,10 +25,11 @@ class TestJsonClass(unittest.TestCase):
         dag_file_name = "dag.dot"
         data_file_name = "data_with_meta.csv"
         test_data_dir_path = Path("tests/resources/data")
+        self.temp_dir = Path(create_temp_dir_if_non_existent())
         self.json_path = str(test_data_dir_path / json_file_name)
         self.dag_path = str(test_data_dir_path / dag_file_name)
         self.data_path = [str(test_data_dir_path / data_file_name)]
-        self.json_class = JsonUtility("temp_out.txt", True)
+        self.json_class = JsonUtility(self.temp_dir / "temp_out.txt", True)
         self.example_distribution = scipy.stats.uniform(1, 10)
         self.input_dict_list = [
             {"name": "test_input", "datatype": float, "distribution": self.example_distribution},
@@ -121,7 +122,7 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.run_json_tests(effects=effects, mutates={}, estimators=estimators, f_flag=False)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
-        with open("temp_out.txt", "r") as reader:
+        with open(self.temp_dir / "temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("FAILED", temp_out[-1])
 
@@ -151,7 +152,7 @@ class TestJsonClass(unittest.TestCase):
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this
         # scenario
-        with open("temp_out.txt", "r") as reader:
+        with open(self.temp_dir / "temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("failed", temp_out[-1])
 
@@ -180,7 +181,7 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
-        with open("temp_out.txt", "r") as reader:
+        with open(self.temp_dir / "temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("failed", temp_out[-1])
 
@@ -208,7 +209,7 @@ class TestJsonClass(unittest.TestCase):
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
         self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
-        with open("temp_out.txt", "r") as reader:
+        with open(self.temp_dir / "temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("test_output ~ test_input", "".join(temp_out))
 
@@ -232,7 +233,7 @@ class TestJsonClass(unittest.TestCase):
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
         self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
-        with open("temp_out.txt", "r") as reader:
+        with open(self.temp_dir / "temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("FAILED", temp_out[-1])
 
