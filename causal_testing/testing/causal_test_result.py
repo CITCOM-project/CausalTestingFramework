@@ -46,7 +46,7 @@ class CausalTestResult:
         def push(s, inc="  "):
             return inc + str(s).replace("\n", "\n" + inc)
 
-        result_str = " " + str(self.test_value.value)
+        result_str = str(self.test_value.value)
         if "\n" in result_str:
             result_str = "\n" + push(self.test_value.value)
         base_str = (
