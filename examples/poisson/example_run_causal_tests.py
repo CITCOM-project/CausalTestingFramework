@@ -65,8 +65,8 @@ class WidthHeightEstimator(LinearRegressionEstimator):
 class PoissonWidthHeight(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be positive."""
 
-    def __init__(self, tolerance=0.5):
-        self.tolerance = tolerance
+    def __init__(self, atol=0.5):
+        self.atol = atol
         self.i2c = None
 
     def apply(self, res: CausalTestResult) -> bool:
@@ -79,12 +79,12 @@ class PoissonWidthHeight(CausalTestOutcome):
         self.i2c = i * 2 * c
         logger.info("2ic: 2 * %s * %s = %s", i, c, self.i2c)
         logger.info("ate: %s", res.test_value.value)
-        return np.isclose(res.test_value.value, self.i2c, atol=self.tolerance)
+        return np.isclose(res.test_value.value, self.i2c, atol=self.atol)
 
     def __str__(self):
         if self.i2c is None:
-            return f"PoissonWidthHeight±{self.tolerance}"
-        return f"PoissonWidthHeight:{self.i2c}±{self.tolerance}"
+            return f"PoissonWidthHeight±{self.atol}"
+        return f"PoissonWidthHeight:{self.i2c}±{self.atol}"
 
 
 def populate_width_height(data):
@@ -121,7 +121,7 @@ effects = {
     "PoissonWidthHeight": PoissonWidthHeight(),
     "Positive": Positive(),
     "Negative": Negative(),
-    "ExactValue4_05": ExactValue(4, tolerance=0.5),
+    "ExactValue4_05": ExactValue(4, atol=0.5),
     "NoEffect": NoEffect(),
 }
 
