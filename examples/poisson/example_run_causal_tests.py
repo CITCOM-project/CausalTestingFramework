@@ -152,12 +152,12 @@ mutates = {
 def test_run_causal_tests():
     ROOT = os.path.realpath(os.path.dirname(__file__))
 
-    log_path = f"{ROOT}/json_frontend.log"
+    output_path = f"{ROOT}/json_frontend.txt"
     json_path = f"{ROOT}/causal_tests.json"
     dag_path = f"{ROOT}/dag.dot"
     data_path = f"{ROOT}/data.csv"
 
-    json_utility = JsonUtility(log_path)  # Create an instance of the extended JsonUtility class
+    json_utility = JsonUtility(output_path)  # Create an instance of the extended JsonUtility class
     json_utility.set_paths(
         json_path, dag_path, [data_path]
     )  # Set the path to the data.csv, dag.dot and causal_tests.json file
@@ -167,6 +167,7 @@ def test_run_causal_tests():
 
     json_utility.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
 
+    os.remove(output_path)
 
 if __name__ == "__main__":
     args = JsonUtility.get_args()
