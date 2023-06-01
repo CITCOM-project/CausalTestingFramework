@@ -118,7 +118,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "expected_effect": {"Z": "NoEffect"},
                 "mutations": ["X1"],
                 "name": "X1 _||_ Z",
-                "skip": True,
+                "skip": False,
             },
         )
 
@@ -141,7 +141,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "expected_effect": {"Z": "SomeEffect"},
                 "mutations": ["X1"],
                 "name": "X1 --> Z",
-                "skip": True,
+                "skip": False,
             },
         )
 
