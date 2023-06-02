@@ -339,13 +339,8 @@ class LinearRegressionEstimator(Estimator):
         print(model.conf_int())
         treatment = [self.treatment]
         if str(self.df.dtypes[self.treatment]) == "object":
-            reference = min(self.df[self.treatment])
-            treatment = [
-                x.replace("[", "[T.")
-                for x in dmatrix(
-                    f"{self.treatment}-1", self.df.query(f"{self.treatment} != '{reference}'"), return_type="dataframe"
-                ).columns
-            ]
+            design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
+            treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         assert set(treatment).issubset(
             model.params.index.tolist()
         ), f"{treatment} not in\n{'  '+str(model.params.index).replace(newline, newline+'  ')}"

@@ -163,7 +163,9 @@ def test_run_causal_tests():
     )  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
-    json_utility.setup(scenario=modelling_scenario)  # Sets up all the necessary parts of the json_class needed to execute tests
+    json_utility.setup(
+        scenario=modelling_scenario
+    )  # Sets up all the necessary parts of the json_class needed to execute tests
 
     json_utility.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
 
@@ -176,6 +178,8 @@ if __name__ == "__main__":
     )  # Set the path to the data.csv, dag.dot and causal_tests.json file
 
     # Load the Causal Variables into the JsonUtility class ready to be used in the tests
-    json_utility.setup(scenario=modelling_scenario)  # Sets up all the necessary parts of the json_class needed to execute tests
+    json_utility.setup(
+        scenario=modelling_scenario
+    )  # Sets up all the necessary parts of the json_class needed to execute tests
 
     json_utility.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=args.f)

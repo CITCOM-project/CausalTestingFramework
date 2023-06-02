@@ -48,8 +48,6 @@ class TestJsonClass(unittest.TestCase):
         json_class.set_paths(self.json_path, self.dag_path, None)
         self.assertEqual(json_class.input_paths.data_paths, [])  # Needs to be list of Paths
 
-
-
     def test_setting_paths(self):
         self.assertEqual(self.json_class.input_paths.json_path, Path(self.json_path))
         self.assertEqual(self.json_class.input_paths.dag_path, Path(self.dag_path))

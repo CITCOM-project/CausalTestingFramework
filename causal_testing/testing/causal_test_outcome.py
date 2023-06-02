@@ -41,18 +41,21 @@ class SomeEffect(CausalTestOutcome):
 class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
-    def apply(self, res: CausalTestResult, atol: float = 1e-10) -> bool:
+    def __init__(self, atol: float = 1e-10):
+        self.atol = atol
+
+    def apply(self, res: CausalTestResult) -> bool:
         if res.test_value.type == "ate":
-            return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < atol)
+            return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < self.atol)
         if res.test_value.type == "coefficient":
             ci_low = res.ci_low() if isinstance(res.ci_low(), Iterable) else [res.ci_low()]
             ci_high = res.ci_high() if isinstance(res.ci_high(), Iterable) else [res.ci_high()]
             value = res.test_value.value if isinstance(res.ci_high(), Iterable) else [res.test_value.value]
             return all(ci_low < 0 < ci_high for ci_low, ci_high in zip(ci_low, ci_high)) or all(
-                abs(v) < 1e-10 for v in value
+                abs(v) < self.atol for v in value
             )
         if res.test_value.type == "risk_ratio":
-            return (res.ci_low() < 1 < res.ci_high()) or np.isclose(res.test_value.value, 1.0, atol=atol)
+            return (res.ci_low() < 1 < res.ci_high()) or np.isclose(res.test_value.value, 1.0, atol=self.atol)
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
 
