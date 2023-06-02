@@ -7,12 +7,12 @@ from dataclasses import dataclass
 from abc import abstractmethod
 from typing import Iterable
 from itertools import combinations
-import numpy as np
-import pandas as pd
-import networkx as nx
 import argparse
 import logging
 import json
+import networkx as nx
+import pandas as pd
+import numpy as np
 
 from causal_testing.specification.causal_specification import CausalDAG, Node
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
@@ -270,14 +270,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    dag = CausalDAG(args.dag_path)
-    relations = generate_metamorphic_relations(dag)
+    causal_dag = CausalDAG(args.dag_path)
+    relations = generate_metamorphic_relations(causal_dag)
     tests = [
         relation.to_json_stub(skip=False)
         for relation in relations
-        if len(list(dag.graph.predecessors(relation.output_var))) > 0
+        if len(list(causal_dag.graph.predecessors(relation.output_var))) > 0
     ]
 
     logger.info(f"Generated {len(tests)} tests. Saving to {args.output_path}.")
-    with open(args.output_path, "w") as f:
+    with open(args.output_path, "w", encoding="utf-8") as f:
         json.dump({"tests": tests}, f, indent=2)
