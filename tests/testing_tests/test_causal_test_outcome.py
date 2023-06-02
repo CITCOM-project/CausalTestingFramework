@@ -2,7 +2,7 @@ import unittest
 from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect, Positive, Negative, NoEffect
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.testing.estimators import LinearRegressionEstimator
-from causal_testing.testing.validation import CausalValidator
+from causal_testing.utils.validation import CausalValidator
 
 
 class TestCausalTestOutcome(unittest.TestCase):
