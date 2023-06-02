@@ -43,6 +43,11 @@ class TestJsonClass(unittest.TestCase):
         self.json_class.set_paths(self.json_path, self.dag_path, self.data_path)
         self.json_class.setup(self.scenario)
 
+    def test_setting_no_path(self):
+        json_class = JsonUtility("temp_out.txt", True)
+        json_class.set_paths(self.json_path, self.dag_path, None)
+        self.assertEqual(json_class.input_paths.data_paths, [])  # Needs to be list of Paths
+
     def test_setting_paths(self):
         self.assertEqual(self.json_class.input_paths.json_path, Path(self.json_path))
         self.assertEqual(self.json_class.input_paths.dag_path, Path(self.dag_path))
