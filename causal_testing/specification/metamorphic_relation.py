@@ -179,6 +179,7 @@ class ShouldNotCause(MetamorphicRelation):
             "effect": "direct",
             "mutations": [self.treatment_var],
             "expected_effect": {self.output_var: "NoEffect"},
+            "formula": f"{self.output_var} ~ {'+'.join([self.treatment_var] + self.adjustment_vars)}",
             "skip": skip,
         }
 
