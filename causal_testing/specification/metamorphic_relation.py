@@ -253,7 +253,7 @@ def generate_metamorphic_relations(dag: CausalDAG) -> list[MetamorphicRelation]:
     return metamorphic_relations
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
     parser = argparse.ArgumentParser(
         description="A script for generating metamorphic relations to test the causal relationships in a given DAG."
