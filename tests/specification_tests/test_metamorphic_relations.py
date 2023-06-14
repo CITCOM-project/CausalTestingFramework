@@ -119,6 +119,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "formula": "Z ~ X1",
                 "mutations": ["X1"],
                 "name": "X1 _||_ Z",
+                "formula": "Z ~ X1",
                 "skip": True,
             },
         )
