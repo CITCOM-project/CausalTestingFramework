@@ -17,7 +17,7 @@ They are:
 Github Webhooks
 ---------------
 
-The project also uses 3 `Webhooks <https://docs.github.com/en/webhooks-and-events/webhooks/about-webhooks>`_
+The project also uses 3 `Webhooks <https://docs.github.com/en/webhooks-and-events/webhooks/about-webhooks>`_, which can be found in the `project settings <https://github.com/CITCOM-project/CausalTestingFramework/settings>`_ on Github
 
 #.  To codacy
 
