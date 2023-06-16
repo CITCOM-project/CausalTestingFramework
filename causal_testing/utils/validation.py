@@ -8,7 +8,8 @@ from statsmodels.regression.linear_model import RegressionResultsWrapper
 class CausalValidator:
     """A suite of validation tools to perform Quantitive Bias Analysis to back up causal claims"""
 
-    def estimate_robustness(self, model: RegressionResultsWrapper, q=1, alpha=1):
+    @staticmethod
+    def estimate_robustness(model: RegressionResultsWrapper, q=1, alpha=1):
         """Calculate the robustness of a linear regression model. This allow
         the user to identify how large an unidentified confounding variable
         would need to be to nullify the causal relationship under test."""
@@ -24,7 +25,8 @@ class CausalValidator:
 
         return rv
 
-    def estimate_e_value(self, risk_ratio: float) -> float:
+    @staticmethod
+    def estimate_e_value(risk_ratio: float) -> float:
         """Calculate the E value from a risk ratio. This allow
         the user to identify how large a risk an unidentified confounding
         variable would need to be to nullify the causal relationship
@@ -36,7 +38,8 @@ class CausalValidator:
         risk_ratio_prime = 1 / risk_ratio
         return risk_ratio_prime + math.sqrt(risk_ratio_prime * (risk_ratio_prime - 1))
 
-    def estimate_e_value_using_ci(self, risk_ratio: float, confidence_intervals: tuple[float, float]) -> float:
+    @staticmethod
+    def estimate_e_value_using_ci(risk_ratio: float, confidence_intervals: tuple[float, float]) -> float:
         """Calculate the E value from a risk ratio and it's confidence intervals.
         This allow the user to identify how large a risk an unidentified
         confounding variable would need to be to nullify the causal relationship

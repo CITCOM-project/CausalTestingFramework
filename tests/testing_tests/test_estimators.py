@@ -9,7 +9,7 @@ from causal_testing.testing.estimators import (
     InstrumentalVariableEstimator,
 )
 from causal_testing.specification.variable import Input
-from causal_testing.testing.validation import CausalValidator
+from causal_testing.utils.validation import CausalValidator
 
 
 def plot_results_df(df):
@@ -92,6 +92,14 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
                 {"length_in": 82, "large_gauge": 1, "color": "brown", "completed": 0},
             ]
         )
+
+    # Yes, this probably shouldn't be in here, but it uses the scarf data so it makes more sense to put it
+    # here than duplicating the scarf data for a single test
+    def test_linear_regression_categorical_ate(self):
+        df = self.scarf_df.copy()
+        logistic_regression_estimator = LinearRegressionEstimator("color", None, None, set(), "completed", df)
+        ate, confidence = logistic_regression_estimator.estimate_unit_ate()
+        self.assertTrue(all([ci_low < 0 < ci_high for ci_low, ci_high in zip(confidence[0], confidence[1])]))
 
     def test_ate(self):
         df = self.scarf_df.copy()
@@ -212,7 +220,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_unit_ate()
 
-        print(model.summary())
         self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE

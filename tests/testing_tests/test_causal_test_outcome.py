@@ -2,7 +2,7 @@ import unittest
 from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect, Positive, Negative, NoEffect
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.testing.estimators import LinearRegressionEstimator
-from causal_testing.testing.validation import CausalValidator
+from causal_testing.utils.validation import CausalValidator
 
 
 class TestCausalTestOutcome(unittest.TestCase):
@@ -64,8 +64,19 @@ class TestCausalTestOutcome(unittest.TestCase):
             ),
         )
 
-    def test_Positive_pass(self):
+    def test_Positive_ate_pass(self):
         test_value = TestValue(type="ate", value=5.05)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        ev = Positive()
+        self.assertTrue(ev.apply(ctr))
+
+    def test_Positive_risk_ratio_pass(self):
+        test_value = TestValue(type="risk_ratio", value=2)
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
@@ -97,8 +108,19 @@ class TestCausalTestOutcome(unittest.TestCase):
         ev = Positive()
         self.assertFalse(ev.apply(ctr))
 
-    def test_Negative_pass(self):
+    def test_Negative_ate_pass(self):
         test_value = TestValue(type="ate", value=-5.05)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        ev = Negative()
+        self.assertTrue(ev.apply(ctr))
+
+    def test_Negative_risk_ratio_pass(self):
+        test_value = TestValue(type="risk_ratio", value=0.2)
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
@@ -163,7 +185,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ev = ExactValue(5, 0.1)
         self.assertFalse(ev.apply(ctr))
 
-    def test_someEffect_invalid(self):
+    def test_invalid(self):
         test_value = TestValue(type="invalid", value=5.05)
         ctr = CausalTestResult(
             estimator=self.estimator,
@@ -171,9 +193,25 @@ class TestCausalTestOutcome(unittest.TestCase):
             confidence_intervals=[4.8, 6.7],
             effect_modifier_configuration=None,
         )
-        ev = SomeEffect()
         with self.assertRaises(ValueError):
-            ev.apply(ctr)
+            SomeEffect().apply(ctr)
+        with self.assertRaises(ValueError):
+            NoEffect().apply(ctr)
+        with self.assertRaises(ValueError):
+            Positive().apply(ctr)
+        with self.assertRaises(ValueError):
+            Negative().apply(ctr)
+
+    def test_someEffect_pass_coefficient(self):
+        test_value = TestValue(type="coefficient", value=5.05)
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=[4.8, 6.7],
+            effect_modifier_configuration=None,
+        )
+        self.assertTrue(SomeEffect().apply(ctr))
+        self.assertFalse(NoEffect().apply(ctr))
 
     def test_someEffect_pass_ate(self):
         test_value = TestValue(type="ate", value=5.05)

@@ -139,7 +139,7 @@ def test_poisson_intensity_num_shapes(save=False):
             base_test_case = BaseTestCase(treatment_variable=intensity, outcome_variable=num_shapes_unit)
             causal_test_case = CausalTestCase(
                 base_test_case=base_test_case,
-                expected_causal_effect=ExactValue(4, tolerance=0.5),
+                expected_causal_effect=ExactValue(4, atol=0.5),
                 treatment_value=treatment_value,
                 control_value=control_value,
                 estimate_type="risk_ratio",
