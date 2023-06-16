@@ -3,7 +3,7 @@ Project Documentation
 
 This page aims to describe:
 
-#. How to comply with the projects documentation style
+#. The projects documentation style
 
 #. The tools used for documentation
 
@@ -55,5 +55,7 @@ The configuration for Sphinx, Autodoc and AutoAPI are all found in `/docs/source
 
 ReadTheDocs
 -----------
-`Read the Docs <https://readthedocs.org/>`_ is a documentation hosting site that hosts open source projects for free.
+`Read the Docs <https://readthedocs.org/>`_ is a documentation hosting site that hosts, versions and builds documentation for free for open source projects.
+
+This project makes use of a Github Webook to trigger the build in ReadTheDocs
 
