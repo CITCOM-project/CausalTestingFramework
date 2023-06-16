@@ -54,6 +54,8 @@ system-under-test that is expected to cause a change to some output(s).
    :caption: Development Documentation
 
    /dev/version_release
+   /dev/documentation
+   /dev/actions_and_webhooks
 
 Indices and tables
 ==================

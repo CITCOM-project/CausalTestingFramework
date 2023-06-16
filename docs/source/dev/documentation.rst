@@ -57,5 +57,5 @@ ReadTheDocs
 -----------
 `Read the Docs <https://readthedocs.org/>`_ is a documentation hosting site that hosts, versions and builds documentation for free for open source projects.
 
-This project makes use of a Github Webook to trigger the build in ReadTheDocs
+This project makes use of a Github Webook to trigger the build in ReadTheDocs, further reading on this can be found :doc:`here <../dev/actions_and_webhooks>`\
 
