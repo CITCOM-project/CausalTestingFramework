@@ -3,24 +3,37 @@ JSON Frontend
 The JSON frontend allows Causal Tests and parameters to be specified in JSON to allow for tests to be quickly written
 whilst retaining the flexibility of the Causal Testing Framework (CTF).
 
+basic workflow
+--------------
+The basic workflow of using the JSON frontend is as follows:
+
+#. Specify your test cases in the JSON format (more details below)
+#. Create your DAG in a dot file
+#. Initialise the JsonUtility class in python with a path of where you want the outputs saved
+#. Set the paths pointing the Json class to your json file, dag file and optionally your data file (see data section below) using the .set_paths method
+#. Run the .setup method providing your scenario
+#. Run the .run_json_tests method, which will execute the test cases provided by the JSON file.
+
+Example Walkthrough
+-------------------
 An example is provided in `examples/poisson` which will be walked through in this README to better understand
 the framework
 
 run_causal_tests.py
--------------------
+*******************
 `examples/poisson/run_causal_tests.py <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/run_causal_tests.py>`_
 contains python code written by the user to implement scenario specific features
 such as:
-1. Custom Estimators
-2. Causal Variable specification
-3. Causal test case outcomes
-4. Meta constraint functions
-5. Mapping JSON distributions, effects, and estimators to python objects
+#. Custom Estimators
+#. Causal Variable specification
+#. Causal test case outcomes
+#. Meta constraint functions
+#. Mapping JSON distributions, effects, and estimators to python objects
 
 Use case specific information is also declared here such as the paths to the relevant files needed for the tests.
 
 causal_tests.json
------------------
+*****************
 `examples/poisson/causal_tests.json <https://github.c#om/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/causal_tests.json>`_ contains python code written by the user to implement scenario specific features
 is the JSON file that allows for the easy specification of multiple causal tests. Tests can be specified two ways; firstly by specifying a mutation lke in the example tests with the following structure:
 Each test requires:
@@ -45,7 +58,9 @@ The second method of specifying a test is to specify the test in a concrete form
 #. skip
 
 Run Commands
-------------
+************
+This example uses the Argparse utility built into the JSON frontend, which allows the frontend to be run from a commandline interface as shown here.
+
 To run the JSON frontend example from the root directory of the project, use::
 
     python examples\poisson\run_causal_tests.py --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json
