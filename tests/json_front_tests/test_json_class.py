@@ -256,9 +256,9 @@ class TestJsonClass(unittest.TestCase):
         }
         json_class = JsonUtility("temp_out.txt", True)
         json_class.set_paths(self.json_path, self.dag_path)
-        json_class.setup(self.scenario)
 
-        self.assertRaises(ValueError)
+        with self.assertRaises(ValueError):
+            json_class.setup(self.scenario)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
