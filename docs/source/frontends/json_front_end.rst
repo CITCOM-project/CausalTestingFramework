@@ -10,9 +10,9 @@ The basic workflow of using the JSON frontend is as follows:
 #. Specify your test cases in the JSON format (more details below)
 #. Create your DAG in a dot file
 #. Initialise the JsonUtility class in python with a path of where you want the outputs saved
-#. Set the paths pointing the Json class to your json file, dag file and optionally your data file (see data section below) using the .set_paths method
-#. Run the .setup method providing your scenario
-#. Run the .run_json_tests method, which will execute the test cases provided by the JSON file.
+#. Set the paths pointing the Json class to your json file, dag file and optionally your data file (see data section below) using the :func:`causal_testing.json_front.json_class.JsonUtility.set_paths` method
+#. Run the :func:`causal_testing.json_front.json_class.JsonUtility.setup` method providing your scenario
+#. Run the :func:`causal_testing.json_front.json_class.JsonUtility.run_json_tests` method, which will execute the test cases provided by the JSON file.
 
 Example Walkthrough
 -------------------
@@ -24,6 +24,7 @@ run_causal_tests.py
 `examples/poisson/run_causal_tests.py <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/run_causal_tests.py>`_
 contains python code written by the user to implement scenario specific features
 such as:
+
 #. Custom Estimators
 #. Causal Variable specification
 #. Causal test case outcomes
