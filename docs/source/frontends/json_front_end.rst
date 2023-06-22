@@ -76,3 +76,16 @@ Secondly a log file is produced, by default a file called `json_frontend.log` is
 The behaviour of where the log file is produced and named can be altered with the --log_path argument::
 
     python examples\poisson\run_causal_tests.py -f --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json --log_path="example_directory\logname.log"
+
+
+Runtime Data
+----------
+
+There are currently 2 methods to inputting your runtime data into the JSON frontend:
+
+#. Providing one or more file paths to `.csv` files containing your data
+#. Setting a dataframe to the .data attribute of the JsonUtility instance, this must be done before the setup method is called.
+
+
+
+
