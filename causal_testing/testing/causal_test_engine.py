@@ -81,7 +81,6 @@ class CausalTestEngine:
 
             estimators = test_suite[edge]["estimators"]
             tests = test_suite[edge]["tests"]
-            estimate_type = test_suite[edge]["estimate_type"]
             results = {}
             for estimator_class in estimators:
                 causal_test_results = []
@@ -96,7 +95,7 @@ class CausalTestEngine:
                     )
                     if estimator.df is None:
                         estimator.df = self.scenario_execution_data_df
-                    causal_test_result = self._return_causal_test_results(estimate_type, estimator, test)
+                    causal_test_result = self._return_causal_test_results(estimator, test)
                     causal_test_results.append(causal_test_result)
 
                 results[estimator_class.__name__] = causal_test_results
@@ -118,7 +117,6 @@ class CausalTestEngine:
 
         :param estimator: A reference to an Estimator class.
         :param causal_test_case: The CausalTestCase object to be tested
-        :param estimate_type: A string which denotes the type of estimate to return, ATE or CATE.
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
         if self.scenario_execution_data_df.empty:
@@ -146,7 +144,6 @@ class CausalTestEngine:
     def _return_causal_test_results(self, estimator, causal_test_case):
         """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
 
-        :param estimate_type: A string which denotes the type of estimate to return
         :param estimator: An Estimator class object
         :param causal_test_case: The concrete test case to be executed
         :return: a CausalTestResult object containing the confidence intervals
