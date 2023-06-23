@@ -229,9 +229,7 @@ class JsonUtility:
         causal_test_engine, estimation_model = self._setup_test(
             causal_test_case, test, test["conditions"] if "conditions" in test else None
         )
-        causal_test_result = causal_test_engine.execute_test(
-            estimation_model, causal_test_case, estimate_type=causal_test_case.estimate_type
-        )
+        causal_test_result = causal_test_engine.execute_test(estimation_model, causal_test_case)
 
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
