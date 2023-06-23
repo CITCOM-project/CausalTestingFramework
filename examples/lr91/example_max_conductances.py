@@ -148,7 +148,7 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     )
 
     # 10. Run the causal test and print results
-    causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, "ate")
+    causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case)
     logger.info("%s", causal_test_result)
     return causal_test_result.test_value.value, causal_test_result.confidence_intervals
 
