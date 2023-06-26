@@ -81,7 +81,6 @@ class CausalTestEngine:
 
             estimators = test_suite[edge]["estimators"]
             tests = test_suite[edge]["tests"]
-            estimate_type = test_suite[edge]["estimate_type"]
             results = {}
             for estimator_class in estimators:
                 causal_test_results = []
@@ -96,16 +95,14 @@ class CausalTestEngine:
                     )
                     if estimator.df is None:
                         estimator.df = self.scenario_execution_data_df
-                    causal_test_result = self._return_causal_test_results(estimate_type, estimator, test)
+                    causal_test_result = self._return_causal_test_results(estimator, test)
                     causal_test_results.append(causal_test_result)
 
                 results[estimator_class.__name__] = causal_test_results
             test_suite_results[edge] = results
         return test_suite_results
 
-    def execute_test(
-        self, estimator: type(Estimator), causal_test_case: CausalTestCase, estimate_type: str = "ate"
-    ) -> CausalTestResult:
+    def execute_test(self, estimator: type(Estimator), causal_test_case: CausalTestCase) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
 
         Test case execution proceeds with the following steps:
@@ -120,7 +117,6 @@ class CausalTestEngine:
 
         :param estimator: A reference to an Estimator class.
         :param causal_test_case: The CausalTestCase object to be tested
-        :param estimate_type: A string which denotes the type of estimate to return, ATE or CATE.
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
         if self.scenario_execution_data_df.empty:
@@ -142,18 +138,17 @@ class CausalTestEngine:
         if self._check_positivity_violation(variables_for_positivity):
             raise ValueError("POSITIVITY VIOLATION -- Cannot proceed.")
 
-        causal_test_result = self._return_causal_test_results(estimate_type, estimator, causal_test_case)
+        causal_test_result = self._return_causal_test_results(estimator, causal_test_case)
         return causal_test_result
 
-    def _return_causal_test_results(self, estimate_type, estimator, causal_test_case):
+    def _return_causal_test_results(self, estimator, causal_test_case):
         """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
 
-        :param estimate_type: A string which denotes the type of estimate to return
         :param estimator: An Estimator class object
         :param causal_test_case: The concrete test case to be executed
         :return: a CausalTestResult object containing the confidence intervals
         """
-        if estimate_type == "cate":
+        if causal_test_case.estimate_type == "cate":
             logger.debug("calculating cate")
             if not hasattr(estimator, "estimate_cates"):
                 raise NotImplementedError(f"{estimator.__class__} has no CATE method.")
@@ -165,7 +160,7 @@ class CausalTestEngine:
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )
-        elif estimate_type == "risk_ratio":
+        elif causal_test_case.estimate_type == "risk_ratio":
             logger.debug("calculating risk_ratio")
             risk_ratio, confidence_intervals = estimator.estimate_risk_ratio()
             causal_test_result = CausalTestResult(
@@ -174,7 +169,7 @@ class CausalTestEngine:
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )
-        elif estimate_type == "coefficient":
+        elif causal_test_case.estimate_type == "coefficient":
             logger.debug("calculating coefficient")
             coefficient, confidence_intervals = estimator.estimate_unit_ate()
             causal_test_result = CausalTestResult(
@@ -183,7 +178,7 @@ class CausalTestEngine:
                 effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
                 confidence_intervals=confidence_intervals,
             )
-        elif estimate_type == "ate":
+        elif causal_test_case.estimate_type == "ate":
             logger.debug("calculating ate")
             ate, confidence_intervals = estimator.estimate_ate()
             causal_test_result = CausalTestResult(
@@ -194,7 +189,7 @@ class CausalTestEngine:
             )
             # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
             # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
-        elif estimate_type == "ate_calculated":
+        elif causal_test_case.estimate_type == "ate_calculated":
             logger.debug("calculating ate")
             ate, confidence_intervals = estimator.estimate_ate_calculated()
             causal_test_result = CausalTestResult(
@@ -206,7 +201,9 @@ class CausalTestEngine:
             # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
             # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
         else:
-            raise ValueError(f"Invalid estimate type {estimate_type}, expected 'ate', 'cate', or 'risk_ratio'")
+            raise ValueError(
+                f"Invalid estimate type {causal_test_case.estimate_type}, expected 'ate', 'cate', or 'risk_ratio'"
+            )
         return causal_test_result
 
     def _check_positivity_violation(self, variables_list):

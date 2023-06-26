@@ -107,8 +107,7 @@ various information. Here, we simply assert that the observed result is (on aver
 
    causal_test_result = causal_test_engine.execute_test(
        estimator = estimation_model,
-       causal_test_case = causal_test_case,
-       estimate_type = "ate")
+       causal_test_case = causal_test_case)
    test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
    assert test_passes, "Expected to see a positive change in y."
 
