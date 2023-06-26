@@ -81,6 +81,11 @@ class JsonUtility:
         # Populate the data
         if self.input_paths.data_paths:
             self.data = pd.concat([pd.read_csv(data_file, header=0) for data_file in self.input_paths.data_paths])
+        if len(self.data) == 0:
+            raise ValueError(
+                "No data found, either provide a path to a file containing data or manually populate the .data "
+                "attribute with a dataframe before calling .setup()"
+            )
         self._populate_metas()
 
     def _create_abstract_test_case(self, test, mutates, effects):
