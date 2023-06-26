@@ -8,6 +8,7 @@ from random import sample
 from typing import Union
 
 import networkx as nx
+import pydot
 
 from causal_testing.testing.base_test_case import BaseTestCase
 
@@ -133,7 +134,9 @@ class CausalDAG(nx.DiGraph):
     def __init__(self, dot_path: str = None, **attr):
         super().__init__(**attr)
         if dot_path:
-            self.graph = nx.DiGraph(nx.drawing.nx_agraph.read_dot(dot_path))
+            pydot_graph = pydot.graph_from_dot_file(dot_path)
+            self.graph = nx.DiGraph(nx.drawing.nx_pydot.from_pydot(pydot_graph[0]))
+            self.graph2 = nx.DiGraph(nx.drawing.nx_agraph.read_dot(dot_path))
         else:
             self.graph = nx.DiGraph()
 
