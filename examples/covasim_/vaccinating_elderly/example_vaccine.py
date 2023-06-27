@@ -99,7 +99,7 @@ def test_experimental_vaccinate_elderly(runs_per_test_per_config: int = 30, verb
         )
 
         # 10. Execute test and save results in dict
-        causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case, "ate")
+        causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case)
         if verbose:
             logging.info("Causation:\n%s", causal_test_result)
         results_dict[outcome_variable.name]["ate"] = causal_test_result.test_value.value

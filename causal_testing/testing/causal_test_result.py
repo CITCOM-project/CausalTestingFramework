@@ -43,6 +43,12 @@ class CausalTestResult:
             self.effect_modifier_configuration = {}
 
     def __str__(self):
+        def push(s, inc="  "):
+            return inc + str(s).replace("\n", "\n" + inc)
+
+        result_str = str(self.test_value.value)
+        if "\n" in result_str:
+            result_str = "\n" + push(self.test_value.value)
         base_str = (
             f"Causal Test Result\n==============\n"
             f"Treatment: {self.estimator.treatment}\n"
@@ -50,11 +56,14 @@ class CausalTestResult:
             f"Treatment value: {self.estimator.treatment_value}\n"
             f"Outcome: {self.estimator.outcome}\n"
             f"Adjustment set: {self.adjustment_set}\n"
-            f"{self.test_value.type}: {self.test_value.value}\n"
+            f"{self.test_value.type}: {result_str}\n"
         )
         confidence_str = ""
         if self.confidence_intervals:
-            confidence_str += f"Confidence intervals: {self.confidence_intervals}\n"
+            ci_str = " " + str(self.confidence_intervals)
+            if "\n" in ci_str:
+                ci_str = " " + push(pd.DataFrame(self.confidence_intervals).transpose().to_string(header=False))
+            confidence_str += f"Confidence intervals:{ci_str}\n"
         return base_str + confidence_str
 
     def to_dict(self):
@@ -76,14 +85,14 @@ class CausalTestResult:
 
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""
-        if self.confidence_intervals and all(self.confidence_intervals):
-            return min(self.confidence_intervals)
+        if self.confidence_intervals:
+            return self.confidence_intervals[0]
         return None
 
     def ci_high(self):
         """Return the higher bracket of the confidence intervals."""
-        if self.confidence_intervals and all(self.confidence_intervals):
-            return max(self.confidence_intervals)
+        if self.confidence_intervals:
+            return self.confidence_intervals[1]
         return None
 
     def ci_valid(self) -> bool:

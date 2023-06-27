@@ -3,7 +3,6 @@ from pathlib import Path
 from statistics import StatisticsError
 import scipy
 
-
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
 from tests.test_helpers import remove_temp_dir_if_existent, create_temp_dir_if_non_existent
@@ -43,6 +42,11 @@ class TestJsonClass(unittest.TestCase):
         self.scenario = Scenario(variables=variables, constraints=None)
         self.json_class.set_paths(self.json_path, self.dag_path, self.data_path)
         self.json_class.setup(self.scenario)
+
+    def test_setting_no_path(self):
+        json_class = JsonUtility("temp_out.txt", True)
+        json_class.set_paths(self.json_path, self.dag_path, None)
+        self.assertEqual(json_class.input_paths.data_paths, [])  # Needs to be list of Paths
 
     def test_setting_paths(self):
         self.assertEqual(self.json_class.input_paths.json_path, Path(self.json_path))
@@ -95,7 +99,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
         with self.assertRaises(StatisticsError):
@@ -144,7 +148,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
@@ -174,7 +178,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
@@ -204,7 +208,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"Positive": Positive()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
@@ -236,6 +240,26 @@ class TestJsonClass(unittest.TestCase):
         with open(self.temp_dir / "temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("FAILED", temp_out[-1])
+
+    def test_no_data_provided(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "mutations": {"test_input": "Increase"},
+                    "estimator": "LinearRegressionEstimator",
+                    "estimate_type": "ate",
+                    "effect_modifiers": [],
+                    "expected_effect": {"test_output": "NoEffect"},
+                    "skip": False,
+                }
+            ]
+        }
+        json_class = JsonUtility("temp_out.txt", True)
+        json_class.set_paths(self.json_path, self.dag_path)
+
+        with self.assertRaises(ValueError):
+            json_class.setup(self.scenario)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

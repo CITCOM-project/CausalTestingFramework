@@ -189,9 +189,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             "A",
             self.causal_test_engine.scenario_execution_data_df,
         )
-        causal_test_result = self.causal_test_engine.execute_test(
-            estimation_model, self.causal_test_case, estimate_type="coefficient"
-        )
+        self.causal_test_case.estimate_type = "coefficient"
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
         self.assertEqual(int(causal_test_result.test_value.value), 0)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
@@ -205,9 +204,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             "A",
             self.causal_test_engine.scenario_execution_data_df,
         )
-        causal_test_result = self.causal_test_engine.execute_test(
-            estimation_model, self.causal_test_case, estimate_type="risk_ratio"
-        )
+        self.causal_test_case.estimate_type = "risk_ratio"
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
         self.assertEqual(int(causal_test_result.test_value.value), 0)
 
     def test_invalid_estimate_type(self):
@@ -221,8 +219,9 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             "A",
             self.causal_test_engine.scenario_execution_data_df,
         )
+        self.causal_test_case.estimate_type = "invalid"
         with self.assertRaises(ValueError):
-            self.causal_test_engine.execute_test(estimation_model, self.causal_test_case, estimate_type="invalid")
+            self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
 
     def test_execute_test_observational_linear_regression_estimator_squared_term(self):
         """Check that executing the causal test case returns the correct results for dummy data with a squared term
@@ -258,9 +257,8 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_test_engine.scenario_execution_data_df,
             effect_modifiers={"M": None},
         )
-        causal_test_result = self.causal_test_engine.execute_test(
-            estimation_model, self.causal_test_case, estimate_type="cate"
-        )
+        self.causal_test_case.estimate_type = "cate"
+        causal_test_result = self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
         causal_test_result = causal_test_result.test_value.value
         # Check that each effect modifier's strata has a greater ATE than the last (ascending order)
         causal_test_result_m1 = causal_test_result.loc[causal_test_result["M"] == 1]
