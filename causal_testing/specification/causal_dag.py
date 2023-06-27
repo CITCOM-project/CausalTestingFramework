@@ -136,7 +136,6 @@ class CausalDAG(nx.DiGraph):
         if dot_path:
             pydot_graph = pydot.graph_from_dot_file(dot_path)
             self.graph = nx.DiGraph(nx.drawing.nx_pydot.from_pydot(pydot_graph[0]))
-            self.graph2 = nx.DiGraph(nx.drawing.nx_agraph.read_dot(dot_path))
         else:
             self.graph = nx.DiGraph()
 
