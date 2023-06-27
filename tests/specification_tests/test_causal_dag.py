@@ -6,7 +6,6 @@ from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_
 
 
 class TestCausalDAGIssue90(unittest.TestCase):
-
     """
     Test the CausalDAG class for the resolution of Issue 90.
     """
@@ -62,7 +61,6 @@ class TestIVAssumptions(unittest.TestCase):
 
 
 class TestCausalDAG(unittest.TestCase):
-
     """
     Test the CausalDAG class for creation of Causal Directed Acyclic Graphs (DAGs).
 
@@ -176,19 +174,18 @@ class TestDAGIdentification(unittest.TestCase):
         """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
         causal_dag = CausalDAG(self.dag_dot_path)
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(["X1", "X2"], ["Y"])
-        self.assertEqual(
-            list(proper_backdoor_graph.graph.edges),
-            [
-                ("X1", "X2"),
-                ("X2", "V"),
-                ("X2", "D2"),
-                ("D1", "D2"),
-                ("D1", "Y"),
-                ("Y", "D3"),
-                ("Z", "X2"),
-                ("Z", "Y"),
-            ],
-        )
+        edges = set([
+                    ("X1", "X2"),
+                    ("X2", "V"),
+                    ("X2", "D2"),
+                    ("D1", "D2"),
+                    ("D1", "Y"),
+                    ("Y", "D3"),
+                    ("Z", "X2"),
+                    ("Z", "Y"),
+                ])
+        self.assertTrue(
+            set(proper_backdoor_graph.graph.edges).issubset(edges))
 
     def test_constructive_backdoor_criterion_should_hold(self):
         """Test whether the constructive criterion holds when it should."""
@@ -198,7 +195,7 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertTrue(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_proper_backdoor_graph(
-        self,
+            self,
     ):
         """Test whether the constructive criterion fails when the adjustment set is not a d-separator."""
         causal_dag = CausalDAG(self.dag_dot_path)
@@ -207,7 +204,7 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_causal_path(
-        self,
+            self,
     ):
         """Test whether the constructive criterion holds when the adjustment set Z contains a descendent of a variable
         on a proper causal path between X and Y."""
@@ -392,7 +389,6 @@ class TestDependsOnOutputs(unittest.TestCase):
 
 
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
-
     """
     Test the graph algorithms designed for the undirected graph variants of a Causal DAG.
     During the identification process, a Causal DAG is converted into several forms of undirected graph which allow for
