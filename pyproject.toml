@@ -15,6 +15,7 @@ requires-python = ">=3.9"
 license = { text = "MIT" }
 keywords = ["causal inference", "verification"]
 dependencies = [
+    "z3_solver~=4.11.2", # z3_solver does not follow semantic versioning and tying to 4.11 introduces problems
     "econml~=0.12",
     "fitter~=1.4",
     "lhsmdu~=1.1",
@@ -24,9 +25,8 @@ dependencies = [
     "scikit_learn~=1.1",
     "scipy~=1.7",
     "statsmodels~=0.13",
-    "tabulate~=0.8",
-    "z3_solver~=4.11.2",
-] # z3_solver does not follow semantic versioning and tying to 4.11 introduces problems
+    "tabulate~=0.8"
+]
 dynamic = ["version"]
 
 [project.optional-dependencies]
