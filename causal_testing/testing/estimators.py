@@ -215,7 +215,7 @@ class LogisticRegressionEstimator(Estimator):
 
         return (y.iloc[1], np.array(control)), (y.iloc[0], np.array(treatment))
 
-    def estimate_ate(self, estimator_params: dict) -> float:
+    def estimate_ate(self, estimator_params: dict = {}) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and take one away from the other. This
@@ -247,7 +247,7 @@ class LogisticRegressionEstimator(Estimator):
 
         return estimate, (ci_low, ci_high)
 
-    def estimate_risk_ratio(self, estimator_params: dict) -> float:
+    def estimate_risk_ratio(self, estimator_params: dict = {}) -> float:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
