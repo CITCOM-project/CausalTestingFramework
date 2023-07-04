@@ -360,7 +360,7 @@ class LinearRegressionEstimator(Estimator):
             ci_high = ci_high[0]
         return unit_effect, [ci_low, ci_high]
 
-    def estimate_ate(self) -> tuple[float, list[float, float], float]:
+    def estimate_ate(self, estimator_params: dict = None) -> tuple[float, list[float, float], float]:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -411,7 +411,7 @@ class LinearRegressionEstimator(Estimator):
 
         return y.iloc[1], y.iloc[0]
 
-    def estimate_risk_ratio(self) -> tuple[float, list[float, float]]:
+    def estimate_risk_ratio(self, estimator_params: dict = None) -> tuple[float, list[float, float]]:
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
