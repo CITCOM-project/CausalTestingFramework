@@ -30,7 +30,7 @@ class CausalTestCase:
         control_value: Any = None,
         treatment_value: Any = None,
         estimate_type: str = "ate",
-        estimate_params: dict = "None",
+        estimate_params: dict = None,
         effect_modifier_configuration: dict[Variable:Any] = None,
     ):
         """
@@ -48,7 +48,8 @@ class CausalTestCase:
         self.treatment_variable = base_test_case.treatment_variable
         self.treatment_value = treatment_value
         self.estimate_type = estimate_type
-        self.estimate_params = estimate_params
+        if estimate_params is None:
+            self.estimate_params = {}
         self.effect = base_test_case.effect
 
         if effect_modifier_configuration:

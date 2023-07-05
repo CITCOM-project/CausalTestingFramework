@@ -162,10 +162,8 @@ class CausalTestEngine:
             )
         elif causal_test_case.estimate_type == "risk_ratio":
             logger.debug("calculating risk_ratio")
-            try:
-                risk_ratio, confidence_intervals = estimator.estimate_risk_ratio(causal_test_case.estimate_params)
-            except TypeError:
-                risk_ratio, confidence_intervals = estimator.estimate_risk_ratio()
+            risk_ratio, confidence_intervals = estimator.estimate_risk_ratio(**causal_test_case.estimate_params)
+
             causal_test_result = CausalTestResult(
                 estimator=estimator,
                 test_value=TestValue("risk_ratio", risk_ratio),
