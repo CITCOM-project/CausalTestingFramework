@@ -81,6 +81,11 @@ class TestJsonClass(unittest.TestCase):
     def test_setup_causal_specification(self):
         self.assertIsInstance(self.json_class.causal_specification, CausalSpecification)
 
+    def test_can_not_overwrite_output(self):
+        self.json_class._append_to_file('example_string')
+        with self.assertRaises(FileExistsError):
+            JsonUtility(self.temp_dir / "temp_out.txt")
+
     def test_f_flag(self):
         example_test = {
             "tests": [
