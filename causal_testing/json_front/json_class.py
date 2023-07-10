@@ -288,7 +288,7 @@ class JsonUtility:
     ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
-        `:param test: Single JSON test definition stored in a mapping (dict)`
+        :param test: Single JSON test definition stored in a mapping (dict)
         :param conditions: A list of conditions which should be applied to the
         data. Conditions should be in the query format detailed at
         https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html
