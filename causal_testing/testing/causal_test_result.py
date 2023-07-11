@@ -56,6 +56,7 @@ class CausalTestResult:
             f"Treatment value: {self.estimator.treatment_value}\n"
             f"Outcome: {self.estimator.outcome}\n"
             f"Adjustment set: {self.adjustment_set}\n"
+            f"Formula: {self.estimator.formula}\n"
             f"{self.test_value.type}: {result_str}\n"
         )
         confidence_str = ""
@@ -64,6 +65,7 @@ class CausalTestResult:
             if "\n" in ci_str:
                 ci_str = " " + push(pd.DataFrame(self.confidence_intervals).transpose().to_string(header=False))
             confidence_str += f"Confidence intervals:{ci_str}\n"
+            confidence_str += f"Alpha:{self.estimator.alpha}\n"
         return base_str + confidence_str
 
     def to_dict(self):
