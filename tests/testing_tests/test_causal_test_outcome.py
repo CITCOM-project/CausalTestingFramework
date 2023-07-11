@@ -60,6 +60,7 @@ class TestCausalTestOutcome(unittest.TestCase):
                 "Treatment value: 1\n"
                 "Outcome: A\n"
                 "Adjustment set: set()\n"
+                "Formula: A ~ A\n"
                 "ate: 0\n"
             ),
         )
