@@ -181,7 +181,7 @@ class ShouldNotCause(MetamorphicRelation):
             "mutations": [self.treatment_var],
             "expected_effect": {self.output_var: "NoEffect"},
             "formula": f"{self.output_var} ~ {' + '.join([self.treatment_var] + self.adjustment_vars)}",
-            "alpha": 0.01,
+            "alpha": 0.05,
             "skip": skip,
         }
 
