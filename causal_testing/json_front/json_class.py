@@ -286,7 +286,7 @@ class JsonUtility:
             "outcome": causal_test_case.outcome_variable.name,
             "df": causal_test_engine.scenario_execution_data_df,
             "effect_modifiers": causal_test_case.effect_modifier_configuration,
-            "alpha": test['alpha'] if 'alpha' in test else 0.05
+            "alpha": test["alpha"] if "alpha" in test else 0.05,
         }
         if "formula" in test:
             estimator_kwargs["formula"] = test["formula"]

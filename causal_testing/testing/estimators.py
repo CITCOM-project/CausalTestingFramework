@@ -49,7 +49,7 @@ class Estimator(ABC):
         outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[str:Any] = None,
-        alpha: float = 0.05
+        alpha: float = 0.05,
     ):
         self.treatment = treatment
         self.treatment_value = treatment_value
@@ -303,9 +303,11 @@ class LinearRegressionEstimator(Estimator):
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
         formula: str = None,
-        alpha: float = 0.05
+        alpha: float = 0.05,
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha)
+        super().__init__(
+            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha
+        )
 
         self.model = None
         if effect_modifiers is None:
