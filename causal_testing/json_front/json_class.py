@@ -123,54 +123,15 @@ class JsonUtility:
         :param estimators: Dictionary mapping estimator classes to string representations.
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         """
-        failures = 0
-        msg = ""
         for test in self.test_plan["tests"]:
             if "skip" in test and test["skip"]:
                 continue
             test["estimator"] = estimators[test["estimator"]]
             if "mutations" in test:
                 if test["estimate_type"] == "coefficient":
-                    base_test_case = BaseTestCase(
-                        treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
-                        outcome_variable=next(self.scenario.variables[v] for v in test["expected_effect"]),
-                        effect=test.get("effect", "direct"),
-                    )
-                    assert len(test["expected_effect"]) == 1, "Can only have one expected effect."
-                    causal_test_case = CausalTestCase(
-                        base_test_case=base_test_case,
-                        expected_causal_effect=next(
-                            effects[effect] for variable, effect in test["expected_effect"].items()
-                        ),
-                        estimate_type="coefficient",
-                        effect_modifier_configuration={
-                            self.scenario.variables[v] for v in test.get("effect_modifiers", [])
-                        },
-                    )
-                    result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
-                    msg = (
-                        f"Executing test: {test['name']} \n"
-                        + f"  {causal_test_case} \n"
-                        + "  "
-                        + ("\n  ").join(str(result[1]).split("\n"))
-                        + "==============\n"
-                        + f"  Result: {'FAILED' if result[0] else 'Passed'}"
-                    )
-                    print(msg)
+                    msg = self._run_coefficient_test(test=test, f_flag=f_flag, effects=effects)
                 else:
-                    abstract_test = self._create_abstract_test_case(test, mutates, effects)
-                    concrete_tests, _ = abstract_test.generate_concrete_tests(5, 0.05)
-                    failures, _ = self._execute_tests(concrete_tests, test, f_flag)
-
-                    msg = (
-                        f"Executing test: {test['name']} \n"
-                        + "  abstract_test \n"
-                        + f"  {abstract_test} \n"
-                        + f"  {abstract_test.treatment_variable.name},"
-                        + f"  {abstract_test.treatment_variable.distribution} \n"
-                        + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-                        + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
-                    )
+                    msg = self._run_ate_test(test=test, f_flag=f_flag, effects=effects, mutates=mutates)
                 self._append_to_file(msg, logging.INFO)
             else:
                 outcome_variable = next(
@@ -197,7 +158,73 @@ class JsonUtility:
                     + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
                     + f"Result: {'FAILED' if failed else 'Passed'}"
                 )
+                print(msg)
                 self._append_to_file(msg, logging.INFO)
+
+    def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict):
+        """Builds structures and runs test case for tests with an estimate_type of 'coefficient'.
+
+        :param test: Single JSON test definition stored in a mapping (dict)
+        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        :param effects: Dictionary mapping effect class instances to string representations.
+        :return: String containing the message to be outputted
+        """
+        base_test_case = BaseTestCase(
+            treatment_variable=next(self.scenario.variables[v] for v in test["mutations"]),
+            outcome_variable=next(self.scenario.variables[v] for v in test["expected_effect"]),
+            effect=test.get("effect", "direct"),
+        )
+        assert len(test["expected_effect"]) == 1, "Can only have one expected effect."
+        causal_test_case = CausalTestCase(
+            base_test_case=base_test_case,
+            expected_causal_effect=next(effects[effect] for variable, effect in test["expected_effect"].items()),
+            estimate_type="coefficient",
+            effect_modifier_configuration={self.scenario.variables[v] for v in test.get("effect_modifiers", [])},
+        )
+        result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+        msg = (
+            f"Executing test: {test['name']} \n"
+            + f"  {causal_test_case} \n"
+            + "  "
+            + ("\n  ").join(str(result[1]).split("\n"))
+            + "==============\n"
+            + f"  Result: {'FAILED' if result[0] else 'Passed'}"
+        )
+        return msg
+
+    def _run_ate_test(self, test: dict, f_flag: bool, effects: dict, mutates: dict):
+        """Builds structures and runs test case for tests with an estimate_type of 'ate'.
+
+        :param test: Single JSON test definition stored in a mapping (dict)
+        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
+        :param effects: Dictionary mapping effect class instances to string representations.
+        :param mutates: Dictionary mapping mutation functions to string representations.
+        :return: String containing the message to be outputted
+        """
+        if "sample_size" in test:
+            sample_size = test["sample_size"]
+        else:
+            sample_size = 5
+        if "target_ks_score" in test:
+            target_ks_score = test["target_ks_score"]
+        else:
+            target_ks_score = 0.05
+        abstract_test = self._create_abstract_test_case(test, mutates, effects)
+        concrete_tests, _ = abstract_test.generate_concrete_tests(
+            sample_size=sample_size, target_ks_score=target_ks_score
+        )
+        failures, _ = self._execute_tests(concrete_tests, test, f_flag)
+
+        msg = (
+            f"Executing test: {test['name']} \n"
+            + "  abstract_test \n"
+            + f"  {abstract_test} \n"
+            + f"  {abstract_test.treatment_variable.name},"
+            + f"  {abstract_test.treatment_variable.distribution} \n"
+            + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+        )
+        return msg
 
     def _execute_tests(self, concrete_tests, test, f_flag):
         failures = 0
