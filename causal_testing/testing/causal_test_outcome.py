@@ -51,6 +51,10 @@ class NoEffect(CausalTestOutcome):
             ci_low = res.ci_low() if isinstance(res.ci_low(), Iterable) else [res.ci_low()]
             ci_high = res.ci_high() if isinstance(res.ci_high(), Iterable) else [res.ci_high()]
             value = res.test_value.value if isinstance(res.ci_high(), Iterable) else [res.test_value.value]
+
+            if not all(ci_low < 0 < ci_high for ci_low, ci_high in zip(ci_low, ci_high)):
+                print("FAILING ON", [(ci_low, ci_high) for ci_low, ci_high in zip(ci_low, ci_high) if not ci_low < 0 < ci_high])
+
             return all(ci_low < 0 < ci_high for ci_low, ci_high in zip(ci_low, ci_high)) or all(
                 abs(v) < self.atol for v in value
             )
