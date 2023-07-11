@@ -23,7 +23,7 @@ jobs:
       - name: Install package and dependencies
         run: |
           python --version
-          pip install -e . --no-cache-dir
+          pip install -e .
           pip install -e .[test]
           pip install pytest pytest-cov
         shell: bash -l {0}
