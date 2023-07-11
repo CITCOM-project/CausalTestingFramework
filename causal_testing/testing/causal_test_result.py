@@ -57,7 +57,7 @@ class CausalTestResult:
             f"Outcome: {self.estimator.outcome}\n"
             f"Adjustment set: {self.adjustment_set}\n"
             f"Formula: {self.estimator.formula}\n"
-            f"{self.test_value.type.capitalize()}: {result_str}\n"
+            f"{self.test_value.type}: {result_str}\n"
         )
         confidence_str = ""
         if self.confidence_intervals:
