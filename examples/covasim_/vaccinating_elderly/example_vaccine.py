@@ -212,7 +212,7 @@ class CovasimVaccineDataCollector(ExperimentalDataCollector):
                 # Append outputs to results
                 for output in desired_outputs:
                     if output not in results:
-                        raise IndexError(f"{output} is not in the Covasim outputs.")
+                        raise IndexError(f"{output} is not in the Covasim outputs. Are you using v3.0.7?")
                     results_dict[output].append(
                         results[output][-1]
                     )  # Append the final recorded value for each variable
