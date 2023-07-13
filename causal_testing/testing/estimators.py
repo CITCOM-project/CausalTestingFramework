@@ -341,7 +341,7 @@ class LinearRegressionEstimator(Estimator):
             "do not need to be linear."
         )
 
-    def estimate_unit_ate(self) -> float:
+    def estimate_coefficient(self) -> float:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
         caused by a unit change in treatment.
 
@@ -495,7 +495,7 @@ class InstrumentalVariableEstimator(Estimator):
             (iii) Instrument and outcome do not share causes
         """
 
-    def estimate_coefficient(self, df):
+    def estimate_coefficient_aux(self, df):
         """
         Estimate the linear regression coefficient of the treatment on the
         outcome.
@@ -509,19 +509,19 @@ class InstrumentalVariableEstimator(Estimator):
         # Estimate the coefficient of I on X by cancelling
         return ab / a
 
-    def estimate_unit_ate(self, bootstrap_size=100):
+    def estimate_coefficient(self, bootstrap_size=100):
         """
         Estimate the unit ate (i.e. coefficient) of the treatment on the
         outcome.
         """
         bootstraps = sorted(
-            [self.estimate_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
+            [self.estimate_coefficient_aux(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
         )
         bound = ceil((bootstrap_size * self.alpha) / 2)
         ci_low = bootstraps[bound]
         ci_high = bootstraps[bootstrap_size - bound]
 
-        return self.estimate_coefficient(self.df), (ci_low, ci_high)
+        return self.estimate_coefficient_aux(self.df), (ci_low, ci_high)
 
 
 class CausalForestEstimator(Estimator):
