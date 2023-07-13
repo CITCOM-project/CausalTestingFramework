@@ -129,9 +129,9 @@ class JsonUtility:
             test["estimator"] = estimators[test["estimator"]]
             if "mutations" in test:
                 if test["estimate_type"] == "coefficient":
-                    msg = self._run_coefficient_test(test=test, f_flag=f_flag, effects=effects)
+                    failed, msg = self._run_coefficient_test(test=test, f_flag=f_flag, effects=effects)
                 else:
-                    msg = self._run_ate_test(test=test, f_flag=f_flag, effects=effects, mutates=mutates)
+                    failed, msg = self._run_ate_test(test=test, f_flag=f_flag, effects=effects, mutates=mutates)
                 self._append_to_file(msg, logging.INFO)
             else:
                 outcome_variable = next(
@@ -158,8 +158,10 @@ class JsonUtility:
                     + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
                     + f"Result: {'FAILED' if failed else 'Passed'}"
                 )
-                print(msg)
                 self._append_to_file(msg, logging.INFO)
+            test["failed"] = failed
+            print(msg)
+        return self.test_plan["tests"]
 
     def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict):
         """Builds structures and runs test case for tests with an estimate_type of 'coefficient'.
@@ -181,16 +183,16 @@ class JsonUtility:
             estimate_type="coefficient",
             effect_modifier_configuration={self.scenario.variables[v] for v in test.get("effect_modifiers", [])},
         )
-        result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+        failed, result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
         msg = (
             f"Executing test: {test['name']} \n"
             + f"  {causal_test_case} \n"
             + "  "
-            + ("\n  ").join(str(result[1]).split("\n"))
+            + ("\n  ").join(str(result).split("\n"))
             + "==============\n"
-            + f"  Result: {'FAILED' if result[0] else 'Passed'}"
+            + f"  Result: {'FAILED' if failed else 'Passed'}"
         )
-        return msg
+        return failed, msg
 
     def _run_ate_test(self, test: dict, f_flag: bool, effects: dict, mutates: dict):
         """Builds structures and runs test case for tests with an estimate_type of 'ate'.
@@ -224,7 +226,7 @@ class JsonUtility:
             + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
             + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
         )
-        return msg
+        return failures, msg
 
     def _execute_tests(self, concrete_tests, test, f_flag):
         failures = 0
