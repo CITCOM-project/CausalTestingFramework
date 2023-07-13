@@ -48,6 +48,11 @@ class DataCollector(ABC):
                 f"Missing columns: missing data for variables {missing_variables}. Should they be marked as hidden?"
             )
 
+        # Quick out if we don't have any constraints
+        if len(self.scenario.constraints) == 0:
+            return data
+
+
         # For each row, does it satisfy the constraints?
         solver = z3.Solver()
         for c in self.scenario.constraints:
@@ -57,6 +62,7 @@ class DataCollector(ABC):
         for _, row in data.iterrows():
             solver.push()
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
+            # Check that the row does not violate any scenario constraints
             model = [
                 self.scenario.variables[var].z3
                 == self.scenario.variables[var].z3_val(self.scenario.variables[var].z3, row[var])
