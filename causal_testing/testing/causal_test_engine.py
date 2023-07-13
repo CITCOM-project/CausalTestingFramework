@@ -63,8 +63,6 @@ class CausalTestEngine:
             raise ValueError("No data has been loaded. Please call load_data prior to executing a causal test case.")
         test_suite_results = {}
         for edge in test_suite:
-            print("edge: ")
-            print(edge)
             logger.info("treatment: %s", edge.treatment_variable)
             logger.info("outcome: %s", edge.outcome_variable)
             minimal_adjustment_set = self.causal_dag.identification(edge)
