@@ -52,7 +52,6 @@ class DataCollector(ABC):
         if len(self.scenario.constraints) == 0:
             return data
 
-
         # For each row, does it satisfy the constraints?
         solver = z3.Solver()
         for c in self.scenario.constraints:
