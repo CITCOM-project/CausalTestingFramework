@@ -72,18 +72,17 @@ class CausalTestResult:
         """Return result contents as a dictionary
         :return: Dictionary containing contents of causal_test_result
         """
-        base_dict = {
-            "treatment": self.estimator.treatment[0],
+        return {
+            "treatment": self.estimator.treatment,
             "control_value": self.estimator.control_value,
             "treatment_value": self.estimator.treatment_value,
-            "outcome": self.estimator.outcome[0],
+            "outcome": self.estimator.outcome,
             "adjustment_set": self.adjustment_set,
-            "test_value": self.test_value,
+            "effect_measure": self.test_value.type,
+            "effect_estimate": self.test_value.value,
+            "ci_low": self.ci_low(),
+            "ci_high": self.ci_high(),
         }
-        if self.confidence_intervals and all(self.confidence_intervals):
-            base_dict["ci_low"] = min(self.confidence_intervals)
-            base_dict["ci_high"] = max(self.confidence_intervals)
-        return base_dict
 
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""

@@ -41,8 +41,13 @@ class SomeEffect(CausalTestOutcome):
 class NoEffect(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
-    def __init__(self, atol: float = 1e-10):
+    def __init__(self, atol: float = 1e-10, ctol: float = 0.05):
+        """
+        :param atol: Arithmetic tolerance. The test will pass if the absolute value of the causal effect is less than atol.
+        :param ctol: Categorical tolerance. The test will pass if this proportion of categories pass.
+        """
         self.atol = atol
+        self.ctol = ctol
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.test_value.type == "ate":
@@ -52,14 +57,19 @@ class NoEffect(CausalTestOutcome):
             ci_high = res.ci_high() if isinstance(res.ci_high(), Iterable) else [res.ci_high()]
             value = res.test_value.value if isinstance(res.ci_high(), Iterable) else [res.test_value.value]
 
-            if not all(ci_low < 0 < ci_high for ci_low, ci_high in zip(ci_low, ci_high)):
-                print(
-                    "FAILING ON",
-                    [(ci_low, ci_high) for ci_low, ci_high in zip(ci_low, ci_high) if not ci_low < 0 < ci_high],
-                )
+            # if not all(ci_low < 0 < ci_high for ci_low, ci_high in zip(ci_low, ci_high)):
+            #     print(
+            #         "FAILING ON",
+            #         [(ci_low, ci_high) for ci_low, ci_high in zip(ci_low, ci_high) if not ci_low < 0 < ci_high],
+            #     )
 
-            return all(ci_low < 0 < ci_high for ci_low, ci_high in zip(ci_low, ci_high)) or all(
-                abs(v) < self.atol for v in value
+            return (
+                sum(
+                    not ((ci_low < 0 < ci_high) or abs(v) < self.atol)
+                    for ci_low, ci_high, v in zip(ci_low, ci_high, value)
+                )
+                / len(value)
+                < self.ctol
             )
         if res.test_value.type == "risk_ratio":
             return (res.ci_low() < 1 < res.ci_high()) or np.isclose(res.test_value.value, 1.0, atol=self.atol)

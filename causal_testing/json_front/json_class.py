@@ -25,6 +25,7 @@ from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
 logger = logging.getLogger(__name__)
 
@@ -264,8 +265,27 @@ class JsonUtility:
             causal_test_case, test, test["conditions"] if "conditions" in test else None
         )
         causal_test_result = causal_test_engine.execute_test(estimation_model, causal_test_case)
-
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
+
+        if "coverage" in test and test["coverage"]:
+            adequacy = DataAdequacy(causal_test_case, causal_test_engine, estimation_model)
+            results = adequacy.measure_adequacy_bootstrap(100)
+            outcomes = [causal_test_case.expected_causal_effect.apply(c) for c in results]
+            coverage = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
+            coverage["pass"] = outcomes
+            std = coverage.std(numeric_only=True)
+            self._append_to_file(f"COVERAGE: {coverage['pass'].sum()}", logging.INFO)
+            # std["pass"] = coverage["pass"].sum()
+            # print(coverage)
+            # print(std)
+
+            # k_folds = adequacy.measure_adequacy_k_folds()
+
+            # import matplotlib.pyplot as plt
+            #
+            # plt.hist(coverage["ci_low"], alpha=0.8)
+            # plt.hist(coverage["ci_high"], alpha=0.8)
+            # plt.show()
 
         if causal_test_result.ci_low() is not None and causal_test_result.ci_high() is not None:
             result_string = (
