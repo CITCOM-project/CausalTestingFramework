@@ -55,4 +55,4 @@ class DataAdequacy:
             estimator.df = estimator.df.iloc[train_inx]
             test_result = estimator.model.predict(test)
             results.append(np.sqrt(mse(test_result, test[self.test_case.base_test_case.outcome_variable.name])).mean())
-        print("K-score", np.mean(results))
+        return np.mean(results)
