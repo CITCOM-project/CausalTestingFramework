@@ -60,6 +60,7 @@ class DataCollector(ABC):
         unsat_core = None
         for _, row in data.iterrows():
             solver.push()
+            # Check that the row does not violate any scenario constraints
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
             # Check that the row does not violate any scenario constraints
             model = [

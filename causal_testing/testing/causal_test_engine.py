@@ -63,8 +63,6 @@ class CausalTestEngine:
             raise ValueError("No data has been loaded. Please call load_data prior to executing a causal test case.")
         test_suite_results = {}
         for edge in test_suite:
-            print("edge: ")
-            print(edge)
             logger.info("treatment: %s", edge.treatment_variable)
             logger.info("outcome: %s", edge.outcome_variable)
             minimal_adjustment_set = self.causal_dag.identification(edge)
@@ -148,63 +146,17 @@ class CausalTestEngine:
         :param causal_test_case: The concrete test case to be executed
         :return: a CausalTestResult object containing the confidence intervals
         """
-        if causal_test_case.estimate_type == "cate":
-            logger.debug("calculating cate")
-            if not hasattr(estimator, "estimate_cates"):
-                raise NotImplementedError(f"{estimator.__class__} has no CATE method.")
+        if not hasattr(estimator, f"estimate_{causal_test_case.estimate_type}"):
+            raise AttributeError(f"{estimator.__class__} has no {causal_test_case.estimate_type} method.")
+        estimate_effect = getattr(estimator, f"estimate_{causal_test_case.estimate_type}")
+        effect, confidence_intervals = estimate_effect(**causal_test_case.estimate_params)
+        causal_test_result = CausalTestResult(
+            estimator=estimator,
+            test_value=TestValue(causal_test_case.estimate_type, effect),
+            effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
+            confidence_intervals=confidence_intervals,
+        )
 
-            cates_df, confidence_intervals = estimator.estimate_cates()
-            causal_test_result = CausalTestResult(
-                estimator=estimator,
-                test_value=TestValue("ate", cates_df),
-                effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
-                confidence_intervals=confidence_intervals,
-            )
-        elif causal_test_case.estimate_type == "risk_ratio":
-            logger.debug("calculating risk_ratio")
-            risk_ratio, confidence_intervals = estimator.estimate_risk_ratio(**causal_test_case.estimate_params)
-
-            causal_test_result = CausalTestResult(
-                estimator=estimator,
-                test_value=TestValue("risk_ratio", risk_ratio),
-                effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
-                confidence_intervals=confidence_intervals,
-            )
-        elif causal_test_case.estimate_type == "coefficient":
-            logger.debug("calculating coefficient")
-            coefficient, confidence_intervals = estimator.estimate_unit_ate()
-            causal_test_result = CausalTestResult(
-                estimator=estimator,
-                test_value=TestValue("coefficient", coefficient),
-                effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
-                confidence_intervals=confidence_intervals,
-            )
-        elif causal_test_case.estimate_type == "ate":
-            logger.debug("calculating ate")
-            ate, confidence_intervals = estimator.estimate_ate()
-            causal_test_result = CausalTestResult(
-                estimator=estimator,
-                test_value=TestValue("ate", ate),
-                effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
-                confidence_intervals=confidence_intervals,
-            )
-            # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
-            # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
-        elif causal_test_case.estimate_type == "ate_calculated":
-            logger.debug("calculating ate")
-            ate, confidence_intervals = estimator.estimate_ate_calculated()
-            causal_test_result = CausalTestResult(
-                estimator=estimator,
-                test_value=TestValue("ate", ate),
-                effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
-                confidence_intervals=confidence_intervals,
-            )
-            # causal_test_result = CausalTestResult(minimal_adjustment_set, ate, confidence_intervals)
-            # causal_test_result.apply_test_oracle_procedure(self.causal_test_case.expected_causal_effect)
-        else:
-            raise ValueError(
-                f"Invalid estimate type {causal_test_case.estimate_type}, expected 'ate', 'cate', or 'risk_ratio'"
-            )
         return causal_test_result
 
     def _check_positivity_violation(self, variables_list):

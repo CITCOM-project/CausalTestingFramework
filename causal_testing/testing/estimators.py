@@ -129,26 +129,6 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The model after fitting to data.
         """
-        # 1. Reduce dataframe to contain only the necessary columns
-        reduced_df = data.copy()
-        necessary_cols = [self.treatment] + list(self.adjustment_set) + [self.outcome]
-        missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
-        reduced_df = reduced_df[~missing_rows]
-        reduced_df = reduced_df.sort_values([self.treatment])
-        logger.debug(reduced_df[necessary_cols])
-
-        # 2. Add intercept
-        reduced_df["Intercept"] = 1  # self.intercept
-
-        # 3. Estimate the unit difference in outcome caused by unit difference in treatment
-        cols = [self.treatment]
-        cols += [x for x in self.adjustment_set if x not in cols]
-        treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
-        for col in treatment_and_adjustments_cols:
-            if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
-                treatment_and_adjustments_cols = pd.get_dummies(
-                    treatment_and_adjustments_cols, columns=[col], drop_first=True
-                )
         model = smf.logit(formula=self.formula, data=data).fit(disp=0)
         self.model = model
         return model
@@ -341,7 +321,7 @@ class LinearRegressionEstimator(Estimator):
             "do not need to be linear."
         )
 
-    def estimate_unit_ate(self) -> float:
+    def estimate_coefficient(self) -> float:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
         caused by a unit change in treatment.
 
@@ -494,7 +474,7 @@ class InstrumentalVariableEstimator(Estimator):
             (iii) Instrument and outcome do not share causes
         """
 
-    def estimate_coefficient(self, df):
+    def estimate_iv_coefficient(self, df):
         """
         Estimate the linear regression coefficient of the treatment on the
         outcome.
@@ -508,19 +488,19 @@ class InstrumentalVariableEstimator(Estimator):
         # Estimate the coefficient of I on X by cancelling
         return ab / a
 
-    def estimate_unit_ate(self, bootstrap_size=100):
+    def estimate_coefficient(self, bootstrap_size=100):
         """
         Estimate the unit ate (i.e. coefficient) of the treatment on the
         outcome.
         """
         bootstraps = sorted(
-            [self.estimate_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
+            [self.estimate_iv_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
         )
         bound = ceil((bootstrap_size * self.alpha) / 2)
         ci_low = bootstraps[bound]
         ci_high = bootstraps[bootstrap_size - bound]
 
-        return self.estimate_coefficient(self.df), (ci_low, ci_high)
+        return self.estimate_iv_coefficient(self.df), (ci_low, ci_high)
 
 
 class CausalForestEstimator(Estimator):

@@ -98,7 +98,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-                                  > self.json_class.scenario.variables[x].z3
+            > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
         with self.assertRaises(StatisticsError):
@@ -147,7 +147,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-                                  > self.json_class.scenario.variables[x].z3
+            > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
@@ -177,7 +177,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-                                  > self.json_class.scenario.variables[x].z3
+            > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
@@ -207,7 +207,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"Positive": Positive()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-                                  > self.json_class.scenario.variables[x].z3
+            > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
@@ -239,6 +239,7 @@ class TestJsonClass(unittest.TestCase):
         with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("FAILED", temp_out[-1])
+
     def test_concrete_generate_params(self):
         example_test = {
             "tests": [
@@ -259,7 +260,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"NoEffect": NoEffect()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-                                  > self.json_class.scenario.variables[x].z3
+            > self.json_class.scenario.variables[x].z3
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
