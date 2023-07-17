@@ -147,7 +147,7 @@ class CausalTestEngine:
         :return: a CausalTestResult object containing the confidence intervals
         """
         if not hasattr(estimator, f"estimate_{causal_test_case.estimate_type}"):
-            raise NotImplementedError(f"{estimator.__class__} has no {causal_test_case.estimate_type} method.")
+            raise AttributeError(f"{estimator.__class__} has no {causal_test_case.estimate_type} method.")
         estimate_effect = getattr(estimator, f"estimate_{causal_test_case.estimate_type}")
         effect, confidence_intervals = estimate_effect(**causal_test_case.estimate_params)
         causal_test_result = CausalTestResult(

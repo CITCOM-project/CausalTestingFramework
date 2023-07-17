@@ -220,7 +220,7 @@ class TestCausalTestEngineObservational(unittest.TestCase):
             self.causal_test_engine.scenario_execution_data_df,
         )
         self.causal_test_case.estimate_type = "invalid"
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AttributeError):
             self.causal_test_engine.execute_test(estimation_model, self.causal_test_case)
 
     def test_execute_test_observational_linear_regression_estimator_squared_term(self):
