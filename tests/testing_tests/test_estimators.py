@@ -98,7 +98,7 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
     def test_linear_regression_categorical_ate(self):
         df = self.scarf_df.copy()
         logistic_regression_estimator = LinearRegressionEstimator("color", None, None, set(), "completed", df)
-        ate, confidence = logistic_regression_estimator.estimate_unit_ate()
+        ate, confidence = logistic_regression_estimator.estimate_coefficient()
         self.assertTrue(all([ci_low < 0 < ci_high for ci_low, ci_high in zip(confidence[0], confidence[1])]))
 
     def test_ate(self):
@@ -131,7 +131,9 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, {}, "completed", df)
         with self.assertRaises(ValueError):
-            ate, _ = logistic_regression_estimator.estimate_ate(estimator_params={"adjustment_config": {"large_gauge": 0}})
+            ate, _ = logistic_regression_estimator.estimate_ate(
+                estimator_params={"adjustment_config": {"large_gauge": 0}}
+            )
 
     def test_ate_effect_modifiers(self):
         df = self.scarf_df.copy()
@@ -184,7 +186,7 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         )
         self.assertEqual(iv_estimator.estimate_coefficient(self.df), 2)
 
-    def test_estimate_unit_ate(self):
+    def test_estimate_coefficient(self):
         """
         Test we get the correct coefficient.
         """
@@ -197,8 +199,8 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
             outcome="Y",
             instrument="Z",
         )
-        unit_ate, [low, high] = iv_estimator.estimate_unit_ate()
-        self.assertEqual(unit_ate, 2)
+        coefficient, [low, high] = iv_estimator.estimate_coefficient()
+        self.assertEqual(coefficient, 2)
 
 
 class TestLinearRegressionEstimator(unittest.TestCase):
@@ -218,7 +220,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         df = self.chapter_11_df
         linear_regression_estimator = LinearRegressionEstimator("treatments", None, None, set(), "outcomes", df)
         model = linear_regression_estimator._run_linear_regression()
-        ate, _ = linear_regression_estimator.estimate_unit_ate()
+        ate, _ = linear_regression_estimator.estimate_coefficient()
 
         self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
 
@@ -232,7 +234,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "treatments", None, None, set(), "outcomes", df, formula="outcomes ~ treatments + np.power(treatments, 2)"
         )
         model = linear_regression_estimator._run_linear_regression()
-        ate, _ = linear_regression_estimator.estimate_unit_ate()
+        ate, _ = linear_regression_estimator.estimate_coefficient()
         self.assertEqual(
             round(
                 model.params["Intercept"]
@@ -320,7 +322,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
-        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_unit_ate()
+        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_coefficient()
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
 
