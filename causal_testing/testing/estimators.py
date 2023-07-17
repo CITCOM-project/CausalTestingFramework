@@ -129,26 +129,6 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The model after fitting to data.
         """
-        # 1. Reduce dataframe to contain only the necessary columns
-        reduced_df = data.copy()
-        necessary_cols = [self.treatment] + list(self.adjustment_set) + [self.outcome]
-        missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
-        reduced_df = reduced_df[~missing_rows]
-        reduced_df = reduced_df.sort_values([self.treatment])
-        logger.debug(reduced_df[necessary_cols])
-
-        # 2. Add intercept
-        reduced_df["Intercept"] = 1  # self.intercept
-
-        # 3. Estimate the unit difference in outcome caused by unit difference in treatment
-        cols = [self.treatment]
-        cols += [x for x in self.adjustment_set if x not in cols]
-        treatment_and_adjustments_cols = reduced_df[cols + ["Intercept"]]
-        for col in treatment_and_adjustments_cols:
-            if str(treatment_and_adjustments_cols.dtypes[col]) == "object":
-                treatment_and_adjustments_cols = pd.get_dummies(
-                    treatment_and_adjustments_cols, columns=[col], drop_first=True
-                )
         model = smf.logit(formula=self.formula, data=data).fit(disp=0)
         return model
 
