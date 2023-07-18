@@ -273,7 +273,7 @@ class JsonUtility:
             effect_estimate, ci_low, ci_high, outcomes = adequacy.measure_adequacy(100)
 
             self._append_to_file(f"KURTOSIS: {effect_estimate.mean()}", logging.INFO)
-            self._append_to_file(f"PASSING:\n{sum(outcomes)}/{len(outcomes)}", logging.INFO)
+            self._append_to_file(f"PASSING: {sum(outcomes)}/{len(outcomes)}", logging.INFO)
 
         if causal_test_result.ci_low() is not None and causal_test_result.ci_high() is not None:
             result_string = (
