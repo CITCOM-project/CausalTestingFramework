@@ -12,6 +12,7 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error as mse
 import numpy as np
 from sklearn.model_selection import cross_val_score
+import pandas as pd
 
 
 class DAGAdequacy:
@@ -38,21 +39,30 @@ class DataAdequacy:
         self.test_engine = test_engine
         self.estimator = estimator
 
-    def measure_adequacy_bootstrap(self, bootstrap_size: int = 100):
+    def measure_adequacy(self, bootstrap_size: int = 100):
         results = []
         for i in range(bootstrap_size):
             estimator = deepcopy(self.estimator)
             estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
             results.append(self.test_engine.execute_test(estimator, self.test_case))
-        return results
+        outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
+        results = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
 
-    def measure_adequacy_k_folds(self, k: int = 10, random_state=0):
-        results = []
-        kf = KFold(n_splits=k, shuffle=True, random_state=random_state)
-        for train_inx, test_inx in kf.split(self.estimator.df):
-            estimator = deepcopy(self.estimator)
-            test = estimator.df.iloc[test_inx]
-            estimator.df = estimator.df.iloc[train_inx]
-            test_result = estimator.model.predict(test)
-            results.append(np.sqrt(mse(test_result, test[self.test_case.base_test_case.outcome_variable.name])).mean())
-        return np.mean(results)
+        def convert_to_df(field):
+            converted = []
+            for r in results[field]:
+                if isinstance(r, float):
+                    converted.append(
+                        pd.DataFrame({self.test_case.base_test_case.treatment_variable.name: [r]}).transpose()
+                    )
+                else:
+                    converted.append(r)
+            return converted
+
+        for field in ["effect_estimate", "ci_low", "ci_high"]:
+            results[field] = convert_to_df(field)
+
+        effect_estimate = pd.concat(results["effect_estimate"].tolist(), axis=1).transpose().reset_index(drop=True)
+        ci_low = pd.concat(results["ci_low"].tolist(), axis=1).transpose()
+        ci_high = pd.concat(results["ci_high"].tolist(), axis=1).transpose()
+        return effect_estimate.kurtosis(), ci_low.kurtosis(), ci_high.kurtosis(), outcomes

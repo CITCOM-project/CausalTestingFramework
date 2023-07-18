@@ -11,6 +11,7 @@ from pathlib import Path
 from statistics import StatisticsError
 
 import pandas as pd
+import numpy as np
 import scipy
 from fitter import Fitter, get_common_distributions
 
@@ -269,23 +270,10 @@ class JsonUtility:
 
         if "coverage" in test and test["coverage"]:
             adequacy = DataAdequacy(causal_test_case, causal_test_engine, estimation_model)
-            results = adequacy.measure_adequacy_bootstrap(100)
-            outcomes = [causal_test_case.expected_causal_effect.apply(c) for c in results]
-            coverage = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
-            coverage["pass"] = outcomes
-            std = coverage.std(numeric_only=True)
-            self._append_to_file(f"COVERAGE: {coverage['pass'].sum()}", logging.INFO)
-            # std["pass"] = coverage["pass"].sum()
-            # print(coverage)
-            # print(std)
+            effect_estimate, ci_low, ci_high, outcomes = adequacy.measure_adequacy(100)
 
-            # k_folds = adequacy.measure_adequacy_k_folds()
-
-            # import matplotlib.pyplot as plt
-            #
-            # plt.hist(coverage["ci_low"], alpha=0.8)
-            # plt.hist(coverage["ci_high"], alpha=0.8)
-            # plt.show()
+            self._append_to_file(f"KURTOSIS: {effect_estimate.mean()}", logging.INFO)
+            self._append_to_file(f"PASSING:\n{sum(outcomes)}/{len(outcomes)}", logging.INFO)
 
         if causal_test_result.ci_low() is not None and causal_test_result.ci_high() is not None:
             result_string = (
@@ -398,7 +386,6 @@ class JsonUtility:
         parser.add_argument(
             "--log_path",
             help="Specify a directory to change the location of the log file",
-            default="./json_frontend.log",
         )
         parser.add_argument(
             "--data_path",
