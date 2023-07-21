@@ -271,7 +271,6 @@ class JsonUtility:
         if "coverage" in test and test["coverage"]:
             adequacy = DataAdequacy(causal_test_case, causal_test_engine, estimation_model)
             effect_estimate, ci_low, ci_high, outcomes = adequacy.measure_adequacy(100)
-
             self._append_to_file(f"KURTOSIS: {effect_estimate.mean()}", logging.INFO)
             self._append_to_file(f"PASSING: {sum(outcomes)}/{len(outcomes)}", logging.INFO)
 
