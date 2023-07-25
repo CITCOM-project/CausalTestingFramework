@@ -2,9 +2,14 @@
 import logging
 from typing import Any
 
+import pandas as pd
+
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.estimators import Estimator
+from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.data_collection.data_collector import DataCollector
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +77,35 @@ class CausalTestCase:
     def get_treatment_value(self):
         """Return the treatment value of the treatment variable in this causal test case."""
         return self.treatment_value
+
+    def execute_test(self, estimator: type(Estimator), dataframe: pd.DataFrame) -> CausalTestResult:
+        """Execute a causal test case and return the causal test result.
+
+        :param estimator: A reference to an Estimator class.
+        :param causal_test_case: The CausalTestCase object to be tested
+        :return causal_test_result: A CausalTestResult for the executed causal test case.
+        """
+        if self.scenario_execution_data_df.empty:
+            raise ValueError("No data has been loaded. Please call load_data prior to executing a causal test case.")
+        if estimator.df is None:
+            estimator.df = dataframe
+        treatment_variable = self.treatment_variable
+        treatments = treatment_variable.name
+        outcome_variable = self.outcome_variable
+
+        logger.info("treatments: %s", treatments)
+        logger.info("outcomes: %s", outcome_variable)
+        minimal_adjustment_set = self.causal_dag.identification(BaseTestCase(treatment_variable, outcome_variable))
+        minimal_adjustment_set = minimal_adjustment_set - set(treatment_variable.name)
+        minimal_adjustment_set = minimal_adjustment_set - set(outcome_variable.name)
+
+        variables_for_positivity = list(minimal_adjustment_set) + [treatment_variable.name] + [outcome_variable.name]
+
+        if self._check_positivity_violation(variables_for_positivity):
+            raise ValueError("POSITIVITY VIOLATION -- Cannot proceed.")
+
+        causal_test_result = self._return_causal_test_results(estimator)
+        return causal_test_result
 
     def __str__(self):
         treatment_config = {self.treatment_variable.name: self.treatment_value}
