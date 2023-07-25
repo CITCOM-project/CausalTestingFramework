@@ -162,7 +162,7 @@ class JsonUtility:
                 )
                 self._append_to_file(msg, logging.INFO)
             test["failed"] = failed
-            print(msg)
+            # print(msg)
         return self.test_plan["tests"]
 
     def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict):
@@ -289,7 +289,7 @@ class JsonUtility:
                     f"got {result_string}"
                 )
             failed = True
-            logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
+            # logger.warning("   FAILED - expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed, causal_test_result
 
     def _setup_test(
