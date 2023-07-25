@@ -8,7 +8,7 @@ from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.estimators import Estimator
-from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
