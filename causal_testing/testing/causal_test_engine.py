@@ -99,19 +99,8 @@ class CausalTestEngine:
                 results[estimator_class.__name__] = causal_test_results
             test_suite_results[edge] = results
         return test_suite_results
-
     def execute_test(self, estimator: type(Estimator), causal_test_case: CausalTestCase) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
-
-        Test case execution proceeds with the following steps:
-        (1) Check that data has been loaded using the method load_data
-        (2) Check loaded data for any positivity violations and warn the user if so
-        (3) Instantiate the estimator with the values of the causal test case.
-        (4) Using the estimator, estimate the average treatment effect of the changing the treatment from control value
-            to treatment value on the outcome of interest, adjusting for the identified adjustment set.
-        (5) Depending on the estimator used, compute 95% confidence intervals for the estimate.
-        (6) Store results in an instance of CausalTestResults.
-        (7) Apply test oracle procedure to assign a pass/fail to the CausalTestResult and return.
 
         :param estimator: A reference to an Estimator class.
         :param causal_test_case: The CausalTestCase object to be tested
@@ -138,7 +127,6 @@ class CausalTestEngine:
 
         causal_test_result = self._return_causal_test_results(estimator, causal_test_case)
         return causal_test_result
-
     def _return_causal_test_results(self, estimator, causal_test_case):
         """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
 
