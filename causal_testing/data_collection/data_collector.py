@@ -140,6 +140,7 @@ class ObservationalDataCollector(DataCollector):
     def __init__(self, scenario: Scenario, data: pd.DataFrame):
         super().__init__(scenario)
         self.data = data
+        self.data_checked = False
 
     def collect_data(self, **kwargs) -> pd.DataFrame:
         """Read a pandas dataframe and filter to remove
@@ -149,7 +150,6 @@ class ObservationalDataCollector(DataCollector):
 
         :return: A pandas dataframe containing execution data that is valid for the scenario-under-test.
         """
-
         execution_data_df = self.data
         for meta in self.scenario.metas():
             if meta.name not in self.data:
@@ -158,4 +158,5 @@ class ObservationalDataCollector(DataCollector):
         for var_name, var in self.scenario.variables.items():
             if issubclass(var.datatype, Enum):
                 scenario_execution_data_df[var_name] = [var.datatype(x) for x in scenario_execution_data_df[var_name]]
-        return scenario_execution_data_df
+        self.data_checked = True
+        self.data = scenario_execution_data_df
