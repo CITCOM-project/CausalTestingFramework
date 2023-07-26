@@ -55,6 +55,7 @@ class JsonUtility:
         self.causal_specification = None
         self.output_path = Path(output_path)
         self.check_file_exists(self.output_path, output_overwrite)
+        self.data_collector = None
 
     def set_paths(self, json_path: str, dag_path: str, data_paths: list[str] = None):
         """
@@ -87,6 +88,8 @@ class JsonUtility:
                 "attribute with a dataframe before calling .setup()"
             )
         self._populate_metas()
+        self.data_collector = ObservationalDataCollector(
+            self.scenario, self.data)
 
     def _create_abstract_test_case(self, test, mutates, effects):
         assert len(test["mutations"]) == 1
@@ -149,14 +152,15 @@ class JsonUtility:
                     treatment_value=test["treatment_value"],
                     estimate_type=test["estimate_type"],
                 )
+
                 failed, _ = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
 
                 msg = (
-                    f"Executing concrete test: {test['name']} \n"
-                    + f"treatment variable: {test['treatment_variable']} \n"
-                    + f"outcome_variable = {outcome_variable} \n"
-                    + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                    + f"Result: {'FAILED' if failed else 'Passed'}"
+                        f"Executing concrete test: {test['name']} \n"
+                        + f"treatment variable: {test['treatment_variable']} \n"
+                        + f"outcome_variable = {outcome_variable} \n"
+                        + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                        + f"Result: {'FAILED' if failed else 'Passed'}"
                 )
                 print(msg)
                 self._append_to_file(msg, logging.INFO)
@@ -183,12 +187,12 @@ class JsonUtility:
         )
         result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
         msg = (
-            f"Executing test: {test['name']} \n"
-            + f"  {causal_test_case} \n"
-            + "  "
-            + ("\n  ").join(str(result[1]).split("\n"))
-            + "==============\n"
-            + f"  Result: {'FAILED' if result[0] else 'Passed'}"
+                f"Executing test: {test['name']} \n"
+                + f"  {causal_test_case} \n"
+                + "  "
+                + ("\n  ").join(str(result[1]).split("\n"))
+                + "==============\n"
+                + f"  Result: {'FAILED' if result[0] else 'Passed'}"
         )
         return msg
 
@@ -216,13 +220,13 @@ class JsonUtility:
         failures, _ = self._execute_tests(concrete_tests, test, f_flag)
 
         msg = (
-            f"Executing test: {test['name']} \n"
-            + "  abstract_test \n"
-            + f"  {abstract_test} \n"
-            + f"  {abstract_test.treatment_variable.name},"
-            + f"  {abstract_test.treatment_variable.distribution} \n"
-            + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                f"Executing test: {test['name']} \n"
+                + "  abstract_test \n"
+                + f"  {abstract_test} \n"
+                + f"  {abstract_test.treatment_variable.name},"
+                + f"  {abstract_test.treatment_variable.distribution} \n"
+                + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+                + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
         )
         return msg
 
@@ -231,6 +235,7 @@ class JsonUtility:
         details = []
         if "formula" in test:
             self._append_to_file(f"Estimator formula used for test: {test['formula']}")
+
         for concrete_test in concrete_tests:
             failed, result = self._execute_test_case(concrete_test, test, f_flag)
             details.append(result)
@@ -246,7 +251,8 @@ class JsonUtility:
             meta.populate(self.data)
 
     def _execute_test_case(
-        self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool
+            self, causal_test_case: CausalTestCase, test: Iterable[Mapping],
+            f_flag: bool
     ) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
@@ -258,10 +264,10 @@ class JsonUtility:
         """
         failed = False
 
-        causal_test_engine, estimation_model = self._setup_test(
-            causal_test_case, test, test["conditions"] if "conditions" in test else None
-        )
-        causal_test_result = causal_test_engine.execute_test(estimation_model, causal_test_case)
+        estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test, data=self.data_collector.data)
+        causal_test_result = causal_test_case.execute_test(estimator=estimation_model,
+                                                           data_collector=self.data_collector,
+                                                           causal_specification=self.causal_specification)
 
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
@@ -284,7 +290,7 @@ class JsonUtility:
         return failed, causal_test_result
 
     def _setup_test(
-        self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
+            self, causal_test_case: CausalTestCase, test: Mapping, data: pd.DataFrame
     ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
@@ -296,12 +302,6 @@ class JsonUtility:
                 - causal_test_engine - Test Engine instance for the test being run
                 - estimation_model - Estimator instance for the test being run
         """
-
-        data_collector = ObservationalDataCollector(
-            self.scenario, self.data.query(" & ".join(conditions)) if conditions else self.data
-        )
-        causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
-
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
         treatment_var = causal_test_case.treatment_variable
         minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
@@ -311,14 +311,14 @@ class JsonUtility:
             "control_value": causal_test_case.control_value,
             "adjustment_set": minimal_adjustment_set,
             "outcome": causal_test_case.outcome_variable.name,
-            "df": causal_test_engine.scenario_execution_data_df,
+            "df": data,
             "effect_modifiers": causal_test_case.effect_modifier_configuration,
             "alpha": test["alpha"] if "alpha" in test else 0.05,
         }
         if "formula" in test:
             estimator_kwargs["formula"] = test["formula"]
         estimation_model = test["estimator"](**estimator_kwargs)
-        return causal_test_engine, estimation_model
+        return estimation_model
 
     def _append_to_file(self, line: str, log_level: int = None):
         """Appends given line(s) to the current output file. If log_level is specified it also logs that message to the
@@ -370,7 +370,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-            "careful",
+                 "careful",
             action="store_true",
         )
         parser.add_argument(
