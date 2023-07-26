@@ -10,7 +10,6 @@ from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
-
 logger = logging.getLogger(__name__)
 
 
@@ -63,14 +62,6 @@ class CausalTestSuite(UserDict):
             minimal_adjustment_set = minimal_adjustment_set - set(edge.treatment_variable.name)
             minimal_adjustment_set = minimal_adjustment_set - set(edge.outcome_variable.name)
 
-            variables_for_positivity = list(minimal_adjustment_set) + [
-                edge.treatment_variable.name,
-                edge.outcome_variable.name,
-            ]
-
-            if self._check_positivity_violation(variables_for_positivity, causal_specification.scenario, data_collector.data):
-                raise ValueError("POSITIVITY VIOLATION -- Cannot proceed.")
-
             estimators = self[edge]["estimators"]
             tests = self[edge]["tests"]
             results = {}
@@ -87,55 +78,10 @@ class CausalTestSuite(UserDict):
                     )
                     if estimator.df is None:
                         estimator.df = data_collector.data
-                    causal_test_result = self._return_causal_test_results(estimator, test)
+                    causal_test_result = test._return_causal_test_results(estimator)
                     causal_test_results.append(causal_test_result)
 
                 results[estimator_class.__name__] = causal_test_results
             test_suite_results[edge] = results
         return test_suite_results
 
-    def _return_causal_test_results(self, estimator, causal_test_case):
-        """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
-
-        :param estimator: An Estimator class object
-        :param causal_test_case: The concrete test case to be executed
-        :return: a CausalTestResult object containing the confidence intervals
-        """
-        if not hasattr(estimator, f"estimate_{causal_test_case.estimate_type}"):
-            raise AttributeError(f"{estimator.__class__} has no {causal_test_case.estimate_type} method.")
-        estimate_effect = getattr(estimator, f"estimate_{causal_test_case.estimate_type}")
-        effect, confidence_intervals = estimate_effect(**causal_test_case.estimate_params)
-        causal_test_result = CausalTestResult(
-            estimator=estimator,
-            test_value=TestValue(causal_test_case.estimate_type, effect),
-            effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
-            confidence_intervals=confidence_intervals,
-        )
-
-        return causal_test_result
-
-    def _check_positivity_violation(self, variables_list, scenario, data):
-        """Check whether the dataframe has a positivity violation relative to the specified variables list.
-
-        A positivity violation occurs when there is a stratum of the dataframe which does not have any data. Put simply,
-        if we split the dataframe into covariate sub-groups, each sub-group must contain both a treated and untreated
-        individual. If a positivity violation occurs, causal inference is still possible using a properly specified
-        parametric estimator. Therefore, we should not throw an exception upon violation but raise a warning instead.
-
-        :param variables_list: The list of variables for which positivity must be satisfied.
-        :return: True if positivity is violated, False otherwise.
-        """
-        if not (set(variables_list) - {x.name for x in scenario.hidden_variables()}).issubset(
-                data.columns
-        ):
-            missing_variables = set(variables_list) - set(data.columns)
-            logger.warning(
-                "Positivity violation: missing data for variables %s.\n"
-                "Causal inference is only valid if a well-specified parametric model is used.\n"
-                "Alternatively, consider restricting analysis to executions without the variables:"
-                ".",
-                missing_variables,
-            )
-            return True
-
-        return False
