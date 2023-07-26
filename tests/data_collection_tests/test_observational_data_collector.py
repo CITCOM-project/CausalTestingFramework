@@ -44,13 +44,15 @@ class TestObservationalDataCollector(unittest.TestCase):
     def test_all_variables_in_data(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.Y1, self.Y2})
         observational_data_collector = ObservationalDataCollector(scenario, self.observational_df)
-        df = observational_data_collector.collect_data(index_col=0)
+        observational_data_collector.collect_data(index_col=0)
+        df = observational_data_collector.data
         assert df.equals(self.observational_df), f"\n{df}\nwas not equal to\n{self.observational_df}"
 
     def test_data_constraints(self):
         scenario = Scenario({self.X1, self.X2, self.X3, self.Y1, self.Y2}, {self.X1.z3 > 2})
         observational_data_collector = ObservationalDataCollector(scenario, self.observational_df)
-        df = observational_data_collector.collect_data(index_col=0)
+        observational_data_collector.collect_data(index_col=0)
+        df = observational_data_collector.data
         expected = self.observational_df.loc[[2, 3]]
         assert df.equals(expected), f"\n{df}\nwas not equal to\n{expected}"
 
@@ -61,7 +63,8 @@ class TestObservationalDataCollector(unittest.TestCase):
         meta = Meta("M", int, populate_m)
         scenario = Scenario({self.X1, meta})
         observational_data_collector = ObservationalDataCollector(scenario, self.observational_df)
-        data = observational_data_collector.collect_data()
+        observational_data_collector.collect_data()
+        data = observational_data_collector.data
         assert all((m == 2 * x1 for x1, m in zip(data["X1"], data["M"])))
 
     def tearDown(self) -> None:
