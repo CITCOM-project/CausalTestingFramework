@@ -110,21 +110,21 @@ class CausalTestCase:
         causal_test_result = self._return_causal_test_results(estimator)
         return causal_test_result
 
-    def _return_causal_test_results(self, estimator, causal_test_case):
+    def _return_causal_test_results(self, estimator):
         """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
 
         :param estimator: An Estimator class object
         :param causal_test_case: The concrete test case to be executed
         :return: a CausalTestResult object containing the confidence intervals
         """
-        if not hasattr(estimator, f"estimate_{causal_test_case.estimate_type}"):
-            raise AttributeError(f"{estimator.__class__} has no {causal_test_case.estimate_type} method.")
-        estimate_effect = getattr(estimator, f"estimate_{causal_test_case.estimate_type}")
-        effect, confidence_intervals = estimate_effect(**causal_test_case.estimate_params)
+        if not hasattr(estimator, f"estimate_{self.estimate_type}"):
+            raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
+        estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
+        effect, confidence_intervals = estimate_effect(**self.estimate_params)
         causal_test_result = CausalTestResult(
             estimator=estimator,
-            test_value=TestValue(causal_test_case.estimate_type, effect),
-            effect_modifier_configuration=causal_test_case.effect_modifier_configuration,
+            test_value=TestValue(self.estimate_type, effect),
+            effect_modifier_configuration=self.effect_modifier_configuration,
             confidence_intervals=confidence_intervals,
         )
 
