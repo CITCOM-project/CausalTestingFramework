@@ -22,7 +22,6 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
-from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
@@ -291,7 +290,7 @@ class JsonUtility:
 
     def _setup_test(
             self, causal_test_case: CausalTestCase, test: Mapping
-    ) -> tuple[CausalTestEngine, Estimator]:
+    ) -> Estimator:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :param test: Single JSON test definition stored in a mapping (dict)
