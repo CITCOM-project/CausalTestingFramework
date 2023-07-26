@@ -264,7 +264,7 @@ class JsonUtility:
         """
         failed = False
 
-        estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test, data=self.data_collector.data)
+        estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test)
         causal_test_result = causal_test_case.execute_test(estimator=estimation_model,
                                                            data_collector=self.data_collector,
                                                            causal_specification=self.causal_specification)
@@ -290,7 +290,7 @@ class JsonUtility:
         return failed, causal_test_result
 
     def _setup_test(
-            self, causal_test_case: CausalTestCase, test: Mapping, data: pd.DataFrame
+            self, causal_test_case: CausalTestCase, test: Mapping
     ) -> tuple[CausalTestEngine, Estimator]:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
@@ -311,7 +311,7 @@ class JsonUtility:
             "control_value": causal_test_case.control_value,
             "adjustment_set": minimal_adjustment_set,
             "outcome": causal_test_case.outcome_variable.name,
-            "df": data,
+            "df": self.data_collector.data,
             "effect_modifiers": causal_test_case.effect_modifier_configuration,
             "alpha": test["alpha"] if "alpha" in test else 0.05,
         }
