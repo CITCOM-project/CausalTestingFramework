@@ -5,7 +5,6 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue, Positive
-from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
@@ -85,13 +84,10 @@ def causal_test_intensity_num_shapes(
     # 6. Create a data collector
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
 
-    # 7. Create an instance of the causal test engine
-    causal_test_engine = CausalTestEngine(causal_specification, data_collector)
-
-    # 8. Obtain the minimal adjustment set for the causal test case from the causal DAG
+    # 7. Obtain the minimal adjustment set for the causal test case from the causal DAG
     minimal_adjustment_set = causal_dag.identification(causal_test_case.base_test_case)
 
-    # 9. Set up an estimator
+    # 8. Set up an estimator
     data = pd.read_csv(observational_data_path)
 
     treatment = causal_test_case.get_treatment_variable()
@@ -122,8 +118,8 @@ def causal_test_intensity_num_shapes(
             formula=f"{outcome} ~ {treatment} + {'+'.join(square_terms + inverse_terms + list([e for e in causal_test_case.effect_modifier_configuration]))} -1",
         )
 
-    # 10. Execute the test
-    causal_test_result = causal_test_engine.execute_test(estimator, causal_test_case)
+    # 9. Execute the test
+    causal_test_result = causal_test_case.execute_test(estimator, data_collector, causal_specification)
 
     return causal_test_result
 

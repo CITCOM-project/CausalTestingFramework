@@ -8,7 +8,6 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
-from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from matplotlib.pyplot import rcParams
@@ -36,7 +35,7 @@ OBSERVATIONAL_DATA_PATH = f"{ROOT}/data/10k_observational_data.csv"
 
 
 def doubling_beta_CATE_on_csv(
-    observational_data_path: str, simulate_counterfactuals: bool = False, verbose: bool = False
+        observational_data_path: str, simulate_counterfactuals: bool = False, verbose: bool = False
 ):
     """Compute the CATE of increasing beta from 0.016 to 0.032 on cum_infections using the dataframe
     loaded from the specified path. Additionally simulate the counterfactuals by repeating the analysis
@@ -50,9 +49,9 @@ def doubling_beta_CATE_on_csv(
     """
     results_dict = {"association": {}, "causation": {}}
 
-    # Read in the observational data, perform identification, and setup the causal_test_engine
+    # Read in the observational data, perform identification
     past_execution_df = pd.read_csv(observational_data_path)
-    _, causal_test_engine, causal_test_case = engine_setup(observational_data_path)
+    data_collector, _, causal_test_case, causal_specification = setup(observational_data_path)
 
     linear_regression_estimator = LinearRegressionEstimator(
         "beta",
@@ -65,7 +64,9 @@ def doubling_beta_CATE_on_csv(
     )
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case)
+    causal_test_result = causal_test_case.execute_test(estimator=linear_regression_estimator,
+                                                       data_collector=data_collector,
+                                                       causal_specification=causal_specification)
 
     # Repeat for association estimate (no adjustment)
     no_adjustment_linear_regression_estimator = LinearRegressionEstimator(
@@ -77,9 +78,9 @@ def doubling_beta_CATE_on_csv(
         df=past_execution_df,
         formula="cum_infections ~ beta + np.power(beta, 2)",
     )
-    association_test_result = causal_test_engine.execute_test(
-        no_adjustment_linear_regression_estimator, causal_test_case
-    )
+    association_test_result = causal_test_case.execute_test(estimator=no_adjustment_linear_regression_estimator,
+                                                            data_collector=data_collector,
+                                                            causal_specification=causal_specification)
 
     # Store results for plotting
     results_dict["association"] = {
@@ -109,8 +110,9 @@ def doubling_beta_CATE_on_csv(
             df=counterfactual_past_execution_df,
             formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts",
         )
-        counterfactual_causal_test_result = causal_test_engine.execute_test(
-            linear_regression_estimator, causal_test_case
+        counterfactual_causal_test_result = causal_test_case.execute_test(
+            estimator=linear_regression_estimator, data_collector=data_collector,
+            causal_specification=causal_specification
         )
         results_dict["counterfactual"] = {
             "ate": counterfactual_causal_test_result.test_value.value,
@@ -218,7 +220,7 @@ def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: b
     age_contact_fig.savefig(outpath_base_str + "age_contact_executions.pdf", format="pdf")
 
 
-def engine_setup(observational_data_path):
+def setup(observational_data_path):
     # 1. Read in the Causal DAG
     causal_dag = CausalDAG(f"{ROOT}/dag.dot")
 
@@ -265,13 +267,10 @@ def engine_setup(observational_data_path):
     # 7. Create a data collector
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
 
-    # 8. Create an instance of the causal test engine
-    causal_test_engine = CausalTestEngine(causal_specification, data_collector)
-
-    # 9. Obtain the minimal adjustment set for the base test case from the causal DAG
+    # 8. Obtain the minimal adjustment set for the base test case from the causal DAG
     minimal_adjustment_set = causal_dag.identification(base_test_case)
 
-    return minimal_adjustment_set, causal_test_engine, causal_test_case
+    return data_collector, minimal_adjustment_set, causal_test_case, causal_specification
 
 
 def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=None, col=None):
