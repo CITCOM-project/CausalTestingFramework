@@ -263,7 +263,6 @@ def setup(observational_data_path):
     )
 
     # 7. Create a data collector
-    breakpoint()
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
 
     # 8. Obtain the minimal adjustment set for the base test case from the causal DAG
