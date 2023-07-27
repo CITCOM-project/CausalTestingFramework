@@ -81,17 +81,15 @@ class CausalTestCase:
         """Return the treatment value of the treatment variable in this causal test case."""
         return self.treatment_value
 
-    def execute_test(self, estimator: type(Estimator), data_collector: ObservationalDataCollector, causal_specification: CausalSpecification) -> CausalTestResult:
+    def execute_test(self, estimator: type(Estimator), data_collector: ObservationalDataCollector) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
 
         :param estimator: A reference to an Estimator class.
         :param causal_test_case: The CausalTestCase object to be tested
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
-        if not data_collector.data_checked:
-            data_collector.collect_data()
         if estimator.df is None:
-            estimator.df = data_collector.data
+            estimator.df = data_collector.collect_data()
         treatment_variable = self.treatment_variable
         treatments = treatment_variable.name
         outcome_variable = self.outcome_variable

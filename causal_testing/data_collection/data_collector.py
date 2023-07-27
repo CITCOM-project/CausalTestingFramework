@@ -18,8 +18,6 @@ class DataCollector(ABC):
 
     def __init__(self, scenario: Scenario):
         self.scenario = scenario
-        self.data_checked = False
-
     @abstractmethod
     def collect_data(self, **kwargs) -> pd.DataFrame:
         """
@@ -158,5 +156,4 @@ class ObservationalDataCollector(DataCollector):
         for var_name, var in self.scenario.variables.items():
             if issubclass(var.datatype, Enum):
                 scenario_execution_data_df[var_name] = [var.datatype(x) for x in scenario_execution_data_df[var_name]]
-        self.data_checked = True
-        self.data = scenario_execution_data_df
+        return scenario_execution_data_df

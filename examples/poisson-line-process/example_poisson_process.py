@@ -119,7 +119,7 @@ def causal_test_intensity_num_shapes(
         )
 
     # 9. Execute the test
-    causal_test_result = causal_test_case.execute_test(estimator, data_collector, causal_specification)
+    causal_test_result = causal_test_case.execute_test(estimator, data_collector)
 
     return causal_test_result
 
