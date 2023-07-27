@@ -265,8 +265,7 @@ class JsonUtility:
 
         estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test)
         causal_test_result = causal_test_case.execute_test(estimator=estimation_model,
-                                                           data_collector=self.data_collector,
-                                                           causal_specification=self.causal_specification)
+                                                           data_collector=self.data_collector)
 
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
@@ -310,7 +309,7 @@ class JsonUtility:
             "control_value": causal_test_case.control_value,
             "adjustment_set": minimal_adjustment_set,
             "outcome": causal_test_case.outcome_variable.name,
-            "df": self.data_collector.data,
+            "df": self.data_collector.collect_data(),
             "effect_modifiers": causal_test_case.effect_modifier_configuration,
             "alpha": test["alpha"] if "alpha" in test else 0.05,
         }

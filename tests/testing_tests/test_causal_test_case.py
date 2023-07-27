@@ -108,7 +108,7 @@ class TestCausalTestExecution(unittest.TestCase):
         # Obsolete?
         self.data_collector = ObservationalDataCollector(self.scenario, df)
         self.data_collector.collect_data()
-        self.df = self.data_collector.data
+        self.df = self.data_collector.collect_data()
         self.minimal_adjustment_set = self.causal_dag.identification(self.base_test_case)
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
@@ -130,7 +130,7 @@ class TestCausalTestExecution(unittest.TestCase):
             "C",
             self.df,
         )
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector, self.causal_specification)
+        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         self.assertAlmostEqual(causal_test_result.test_value.value, 4, delta=1)
 
     def test_invalid_causal_effect(self):
@@ -152,7 +152,7 @@ class TestCausalTestExecution(unittest.TestCase):
             "C",
             self.df,
         )
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector, self.causal_specification)
+        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         self.assertAlmostEqual(causal_test_result.test_value.value, 4, delta=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_direct_effect(self):
@@ -179,7 +179,7 @@ class TestCausalTestExecution(unittest.TestCase):
             "C",
             self.df,
         )
-        causal_test_result = causal_test_case.execute_test(estimation_model, self.data_collector, self.causal_specification)
+        causal_test_result = causal_test_case.execute_test(estimation_model, self.data_collector)
         self.assertAlmostEqual(causal_test_result.test_value.value, 4, delta=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_coefficient(self):
@@ -194,7 +194,7 @@ class TestCausalTestExecution(unittest.TestCase):
             self.df,
         )
         self.causal_test_case.estimate_type = "coefficient"
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector, self.causal_specification)
+        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         self.assertEqual(int(causal_test_result.test_value.value), 0)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
@@ -209,7 +209,7 @@ class TestCausalTestExecution(unittest.TestCase):
             self.df,
         )
         self.causal_test_case.estimate_type = "risk_ratio"
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector, self.causal_specification)
+        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         self.assertEqual(int(causal_test_result.test_value.value), 0)
 
     def test_invalid_estimate_type(self):
@@ -225,7 +225,7 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         self.causal_test_case.estimate_type = "invalid"
         with self.assertRaises(AttributeError):
-            self.causal_test_case.execute_test(estimation_model, self.data_collector, self.causal_specification)
+            self.causal_test_case.execute_test(estimation_model, self.data_collector)
 
     def test_execute_test_observational_linear_regression_estimator_squared_term(self):
         """Check that executing the causal test case returns the correct results for dummy data with a squared term
@@ -239,7 +239,7 @@ class TestCausalTestExecution(unittest.TestCase):
             self.df,
             formula=f"C ~ A + {'+'.join(self.minimal_adjustment_set)} + (D ** 2)",
         )
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector, self.causal_specification)
+        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         self.assertAlmostEqual(round(causal_test_result.test_value.value, 1), 4, delta=1)
 
     def test_execute_observational_causal_forest_estimator_cates(self):
@@ -262,7 +262,7 @@ class TestCausalTestExecution(unittest.TestCase):
             effect_modifiers={"M": None},
         )
         self.causal_test_case.estimate_type = "cates"
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector, self.causal_specification)
+        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         causal_test_result = causal_test_result.test_value.value
         # Check that each effect modifier's strata has a greater ATE than the last (ascending order)
         causal_test_result_m1 = causal_test_result.loc[causal_test_result["M"] == 1]

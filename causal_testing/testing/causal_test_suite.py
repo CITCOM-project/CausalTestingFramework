@@ -77,7 +77,7 @@ class CausalTestSuite(UserDict):
                         test.outcome_variable.name,
                     )
                     if estimator.df is None:
-                        estimator.df = data_collector.data
+                        estimator.df = data_collector.collect_data()
                     causal_test_result = test._return_causal_test_results(estimator)
                     causal_test_results.append(causal_test_result)
 
