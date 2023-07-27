@@ -1,3 +1,4 @@
+from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -30,8 +31,8 @@ logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 # }
 # rcParams.update(rc_fonts)
 
-ROOT = os.path.realpath(os.path.dirname(__file__))
-OBSERVATIONAL_DATA_PATH = f"{ROOT}/data/10k_observational_data.csv"
+ROOT = Path(os.path.realpath(os.path.dirname(__file__)))
+OBSERVATIONAL_DATA_PATH = ROOT / "data" / "10k_observational_data.csv"
 
 
 def doubling_beta_CATE_on_csv(
@@ -262,6 +263,7 @@ def setup(observational_data_path):
     )
 
     # 7. Create a data collector
+    breakpoint()
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
 
     # 8. Obtain the minimal adjustment set for the base test case from the causal DAG
