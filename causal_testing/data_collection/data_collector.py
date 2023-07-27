@@ -18,6 +18,7 @@ class DataCollector(ABC):
 
     def __init__(self, scenario: Scenario):
         self.scenario = scenario
+        self.data_checked = False
 
     @abstractmethod
     def collect_data(self, **kwargs) -> pd.DataFrame:
@@ -140,7 +141,6 @@ class ObservationalDataCollector(DataCollector):
     def __init__(self, scenario: Scenario, data: pd.DataFrame):
         super().__init__(scenario)
         self.data = data
-        self.data_checked = False
 
     def collect_data(self, **kwargs) -> pd.DataFrame:
         """Read a pandas dataframe and filter to remove
