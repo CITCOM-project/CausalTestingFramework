@@ -34,14 +34,19 @@ class DAGAdequacy:
 
 
 class DataAdequacy:
-    def __init__(self, test_case: CausalTestCase, test_engine: CausalTestEngine, estimator: Estimator):
+    def __init__(
+        self, test_case: CausalTestCase, test_engine: CausalTestEngine, estimator: Estimator, bootstrap_size: int = 100
+    ):
         self.test_case = test_case
         self.test_engine = test_engine
         self.estimator = estimator
+        self.kurtosis = None
+        self.outcomes = None
+        self.bootstrap_size = bootstrap_size
 
-    def measure_adequacy(self, bootstrap_size: int = 100):
+    def measure_adequacy(self):
         results = []
-        for i in range(bootstrap_size):
+        for i in range(self.bootstrap_size):
             estimator = deepcopy(self.estimator)
             estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
             try:
@@ -66,6 +71,8 @@ class DataAdequacy:
             results[field] = convert_to_df(field)
 
         effect_estimate = pd.concat(results["effect_estimate"].tolist(), axis=1).transpose().reset_index(drop=True)
-        ci_low = pd.concat(results["ci_low"].tolist(), axis=1).transpose()
-        ci_high = pd.concat(results["ci_high"].tolist(), axis=1).transpose()
-        return effect_estimate.kurtosis(), ci_low.kurtosis(), ci_high.kurtosis(), outcomes
+        self.kurtosis = effect_estimate.kurtosis()
+        self.outcomes = sum(outcomes)
+
+    def to_dict(self):
+        return {"kurtosis": self.kurtosis.to_dict(), "bootstrap_size": self.bootstrap_size, "passing": self.outcomes}

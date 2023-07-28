@@ -129,40 +129,19 @@ class JsonUtility:
             if "skip" in test and test["skip"]:
                 continue
             test["estimator"] = estimators[test["estimator"]]
-            if "mutations" in test:
+            # If we have specified concrete control and treatment value
+            if "mutations" not in test:
+                failed, msg = self._run_concrete_metamorphic_test()
+            # If we have a variable to mutate
+            else:
                 if test["estimate_type"] == "coefficient":
                     failed, msg = self._run_coefficient_test(test=test, f_flag=f_flag, effects=effects)
                 else:
-                    failed, msg = self._run_ate_test(test=test, f_flag=f_flag, effects=effects, mutates=mutates)
-                self._append_to_file(msg, logging.INFO)
-            else:
-                outcome_variable = next(
-                    iter(test["expected_effect"])
-                )  # Take first key from dictionary of expected effect
-                base_test_case = BaseTestCase(
-                    treatment_variable=self.variables["inputs"][test["treatment_variable"]],
-                    outcome_variable=self.variables["outputs"][outcome_variable],
-                )
-
-                causal_test_case = CausalTestCase(
-                    base_test_case=base_test_case,
-                    expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
-                    control_value=test["control_value"],
-                    treatment_value=test["treatment_value"],
-                    estimate_type=test["estimate_type"],
-                )
-                failed, _ = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
-
-                msg = (
-                    f"Executing concrete test: {test['name']} \n"
-                    + f"treatment variable: {test['treatment_variable']} \n"
-                    + f"outcome_variable = {outcome_variable} \n"
-                    + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                    + f"Result: {'FAILED' if failed else 'Passed'}"
-                )
-                self._append_to_file(msg, logging.INFO)
+                    failed, msg = self._run_metamorphic_tests(
+                        test=test, f_flag=f_flag, effects=effects, mutates=mutates
+                    )
             test["failed"] = failed
-            # print(msg)
+            test["result"] = msg
         return self.test_plan["tests"]
 
     def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict):
@@ -194,9 +173,36 @@ class JsonUtility:
             + "==============\n"
             + f"  Result: {'FAILED' if failed else 'Passed'}"
         )
+        self._append_to_file(msg, logging.INFO)
+        return failed, result
+
+    def _run_concrete_metamorphic_test(self, test: dict, f_flag: bool, effects: dict, mutates: dict):
+        outcome_variable = next(iter(test["expected_effect"]))  # Take first key from dictionary of expected effect
+        base_test_case = BaseTestCase(
+            treatment_variable=self.variables["inputs"][test["treatment_variable"]],
+            outcome_variable=self.variables["outputs"][outcome_variable],
+        )
+
+        causal_test_case = CausalTestCase(
+            base_test_case=base_test_case,
+            expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
+            control_value=test["control_value"],
+            treatment_value=test["treatment_value"],
+            estimate_type=test["estimate_type"],
+        )
+        failed, msg = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+
+        msg = (
+            f"Executing concrete test: {test['name']} \n"
+            + f"treatment variable: {test['treatment_variable']} \n"
+            + f"outcome_variable = {outcome_variable} \n"
+            + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+            + f"Result: {'FAILED' if failed else 'Passed'}"
+        )
+        self._append_to_file(msg, logging.INFO)
         return failed, msg
 
-    def _run_ate_test(self, test: dict, f_flag: bool, effects: dict, mutates: dict):
+    def _run_metamorphic_tests(self, test: dict, f_flag: bool, effects: dict, mutates: dict):
         """Builds structures and runs test case for tests with an estimate_type of 'ate'.
 
         :param test: Single JSON test definition stored in a mapping (dict)
@@ -228,6 +234,7 @@ class JsonUtility:
             + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
             + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
         )
+        self._append_to_file(msg, logging.INFO)
         return failures, msg
 
     def _execute_tests(self, concrete_tests, test, f_flag):
@@ -269,10 +276,11 @@ class JsonUtility:
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
         if "coverage" in test and test["coverage"]:
-            adequacy = DataAdequacy(causal_test_case, causal_test_engine, estimation_model)
-            effect_estimate, ci_low, ci_high, outcomes = adequacy.measure_adequacy(100)
-            self._append_to_file(f"KURTOSIS: {effect_estimate.mean()}", logging.INFO)
-            self._append_to_file(f"PASSING: {sum(outcomes)}/{len(outcomes)}", logging.INFO)
+            adequacy_metric = DataAdequacy(causal_test_case, causal_test_engine, estimation_model)
+            adequacy_metric.measure_adequacy()
+            # self._append_to_file(f"KURTOSIS: {effect_estimate.mean()}", logging.INFO)
+            # self._append_to_file(f"PASSING: {sum(outcomes)}/{len(outcomes)}", logging.INFO)
+            causal_test_result.adequacy = adequacy_metric
 
         if causal_test_result.ci_low() is not None and causal_test_result.ci_high() is not None:
             result_string = (

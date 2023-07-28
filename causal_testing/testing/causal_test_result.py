@@ -28,8 +28,10 @@ class CausalTestResult:
         test_value: TestValue,
         confidence_intervals: [float, float] = None,
         effect_modifier_configuration: {Variable: Any} = None,
+        adequacy=None,
     ):
         self.estimator = estimator
+        self.adequacy = adequacy
         if estimator.adjustment_set:
             self.adjustment_set = estimator.adjustment_set
         else:
@@ -66,23 +68,29 @@ class CausalTestResult:
                 ci_str = " " + push(pd.DataFrame(self.confidence_intervals).transpose().to_string(header=False))
             confidence_str += f"Confidence intervals:{ci_str}\n"
             confidence_str += f"Alpha:{self.estimator.alpha}\n"
-        return base_str + confidence_str
+        adequacy_str = ""
+        if self.adequacy:
+            adequacy_str = str(self.adequacy)
+        return base_str + confidence_str + adequacy_str
 
-    def to_dict(self):
+    def to_dict(self, json=False):
         """Return result contents as a dictionary
         :return: Dictionary containing contents of causal_test_result
         """
-        return {
+        base_dict = {
             "treatment": self.estimator.treatment,
             "control_value": self.estimator.control_value,
             "treatment_value": self.estimator.treatment_value,
             "outcome": self.estimator.outcome,
-            "adjustment_set": self.adjustment_set,
+            "adjustment_set": list(self.adjustment_set) if json else self.adjustment_set,
             "effect_measure": self.test_value.type,
             "effect_estimate": self.test_value.value,
             "ci_low": self.ci_low(),
             "ci_high": self.ci_high(),
         }
+        if self.adequacy:
+            base_dict["adequacy"] = self.adequacy.to_dict()
+        return base_dict
 
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""
