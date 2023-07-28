@@ -52,7 +52,7 @@ def doubling_beta_CATE_on_csv(
 
     # Read in the observational data, perform identification
     past_execution_df = pd.read_csv(observational_data_path)
-    data_collector, _, causal_test_case, causal_specification = setup(observational_data_path)
+    data_collector, _, causal_test_case, causal_specification = setup(past_execution_df)
 
     linear_regression_estimator = LinearRegressionEstimator(
         "beta",
@@ -218,7 +218,7 @@ def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: b
     age_contact_fig.savefig(outpath_base_str + "age_contact_executions.pdf", format="pdf")
 
 
-def setup(observational_data_path):
+def setup(observational_data):
     # 1. Read in the Causal DAG
     causal_dag = CausalDAG(f"{ROOT}/dag.dot")
 
@@ -263,7 +263,7 @@ def setup(observational_data_path):
     )
 
     # 7. Create a data collector
-    data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
+    data_collector = ObservationalDataCollector(scenario, observational_data)
 
     # 8. Obtain the minimal adjustment set for the base test case from the causal DAG
     minimal_adjustment_set = causal_dag.identification(base_test_case)
