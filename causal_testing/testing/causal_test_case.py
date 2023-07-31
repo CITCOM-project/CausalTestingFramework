@@ -86,12 +86,9 @@ class CausalTestCase:
         """
         if estimator.df is None:
             estimator.df = data_collector.collect_data()
-        treatment_variable = self.treatment_variable
-        treatments = treatment_variable.name
-        outcome_variable = self.outcome_variable
 
-        logger.info("treatments: %s", treatments)
-        logger.info("outcomes: %s", outcome_variable)
+        logger.info("treatments: %s", self.treatment_variable.name)
+        logger.info("outcomes: %s", self.outcome_variable)
 
         causal_test_result = self._return_causal_test_results(estimator)
         return causal_test_result
