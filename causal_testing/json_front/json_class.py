@@ -48,7 +48,6 @@ class JsonUtility:
     def __init__(self, output_path: str, output_overwrite: bool = False):
         self.input_paths = None
         self.variables = {"inputs": {}, "outputs": {}, "metas": {}}
-        self.data = []
         self.test_plan = None
         self.scenario = None
         self.causal_specification = None
@@ -69,6 +68,7 @@ class JsonUtility:
 
     def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
+        data = []
         self.scenario = scenario
         self._get_scenario_variables()
         self.scenario.setup_treatment_variables()
@@ -80,22 +80,23 @@ class JsonUtility:
             self.test_plan = json.load(f)
         # Populate the data
         if self.input_paths.data_paths:
-            self.data = pd.concat([pd.read_csv(data_file, header=0) for data_file in self.input_paths.data_paths])
-        if len(self.data) == 0:
+            data = pd.concat([pd.read_csv(data_file, header=0) for data_file in self.input_paths.data_paths])
+        if len(data) == 0:
             raise ValueError(
                 "No data found, either provide a path to a file containing data or manually populate the .data "
                 "attribute with a dataframe before calling .setup()"
             )
-        self._populate_metas()
         self.data_collector = ObservationalDataCollector(
-            self.scenario, self.data)
+            self.scenario, data)
+        self._populate_metas()
+
 
     def _create_abstract_test_case(self, test, mutates, effects):
         assert len(test["mutations"]) == 1
         treatment_var = next(self.scenario.variables[v] for v in test["mutations"])
 
         if not treatment_var.distribution:
-            fitter = Fitter(self.data[treatment_var.name], distributions=get_common_distributions())
+            fitter = Fitter(self.data_collector.data[treatment_var.name], distributions=get_common_distributions())
             fitter.fit()
             (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
             treatment_var.distribution = getattr(scipy.stats, dist)(**params)
@@ -247,10 +248,10 @@ class JsonUtility:
         Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
         """
         for meta in self.scenario.variables_of_type(Meta):
-            meta.populate(self.data)
+            meta.populate(self.data_collector.data)
 
     def _execute_test_case(
-            self, causal_test_case: CausalTestCase, test: Iterable[Mapping],
+            self, causal_test_case: CausalTestCase, test: Mapping,
             f_flag: bool
     ) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
@@ -309,7 +310,6 @@ class JsonUtility:
             "control_value": causal_test_case.control_value,
             "adjustment_set": minimal_adjustment_set,
             "outcome": causal_test_case.outcome_variable.name,
-            "df": self.data_collector.collect_data(),
             "effect_modifiers": causal_test_case.effect_modifier_configuration,
             "alpha": test["alpha"] if "alpha" in test else 0.05,
         }
