@@ -11,9 +11,9 @@ Node = Union[str, int]  # Node type hint: A node is a string or an int
 
 
 @dataclass
-class CausalSpecification(ABC):
+class CausalSpecification:
     """
-    Abstract Class for the Causal Specification (combination of Scenario and Causal Dag)
+    Data class storing the Causal Specification (combination of Scenario and Causal Dag)
     """
 
     scenario: Scenario
