@@ -5,7 +5,7 @@ import argparse
 import json
 import logging
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import StatisticsError
@@ -86,10 +86,8 @@ class JsonUtility:
                 "No data found, either provide a path to a file containing data or manually populate the .data "
                 "attribute with a dataframe before calling .setup()"
             )
-        self.data_collector = ObservationalDataCollector(
-            self.scenario, data)
+        self.data_collector = ObservationalDataCollector(self.scenario, data)
         self._populate_metas()
-
 
     def _create_abstract_test_case(self, test, mutates, effects):
         assert len(test["mutations"]) == 1
@@ -156,11 +154,11 @@ class JsonUtility:
                 failed, _ = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
 
                 msg = (
-                        f"Executing concrete test: {test['name']} \n"
-                        + f"treatment variable: {test['treatment_variable']} \n"
-                        + f"outcome_variable = {outcome_variable} \n"
-                        + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                        + f"Result: {'FAILED' if failed else 'Passed'}"
+                    f"Executing concrete test: {test['name']} \n"
+                    + f"treatment variable: {test['treatment_variable']} \n"
+                    + f"outcome_variable = {outcome_variable} \n"
+                    + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                    + f"Result: {'FAILED' if failed else 'Passed'}"
                 )
                 print(msg)
                 self._append_to_file(msg, logging.INFO)
@@ -187,12 +185,12 @@ class JsonUtility:
         )
         result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
         msg = (
-                f"Executing test: {test['name']} \n"
-                + f"  {causal_test_case} \n"
-                + "  "
-                + ("\n  ").join(str(result[1]).split("\n"))
-                + "==============\n"
-                + f"  Result: {'FAILED' if result[0] else 'Passed'}"
+            f"Executing test: {test['name']} \n"
+            + f"  {causal_test_case} \n"
+            + "  "
+            + ("\n  ").join(str(result[1]).split("\n"))
+            + "==============\n"
+            + f"  Result: {'FAILED' if result[0] else 'Passed'}"
         )
         return msg
 
@@ -220,13 +218,13 @@ class JsonUtility:
         failures, _ = self._execute_tests(concrete_tests, test, f_flag)
 
         msg = (
-                f"Executing test: {test['name']} \n"
-                + "  abstract_test \n"
-                + f"  {abstract_test} \n"
-                + f"  {abstract_test.treatment_variable.name},"
-                + f"  {abstract_test.treatment_variable.distribution} \n"
-                + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-                + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+            f"Executing test: {test['name']} \n"
+            + "  abstract_test \n"
+            + f"  {abstract_test} \n"
+            + f"  {abstract_test.treatment_variable.name},"
+            + f"  {abstract_test.treatment_variable.distribution} \n"
+            + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
         )
         return msg
 
@@ -251,8 +249,7 @@ class JsonUtility:
             meta.populate(self.data_collector.data)
 
     def _execute_test_case(
-            self, causal_test_case: CausalTestCase, test: Mapping,
-            f_flag: bool
+        self, causal_test_case: CausalTestCase, test: Mapping, f_flag: bool
     ) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
@@ -265,8 +262,9 @@ class JsonUtility:
         failed = False
 
         estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test)
-        causal_test_result = causal_test_case.execute_test(estimator=estimation_model,
-                                                           data_collector=self.data_collector)
+        causal_test_result = causal_test_case.execute_test(
+            estimator=estimation_model, data_collector=self.data_collector
+        )
 
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
@@ -288,9 +286,7 @@ class JsonUtility:
             logger.warning("   FAILED- expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed, causal_test_result
 
-    def _setup_test(
-            self, causal_test_case: CausalTestCase, test: Mapping
-    ) -> Estimator:
+    def _setup_test(self, causal_test_case: CausalTestCase, test: Mapping) -> Estimator:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :param test: Single JSON test definition stored in a mapping (dict)
@@ -368,7 +364,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-                 "careful",
+            "careful",
             action="store_true",
         )
         parser.add_argument(

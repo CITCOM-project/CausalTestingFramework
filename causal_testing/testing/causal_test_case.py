@@ -2,18 +2,14 @@
 import logging
 from typing import Any
 
-import pandas as pd
-
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
-from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 
-from causal_testing.specification.causal_specification import CausalSpecification
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,15 +27,15 @@ class CausalTestCase:
     """
 
     def __init__(
-            # pylint: disable=too-many-arguments
-            self,
-            base_test_case: BaseTestCase,
-            expected_causal_effect: CausalTestOutcome,
-            control_value: Any = None,
-            treatment_value: Any = None,
-            estimate_type: str = "ate",
-            estimate_params: dict = None,
-            effect_modifier_configuration: dict[Variable:Any] = None,
+        # pylint: disable=too-many-arguments
+        self,
+        base_test_case: BaseTestCase,
+        expected_causal_effect: CausalTestOutcome,
+        control_value: Any = None,
+        treatment_value: Any = None,
+        estimate_type: str = "ate",
+        estimate_params: dict = None,
+        effect_modifier_configuration: dict[Variable:Any] = None,
     ):
         """
         :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
@@ -85,7 +81,7 @@ class CausalTestCase:
         """Execute a causal test case and return the causal test result.
 
         :param estimator: A reference to an Estimator class.
-        :param causal_test_case: The CausalTestCase object to be tested
+        :param data_collector: The data collector to be used which provides a dataframe for the Estimator
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
         if estimator.df is None:
@@ -100,11 +96,10 @@ class CausalTestCase:
         causal_test_result = self._return_causal_test_results(estimator)
         return causal_test_result
 
-    def _return_causal_test_results(self, estimator):
+    def _return_causal_test_results(self, estimator) -> CausalTestResult:
         """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
 
         :param estimator: An Estimator class object
-        :param causal_test_case: The concrete test case to be executed
         :return: a CausalTestResult object containing the confidence intervals
         """
         if not hasattr(estimator, f"estimate_{self.estimate_type}"):
@@ -128,4 +123,3 @@ class CausalTestCase:
             f"Running {treatment_config} instead of {control_config} should cause the following "
             f"changes to {outcome_variable}: {self.expected_causal_effect}."
         )
-

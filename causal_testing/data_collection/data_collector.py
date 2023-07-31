@@ -18,6 +18,7 @@ class DataCollector(ABC):
 
     def __init__(self, scenario: Scenario):
         self.scenario = scenario
+
     @abstractmethod
     def collect_data(self, **kwargs) -> pd.DataFrame:
         """

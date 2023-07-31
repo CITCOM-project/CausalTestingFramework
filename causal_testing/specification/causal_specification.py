@@ -1,6 +1,5 @@
 """This module holds the abstract CausalSpecification data class, which holds a Scenario and CausalDag"""
 
-from abc import ABC
 from dataclasses import dataclass
 from typing import Union
 
