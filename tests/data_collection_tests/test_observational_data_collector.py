@@ -61,6 +61,7 @@ class TestObservationalDataCollector(unittest.TestCase):
         meta = Meta("M", int, populate_m)
         scenario = Scenario({self.X1, meta})
         observational_data_collector = ObservationalDataCollector(scenario, self.observational_df)
+        observational_data_collector.collect_data()
         data = observational_data_collector.collect_data()
         assert all((m == 2 * x1 for x1, m in zip(data["X1"], data["M"])))
 

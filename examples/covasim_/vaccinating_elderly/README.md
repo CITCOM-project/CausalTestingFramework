@@ -19,7 +19,7 @@ To run this case study:
 level of this directory (instructions are provided in the project README).
 2. Additionally, in order to run Covasim, install version 3.0.7 by running `pip install covasim==3.0.7`.
 3. Change directory to `causal_testing/examples/covasim_/vaccinating_elderly`.
-4. Run the command `python test_vaccine.py`.
+4. Run the command `python example_vaccine.py`.
 
 This will run Covasim as described above and print out the causal test results for the effect of each input on each
 output.

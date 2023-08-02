@@ -149,7 +149,6 @@ class ObservationalDataCollector(DataCollector):
 
         :return: A pandas dataframe containing execution data that is valid for the scenario-under-test.
         """
-
         execution_data_df = self.data
         for meta in self.scenario.metas():
             if meta.name not in self.data:
