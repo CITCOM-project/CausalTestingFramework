@@ -7,7 +7,7 @@ from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
-from causal_testing.data_collection.data_collector import ObservationalDataCollector
+from causal_testing.data_collection.data_collector import DataCollector
 
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ class CausalTestCase:
         """Return the treatment value of the treatment variable in this causal test case."""
         return self.treatment_value
 
-    def execute_test(self, estimator: type(Estimator), data_collector: ObservationalDataCollector) -> CausalTestResult:
+    def execute_test(self, estimator: type(Estimator), data_collector: DataCollector) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
 
         :param estimator: A reference to an Estimator class.

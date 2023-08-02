@@ -8,7 +8,7 @@ from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_result import CausalTestResult
-from causal_testing.data_collection.data_collector import ObservationalDataCollector
+from causal_testing.data_collection.data_collector import DataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class CausalTestSuite(UserDict):
         self.data[base_test_case] = test_object
 
     def execute_test_suite(
-        self, data_collector: ObservationalDataCollector, causal_specification: CausalSpecification
+        self, data_collector: DataCollector, causal_specification: CausalSpecification
     ) -> dict[str, CausalTestResult]:
         """Execute a suite of causal tests and return the results in a list
         :param data_collector: The data collector to be used for the test_suite. Can be observational, experimental or
