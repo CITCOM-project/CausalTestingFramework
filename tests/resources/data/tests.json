@@ -1,1 +1,11 @@
-{"tests": [{"name": "test1", "mutations": {}, "estimator": null, "estimate_type": null, "effect_modifiers": [], "expected_effect": {}, "skip": false}]}
+{
+  "tests": [{
+    "name": "test1",
+    "mutations": {},
+    "estimator": null,
+    "estimate_type": null,
+    "effect_modifiers": [],
+    "expected_effect": {},
+    "skip": false
+  }]
+}

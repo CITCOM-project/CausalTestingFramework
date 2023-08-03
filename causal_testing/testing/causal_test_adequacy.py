@@ -7,7 +7,7 @@ import pandas as pd
 
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.data_collection.data_collector import DataCollector
-from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_case import CausalTestCase
 
@@ -19,10 +19,10 @@ class DAGAdequacy:
 
     def __init__(
         self,
-        causal_specification: CausalSpecification,
+        causal_dag: CausalDAG,
         test_suite: CausalTestSuite,
     ):
-        self.causal_dag = causal_specification.causal_dag
+        self.causal_dag = causal_dag
         self.test_suite = test_suite
         self.tested_pairs = None
         self.pairs_to_test = None
@@ -33,9 +33,7 @@ class DAGAdequacy:
         """
         Calculate the adequacy measurement, and populate the `dat_adequacy` field.
         """
-        self.tested_pairs = {
-            (t.base_test_case.treatment_variable, t.base_test_case.outcome_variable) for t in self.test_suite
-        }
+        self.tested_pairs = {(t.treatment_variable, t.outcome_variable) for t in self.test_suite}
         self.pairs_to_test = set(combinations(self.causal_dag.graph.nodes, 2))
         self.untested_edges = self.pairs_to_test.difference(self.tested_pairs)
         self.dag_adequacy = len(self.tested_pairs) / len(self.pairs_to_test)

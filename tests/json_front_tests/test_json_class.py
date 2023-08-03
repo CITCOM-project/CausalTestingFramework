@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 from statistics import StatisticsError
 import scipy
+import os
 
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
@@ -136,9 +137,10 @@ class TestJsonClass(unittest.TestCase):
                     "name": "test1",
                     "mutations": {"test_input": "Increase"},
                     "estimator": "LinearRegressionEstimator",
-                    "estimate_type": "ate",
+                    "estimate_type": "coefficient",
                     "effect_modifiers": [],
                     "expected_effect": {"test_output": "NoEffect"},
+                    "coverage": True,
                     "skip": False,
                 }
             ]
@@ -151,13 +153,10 @@ class TestJsonClass(unittest.TestCase):
         }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False, mutates=mutates)
-
-        # Test that the final log message prints that failed tests are printed, which is expected behaviour for this
-        # scenario
-        with open("temp_out.txt", "r") as reader:
-            temp_out = reader.readlines()
-        self.assertIn("failed", temp_out[-1])
+        test_results = self.json_class.run_json_tests(
+            effects=effects, estimators=estimators, f_flag=False, mutates=mutates
+        )
+        self.assertTrue(test_results[0]["failed"])
 
     def test_generate_tests_from_json_no_dist(self):
         example_test = {
@@ -294,6 +293,8 @@ class TestJsonClass(unittest.TestCase):
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
+        if os.path.exists("temp_out.txt"):
+            os.remove("temp_out.txt")
 
 
 def populate_example(*args, **kwargs):
