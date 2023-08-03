@@ -68,9 +68,8 @@ class JsonUtility:
             data_paths = []
         self.input_paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
-    def setup(self, scenario: Scenario):
+    def setup(self, scenario: Scenario, data=[]):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
-        data = []
         self.scenario = scenario
         self._get_scenario_variables()
         self.scenario.setup_treatment_variables()
@@ -85,7 +84,7 @@ class JsonUtility:
             data = pd.concat([pd.read_csv(data_file, header=0) for data_file in self.input_paths.data_paths])
         if len(data) == 0:
             raise ValueError(
-                "No data found, either provide a path to a file containing data or manually populate the .data "
+                "No data found. Please either provide a path to a file containing data or manually populate the .data "
                 "attribute with a dataframe before calling .setup()"
             )
         self.data_collector = ObservationalDataCollector(self.scenario, data)
@@ -132,39 +131,18 @@ class JsonUtility:
             test["estimator"] = estimators[test["estimator"]]
             # If we have specified concrete control and treatment value
             if "mutations" not in test:
-                failed, msg = self._run_concrete_metamorphic_test()
+                failed, msg = self._run_concrete_metamorphic_test(test, f_flag, effects, mutates)
             # If we have a variable to mutate
             else:
-                outcome_variable = next(
-                    iter(test["expected_effect"])
-                )  # Take first key from dictionary of expected effect
-                base_test_case = BaseTestCase(
-                    treatment_variable=self.variables["inputs"][test["treatment_variable"]],
-                    outcome_variable=self.variables["outputs"][outcome_variable],
-                )
-
-                causal_test_case = CausalTestCase(
-                    base_test_case=base_test_case,
-                    expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
-                    control_value=test["control_value"],
-                    treatment_value=test["treatment_value"],
-                    estimate_type=test["estimate_type"],
-                )
-
-                failed, msg = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
-
-                # msg = (
-                #     f"Executing concrete test: {test['name']} \n"
-                #     + f"treatment variable: {test['treatment_variable']} \n"
-                #     + f"outcome_variable = {outcome_variable} \n"
-                #     + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-                #     + f"Result: {'FAILED' if failed else 'Passed'}"
-                # )
-                # print(msg)
-                self._append_to_file(msg, logging.INFO)
+                if test["estimate_type"] == "coefficient":
+                    failed, msg = self._run_coefficient_test(test=test, f_flag=f_flag, effects=effects)
+                else:
+                    failed, msg = self._run_metamorphic_tests(
+                        test=test, f_flag=f_flag, effects=effects, mutates=mutates
+                    )
             test["failed"] = failed
             test["result"] = msg
-            return self.test_plan["tests"]
+        return self.test_plan["tests"]
 
     def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict):
         """Builds structures and runs test case for tests with an estimate_type of 'coefficient'.
@@ -299,7 +277,7 @@ class JsonUtility:
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
         if "coverage" in test and test["coverage"]:
-            adequacy_metric = DataAdequacy(causal_test_case, causal_test_engine, estimation_model)
+            adequacy_metric = DataAdequacy(causal_test_case, estimation_model, self.data_collector)
             adequacy_metric.measure_adequacy()
             # self._append_to_file(f"KURTOSIS: {effect_estimate.mean()}", logging.INFO)
             # self._append_to_file(f"PASSING: {sum(outcomes)}/{len(outcomes)}", logging.INFO)
@@ -331,7 +309,6 @@ class JsonUtility:
         data. Conditions should be in the query format detailed at
         https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html
         :returns:
-                - causal_test_engine - Test Engine instance for the test being run
                 - estimation_model - Estimator instance for the test being run
         """
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)

@@ -49,10 +49,10 @@ class DataAdequacy:
         for i in range(self.bootstrap_size):
             estimator = deepcopy(self.estimator)
             estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
-            try:
-                results.append(self.test.execute_test(estimator, self.data_collector))
-            except np.LinAlgError:
-                continue
+            # try:
+            results.append(self.test_case.execute_test(estimator, self.data_collector))
+            # except np.LinAlgError:
+            # continue
         outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
         results = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
 
