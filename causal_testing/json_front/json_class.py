@@ -11,7 +11,6 @@ from pathlib import Path
 from statistics import StatisticsError
 
 import pandas as pd
-import numpy as np
 import scipy
 from fitter import Fitter, get_common_distributions
 
@@ -68,7 +67,7 @@ class JsonUtility:
             data_paths = []
         self.input_paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
-    def setup(self, scenario: Scenario, data=[]):
+    def setup(self, scenario: Scenario, data=None):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
         self.scenario = scenario
         self._get_scenario_variables()
@@ -82,7 +81,7 @@ class JsonUtility:
         # Populate the data
         if self.input_paths.data_paths:
             data = pd.concat([pd.read_csv(data_file, header=0) for data_file in self.input_paths.data_paths])
-        if len(data) == 0:
+        if data is None or len(data) == 0:
             raise ValueError(
                 "No data found. Please either provide a path to a file containing data or manually populate the .data "
                 "attribute with a dataframe before calling .setup()"
@@ -131,7 +130,7 @@ class JsonUtility:
             test["estimator"] = estimators[test["estimator"]]
             # If we have specified concrete control and treatment value
             if "mutations" not in test:
-                failed, msg = self._run_concrete_metamorphic_test(test, f_flag, effects, mutates)
+                failed, msg = self._run_concrete_metamorphic_test(test, f_flag, effects)
             # If we have a variable to mutate
             else:
                 if test["estimate_type"] == "coefficient":
@@ -176,7 +175,7 @@ class JsonUtility:
         self._append_to_file(msg, logging.INFO)
         return failed, result
 
-    def _run_concrete_metamorphic_test(self, test: dict, f_flag: bool, effects: dict, mutates: dict):
+    def _run_concrete_metamorphic_test(self, test: dict, f_flag: bool, effects: dict):
         outcome_variable = next(iter(test["expected_effect"]))  # Take first key from dictionary of expected effect
         base_test_case = BaseTestCase(
             treatment_variable=self.variables["inputs"][test["treatment_variable"]],

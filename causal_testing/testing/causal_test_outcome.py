@@ -43,7 +43,8 @@ class NoEffect(CausalTestOutcome):
 
     def __init__(self, atol: float = 1e-10, ctol: float = 0.05):
         """
-        :param atol: Arithmetic tolerance. The test will pass if the absolute value of the causal effect is less than atol.
+        :param atol: Arithmetic tolerance. The test will pass if the absolute value of the causal effect is less than
+                     atol.
         :param ctol: Categorical tolerance. The test will pass if this proportion of categories pass.
         """
         self.atol = atol
