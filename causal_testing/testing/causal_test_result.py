@@ -23,6 +23,7 @@ class CausalTestResult:
     confidence intervals."""
 
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         estimator: Estimator,
         test_value: TestValue,
