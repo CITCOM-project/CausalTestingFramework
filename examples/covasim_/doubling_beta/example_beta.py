@@ -36,7 +36,7 @@ OBSERVATIONAL_DATA_PATH = ROOT / "data" / "10k_observational_data.csv"
 
 
 def doubling_beta_CATE_on_csv(
-        observational_data_path: str, simulate_counterfactuals: bool = False, verbose: bool = False
+    observational_data_path: str, simulate_counterfactuals: bool = False, verbose: bool = False
 ):
     """Compute the CATE of increasing beta from 0.016 to 0.032 on cum_infections using the dataframe
     loaded from the specified path. Additionally simulate the counterfactuals by repeating the analysis
@@ -65,8 +65,9 @@ def doubling_beta_CATE_on_csv(
     )
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    causal_test_result = causal_test_case.execute_test(estimator=linear_regression_estimator,
-                                                       data_collector=data_collector)
+    causal_test_result = causal_test_case.execute_test(
+        estimator=linear_regression_estimator, data_collector=data_collector
+    )
 
     # Repeat for association estimate (no adjustment)
     no_adjustment_linear_regression_estimator = LinearRegressionEstimator(
@@ -78,8 +79,9 @@ def doubling_beta_CATE_on_csv(
         df=past_execution_df,
         formula="cum_infections ~ beta + np.power(beta, 2)",
     )
-    association_test_result = causal_test_case.execute_test(estimator=no_adjustment_linear_regression_estimator,
-                                                            data_collector=data_collector)
+    association_test_result = causal_test_case.execute_test(
+        estimator=no_adjustment_linear_regression_estimator, data_collector=data_collector
+    )
 
     # Store results for plotting
     results_dict["association"] = {
@@ -110,7 +112,8 @@ def doubling_beta_CATE_on_csv(
             formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts",
         )
         counterfactual_causal_test_result = causal_test_case.execute_test(
-            estimator=linear_regression_estimator, data_collector=data_collector)
+            estimator=linear_regression_estimator, data_collector=data_collector
+        )
 
         results_dict["counterfactual"] = {
             "ate": counterfactual_causal_test_result.test_value.value,
