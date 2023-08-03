@@ -18,12 +18,8 @@ class CausalTestCase:
     """
     A CausalTestCase extends the information held in a BaseTestCase. As well as storing the treatment and outcome
     variables, a CausalTestCase stores the values of these variables. Also the outcome variable and value are
-    specified.
-
-    The goal of a CausalTestCase is to test whether the intervention made to the control via the treatment causes the
-    model-under-test to produce the expected change. The CausalTestCase structure is designed for execution using the
-    CausalTestEngine, using either execute_test() function to execute a single test case or packing CausalTestCases into
-    a CausalTestSuite and executing them as a batch using the execute_test_suite() function.
+    specified. The goal of a CausalTestCase is to test whether the intervention made to the control via the treatment causes the
+    model-under-test to produce the expected change.
     """
 
     def __init__(

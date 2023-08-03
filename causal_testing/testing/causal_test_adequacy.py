@@ -2,10 +2,10 @@
 This module contains code to measure various aspects of causal test adequacy.
 """
 from causal_testing.testing.causal_test_suite import CausalTestSuite
+from causal_testing.data_collection.data_collector import DataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_engine import CausalTestEngine
 from itertools import combinations
 from copy import deepcopy
 from sklearn.model_selection import KFold
@@ -35,11 +35,11 @@ class DAGAdequacy:
 
 class DataAdequacy:
     def __init__(
-        self, test_case: CausalTestCase, test_engine: CausalTestEngine, estimator: Estimator, bootstrap_size: int = 100
+        self, test_case: CausalTestCase, estimator: Estimator, data_collector: DataCollector, bootstrap_size: int = 100
     ):
         self.test_case = test_case
-        self.test_engine = test_engine
         self.estimator = estimator
+        self.data_collector = data_collector
         self.kurtosis = None
         self.outcomes = None
         self.bootstrap_size = bootstrap_size
@@ -50,7 +50,7 @@ class DataAdequacy:
             estimator = deepcopy(self.estimator)
             estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
             try:
-                results.append(self.test_engine.execute_test(estimator, self.test_case))
+                results.append(self.test.execute_test(estimator, self.data_collector))
             except np.LinAlgError:
                 continue
         outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
