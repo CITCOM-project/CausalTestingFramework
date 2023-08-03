@@ -5,6 +5,10 @@ from typing import Any
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.estimators import Estimator
+from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
+from causal_testing.data_collection.data_collector import DataCollector
+
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +76,41 @@ class CausalTestCase:
     def get_treatment_value(self):
         """Return the treatment value of the treatment variable in this causal test case."""
         return self.treatment_value
+
+    def execute_test(self, estimator: type(Estimator), data_collector: DataCollector) -> CausalTestResult:
+        """Execute a causal test case and return the causal test result.
+
+        :param estimator: A reference to an Estimator class.
+        :param data_collector: The data collector to be used which provides a dataframe for the Estimator
+        :return causal_test_result: A CausalTestResult for the executed causal test case.
+        """
+        if estimator.df is None:
+            estimator.df = data_collector.collect_data()
+
+        logger.info("treatments: %s", self.treatment_variable.name)
+        logger.info("outcomes: %s", self.outcome_variable)
+
+        causal_test_result = self._return_causal_test_results(estimator)
+        return causal_test_result
+
+    def _return_causal_test_results(self, estimator) -> CausalTestResult:
+        """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
+
+        :param estimator: An Estimator class object
+        :return: a CausalTestResult object containing the confidence intervals
+        """
+        if not hasattr(estimator, f"estimate_{self.estimate_type}"):
+            raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
+        estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
+        effect, confidence_intervals = estimate_effect(**self.estimate_params)
+        causal_test_result = CausalTestResult(
+            estimator=estimator,
+            test_value=TestValue(self.estimate_type, effect),
+            effect_modifier_configuration=self.effect_modifier_configuration,
+            confidence_intervals=confidence_intervals,
+        )
+
+        return causal_test_result
 
     def __str__(self):
         treatment_config = {self.treatment_variable.name: self.treatment_value}

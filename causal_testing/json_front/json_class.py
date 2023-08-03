@@ -5,7 +5,7 @@ import argparse
 import json
 import logging
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import StatisticsError
@@ -23,7 +23,6 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
-from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
@@ -51,12 +50,12 @@ class JsonUtility:
     def __init__(self, output_path: str, output_overwrite: bool = False):
         self.input_paths = None
         self.variables = {"inputs": {}, "outputs": {}, "metas": {}}
-        self.data = []
         self.test_plan = None
         self.scenario = None
         self.causal_specification = None
         self.output_path = Path(output_path)
         self.check_file_exists(self.output_path, output_overwrite)
+        self.data_collector = None
 
     def set_paths(self, json_path: str, dag_path: str, data_paths: list[str] = None):
         """
@@ -71,6 +70,7 @@ class JsonUtility:
 
     def setup(self, scenario: Scenario):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
+        data = []
         self.scenario = scenario
         self._get_scenario_variables()
         self.scenario.setup_treatment_variables()
@@ -82,12 +82,13 @@ class JsonUtility:
             self.test_plan = json.load(f)
         # Populate the data
         if self.input_paths.data_paths:
-            self.data = pd.concat([pd.read_csv(data_file, header=0) for data_file in self.input_paths.data_paths])
-        if len(self.data) == 0:
+            data = pd.concat([pd.read_csv(data_file, header=0) for data_file in self.input_paths.data_paths])
+        if len(data) == 0:
             raise ValueError(
                 "No data found, either provide a path to a file containing data or manually populate the .data "
                 "attribute with a dataframe before calling .setup()"
             )
+        self.data_collector = ObservationalDataCollector(self.scenario, data)
         self._populate_metas()
 
     def _create_abstract_test_case(self, test, mutates, effects):
@@ -95,7 +96,7 @@ class JsonUtility:
         treatment_var = next(self.scenario.variables[v] for v in test["mutations"])
 
         if not treatment_var.distribution:
-            fitter = Fitter(self.data[treatment_var.name], distributions=get_common_distributions())
+            fitter = Fitter(self.data_collector.data[treatment_var.name], distributions=get_common_distributions())
             fitter.fit()
             (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
             treatment_var.distribution = getattr(scipy.stats, dist)(**params)
@@ -134,15 +135,36 @@ class JsonUtility:
                 failed, msg = self._run_concrete_metamorphic_test()
             # If we have a variable to mutate
             else:
-                if test["estimate_type"] == "coefficient":
-                    failed, msg = self._run_coefficient_test(test=test, f_flag=f_flag, effects=effects)
-                else:
-                    failed, msg = self._run_metamorphic_tests(
-                        test=test, f_flag=f_flag, effects=effects, mutates=mutates
-                    )
+                outcome_variable = next(
+                    iter(test["expected_effect"])
+                )  # Take first key from dictionary of expected effect
+                base_test_case = BaseTestCase(
+                    treatment_variable=self.variables["inputs"][test["treatment_variable"]],
+                    outcome_variable=self.variables["outputs"][outcome_variable],
+                )
+
+                causal_test_case = CausalTestCase(
+                    base_test_case=base_test_case,
+                    expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
+                    control_value=test["control_value"],
+                    treatment_value=test["treatment_value"],
+                    estimate_type=test["estimate_type"],
+                )
+
+                failed, msg = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+
+                # msg = (
+                #     f"Executing concrete test: {test['name']} \n"
+                #     + f"treatment variable: {test['treatment_variable']} \n"
+                #     + f"outcome_variable = {outcome_variable} \n"
+                #     + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                #     + f"Result: {'FAILED' if failed else 'Passed'}"
+                # )
+                # print(msg)
+                self._append_to_file(msg, logging.INFO)
             test["failed"] = failed
             test["result"] = msg
-        return self.test_plan["tests"]
+            return self.test_plan["tests"]
 
     def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict):
         """Builds structures and runs test case for tests with an estimate_type of 'coefficient'.
@@ -242,6 +264,7 @@ class JsonUtility:
         details = []
         if "formula" in test:
             self._append_to_file(f"Estimator formula used for test: {test['formula']}")
+
         for concrete_test in concrete_tests:
             failed, result = self._execute_test_case(concrete_test, test, f_flag)
             details.append(result)
@@ -254,10 +277,10 @@ class JsonUtility:
         Populate data with meta-variable values and add distributions to Causal Testing Framework Variables
         """
         for meta in self.scenario.variables_of_type(Meta):
-            meta.populate(self.data)
+            meta.populate(self.data_collector.data)
 
     def _execute_test_case(
-        self, causal_test_case: CausalTestCase, test: Iterable[Mapping], f_flag: bool
+        self, causal_test_case: CausalTestCase, test: Mapping, f_flag: bool
     ) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
@@ -269,10 +292,10 @@ class JsonUtility:
         """
         failed = False
 
-        causal_test_engine, estimation_model = self._setup_test(
-            causal_test_case, test, test["conditions"] if "conditions" in test else None
+        estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test)
+        causal_test_result = causal_test_case.execute_test(
+            estimator=estimation_model, data_collector=self.data_collector
         )
-        causal_test_result = causal_test_engine.execute_test(estimation_model, causal_test_case)
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
         if "coverage" in test and test["coverage"]:
@@ -300,9 +323,7 @@ class JsonUtility:
             # logger.warning("   FAILED - expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed, causal_test_result
 
-    def _setup_test(
-        self, causal_test_case: CausalTestCase, test: Mapping, conditions: list[str] = None
-    ) -> tuple[CausalTestEngine, Estimator]:
+    def _setup_test(self, causal_test_case: CausalTestCase, test: Mapping) -> Estimator:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :param test: Single JSON test definition stored in a mapping (dict)
@@ -313,12 +334,6 @@ class JsonUtility:
                 - causal_test_engine - Test Engine instance for the test being run
                 - estimation_model - Estimator instance for the test being run
         """
-
-        data_collector = ObservationalDataCollector(
-            self.scenario, self.data.query(" & ".join(conditions)) if conditions else self.data
-        )
-        causal_test_engine = CausalTestEngine(self.causal_specification, data_collector, index_col=0)
-
         minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
         treatment_var = causal_test_case.treatment_variable
         minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
@@ -328,14 +343,13 @@ class JsonUtility:
             "control_value": causal_test_case.control_value,
             "adjustment_set": minimal_adjustment_set,
             "outcome": causal_test_case.outcome_variable.name,
-            "df": causal_test_engine.scenario_execution_data_df,
             "effect_modifiers": causal_test_case.effect_modifier_configuration,
             "alpha": test["alpha"] if "alpha" in test else 0.05,
         }
         if "formula" in test:
             estimator_kwargs["formula"] = test["formula"]
         estimation_model = test["estimator"](**estimator_kwargs)
-        return causal_test_engine, estimation_model
+        return estimation_model
 
     def _append_to_file(self, line: str, log_level: int = None):
         """Appends given line(s) to the current output file. If log_level is specified it also logs that message to the
