@@ -116,4 +116,3 @@ class TestCausalTestSuite(unittest.TestCase):
         causal_forrest_result = causal_test_case_result["CausalForestEstimator"][0]
         self.assertAlmostEqual(linear_regression_result.test_value.value, 4, delta=1e-1)
         self.assertAlmostEqual(causal_forrest_result.test_value.value, 4, delta=1e-1)
-

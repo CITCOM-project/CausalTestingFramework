@@ -146,7 +146,6 @@ def effects_on_APD90(observational_data_path, test_suite):
     # 7. Create a data collector
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
 
-
     # 8. Run the causal test suite
     causal_test_results = test_suite.execute_test_suite(data_collector, causal_specification)
     return causal_test_results

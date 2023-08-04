@@ -130,6 +130,7 @@ class LogisticRegressionEstimator(Estimator):
         :return: The model after fitting to data.
         """
         model = smf.logit(formula=self.formula, data=data).fit(disp=0)
+        self.model = model
         return model
 
     def estimate(self, data: pd.DataFrame, adjustment_config: dict = None) -> RegressionResultsWrapper:
@@ -145,7 +146,6 @@ class LogisticRegressionEstimator(Estimator):
             )
 
         model = self._run_logistic_regression(data)
-        self.model = model
 
         x = pd.DataFrame(columns=self.df.columns)
         x["Intercept"] = 1  # self.intercept
@@ -351,7 +351,6 @@ class LinearRegressionEstimator(Estimator):
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         model = self._run_linear_regression()
-        self.model = model
 
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
@@ -377,7 +376,6 @@ class LinearRegressionEstimator(Estimator):
             adjustment_config = {}
 
         model = self._run_linear_regression()
-        self.model = model
 
         x = pd.DataFrame(columns=self.df.columns)
         x[self.treatment] = [self.treatment_value, self.control_value]
@@ -427,6 +425,7 @@ class LinearRegressionEstimator(Estimator):
         :return: The model after fitting to data.
         """
         model = smf.ols(formula=self.formula, data=self.df).fit()
+        self.model = model
         return model
 
     def _get_confidence_intervals(self, model, treatment):

@@ -60,9 +60,8 @@ class TestCausalTestCase(unittest.TestCase):
         remove_temp_dir_if_existent()
 
 
-
 class TestCausalTestExecution(unittest.TestCase):
-    """Test the CausalTestEngine workflow using observational data.
+    """Test the causal test execution workflow using observational data.
 
     The causal test engine (CTE) is the main workflow for the causal testing framework. The CTE takes a causal test case
     and a causal specification and computes the causal effect of the intervention on the outcome of interest.
@@ -246,12 +245,8 @@ class TestCausalTestExecution(unittest.TestCase):
         """Check that executing the causal test case returns the correct conditional average treatment effects for
         dummy data with effect multiplicative effect modification. C ~ (4*(A+2) + D)*M"""
         # Add some effect modifier M that has a multiplicative effect on C
-        self.df["M"] = np.random.randint(
-            1, 5, len(self.df)
-        )
-        self.df["C"] *= self.df[
-            "M"
-        ]
+        self.df["M"] = np.random.randint(1, 5, len(self.df))
+        self.df["C"] *= self.df["M"]
         estimation_model = CausalForestEstimator(
             "A",
             self.treatment_value,
