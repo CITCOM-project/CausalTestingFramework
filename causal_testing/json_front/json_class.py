@@ -295,7 +295,6 @@ class JsonUtility:
                     f"got {result_string}"
                 )
             failed = True
-            logger.warning("   FAILED - expected %s, got %s", causal_test_case.expected_causal_effect, result_string)
         return failed, causal_test_result
 
     def _setup_test(self, causal_test_case: CausalTestCase, test: Mapping) -> Estimator:
