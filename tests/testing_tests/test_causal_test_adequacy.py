@@ -17,11 +17,10 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_specification import CausalSpecification
 
 
-class TestJsonClass(unittest.TestCase):
-    """Test the JSON frontend for the Causal Testing Framework (CTF)
-
-    The JSON frontend is an alternative interface for the CTF where tests are specified in JSON format and ingested
-    with the frontend. Tests involve testing that this correctly interfaces with the framework with some dummy data
+class TestCausalTestAdequacy(unittest.TestCase):
+    """
+    Test the causal test adequacy metrics. These provide metrics determine how comprehensive a test set is and,
+    ultimately whether we can stop testing.
     """
 
     def setUp(self) -> None:

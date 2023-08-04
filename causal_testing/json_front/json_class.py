@@ -278,8 +278,6 @@ class JsonUtility:
         if "coverage" in test and test["coverage"]:
             adequacy_metric = DataAdequacy(causal_test_case, estimation_model, self.data_collector)
             adequacy_metric.measure_adequacy()
-            # self._append_to_file(f"KURTOSIS: {effect_estimate.mean()}", logging.INFO)
-            # self._append_to_file(f"PASSING: {sum(outcomes)}/{len(outcomes)}", logging.INFO)
             causal_test_result.adequacy = adequacy_metric
 
         if causal_test_result.ci_low() is not None and causal_test_result.ci_high() is not None:
