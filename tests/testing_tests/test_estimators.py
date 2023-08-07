@@ -392,8 +392,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
+
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
-            {k: self.nhefs_df.mean()[k] for k in covariates}
+            adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates}
         )
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [1.9, 5])
