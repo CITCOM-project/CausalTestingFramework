@@ -374,7 +374,6 @@ class LinearRegressionEstimator(Estimator):
         """
         if adjustment_config is None:
             adjustment_config = {}
-
         model = self._run_linear_regression()
 
         x = pd.DataFrame(columns=self.df.columns)
@@ -393,19 +392,23 @@ class LinearRegressionEstimator(Estimator):
 
         return y.iloc[1], y.iloc[0]
 
-    def estimate_risk_ratio(self) -> tuple[float, list[float, float]]:
+    def estimate_risk_ratio(self, estimator_params: dict = None) -> tuple[float, list[float, float]]:
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
-        control_outcome, treatment_outcome = self.estimate_control_treatment()
+        if estimator_params is None:
+            estimator_params = {}
+        adjustment_config = estimator_params.get("adjustment_config", None)
+
+        control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
         ci_low = treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"]
         ci_high = treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"]
 
         return (treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
 
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[float, list[float, float]]:
+    def estimate_ate_calculated(self, estimator_params: dict = None) -> tuple[float, list[float, float]]:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
@@ -413,6 +416,9 @@ class LinearRegressionEstimator(Estimator):
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
+        if estimator_params is None:
+            estimator_params = {}
+        adjustment_config = estimator_params.get("adjustment_config", None)
         control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
         ci_low = treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"]
         ci_high = treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"]
