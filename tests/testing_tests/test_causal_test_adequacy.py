@@ -107,10 +107,10 @@ class TestCausalTestAdequacy(unittest.TestCase):
             {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100},
         )
 
-    def test_dag_adequacy(self):
+    def test_dag_adequacy_dependent(self):
         base_test_case = BaseTestCase(
             treatment_variable="test_input",
-            outcome_variable="test_output",
+            outcome_variable="B",
             effect=None,
         )
         causal_test_case = CausalTestCase(
@@ -128,29 +128,127 @@ class TestCausalTestAdequacy(unittest.TestCase):
             {
                 "causal_dag": self.json_class.causal_specification.causal_dag,
                 "test_suite": test_suite,
-                "tested_pairs": {("test_input", "test_output")},
+                "tested_pairs": {("test_input", "B")},
                 "pairs_to_test": {
-                    ("test_input_no_dist", "test_input"),
-                    ("test_input", "B"),
-                    ("test_input_no_dist", "C"),
-                    ("test_input_no_dist", "B"),
-                    ("test_input", "C"),
                     ("B", "C"),
-                    ("test_input_no_dist", "test_output"),
+                    ("test_input_no_dist", "test_input"),
+                    ("C", "test_output"),
+                    ("test_input", "B"),
+                    ("test_input_no_dist", "B"),
                     ("test_input", "test_output"),
-                    ("C", "test_output"),
-                    ("B", "test_output"),
-                },
-                "untested_edges": {
-                    ("test_input_no_dist", "test_input"),
-                    ("test_input", "B"),
-                    ("test_input_no_dist", "C"),
-                    ("test_input_no_dist", "B"),
                     ("test_input", "C"),
-                    ("B", "C"),
                     ("test_input_no_dist", "test_output"),
-                    ("C", "test_output"),
                     ("B", "test_output"),
+                    ("test_input_no_dist", "C"),
+                },
+                "untested_pairs": {
+                    ("B", "C"),
+                    ("test_input_no_dist", "test_input"),
+                    ("C", "test_output"),
+                    ("test_input_no_dist", "B"),
+                    ("test_input", "test_output"),
+                    ("test_input", "C"),
+                    ("test_input_no_dist", "test_output"),
+                    ("B", "test_output"),
+                    ("test_input_no_dist", "C"),
+                },
+                "dag_adequacy": 0.1,
+            },
+        )
+
+    def test_dag_adequacy_independent(self):
+        base_test_case = BaseTestCase(
+            treatment_variable="test_input",
+            outcome_variable="C",
+            effect=None,
+        )
+        causal_test_case = CausalTestCase(
+            base_test_case=base_test_case,
+            expected_causal_effect=None,
+            estimate_type=None,
+        )
+        test_suite = CausalTestSuite()
+        test_suite.add_test_object(base_test_case, causal_test_case, None, None)
+        dag_adequacy = DAGAdequacy(self.json_class.causal_specification.causal_dag, test_suite)
+        dag_adequacy.measure_adequacy()
+        print(dag_adequacy.to_dict())
+        self.assertEqual(
+            dag_adequacy.to_dict(),
+            {
+                "causal_dag": self.json_class.causal_specification.causal_dag,
+                "test_suite": test_suite,
+                "tested_pairs": {("test_input", "C")},
+                "pairs_to_test": {
+                    ("B", "C"),
+                    ("test_input_no_dist", "test_input"),
+                    ("C", "test_output"),
+                    ("test_input", "B"),
+                    ("test_input_no_dist", "B"),
+                    ("test_input", "test_output"),
+                    ("test_input", "C"),
+                    ("test_input_no_dist", "test_output"),
+                    ("B", "test_output"),
+                    ("test_input_no_dist", "C"),
+                },
+                "untested_pairs": {
+                    ("B", "C"),
+                    ("test_input_no_dist", "test_input"),
+                    ("C", "test_output"),
+                    ("test_input_no_dist", "B"),
+                    ("test_input", "test_output"),
+                    ("test_input", "B"),
+                    ("test_input_no_dist", "test_output"),
+                    ("B", "test_output"),
+                    ("test_input_no_dist", "C"),
+                },
+                "dag_adequacy": 0.1,
+            },
+        )
+
+    def test_dag_adequacy_independent_other_way(self):
+        base_test_case = BaseTestCase(
+            treatment_variable="C",
+            outcome_variable="test_input",
+            effect=None,
+        )
+        causal_test_case = CausalTestCase(
+            base_test_case=base_test_case,
+            expected_causal_effect=None,
+            estimate_type=None,
+        )
+        test_suite = CausalTestSuite()
+        test_suite.add_test_object(base_test_case, causal_test_case, None, None)
+        dag_adequacy = DAGAdequacy(self.json_class.causal_specification.causal_dag, test_suite)
+        dag_adequacy.measure_adequacy()
+        print(dag_adequacy.to_dict())
+        self.assertEqual(
+            dag_adequacy.to_dict(),
+            {
+                "causal_dag": self.json_class.causal_specification.causal_dag,
+                "test_suite": test_suite,
+                "tested_pairs": {("test_input", "C")},
+                "pairs_to_test": {
+                    ("B", "C"),
+                    ("test_input_no_dist", "test_input"),
+                    ("C", "test_output"),
+                    ("test_input", "B"),
+                    ("test_input_no_dist", "B"),
+                    ("test_input", "test_output"),
+                    ("test_input", "C"),
+                    ("test_input_no_dist", "test_output"),
+                    ("B", "test_output"),
+                    ("test_input_no_dist", "C"),
+                },
+                "untested_pairs": {
+                    ("B", "C"),
+                    ("test_input_no_dist", "test_input"),
+                    ("C", "test_output"),
+                    ("test_input_no_dist", "B"),
+                    ("test_input", "test_output"),
+                    ("test_input", "B"),
+                    ("test_input_no_dist", "test_output"),
+                    ("B", "test_output"),
+                    ("test_input_no_dist", "C"),
                 },
                 "dag_adequacy": 0.1,
             },
