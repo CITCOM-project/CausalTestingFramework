@@ -161,7 +161,9 @@ class LogisticRegressionEstimator(Estimator):
         # x = x[model.params.index]
         return model.predict(x)
 
-    def estimate_control_treatment(self, adjustment_config: dict = None, bootstrap_size: int = 100) -> tuple[pd.Series, pd.Series]:
+    def estimate_control_treatment(
+        self, adjustment_config: dict = None, bootstrap_size: int = 100
+    ) -> tuple[pd.Series, pd.Series]:
         """Estimate the outcomes under control and treatment.
 
         :return: The estimated control and treatment values and their confidence
