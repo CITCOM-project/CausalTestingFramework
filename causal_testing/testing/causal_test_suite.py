@@ -22,7 +22,7 @@ class CausalTestSuite(UserDict):
     and the values are test objects. Test Objects hold a causal_test_case_list which is a list of causal_test_cases
     which provide control and treatment values, and an iterator of Estimator Class References
 
-    This dictionary can be fed into the CausalTestEngines execute_test_suite function which will iterate over all the
+    This dictionary can be fed into the execute_test_suite function which will iterate over all the
     base_test_case's and execute each causal_test_case with each iterator.
     """
 
