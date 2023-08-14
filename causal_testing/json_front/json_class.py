@@ -165,12 +165,12 @@ class JsonUtility:
         )
         failed, result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
         msg = (
-            f"Executing test: {test['name']} \n"
-            + f"  {causal_test_case} \n"
-            + "  "
-            + ("\n  ").join(str(result).split("\n"))
-            + "==============\n"
-            + f"  Result: {'FAILED' if failed else 'Passed'}"
+                f"Executing test: {test['name']} \n"
+                + f"  {causal_test_case} \n"
+                + "  "
+                + ("\n  ").join(str(result).split("\n"))
+                + "==============\n"
+                + f"  Result: {'FAILED' if failed else 'Passed'}"
         )
         self._append_to_file(msg, logging.INFO)
         return failed, result
@@ -192,11 +192,11 @@ class JsonUtility:
         failed, msg = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
 
         msg = (
-            f"Executing concrete test: {test['name']} \n"
-            + f"treatment variable: {test['treatment_variable']} \n"
-            + f"outcome_variable = {outcome_variable} \n"
-            + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
-            + f"Result: {'FAILED' if failed else 'Passed'}"
+                f"Executing concrete test: {test['name']} \n"
+                + f"treatment variable: {test['treatment_variable']} \n"
+                + f"outcome_variable = {outcome_variable} \n"
+                + f"control value = {test['control_value']}, treatment value = {test['treatment_value']} \n"
+                + f"Result: {'FAILED' if failed else 'Passed'}"
         )
         self._append_to_file(msg, logging.INFO)
         return failed, msg
@@ -225,13 +225,13 @@ class JsonUtility:
         failures, _ = self._execute_tests(concrete_tests, test, f_flag)
 
         msg = (
-            f"Executing test: {test['name']} \n"
-            + "  abstract_test \n"
-            + f"  {abstract_test} \n"
-            + f"  {abstract_test.treatment_variable.name},"
-            + f"  {abstract_test.treatment_variable.distribution} \n"
-            + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
+                f"Executing test: {test['name']} \n"
+                + "  abstract_test \n"
+                + f"  {abstract_test} \n"
+                + f"  {abstract_test.treatment_variable.name},"
+                + f"  {abstract_test.treatment_variable.distribution} \n"
+                + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
+                + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
         )
         self._append_to_file(msg, logging.INFO)
         return failures, msg
@@ -257,7 +257,7 @@ class JsonUtility:
             meta.populate(self.data_collector.data)
 
     def _execute_test_case(
-        self, causal_test_case: CausalTestCase, test: Mapping, f_flag: bool
+            self, causal_test_case: CausalTestCase, test: Mapping, f_flag: bool
     ) -> (bool, CausalTestResult):
         """Executes a singular test case, prints the results and returns the test case result
         :param causal_test_case: The concrete test case to be executed
@@ -307,20 +307,23 @@ class JsonUtility:
         :returns:
                 - estimation_model - Estimator instance for the test being run
         """
-        minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
-        treatment_var = causal_test_case.treatment_variable
-        minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
-        estimator_kwargs = {
-            "treatment": treatment_var.name,
-            "treatment_value": causal_test_case.treatment_value,
-            "control_value": causal_test_case.control_value,
-            "adjustment_set": minimal_adjustment_set,
-            "outcome": causal_test_case.outcome_variable.name,
-            "effect_modifiers": causal_test_case.effect_modifier_configuration,
-            "alpha": test["alpha"] if "alpha" in test else 0.05,
-        }
+        estimator_kwargs = {}
         if "formula" in test:
             estimator_kwargs["formula"] = test["formula"]
+            estimator_kwargs["adjustment_set"] = {}
+        else:
+            minimal_adjustment_set = self.causal_specification.causal_dag.identification(
+                causal_test_case.base_test_case)
+            minimal_adjustment_set = minimal_adjustment_set - {causal_test_case.treatment_variable}
+            estimator_kwargs["adjustment_set"] = minimal_adjustment_set
+
+        estimator_kwargs["treatment"] = causal_test_case.treatment_variable.name
+        estimator_kwargs["treatment_value"] = causal_test_case.treatment_value
+        estimator_kwargs["control_value"] = causal_test_case.control_value
+        estimator_kwargs["outcome"] = causal_test_case.outcome_variable.name
+        estimator_kwargs["effect_modifiers"] = causal_test_case.effect_modifier_configuration
+        estimator_kwargs["alpha"] = test["alpha"] if "alpha" in test else 0.05
+
         estimation_model = test["estimator"](**estimator_kwargs)
         return estimation_model
 
@@ -374,7 +377,7 @@ class JsonUtility:
         parser.add_argument(
             "-w",
             help="Specify to overwrite any existing output files. This can lead to the loss of existing outputs if not "
-            "careful",
+                 "careful",
             action="store_true",
         )
         parser.add_argument(
