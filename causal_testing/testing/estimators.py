@@ -307,9 +307,6 @@ class LinearRegressionEstimator(Estimator):
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             self.formula = f"{outcome} ~ {'+'.join(terms)}"
 
-        for term in self.effect_modifiers:
-            self.adjustment_set.add(term)
-
     def add_modelling_assumptions(self):
         """
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
