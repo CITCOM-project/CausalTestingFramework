@@ -22,7 +22,7 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
-from causal_testing.testing.estimators import Estimator, LinearRegressionEstimator
+from causal_testing.testing.estimators import Estimator, LinearRegressionEstimator, LogisticRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
@@ -309,8 +309,10 @@ class JsonUtility:
         """
         estimator_kwargs = {}
         if "formula" in test:
-            if test["estimator"] != LinearRegressionEstimator:
-                raise TypeError("Currently only LinearRegressionEstimator supports the use of formulas")
+            if test["estimator"] != LinearRegressionEstimator or LogisticRegressionEstimator:
+                raise TypeError(
+                    "Currently only LinearRegressionEstimator and LogisticRegressionEstimator supports the use of formulas"
+                )
             estimator_kwargs["formula"] = test["formula"]
             estimator_kwargs["adjustment_set"] = {}
         else:
