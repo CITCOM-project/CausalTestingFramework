@@ -90,8 +90,8 @@ def causal_test_intensity_num_shapes(
     # 8. Set up an estimator
     data = pd.read_csv(observational_data_path)
 
-    treatment = causal_test_case.get_treatment_variable()
-    outcome = causal_test_case.get_outcome_variable()
+    treatment = causal_test_case.treatment_variable.name
+    outcome = causal_test_case.outcome_variable.name
 
     estimator = None
     if empirical:

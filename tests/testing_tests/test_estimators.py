@@ -124,7 +124,7 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         logistic_regression_estimator = LogisticRegressionEstimator(
             "length_in", 65, 55, {"large_gauge"}, "completed", df
         )
-        ate, _ = logistic_regression_estimator.estimate_ate(estimator_params={"adjustment_config": {"large_gauge": 0}})
+        ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config = {"large_gauge": 0})
         self.assertEqual(round(ate, 4), -0.3388)
 
     def test_ate_invalid_adjustment(self):
@@ -132,7 +132,7 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, {}, "completed", df)
         with self.assertRaises(ValueError):
             ate, _ = logistic_regression_estimator.estimate_ate(
-                estimator_params={"adjustment_config": {"large_gauge": 0}}
+                adjustment_config = {"large_gauge": 0}
             )
 
     def test_ate_effect_modifiers(self):
@@ -392,8 +392,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
+
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
-            {k: self.nhefs_df.mean()[k] for k in covariates}
+            adjustment_config = {k: self.nhefs_df.mean()[k] for k in covariates}
         )
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [1.9, 5])
