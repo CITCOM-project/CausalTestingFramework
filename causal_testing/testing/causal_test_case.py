@@ -57,22 +57,6 @@ class CausalTestCase:
         else:
             self.effect_modifier_configuration = {}
 
-    def get_treatment_variable(self):
-        """Return the treatment variable name (as string) for this causal test case"""
-        return self.treatment_variable.name
-
-    def get_outcome_variable(self):
-        """Return the outcome variable name (as string) for this causal test case."""
-        return self.outcome_variable.name
-
-    def get_control_value(self):
-        """Return a the control value of the treatment variable in this causal test case."""
-        return self.control_value
-
-    def get_treatment_value(self):
-        """Return the treatment value of the treatment variable in this causal test case."""
-        return self.treatment_value
-
     def execute_test(self, estimator: type(Estimator), data_collector: DataCollector) -> CausalTestResult:
         """Execute a causal test case and return the causal test result.
 
