@@ -307,6 +307,9 @@ class LinearRegressionEstimator(Estimator):
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             self.formula = f"{outcome} ~ {'+'.join(terms)}"
 
+        for term in self.effect_modifiers:
+            self.adjustment_set.add(term)
+
     def add_modelling_assumptions(self):
         """
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
@@ -332,7 +335,7 @@ class LinearRegressionEstimator(Estimator):
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         assert set(treatment).issubset(
             model.params.index.tolist()
-        ), f"{treatment} not in\n{'  '+str(model.params.index).replace(newline, newline+'  ')}"
+        ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
         if str(self.df.dtypes[self.treatment]) != "object":
