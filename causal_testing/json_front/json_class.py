@@ -309,7 +309,7 @@ class JsonUtility:
         """
         estimator_kwargs = {}
         if "formula" in test:
-            if test["estimator"] != LinearRegressionEstimator or LogisticRegressionEstimator:
+            if test["estimator"] != (LinearRegressionEstimator or LogisticRegressionEstimator):
                 raise TypeError(
                     "Currently only LinearRegressionEstimator and LogisticRegressionEstimator supports the use of formulas"
                 )
