@@ -37,7 +37,6 @@ class TestCausalTestCase(unittest.TestCase):
             treatment_value=1,
         )
 
-
     def test_str(self):
         self.assertEqual(
             str(self.causal_test_case),
