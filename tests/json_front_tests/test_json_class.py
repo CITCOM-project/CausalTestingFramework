@@ -4,7 +4,7 @@ from statistics import StatisticsError
 import scipy
 import os
 
-from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
 from tests.test_helpers import remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
@@ -290,6 +290,31 @@ class TestJsonClass(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             json_class.setup(self.scenario)
+
+    def test_estimator_formula_type_check(self):
+        example_test = {
+            "tests": [
+                {
+                    "name": "test1",
+                    "mutations": {"test_input": "Increase"},
+                    "estimator": "CausalForestEstimator",
+                    "estimate_type": "ate",
+                    "effect_modifiers": [],
+                    "expected_effect": {"test_output": "Positive"},
+                    "skip": False,
+                    "formula": "test_output ~ test_input",
+                }
+            ]
+        }
+        self.json_class.test_plan = example_test
+        effects = {"Positive": Positive()}
+        mutates = {
+            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
+                                  > self.json_class.scenario.variables[x].z3
+        }
+        estimators = {"CausalForestEstimator": CausalForestEstimator}
+        with self.assertRaises(TypeError):
+            self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

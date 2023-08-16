@@ -22,7 +22,7 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
-from causal_testing.testing.estimators import Estimator
+from causal_testing.testing.estimators import Estimator, LinearRegressionEstimator, LogisticRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
@@ -307,20 +307,29 @@ class JsonUtility:
         :returns:
                 - estimation_model - Estimator instance for the test being run
         """
-        minimal_adjustment_set = self.causal_specification.causal_dag.identification(causal_test_case.base_test_case)
-        treatment_var = causal_test_case.treatment_variable
-        minimal_adjustment_set = minimal_adjustment_set - {treatment_var}
-        estimator_kwargs = {
-            "treatment": treatment_var.name,
-            "treatment_value": causal_test_case.treatment_value,
-            "control_value": causal_test_case.control_value,
-            "adjustment_set": minimal_adjustment_set,
-            "outcome": causal_test_case.outcome_variable.name,
-            "effect_modifiers": causal_test_case.effect_modifier_configuration,
-            "alpha": test["alpha"] if "alpha" in test else 0.05,
-        }
+        estimator_kwargs = {}
         if "formula" in test:
+            if test["estimator"] != (LinearRegressionEstimator or LogisticRegressionEstimator):
+                raise TypeError(
+                    "Currently only LinearRegressionEstimator and LogisticRegressionEstimator supports the use of "
+                    "formulas"
+                )
             estimator_kwargs["formula"] = test["formula"]
+            estimator_kwargs["adjustment_set"] = None
+        else:
+            minimal_adjustment_set = self.causal_specification.causal_dag.identification(
+                causal_test_case.base_test_case
+            )
+            minimal_adjustment_set = minimal_adjustment_set - {causal_test_case.treatment_variable}
+            estimator_kwargs["adjustment_set"] = minimal_adjustment_set
+
+        estimator_kwargs["treatment"] = causal_test_case.treatment_variable.name
+        estimator_kwargs["treatment_value"] = causal_test_case.treatment_value
+        estimator_kwargs["control_value"] = causal_test_case.control_value
+        estimator_kwargs["outcome"] = causal_test_case.outcome_variable.name
+        estimator_kwargs["effect_modifiers"] = causal_test_case.effect_modifier_configuration
+        estimator_kwargs["alpha"] = test["alpha"] if "alpha" in test else 0.05
+
         estimation_model = test["estimator"](**estimator_kwargs)
         return estimation_model
 

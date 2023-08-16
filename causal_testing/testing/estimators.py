@@ -334,7 +334,7 @@ class LinearRegressionEstimator(Estimator):
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         assert set(treatment).issubset(
             model.params.index.tolist()
-        ), f"{treatment} not in\n{'  '+str(model.params.index).replace(newline, newline+'  ')}"
+        ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
         if str(self.df.dtypes[self.treatment]) != "object":
