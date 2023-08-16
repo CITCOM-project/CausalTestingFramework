@@ -315,7 +315,7 @@ class JsonUtility:
                     "formulas"
                 )
             estimator_kwargs["formula"] = test["formula"]
-            estimator_kwargs["adjustment_set"] = {}
+            estimator_kwargs["adjustment_set"] = None
         else:
             minimal_adjustment_set = self.causal_specification.causal_dag.identification(
                 causal_test_case.base_test_case
