@@ -105,6 +105,7 @@ class RegressionEstimator(Estimator):
 
         if formula is not None:
             self.formula = formula
+
         else:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             self.formula = f"{outcome} ~ {'+'.join(terms)}"
@@ -131,7 +132,7 @@ class RegressionEstimator(Estimator):
         return outcome, self.treatment, covariates
 
     def validate_formula(self, causal_dag: CausalDAG):
-        outcome, treatment, covariates = causal_dag.get_terms_from_formula()
+        outcome, treatment, covariates = self.get_terms_from_formula()
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(treatments=[treatment], outcomes=[outcome])
         return CausalDAG.constructive_backdoor_criterion(proper_backdoor_graph=proper_backdoor_graph,
                                                          treatments=[treatment], outcomes=[outcome],
