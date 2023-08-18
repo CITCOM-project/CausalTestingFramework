@@ -17,6 +17,7 @@ from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
 from causal_testing.specification.variable import Variable
+from causal_testing.specification.causal_dag import CausalDAG
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +122,14 @@ class RegressionEstimator(Estimator):
             raise ValueError(f"Treatment variable '{self.treatment}' not found in formula")
         covariates = rhs_terms.remove(self.treatment)
         return outcome, self.treatment, covariates
+
+    def validate_formula(self, causal_dag: CausalDAG):
+        outcome, treatment, covariates = causal_dag.get_terms_from_formula()
+        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(treatments=[treatment], outcomes=[outcome])
+        return CausalDAG.constructive_backdoor_criterion(proper_backdoor_graph=proper_backdoor_graph,
+                                                         treatments=[treatment], outcomes=[outcome],
+                                                         covariates=list(covariates))
+
 
 class LogisticRegressionEstimator(Estimator):
     """A Logistic Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
