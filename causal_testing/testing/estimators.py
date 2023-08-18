@@ -100,8 +100,10 @@ class RegressionEstimator(Estimator):
             df: pd.DataFrame = None,
             effect_modifiers: dict[str:Any] = None,
             formula: str = None,
+            alpha: float = 0.05,
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers,
+                         alpha=alpha)
 
         if formula is not None:
             self.formula = formula
