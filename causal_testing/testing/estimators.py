@@ -10,7 +10,7 @@ import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from econml.dml import CausalForestDML
-from patsy import dmatrix
+from patsy import dmatrix, ModelDesc
 
 from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
@@ -40,16 +40,16 @@ class Estimator(ABC):
     """
 
     def __init__(
-        # pylint: disable=too-many-arguments
-        self,
-        treatment: str,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
-        outcome: str,
-        df: pd.DataFrame = None,
-        effect_modifiers: dict[str:Any] = None,
-        alpha: float = 0.05,
+            # pylint: disable=too-many-arguments
+            self,
+            treatment: str,
+            treatment_value: float,
+            control_value: float,
+            adjustment_set: set,
+            outcome: str,
+            df: pd.DataFrame = None,
+            effect_modifiers: dict[str:Any] = None,
+            alpha: float = 0.05,
     ):
         self.treatment = treatment
         self.treatment_value = treatment_value
@@ -83,6 +83,45 @@ class Estimator(ABC):
         """
 
 
+class RegressionEstimator(Estimator):
+    """
+
+    """
+
+    def __init__(
+            # pylint: disable=too-many-arguments
+            self,
+            treatment: str,
+            treatment_value: float,
+            control_value: float,
+            adjustment_set: set,
+            outcome: str,
+            df: pd.DataFrame = None,
+            effect_modifiers: dict[str:Any] = None,
+            formula: str = None,
+    ):
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
+
+        if formula is not None:
+            self.formula = formula
+        else:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            self.formula = f"{outcome} ~ {'+'.join(terms)}"
+
+    def get_terms_from_formula(self):
+        desc = ModelDesc.from_formula(self.formula)
+        if len(desc.lhs_termlist > 1):
+            raise ValueError("More than 1 left hand side term provided in formula, only single term is accepted")
+        outcome = desc.lhs_termlist[0].factors[0].code
+        rhs_terms = set()
+        for term in desc.rhs_termlist:
+            if term.factors:
+                rhs_terms.add(term.factors[0].code)
+        if self.treatment not in rhs_terms:
+            raise ValueError(f"Treatment variable '{self.treatment}' not found in formula")
+        covariates = rhs_terms.remove(self.treatment)
+        return outcome, self.treatment, covariates
+
 class LogisticRegressionEstimator(Estimator):
     """A Logistic Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear). It is designed
@@ -90,16 +129,16 @@ class LogisticRegressionEstimator(Estimator):
     """
 
     def __init__(
-        # pylint: disable=too-many-arguments
-        self,
-        treatment: str,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
-        outcome: str,
-        df: pd.DataFrame = None,
-        effect_modifiers: dict[str:Any] = None,
-        formula: str = None,
+            # pylint: disable=too-many-arguments
+            self,
+            treatment: str,
+            treatment_value: float,
+            control_value: float,
+            adjustment_set: set,
+            outcome: str,
+            df: pd.DataFrame = None,
+            effect_modifiers: dict[str:Any] = None,
+            formula: str = None,
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
@@ -162,7 +201,7 @@ class LogisticRegressionEstimator(Estimator):
         return model.predict(x)
 
     def estimate_control_treatment(
-        self, adjustment_config: dict = None, bootstrap_size: int = 100
+            self, adjustment_config: dict = None, bootstrap_size: int = 100
     ) -> tuple[pd.Series, pd.Series]:
         """Estimate the outcomes under control and treatment.
 
@@ -280,17 +319,18 @@ class LinearRegressionEstimator(Estimator):
     """
 
     def __init__(
-        # pylint: disable=too-many-arguments
-        self,
-        treatment: str,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
-        outcome: str,
-        df: pd.DataFrame = None,
-        effect_modifiers: dict[Variable:Any] = None,
-        formula: str = None,
-        alpha: float = 0.05,
+            # pylint: disable=too-many-arguments
+            self,
+            treatment: str,
+            treatment_value: float,
+            control_value: float,
+            adjustment_set: set,
+            outcome: str,
+            df: pd.DataFrame = None,
+            effect_modifiers: dict[Variable:Any] = None,
+            formula: str = None,
+            alpha: float = 0.05,
+
     ):
         super().__init__(
             treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha
@@ -446,17 +486,17 @@ class InstrumentalVariableEstimator(Estimator):
     """
 
     def __init__(
-        # pylint: disable=too-many-arguments
-        self,
-        treatment: str,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
-        outcome: str,
-        instrument: str,
-        df: pd.DataFrame = None,
-        intercept: int = 1,
-        effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
+            # pylint: disable=too-many-arguments
+            self,
+            treatment: str,
+            treatment_value: float,
+            control_value: float,
+            adjustment_set: set,
+            outcome: str,
+            instrument: str,
+            df: pd.DataFrame = None,
+            intercept: int = 1,
+            effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, None)
         self.intercept = intercept
