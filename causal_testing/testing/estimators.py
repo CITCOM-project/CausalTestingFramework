@@ -105,6 +105,9 @@ class RegressionEstimator(Estimator):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers,
                          alpha=alpha)
 
+        if effect_modifiers is None:
+            effect_modifiers = []
+
         if formula is not None:
             self.formula = formula
 
@@ -121,7 +124,7 @@ class RegressionEstimator(Estimator):
 
     def get_terms_from_formula(self):
         desc = ModelDesc.from_formula(self.formula)
-        if len(desc.lhs_termlist > 1):
+        if len(desc.lhs_termlist) > 1:
             raise ValueError("More than 1 left hand side term provided in formula, only single term is accepted")
         outcome = desc.lhs_termlist[0].factors[0].code
         rhs_terms = set()
@@ -346,6 +349,7 @@ class LinearRegressionEstimator(RegressionEstimator):
             alpha: float = 0.05,
 
     ):
+
         super().__init__(
             treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha,
             formula=formula
