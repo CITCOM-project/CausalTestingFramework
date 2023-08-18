@@ -109,6 +109,13 @@ class RegressionEstimator(Estimator):
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             self.formula = f"{outcome} ~ {'+'.join(terms)}"
 
+    @abstractmethod
+    def add_modelling_assumptions(self):
+        """
+        Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
+        must hold if the resulting causal inference is to be considered valid.
+        """
+
     def get_terms_from_formula(self):
         desc = ModelDesc.from_formula(self.formula)
         if len(desc.lhs_termlist > 1):
@@ -131,7 +138,7 @@ class RegressionEstimator(Estimator):
                                                          covariates=list(covariates))
 
 
-class LogisticRegressionEstimator(Estimator):
+class LogisticRegressionEstimator(RegressionEstimator):
     """A Logistic Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear). It is designed
     for estimating categorical outcomes.
@@ -149,15 +156,10 @@ class LogisticRegressionEstimator(Estimator):
             effect_modifiers: dict[str:Any] = None,
             formula: str = None,
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers,
+                         formula)
 
         self.model = None
-
-        if formula is not None:
-            self.formula = formula
-        else:
-            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(self.effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
 
     def add_modelling_assumptions(self):
         """
@@ -322,7 +324,7 @@ class LogisticRegressionEstimator(Estimator):
         return np.exp(model.params[self.treatment])
 
 
-class LinearRegressionEstimator(Estimator):
+class LinearRegressionEstimator(RegressionEstimator):
     """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
@@ -342,18 +344,11 @@ class LinearRegressionEstimator(Estimator):
 
     ):
         super().__init__(
-            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha
+            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha,
+            formula=formula
         )
 
         self.model = None
-        if effect_modifiers is None:
-            effect_modifiers = []
-
-        if formula is not None:
-            self.formula = formula
-        else:
-            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(terms)}"
 
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
