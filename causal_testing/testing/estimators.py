@@ -85,7 +85,10 @@ class Estimator(ABC):
 
 
 class RegressionEstimator(Estimator):
-    """ """
+    """An abstract class extending the Estimator functionality to add support for formulae, which are used in
+    regression based estimators.
+
+    """
 
     def __init__(
         # pylint: disable=too-many-arguments
@@ -121,7 +124,14 @@ class RegressionEstimator(Estimator):
         must hold if the resulting causal inference is to be considered valid.
         """
 
-    def get_terms_from_formula(self):
+    def get_terms_from_formula(self) -> tuple(str, str, list[str]):
+        """
+        Parse all the terms from a Patsy formula string into outcome, treatment and covariate variables.
+
+        Formulae are expected to only have a single left hand side term.
+
+        :return: a truple containing the outcome, treatment and covariate variable names in string format
+        """
         desc = ModelDesc.from_formula(self.formula)
         if len(desc.lhs_termlist) > 1:
             raise ValueError("More than 1 left hand side term provided in formula, only single term is accepted")
@@ -138,6 +148,14 @@ class RegressionEstimator(Estimator):
         return outcome, self.treatment, covariates
 
     def validate_formula(self, causal_dag: CausalDAG):
+        """
+        Validate the provided Patsy formula string using the constructive backdoor criterion method found in the
+        CausalDAG class
+
+        :param causal_dag: A CausalDAG object containing for the current test scenario
+        :return: True for a formula that does not violate the criteria and False if the formula does violate the
+        criteria
+        """
         outcome, treatment, covariates = self.get_terms_from_formula()
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(treatments=[treatment], outcomes=[outcome])
         return causal_dag.constructive_backdoor_criterion(
