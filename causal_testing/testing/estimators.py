@@ -142,9 +142,12 @@ class RegressionEstimator(Estimator):
                 rhs_terms.add(term.factors[0].code)
         if self.treatment not in rhs_terms:
             raise ValueError(f"Treatment variable '{self.treatment}' not found in formula")
-        covariates = rhs_terms.remove(self.treatment)
+        rhs_terms.remove(self.treatment)
+        covariates = rhs_terms
         if covariates is None:
             covariates = []
+        else:
+            covariates = list(covariates)
         return outcome, self.treatment, covariates
 
     def validate_formula(self, causal_dag: CausalDAG):
