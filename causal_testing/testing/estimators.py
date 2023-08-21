@@ -41,16 +41,16 @@ class Estimator(ABC):
     """
 
     def __init__(
-            # pylint: disable=too-many-arguments
-            self,
-            treatment: str,
-            treatment_value: float,
-            control_value: float,
-            adjustment_set: set,
-            outcome: str,
-            df: pd.DataFrame = None,
-            effect_modifiers: dict[str:Any] = None,
-            alpha: float = 0.05,
+        # pylint: disable=too-many-arguments
+        self,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: str,
+        df: pd.DataFrame = None,
+        effect_modifiers: dict[str:Any] = None,
+        alpha: float = 0.05,
     ):
         self.treatment = treatment
         self.treatment_value = treatment_value
@@ -85,25 +85,24 @@ class Estimator(ABC):
 
 
 class RegressionEstimator(Estimator):
-    """
-
-    """
+    """ """
 
     def __init__(
-            # pylint: disable=too-many-arguments
-            self,
-            treatment: str,
-            treatment_value: float,
-            control_value: float,
-            adjustment_set: set,
-            outcome: str,
-            df: pd.DataFrame = None,
-            effect_modifiers: dict[str:Any] = None,
-            formula: str = None,
-            alpha: float = 0.05,
+        # pylint: disable=too-many-arguments
+        self,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: str,
+        df: pd.DataFrame = None,
+        effect_modifiers: dict[str:Any] = None,
+        formula: str = None,
+        alpha: float = 0.05,
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers,
-                         alpha=alpha)
+        super().__init__(
+            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha
+        )
 
         if effect_modifiers is None:
             effect_modifiers = []
@@ -134,14 +133,19 @@ class RegressionEstimator(Estimator):
         if self.treatment not in rhs_terms:
             raise ValueError(f"Treatment variable '{self.treatment}' not found in formula")
         covariates = rhs_terms.remove(self.treatment)
+        if covariates is None:
+            covariates = []
         return outcome, self.treatment, covariates
 
     def validate_formula(self, causal_dag: CausalDAG):
         outcome, treatment, covariates = self.get_terms_from_formula()
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(treatments=[treatment], outcomes=[outcome])
-        return CausalDAG.constructive_backdoor_criterion(proper_backdoor_graph=proper_backdoor_graph,
-                                                         treatments=[treatment], outcomes=[outcome],
-                                                         covariates=list(covariates))
+        return causal_dag.constructive_backdoor_criterion(
+            proper_backdoor_graph=proper_backdoor_graph,
+            treatments=[treatment],
+            outcomes=[outcome],
+            covariates=list(covariates),
+        )
 
 
 class LogisticRegressionEstimator(RegressionEstimator):
@@ -151,19 +155,20 @@ class LogisticRegressionEstimator(RegressionEstimator):
     """
 
     def __init__(
-            # pylint: disable=too-many-arguments
-            self,
-            treatment: str,
-            treatment_value: float,
-            control_value: float,
-            adjustment_set: set,
-            outcome: str,
-            df: pd.DataFrame = None,
-            effect_modifiers: dict[str:Any] = None,
-            formula: str = None,
+        # pylint: disable=too-many-arguments
+        self,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: str,
+        df: pd.DataFrame = None,
+        effect_modifiers: dict[str:Any] = None,
+        formula: str = None,
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers,
-                         formula)
+        super().__init__(
+            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, formula
+        )
 
         self.model = None
 
@@ -218,7 +223,7 @@ class LogisticRegressionEstimator(RegressionEstimator):
         return model.predict(x)
 
     def estimate_control_treatment(
-            self, adjustment_config: dict = None, bootstrap_size: int = 100
+        self, adjustment_config: dict = None, bootstrap_size: int = 100
     ) -> tuple[pd.Series, pd.Series]:
         """Estimate the outcomes under control and treatment.
 
@@ -336,23 +341,28 @@ class LinearRegressionEstimator(RegressionEstimator):
     """
 
     def __init__(
-            # pylint: disable=too-many-arguments
-            self,
-            treatment: str,
-            treatment_value: float,
-            control_value: float,
-            adjustment_set: set,
-            outcome: str,
-            df: pd.DataFrame = None,
-            effect_modifiers: dict[Variable:Any] = None,
-            formula: str = None,
-            alpha: float = 0.05,
-
+        # pylint: disable=too-many-arguments
+        self,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: str,
+        df: pd.DataFrame = None,
+        effect_modifiers: dict[Variable:Any] = None,
+        formula: str = None,
+        alpha: float = 0.05,
     ):
-
         super().__init__(
-            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha,
-            formula=formula
+            treatment,
+            treatment_value,
+            control_value,
+            adjustment_set,
+            outcome,
+            df,
+            effect_modifiers,
+            alpha=alpha,
+            formula=formula,
         )
 
         self.model = None
@@ -497,17 +507,17 @@ class InstrumentalVariableEstimator(Estimator):
     """
 
     def __init__(
-            # pylint: disable=too-many-arguments
-            self,
-            treatment: str,
-            treatment_value: float,
-            control_value: float,
-            adjustment_set: set,
-            outcome: str,
-            instrument: str,
-            df: pd.DataFrame = None,
-            intercept: int = 1,
-            effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
+        # pylint: disable=too-many-arguments
+        self,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: str,
+        instrument: str,
+        df: pd.DataFrame = None,
+        intercept: int = 1,
+        effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
     ):
         super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, None)
         self.intercept = intercept
