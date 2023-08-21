@@ -510,3 +510,15 @@ class TestRegressionEstimator(unittest.TestCase):
         self.assertEqual(outcome, "Y")
         self.assertEqual(treatment, "X")
         self.assertEqual(covariates, ["Z"])
+
+    def test_multiple_lhs_terms(self):
+        regression_estimator = self.regression_estimator
+        regression_estimator.formula = "Y + Z ~ X"
+        with self.assertRaises(ValueError):
+            self.regression_estimator.get_terms_from_formula()
+
+    def test_no_treatment_variable_in_formula(self):
+        regression_estimator = self.regression_estimator
+        regression_estimator.formula = "Y ~ A + Z"
+        with self.assertRaises(ValueError):
+            self.regression_estimator.get_terms_from_formula()
