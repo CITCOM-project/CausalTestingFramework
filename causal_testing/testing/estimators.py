@@ -124,7 +124,7 @@ class RegressionEstimator(Estimator):
         must hold if the resulting causal inference is to be considered valid.
         """
 
-    def get_terms_from_formula(self) -> tuple(str, str, list[str]):
+    def get_terms_from_formula(self) -> tuple[str, str, list[str]]:
         """
         Parse all the terms from a Patsy formula string into outcome, treatment and covariate variables.
 
