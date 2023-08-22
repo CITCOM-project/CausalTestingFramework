@@ -522,3 +522,11 @@ class TestRegressionEstimator(unittest.TestCase):
         regression_estimator.formula = "Y ~ A + Z"
         with self.assertRaises(ValueError):
             self.regression_estimator.get_terms_from_formula()
+
+
+    def test_no_covariate_in_formula(self):
+        regression_estimator = self.regression_estimator
+        regression_estimator.formula = "Y ~ X"
+        outcome, treatment, covariates = self.regression_estimator.get_terms_from_formula()
+        self.assertEqual(outcome, "Y")
+        self.assertEqual(treatment, "X")
