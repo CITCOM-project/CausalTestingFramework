@@ -66,7 +66,7 @@ def list_all_min_sep(
         # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
         if treatment_node_set_neighbours.difference(outcome_node_set):
             # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
-            node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
+            node = set(sample(sorted(treatment_node_set_neighbours.difference(outcome_node_set)), 1))
 
             # 7.2. Add this node to the treatment node set and recurse (left branch)
             yield from list_all_min_sep(

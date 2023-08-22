@@ -1,5 +1,5 @@
 """This module contains the Estimator abstract class, as well as its concrete extensions: LogisticRegressionEstimator,
-LinearRegressionEstimator and CausalForestEstimator"""
+LinearRegressionEstimator"""
 import logging
 from abc import ABC, abstractmethod
 from typing import Any

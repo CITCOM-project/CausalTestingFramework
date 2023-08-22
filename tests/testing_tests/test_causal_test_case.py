@@ -10,7 +10,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue
-from causal_testing.testing.estimators import CausalForestEstimator, LinearRegressionEstimator
+from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
@@ -106,19 +106,6 @@ class TestCausalTestExecution(unittest.TestCase):
         minimal_adjustment_set = self.causal_dag.identification(self.base_test_case)
         self.assertEqual(minimal_adjustment_set, {"D"})
 
-    def test_execute_test_observational_causal_forest_estimator(self):
-        """Check that executing the causal test case returns the correct results for the dummy data using a causal
-        forest estimator."""
-        estimation_model = CausalForestEstimator(
-            "A",
-            self.treatment_value,
-            self.control_value,
-            self.minimal_adjustment_set,
-            "C",
-            self.df,
-        )
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        self.assertAlmostEqual(causal_test_result.test_value.value, 4, delta=1)
 
     def test_invalid_causal_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -228,33 +215,6 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         self.assertAlmostEqual(round(causal_test_result.test_value.value, 1), 4, delta=1)
-
-    def test_execute_observational_causal_forest_estimator_cates(self):
-        """Check that executing the causal test case returns the correct conditional average treatment effects for
-        dummy data with effect multiplicative effect modification. C ~ (4*(A+2) + D)*M"""
-        # Add some effect modifier M that has a multiplicative effect on C
-        self.df["M"] = np.random.randint(1, 5, len(self.df))
-        self.df["C"] *= self.df["M"]
-        estimation_model = CausalForestEstimator(
-            "A",
-            self.treatment_value,
-            self.control_value,
-            self.minimal_adjustment_set,
-            "C",
-            self.df,
-            effect_modifiers={"M": None},
-        )
-        self.causal_test_case.estimate_type = "cates"
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        causal_test_result = causal_test_result.test_value.value
-        # Check that each effect modifier's strata has a greater ATE than the last (ascending order)
-        causal_test_result_m1 = causal_test_result.loc[causal_test_result["M"] == 1]
-        causal_test_result_m2 = causal_test_result.loc[causal_test_result["M"] == 2]
-        causal_test_result_m3 = causal_test_result.loc[causal_test_result["M"] == 3]
-        causal_test_result_m4 = causal_test_result.loc[causal_test_result["M"] == 4]
-        self.assertLess(causal_test_result_m1["cate"].mean(), causal_test_result_m2["cate"].mean())
-        self.assertLess(causal_test_result_m2["cate"].mean(), causal_test_result_m3["cate"].mean())
-        self.assertLess(causal_test_result_m3["cate"].mean(), causal_test_result_m4["cate"].mean())
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

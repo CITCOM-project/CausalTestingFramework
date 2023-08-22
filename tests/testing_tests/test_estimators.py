@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from causal_testing.testing.estimators import (
     LinearRegressionEstimator,
-    CausalForestEstimator,
     LogisticRegressionEstimator,
     InstrumentalVariableEstimator,
 )
@@ -407,69 +406,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 
         cv = CausalValidator()
         self.assertEqual(round(cv.estimate_robustness(model)["treatments"], 4), 0.7353)
-
-
-class TestCausalForestEstimator(unittest.TestCase):
-    """Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].
-
-    Reference: Hernán MA, Robins JM (2020). Causal Inference: What If. Boca Raton: Chapman & Hall/CRC.
-    Link: https://www.hsph.harvard.edu/miguel-hernan/causal-inference-book/
-    """
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.nhefs_df = load_nhefs_df()
-        cls.chapter_11_df = load_chapter_11_df()
-
-    def test_program_15_ate(self):
-        """Test whether our causal forest implementation produces the similar ATE to program 15.1 (p. 163, 184)."""
-        df = self.nhefs_df
-        covariates = {
-            "sex",
-            "race",
-            "age",
-            "edu_2",
-            "edu_3",
-            "edu_4",
-            "edu_5",
-            "exercise_1",
-            "exercise_2",
-            "active_1",
-            "active_2",
-            "wt71",
-            "smokeintensity",
-            "smokeyrs",
-        }
-        causal_forest = CausalForestEstimator("qsmk", 1, 0, covariates, "wt82_71", df, {"smokeintensity": 40})
-        ate, _ = causal_forest.estimate_ate()
-        self.assertGreater(round(ate, 1), 2.5)
-        self.assertLess(round(ate, 1), 4.5)
-
-    def test_program_15_cate(self):
-        """Test whether our causal forest implementation produces the similar CATE to program 15.1 (p. 163, 184)."""
-        df = self.nhefs_df
-        smoking_intensity_5_and_40_df = df.loc[(df["smokeintensity"] == 5) | (df["smokeintensity"] == 40)]
-        covariates = {
-            "sex",
-            "race",
-            "age",
-            "edu_2",
-            "edu_3",
-            "edu_4",
-            "edu_5",
-            "exercise_1",
-            "exercise_2",
-            "active_1",
-            "active_2",
-            "wt71",
-            "smokeintensity",
-            "smokeyrs",
-        }
-        causal_forest = CausalForestEstimator(
-            "qsmk", 1, 0, covariates, "wt82_71", smoking_intensity_5_and_40_df, {"smokeintensity": 40}
-        )
-        cates_df, _ = causal_forest.estimate_cates()
-        self.assertGreater(cates_df["cate"].mean(), 0)
 
 
 class TestLinearRegressionInteraction(unittest.TestCase):
