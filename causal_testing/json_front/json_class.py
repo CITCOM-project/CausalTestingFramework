@@ -270,6 +270,9 @@ class JsonUtility:
         failed = False
 
         estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test)
+        if "formula" in test:
+            if not estimation_model.validate_formula(self.causal_specification.causal_dag):
+                raise ValueError("Formula covariates do not satisfy the constructive back-door criterion.")
         causal_test_result = causal_test_case.execute_test(
             estimator=estimation_model, data_collector=self.data_collector
         )
@@ -331,6 +334,7 @@ class JsonUtility:
         estimator_kwargs["alpha"] = test["alpha"] if "alpha" in test else 0.05
 
         estimation_model = test["estimator"](**estimator_kwargs)
+
         return estimation_model
 
     def _append_to_file(self, line: str, log_level: int = None):

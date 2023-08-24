@@ -7,6 +7,7 @@ from causal_testing.testing.estimators import (
     CausalForestEstimator,
     LogisticRegressionEstimator,
     InstrumentalVariableEstimator,
+    RegressionEstimator,
 )
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
@@ -124,7 +125,7 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         logistic_regression_estimator = LogisticRegressionEstimator(
             "length_in", 65, 55, {"large_gauge"}, "completed", df
         )
-        ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config = {"large_gauge": 0})
+        ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
         self.assertEqual(round(ate, 4), -0.3388)
 
     def test_ate_invalid_adjustment(self):
@@ -132,7 +133,7 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, {}, "completed", df)
         with self.assertRaises(ValueError):
             ate, _ = logistic_regression_estimator.estimate_ate(
-                adjustment_config = {"large_gauge": 0}
+                adjustment_config={"large_gauge": 0}
             )
 
     def test_ate_effect_modifiers(self):
@@ -394,7 +395,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # for term_to_square in terms_to_square:
 
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
-            adjustment_config = {k: self.nhefs_df.mean()[k] for k in covariates}
+            adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates}
         )
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [1.9, 5])
@@ -491,3 +492,41 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         test_results = lr_model.estimate_ate()
         ate = test_results[0]
         self.assertAlmostEqual(ate, 2.0)
+
+
+class TestRegressionEstimator(unittest.TestCase):
+    """Test the extended functionality of the TestRegressionEstimator"""
+
+    @classmethod
+    def setUpClass(cls):
+        class RegressionEstimatorTesting(RegressionEstimator):
+            def add_modelling_assumptions(self):
+                pass
+
+        cls.regression_estimator = RegressionEstimatorTesting("X", 1, 0, {"Z"}, "Y", formula="Y ~ X + Z")
+
+    def test_get_formulae(self):
+        outcome, treatment, covariates = self.regression_estimator.get_terms_from_formula()
+        self.assertEqual(outcome, "Y")
+        self.assertEqual(treatment, "X")
+        self.assertEqual(covariates, ["Z"])
+
+    def test_multiple_lhs_terms(self):
+        regression_estimator = self.regression_estimator
+        regression_estimator.formula = "Y + Z ~ X"
+        with self.assertRaises(ValueError):
+            self.regression_estimator.get_terms_from_formula()
+
+    def test_no_treatment_variable_in_formula(self):
+        regression_estimator = self.regression_estimator
+        regression_estimator.formula = "Y ~ A + Z"
+        with self.assertRaises(ValueError):
+            self.regression_estimator.get_terms_from_formula()
+
+
+    def test_no_covariate_in_formula(self):
+        regression_estimator = self.regression_estimator
+        regression_estimator.formula = "Y ~ X"
+        outcome, treatment, covariates = self.regression_estimator.get_terms_from_formula()
+        self.assertEqual(outcome, "Y")
+        self.assertEqual(treatment, "X")
