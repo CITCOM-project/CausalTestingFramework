@@ -79,15 +79,23 @@ class CausalTestCase:
         if not hasattr(estimator, f"estimate_{self.estimate_type}"):
             raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
         estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
-        effect, confidence_intervals = estimate_effect(**self.estimate_params)
-        causal_test_result = CausalTestResult(
-            estimator=estimator,
-            test_value=TestValue(self.estimate_type, effect),
-            effect_modifier_configuration=self.effect_modifier_configuration,
-            confidence_intervals=confidence_intervals,
-        )
-
-        return causal_test_result
+        try:
+            effect, confidence_intervals = estimate_effect(**self.estimate_params)
+            causal_test_result = CausalTestResult(
+                estimator=estimator,
+                test_value=TestValue(self.estimate_type, effect),
+                effect_modifier_configuration=self.effect_modifier_configuration,
+                confidence_intervals=confidence_intervals,
+            )
+        except np.linalg.LinAlgError:
+            causal_test_result = CausalTestResult(
+                estimator=estimator,
+                test_value=TestValue(self.estimate_type, "LinAlgError"),
+                effect_modifier_configuration=self.effect_modifier_configuration,
+                confidence_intervals=None,
+            )
+        finally:
+            return causal_test_result
 
     def __str__(self):
         treatment_config = {self.treatment_variable.name: self.treatment_value}
