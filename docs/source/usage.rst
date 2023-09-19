@@ -55,7 +55,7 @@ the given output and input and the desired effect. This information is the minim
    base_test_case = BaseTestCase(
       treatment_variable = x, # Set the treatment (input) variable to x
       outcome_variable = y, # set the outcome (output) variable to y
-      effect = Effect.direct.value) # effect type, current accepted types are direct and total
+      effect = Effect.DIRECT.value) # effect type, current accepted types are direct and total
 
    causal_test_case = CausalTestCase(
       base_test_case = base_test_case,
