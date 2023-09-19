@@ -10,14 +10,13 @@ import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from econml.dml import CausalForestDML
-from patsy import dmatrix, ModelDesc
+from patsy import dmatrix
 
 from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
 from causal_testing.specification.variable import Variable
-from causal_testing.specification.causal_dag import CausalDAG
 
 logger = logging.getLogger(__name__)
 
@@ -84,92 +83,7 @@ class Estimator(ABC):
         """
 
 
-class RegressionEstimator(Estimator):
-    """An abstract class extending the Estimator functionality to add support for formulae, which are used in
-    regression based estimators.
-
-    """
-
-    def __init__(
-        # pylint: disable=too-many-arguments
-        self,
-        treatment: str,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
-        outcome: str,
-        df: pd.DataFrame = None,
-        effect_modifiers: dict[str:Any] = None,
-        formula: str = None,
-        alpha: float = 0.05,
-    ):
-        super().__init__(
-            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha
-        )
-
-        if effect_modifiers is None:
-            effect_modifiers = []
-
-        if formula is not None:
-            self.formula = formula
-
-        else:
-            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(terms)}"
-
-    @abstractmethod
-    def add_modelling_assumptions(self):
-        """
-        Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
-        must hold if the resulting causal inference is to be considered valid.
-        """
-
-    def get_terms_from_formula(self) -> tuple[str, str, list[str]]:
-        """
-        Parse all the terms from a Patsy formula string into outcome, treatment and covariate variables.
-
-        Formulae are expected to only have a single left hand side term.
-
-        :return: a truple containing the outcome, treatment and covariate variable names in string format
-        """
-        desc = ModelDesc.from_formula(self.formula)
-        if len(desc.lhs_termlist) > 1:
-            raise ValueError("More than 1 left hand side term provided in formula, only single term is accepted")
-        outcome = desc.lhs_termlist[0].factors[0].code
-        rhs_terms = set()
-        for term in desc.rhs_termlist:
-            if term.factors:
-                rhs_terms.add(term.factors[0].code)
-        if self.treatment not in rhs_terms:
-            raise ValueError(f"Treatment variable '{self.treatment}' not found in formula")
-        rhs_terms.remove(self.treatment)
-        covariates = rhs_terms
-        if covariates is None:
-            covariates = []
-        else:
-            covariates = list(covariates)
-        return outcome, self.treatment, covariates
-
-    def validate_formula(self, causal_dag: CausalDAG):
-        """
-        Validate the provided Patsy formula string using the constructive backdoor criterion method found in the
-        CausalDAG class
-
-        :param causal_dag: A CausalDAG object containing for the current test scenario
-        :return: True for a formula that does not violate the criteria and False if the formula does violate the
-        criteria
-        """
-        outcome, treatment, covariates = self.get_terms_from_formula()
-        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(treatments=[treatment], outcomes=[outcome])
-        return causal_dag.constructive_backdoor_criterion(
-            proper_backdoor_graph=proper_backdoor_graph,
-            treatments=[treatment],
-            outcomes=[outcome],
-            covariates=list(covariates),
-        )
-
-
-class LogisticRegressionEstimator(RegressionEstimator):
+class LogisticRegressionEstimator(Estimator):
     """A Logistic Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear). It is designed
     for estimating categorical outcomes.
@@ -187,11 +101,15 @@ class LogisticRegressionEstimator(RegressionEstimator):
         effect_modifiers: dict[str:Any] = None,
         formula: str = None,
     ):
-        super().__init__(
-            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, formula
-        )
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
 
         self.model = None
+
+        if formula is not None:
+            self.formula = formula
+        else:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(self.effect_modifiers))
+            self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
 
     def add_modelling_assumptions(self):
         """
@@ -356,7 +274,7 @@ class LogisticRegressionEstimator(RegressionEstimator):
         return np.exp(model.params[self.treatment])
 
 
-class LinearRegressionEstimator(RegressionEstimator):
+class LinearRegressionEstimator(Estimator):
     """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
@@ -375,18 +293,18 @@ class LinearRegressionEstimator(RegressionEstimator):
         alpha: float = 0.05,
     ):
         super().__init__(
-            treatment,
-            treatment_value,
-            control_value,
-            adjustment_set,
-            outcome,
-            df,
-            effect_modifiers,
-            alpha=alpha,
-            formula=formula,
+            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha
         )
 
         self.model = None
+        if effect_modifiers is None:
+            effect_modifiers = []
+
+        if formula is not None:
+            self.formula = formula
+        else:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            self.formula = f"{outcome} ~ {'+'.join(terms)}"
 
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
