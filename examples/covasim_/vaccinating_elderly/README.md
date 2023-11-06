@@ -13,6 +13,9 @@ four test cases: one focusing on each of the four previously mentioned outputs.
 
 Further details are provided in Section 5.3 (Prioritising the elderly for vaccination) of the paper.
 
+Note: this version of the example utilises the observational data collector, which was previously simulated using the 
+experimental data collector, in order to save computation time.
+
 ## How to run
 To run this case study:
 1. Ensure all project dependencies are installed by running `pip install .` from the top
