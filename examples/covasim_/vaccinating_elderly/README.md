@@ -13,8 +13,9 @@ four test cases: one focusing on each of the four previously mentioned outputs.
 
 Further details are provided in Section 5.3 (Prioritising the elderly for vaccination) of the paper.
 
-Note: this version of the example utilises the observational data collector, which was previously simulated using the 
-experimental data collector, in order to save computation time.
+**Note**: this version of the CTF utilises the observational data collector in order to separate the software execution 
+and testing. Older versions of this framework simulate the data using the custom experimental data collector and the 
+`covasim` package (version 3.0.7) as outlined below. 
 
 ## How to run
 To run this case study:

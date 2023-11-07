@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 import logging
-import warnings
 import pandas as pd
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
@@ -13,7 +12,6 @@ from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEff
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
-warnings.filterwarnings("ignore", message=".*The 'nopython' keyword.*")  # Supress the numba warning in covasim
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
@@ -28,7 +26,7 @@ def setup_test_case(verbose: bool = False):
     :return results_dict: A dictionary containing ATE, 95% CIs, and Test Pass/Fail
     """
 
-    # 1. Create causal dag
+    # 1. Read in the Causal DAG
     causal_dag = CausalDAG(f"{ROOT}/dag.dot")
 
     # 2. Create variables
@@ -81,6 +79,7 @@ def setup_test_case(verbose: bool = False):
         # 7. Obtain the minimal adjustment set for the causal test case from the causal DAG
         minimal_adjustment_set = causal_dag.identification(base_test_case)
 
+        # 8. Build statistical model using the Linear Regression estimator
         linear_regression_estimator = LinearRegressionEstimator(
             treatment=vaccine.name,
             treatment_value=1,
@@ -90,6 +89,7 @@ def setup_test_case(verbose: bool = False):
             df=obs_df,
         )
 
+        # 9. Execute test and save results in dict
         causal_test_result = causal_test_case.execute_test(linear_regression_estimator, data_collector)
 
         if verbose:
@@ -107,6 +107,7 @@ def setup_test_case(verbose: bool = False):
 
 
 if __name__ == "__main__":
+
     test_results = setup_test_case(verbose=True)
 
     logging.info("%s", test_results)
