@@ -2,14 +2,13 @@
 Usage
 -----
 
-There are currently three methods of using the Causal Testing Framework, through
-the :doc:`JSON Front End </frontends/json_front_end>`\, using
-:doc:`Test Suites </frontends/test_suite>`\, or directly as
+There are currently 3 methods of using the Causal Testing Framework; 1) :doc:`JSON Front End </frontends/json_front_end>`\, 2)
+:doc:`Test Suites </frontends/test_suite>`\, or 3) directly as
 described below.
 
-The causal testing framework is made up of three main components: Specification, Testing, and Data Collection. The first
+The causal testing framework is made up of 3 main components: Specification, Testing, and Data Collection. The first
 step is to specify the (part of the) system under test as a modelling ``Scenario``. Modelling scenarios specify the
-observable variables and any constraints which exist between them. We currently support three types of variable:
+observable variables and any constraints which exist between them. We currently support 3 types of variable:
 
 
 * ``Input`` variables are input parameters to the system.
@@ -77,19 +76,12 @@ data, e.g.
 
 .. code-block:: python
 
-   data_csv_path = 'results/data.csv'
-   data_collector = ObservationalDataCollector(modelling_scenario, data_csv_path)
+   obs_df = pd.read_csv('results/data.csv')
+   data_collector = ObservationalDataCollector(modelling_scenario, obs_df)
 
-The actual running of the tests is done using the ``CausalTestEngine`` class. The setup of the test engine is as follows:
-
-.. code-block:: python
-
-   from causal_testing.testing.causal_test_engine import CausalTestEngine
-
-   causal_test_engine = CausalTestEngine(causal_specification, data_collector)  # Instantiate the causal test engine
 
 Whether using fresh or pre-existing data, a key aspect of causal inference is estimation. To actually execute a test, we
-need an estimator. We currently support two estimators: linear regression and causal forest. The estimators require the
+need an estimator. We currently support two estimators: linear regression and logistic regression. The estimators require the
 minimal adjustment set from the causal_dag. This and the estimator can be instantiated as per
 the `documentation <https://causal-testing-framework.readthedocs.io/en/latest/autoapi/causal_testing/testing/estimators/index.html>`_.
 
@@ -98,18 +90,18 @@ the `documentation <https://causal-testing-framework.readthedocs.io/en/latest/au
    from causal_testing.testing.estimators import LinearRegressionEstimator
 
    minimal_adjustment_set = causal_dag.identification(base_test_case)
-   estimation_model = LinearRegressionEstimator("x",), 0, 1, minimal_adjustment_set, ("y",), causal_test_engine.scenario_execution_data_df)
+   estimation_model =  LinearRegressionEstimator(treatment=treatment, control=control, treatment_value=1, control_value=0, adjustment_set = minimal_adjustment_set, df = obs_df)
+
+
 
 We can now execute the test using the estimation model. This returns a causal test result, from which we can extract
 various information. Here, we simply assert that the observed result is (on average) what we expect to see.
 
 .. code-block:: python
 
-   causal_test_result = causal_test_engine.execute_test(
-       estimator = estimation_model,
-       causal_test_case = causal_test_case)
+   causal_test_result = causal_test_case.execute_test(estimation_model, data_collector)
    test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
    assert test_passes, "Expected to see a positive change in y."
 
 Multiple tests can be executed at once using the test engines `test_suite <https://causal-testing-framework.readthedocs.io/en/test_suite.html>`_
-feature
+feature.

@@ -6,7 +6,7 @@ The documentation is accessible on [Read the Docs](https://causal-testing-framew
 
 ## Locally building
 To build locally, the requirements in `docs/source/requirements.txt` will need to be installed.
-
+[README.md](README.md)
 Within `docs/`, run `make html` to create or update the .html files in the `docs/build` directory. 
 
 Running `make clean` will clean the `build` folder.  

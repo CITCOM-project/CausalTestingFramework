@@ -1,23 +1,22 @@
 JSON Frontend
 ======================================
-The JSON frontend allows Causal Tests and parameters to be specified in JSON to allow for tests to be quickly written
-whilst retaining the flexibility of the Causal Testing Framework (CTF).
+The JSON frontend allows causal tests and parameters to be specified in JSON to allow for tests to be quickly written
+whilst retaining the flexibility of the framework.
 
-basic workflow
+Basic Workflow
 --------------
 The basic workflow of using the JSON frontend is as follows:
 
-#. Specify your test cases in the JSON format (more details below)
-#. Create your DAG in a dot file
-#. Initialise the JsonUtility class in python with a path of where you want the outputs saved
-#. Set the paths pointing the Json class to your json file, dag file and optionally your data file (see data section below) using the :func:`causal_testing.json_front.json_class.JsonUtility.set_paths` method
-#. Run the :func:`causal_testing.json_front.json_class.JsonUtility.setup` method providing your scenario
+#. Specify your test cases in the JSON format (more details below).
+#. Create your DAG in a dot file.
+#. Initialise the JsonUtility class in python with a path of where you want the outputs saved.
+#. Set the paths pointing the Json class to your json file, dag file and optionally your data file (see data section below) using the :func:`causal_testing.json_front.json_class.JsonUtility.set_paths` method.
+#. Run the :func:`causal_testing.json_front.json_class.JsonUtility.setup` method providing your scenario.
 #. Run the :func:`causal_testing.json_front.json_class.JsonUtility.run_json_tests` method, which will execute the test cases provided by the JSON file.
 
 Example Walkthrough
 -------------------
-An example is provided in `examples/poisson` which will be walked through in this README to better understand
-the framework
+An example is provided in `examples/poisson` which contains a README with more detailed information.
 
 run_causal_tests.py
 *******************
@@ -31,11 +30,11 @@ such as:
 #. Meta constraint functions
 #. Mapping JSON distributions, effects, and estimators to python objects
 
-Use case specific information is also declared here such as the paths to the relevant files needed for the tests.
+Use-case specific information is also declared here such as the paths to the relevant files needed for the tests.
 
 causal_tests.json
 *****************
-`examples/poisson/causal_tests.json <https://github.c#om/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/causal_tests.json>`_ contains python code written by the user to implement scenario specific features
+`examples/poisson/causal_tests.json <https://github.c#om/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/causal_tests.json>`_ contains Python code written by the user to implement scenario specific features
 is the JSON file that allows for the easy specification of multiple causal tests. Tests can be specified two ways; firstly by specifying a mutation lke in the example tests with the following structure:
 Each test requires:
 
@@ -60,7 +59,7 @@ The second method of specifying a test is to specify the test in a concrete form
 
 Run Commands
 ************
-This example uses the Argparse utility built into the JSON frontend, which allows the frontend to be run from a commandline interface as shown here.
+This example uses the ``Argparse`` utility built into the JSON frontend, which allows the frontend to be run from a commandline interface as shown here.
 
 To run the JSON frontend example from the root directory of the project, use::
 
@@ -79,13 +78,9 @@ The behaviour of where the log file is produced and named can be altered with th
 
 
 Runtime Data
-----------
+-------------
 
 There are currently 2 methods to inputting your runtime data into the JSON frontend:
 
 #. Providing one or more file paths to `.csv` files containing your data
-#. Setting a dataframe to the .data attribute of the JsonUtility instance, this must be done before the setup method is called.
-
-
-
-
+#. Setting a dataframe to the .data attribute of the JSONUtility instance, this must be done before the setup method is called.
