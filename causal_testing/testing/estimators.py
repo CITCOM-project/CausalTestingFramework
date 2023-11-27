@@ -275,7 +275,7 @@ class LogisticRegressionEstimator(Estimator):
 
 
 class PolynomialRegressionEstimator(Estimator):
-    """A Polynomial Regression Estimator is a parametric estimator which restricts the variables in the data to a 
+    """A Polynomial Regression Estimator is a parametric estimator which restricts the variables in the data to a
     polynomial combination of parameters and functions of the variables (note these functions need not be polynomial).
     """
 
