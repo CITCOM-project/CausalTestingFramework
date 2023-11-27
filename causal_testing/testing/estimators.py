@@ -272,9 +272,9 @@ class LogisticRegressionEstimator(Estimator):
         """
         model = self._run_logistic_regression(self.df)
         return np.exp(model.params[self.treatment])
+    
 
-
-class LinearRegressionEstimator(Estimator):
+class PolynomialRegressionEstimator(Estimator):
     """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
@@ -287,6 +287,7 @@ class LinearRegressionEstimator(Estimator):
         control_value: float,
         adjustment_set: set,
         outcome: str,
+        degree: int,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
         formula: str = None,
@@ -304,7 +305,7 @@ class LinearRegressionEstimator(Estimator):
             self.formula = formula
         else:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(terms)}"
+            self.formula = f"{outcome} ~ cr({'+'.join(terms)}, df={degree})"
 
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
@@ -437,6 +438,28 @@ class LinearRegressionEstimator(Estimator):
             confidence_intervals[1].loc[treatment],
         )
         return [ci_low, ci_high]
+
+
+class LinearRegressionEstimator(PolynomialRegressionEstimator):
+
+    def __init__(
+        # pylint: disable=too-many-arguments
+        self,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: str,
+        df: pd.DataFrame = None,
+        effect_modifiers: dict[Variable:Any] = None,
+        formula: str = None,
+        alpha: float = 0.05,
+    ):
+        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, 1, df, effect_modifiers, formula, alpha)
+
+        if formula is None:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            self.formula = f"{outcome} ~ {'+'.join(terms)}"
 
 
 class InstrumentalVariableEstimator(Estimator):
