@@ -272,11 +272,11 @@ class LogisticRegressionEstimator(Estimator):
         """
         model = self._run_logistic_regression(self.df)
         return np.exp(model.params[self.treatment])
-    
+
 
 class PolynomialRegressionEstimator(Estimator):
-    """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
-    combination of parameters and functions of the variables (note these functions need not be linear).
+    """A Polynomial Regression Estimator is a parametric estimator which restricts the variables in the data to a polynomial
+    combination of parameters and functions of the variables (note these functions need not be polynomial).
     """
 
     def __init__(
@@ -441,6 +441,9 @@ class PolynomialRegressionEstimator(Estimator):
 
 
 class LinearRegressionEstimator(PolynomialRegressionEstimator):
+    """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
+    combination of parameters and functions of the variables (note these functions need not be linear).
+    """
 
     def __init__(
         # pylint: disable=too-many-arguments
@@ -455,7 +458,9 @@ class LinearRegressionEstimator(PolynomialRegressionEstimator):
         formula: str = None,
         alpha: float = 0.05,
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, 1, df, effect_modifiers, formula, alpha)
+        super().__init__(
+            treatment, treatment_value, control_value, adjustment_set, outcome, 1, df, effect_modifiers, formula, alpha
+        )
 
         if formula is None:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
