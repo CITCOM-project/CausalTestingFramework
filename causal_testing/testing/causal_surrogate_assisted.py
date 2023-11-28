@@ -8,24 +8,33 @@ from typing import Callable
 
 
 class SearchAlgorithm:
-    def generate_fitness_functions(self, specification: CausalSpecification, surrogate_models: list[Estimator]):
+    def generate_fitness_functions(self, surrogate_models: list[Estimator]):
         pass
 
-    def search(self, fitness_functions) -> list:
+    def search(self, fitness_functions, specification: CausalSpecification) -> list:
         pass
+
 
 class GeneticSearchAlgorithm(SearchAlgorithm):
-    def __init__(self, delta = 0.05) -> None:
+    def __init__(self, delta=0.05) -> None:
         super().__init__()
 
         self.delta = delta
+        self.contradiction_functions = {
+            "positive": lambda x: -1 * x,
+            "negative": lambda x: x,
+            "no effect": lambda x: abs(x),
+            "some effect": lambda x: abs(1/x)
+        }
 
     def generate_fitness_functions(
         self, surrogate_models: list[PolynomialRegressionEstimator]
     ) -> Callable[[list[float], int], float]:
         fitness_functions = []
 
-        for surrogate in surrogate_models:
+        for surrogate, expected in surrogate_models:
+
+            contradiction_function = self.contradiction_functions[expected]
 
             def fitness_function(solution, idx):
                 surrogate.control_value = solution[0] - self.delta
@@ -37,14 +46,14 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
 
                 ate = surrogate.estimate_ate_calculated(adjustment_dict)[0]
 
-                return ate  # TODO Need a way here of assessing if high or low ATE is correct
+                return contradiction_function(ate)
 
             fitness_functions.append(fitness_function)
 
         return fitness_functions
-    
-    def search(self, fitness_functions) -> list:
-        pass # TODO Implement GA search
+
+    def search(self, fitness_functions, specification: CausalSpecification) -> list:
+        pass  # TODO Implement GA search
 
 
 @dataclass
@@ -107,11 +116,12 @@ class CausalSurrogateAssistedTestCase:
     ) -> list[PolynomialRegressionEstimator]:
         surrogate_models = []
 
-        for u, v in specification.causal_dag.edges:
-            base_test_case = BaseTestCase(u, v)
-            minimal_adjustment_set = specification.causal_dag.identification(base_test_case)
+        for u, v, d in specification.causal_dag.edges.data():
+            if "included" in d:
+                base_test_case = BaseTestCase(u, v)
+                minimal_adjustment_set = specification.causal_dag.identification(base_test_case)
 
-            surrogate = PolynomialRegressionEstimator(u, 0, 0, minimal_adjustment_set, v, 4, df=data_collector.data)
-            surrogate_models.append(surrogate)
+                surrogate = PolynomialRegressionEstimator(u, 0, 0, minimal_adjustment_set, v, 4, df=data_collector.data)
+                surrogate_models.append((surrogate, d["expected"]))
 
         return surrogate_models
