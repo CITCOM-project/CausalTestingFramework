@@ -14,6 +14,38 @@ class SearchAlgorithm:
     def search(self, fitness_functions) -> list:
         pass
 
+class GeneticSearchAlgorithm(SearchAlgorithm):
+    def __init__(self, delta = 0.05) -> None:
+        super().__init__()
+
+        self.delta = delta
+
+    def generate_fitness_functions(
+        self, surrogate_models: list[PolynomialRegressionEstimator]
+    ) -> Callable[[list[float], int], float]:
+        fitness_functions = []
+
+        for surrogate in surrogate_models:
+
+            def fitness_function(solution, idx):
+                surrogate.control_value = solution[0] - self.delta
+                surrogate.treatment_value = solution[0] + self.delta
+
+                adjustment_dict = dict()
+                for i, adjustment in enumerate(surrogate.adjustment_set):
+                    adjustment_dict[adjustment] = solution[i + 1]
+
+                ate = surrogate.estimate_ate_calculated(adjustment_dict)[0]
+
+                return ate  # TODO Need a way here of assessing if high or low ATE is correct
+
+            fitness_functions.append(fitness_function)
+
+        return fitness_functions
+    
+    def search(self, fitness_functions) -> list:
+        pass # TODO Implement GA search
+
 
 @dataclass
 class SimulationResult:
@@ -83,26 +115,3 @@ class CausalSurrogateAssistedTestCase:
             surrogate_models.append(surrogate)
 
         return surrogate_models
-
-    def generate_fitness_functions(  # TODO Move this into a GA specific search algorithm (Built for PyGAD fitness functions)
-        self, surrogate_models: list[PolynomialRegressionEstimator], delta=0.05
-    ) -> Callable[[list[float], int], float]:
-        fitness_functions = []
-
-        for surrogate in surrogate_models:
-
-            def fitness_function(solution, idx):
-                surrogate.control_value = solution[0] - delta
-                surrogate.treatment_value = solution[0] + delta
-
-                adjustment_dict = dict()
-                for i, adjustment in enumerate(surrogate.adjustment_set):
-                    adjustment_dict[adjustment] = solution[i + 1]
-
-                ate = surrogate.estimate_ate_calculated(adjustment_dict)[0]
-
-                return ate  # TODO Need a way here of assessing if high or low ATE is correct
-
-            fitness_functions.append(fitness_function)
-
-        return fitness_functions
