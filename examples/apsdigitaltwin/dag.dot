@@ -1,0 +1,17 @@
+digraph APS_DAG {
+    rankdir=LR;
+
+    "search_bias" -> "start_bg";
+    "search_bias" -> "start_cob";
+    "search_bias" -> "start_iob";
+
+    "start_bg" -> "hyper";
+    "start_cob" -> "hyper";
+    "start_iob" -> "hyper";
+
+    "start_bg" -> "open_aps_output" [included, expected=positive];
+    "start_cob" -> "open_aps_output" [included, expected=positive];
+    "start_iob" -> "open_aps_output" [included, expected=negative];
+
+    "open_aps_output" -> "hyper";
+}

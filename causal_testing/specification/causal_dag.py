@@ -66,7 +66,7 @@ def list_all_min_sep(
         # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
         if treatment_node_set_neighbours.difference(outcome_node_set):
             # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
-            node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
+            node = set(sample(sorted(treatment_node_set_neighbours.difference(outcome_node_set)), 1))
 
             # 7.2. Add this node to the treatment node set and recurse (left branch)
             yield from list_all_min_sep(
@@ -499,8 +499,13 @@ class CausalDAG(nx.DiGraph):
         if isinstance(scenario.variables[node], Output):
             return True
         return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
+    
+    def remove_hidden_adjustment_sets(self, minimal_adjustment_sets: list[str], scenario: Scenario):
+        return [
+            adj for adj in minimal_adjustment_sets if all([not scenario.variables.get(x).hidden for x in adj])
+        ]
 
-    def identification(self, base_test_case: BaseTestCase):
+    def identification(self, base_test_case: BaseTestCase, scenario: Scenario = None):
         """Identify and return the minimum adjustment set
 
         :param base_test_case: A base test case instance containing the outcome_variable and the
@@ -519,6 +524,9 @@ class CausalDAG(nx.DiGraph):
             )
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
+        
+        if scenario is not None:
+            minimal_adjustment_sets = self.remove_hidden_adjustment_sets(minimal_adjustment_sets, scenario)
 
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
