@@ -99,8 +99,6 @@ if __name__ == "__main__":
         "mutation_type": "random",
         "mutation_percent_genes": 50,
         "mutation_by_replacement": True,
-
-        "num_generations": 1,
     }
 
     ga_search = GeneticSearchAlgorithm(config=ga_config)

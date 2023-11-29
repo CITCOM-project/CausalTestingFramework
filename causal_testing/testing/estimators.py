@@ -275,8 +275,8 @@ class LogisticRegressionEstimator(Estimator):
 
 
 class LinearRegressionEstimator(Estimator):
-    """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a
-    linear combination of parameters and functions of the variables (note these functions need not be linear).
+    """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
+    combination of parameters and functions of the variables (note these functions need not be linear).
     """
 
     def __init__(
