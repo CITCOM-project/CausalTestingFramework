@@ -154,20 +154,6 @@ class OpenAPS:
         file = open(file_path, "w")
         file.write(contents)
 
-    def __update_suggested(self, suggested_json, file_path):
-        if not os.path.isfile(file_path):
-            new_file = open(file_path, "w")
-            new_file.write("[]")
-            new_file.close()
-
-        list_json = None
-        with open(file_path) as output_file:
-            list_json = json.load(output_file)
-            list_json.append(json.loads(suggested_json))
-
-        with open(file_path, 'w') as writing_json:
-            json.dump(list_json, writing_json, indent=4, separators=(',',': '))
-
 class Model:
     def __init__(self, starting_vals, constants):
         self.interventions = dict()

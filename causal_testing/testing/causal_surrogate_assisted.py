@@ -72,17 +72,38 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
     def search(self, fitness_functions: list[SearchFitnessFunction], specification: CausalSpecification) -> list:
         solutions = []
 
-        for fitness_function in fitness_functions:
+        for fitness_function in fitness_functions:            
+            var_space = dict()
+            var_space[fitness_function.surrogate_model.treatment] = dict()
+            for adj in fitness_function.surrogate_model.adjustment_set:
+                var_space[adj] = dict()
+
+            for relationship in list(specification.scenario.constraints):
+                rel_split = str(relationship).split(" ")
+
+                if rel_split[1] == ">=":
+                    var_space[rel_split[0]]["low"] = int(rel_split[2])
+                elif rel_split[1] == "<=":
+                    var_space[rel_split[0]]["high"] = int(rel_split[2])
+
+            gene_space = []
+            gene_space.append(var_space[fitness_function.surrogate_model.treatment])
+            for adj in fitness_function.surrogate_model.adjustment_set:
+                gene_space.append(var_space[adj])
+
             ga = GA(
                 num_generations=200,
                 num_parents_mating=4,
                 fitness_func=fitness_function.fitness_function,
                 sol_per_pop=10,
                 num_genes=1 + len(fitness_function.surrogate_model.adjustment_set),
+                gene_space=gene_space
             )
 
             if self.config is not None:
                 for k, v in self.config.items():
+                    if k == "gene_space":
+                        raise Exception("Gene space should not be set through config. This is generated from the causal specification")
                     setattr(ga, k, v)
 
             ga.run()

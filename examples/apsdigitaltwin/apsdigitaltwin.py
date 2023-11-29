@@ -72,6 +72,12 @@ if __name__ == "__main__":
     open_aps_output = Output("open_aps_output", float)
     hyper = Output("hyper", float)
 
+    constraints = {
+        start_bg >= 70, start_bg <= 180, 
+        start_cob >= 100, start_cob <= 300, 
+        start_iob >= 0, start_iob <= 150
+    }
+
     scenario = Scenario(
         variables={
             search_bias,
@@ -80,12 +86,24 @@ if __name__ == "__main__":
             start_iob,
             open_aps_output,
             hyper,
-        }
+        },
+        constraints = constraints
     )
 
     dag = CausalDAG("./dag.dot")
     specification = CausalSpecification(scenario, dag)
-    ga_search = GeneticSearchAlgorithm()
+
+    ga_config = {
+        "parent_selection_type": "tournament",
+        "K_tournament": 4,
+        "mutation_type": "random",
+        "mutation_percent_genes": 50,
+        "mutation_by_replacement": True,
+
+        "num_generations": 1,
+    }
+
+    ga_search = GeneticSearchAlgorithm(config=ga_config)
 
     constants = []
     with open("constants.txt", "r") as const_file:
