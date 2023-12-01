@@ -3,7 +3,8 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.testing.causal_surrogate_assisted import CausalSurrogateAssistedTestCase, GeneticSearchAlgorithm, SimulationResult, Simulator
+from causal_testing.testing.causal_surrogate_assisted import CausalSurrogateAssistedTestCase, SimulationResult, Simulator
+from causal_testing.testing.surrogate_search_algorithms import GeneticSearchAlgorithm
 from examples.apsdigitaltwin.util.model import Model, OpenAPS, i_label, g_label, s_label
 
 import pandas as pd
@@ -99,6 +100,7 @@ if __name__ == "__main__":
         "mutation_type": "random",
         "mutation_percent_genes": 50,
         "mutation_by_replacement": True,
+        "suppress_warnings": True,
     }
 
     ga_search = GeneticSearchAlgorithm(config=ga_config)
