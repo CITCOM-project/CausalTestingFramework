@@ -60,13 +60,18 @@ class CausalSurrogateAssistedTestCase:
         for _i in range(max_executions):
             surrogate_models = self.generate_surrogates(self.specification, data_collector)
             fitness_functions = self.search_algorithm.generate_fitness_functions(surrogate_models)
-            candidate_test_case = self.search_algorithm.search(fitness_functions, self.specification)
+            candidate_test_case, _fitness, surrogate = self.search_algorithm.search(
+                fitness_functions, self.specification
+            )
 
             self.simulator.startup()
             test_result = self.simulator.run_with_config(candidate_test_case)
             self.simulator.shutdown()
 
             if test_result.fault:
+                print(
+                    f"Fault found between {surrogate.treatment} causing {surrogate.outcome}. Contradiction with expected {surrogate.expected_relationship}."
+                )
                 return test_result
             else:
                 if custom_data_aggregator is not None:
@@ -90,7 +95,16 @@ class CausalSurrogateAssistedTestCase:
 
                 minimal_adjustment_set = specification.causal_dag.identification(base_test_case, specification.scenario)
 
-                surrogate = PolynomialRegressionEstimator(u, 0, 0, minimal_adjustment_set, v, 4, df=data_collector.data)
-                surrogate_models.append((surrogate, edge_metadata["expected"]))
+                surrogate = PolynomialRegressionEstimator(
+                    u,
+                    0,
+                    0,
+                    minimal_adjustment_set,
+                    v,
+                    4,
+                    df=data_collector.data,
+                    expected_relationship=edge_metadata["expected"],
+                )
+                surrogate_models.append(surrogate, edge_metadata["expected"])
 
         return surrogate_models

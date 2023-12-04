@@ -457,10 +457,13 @@ class PolynomialRegressionEstimator(LinearRegressionEstimator):
         effect_modifiers: dict[Variable:Any] = None,
         formula: str = None,
         alpha: float = 0.05,
+        expected_relationship=None,
     ):
         super().__init__(
             treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, formula, alpha
         )
+
+        self.expected_relationship = expected_relationship
 
         if effect_modifiers is None:
             effect_modifiers = []
@@ -471,7 +474,7 @@ class PolynomialRegressionEstimator(LinearRegressionEstimator):
 
     def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[float, list[float]]:
         model = self._run_linear_regression()
-        
+
         x = {"Intercept": 1, self.treatment: self.treatment_value}
         for k, v in adjustment_config.items():
             x[k] = v
@@ -484,11 +487,7 @@ class PolynomialRegressionEstimator(LinearRegressionEstimator):
         x[self.treatment] = self.control_value
         control = model.predict(x).iloc[0]
 
-        return(treatment - control)
-
-        
-
-    
+        return treatment - control
 
 
 class InstrumentalVariableEstimator(Estimator):
