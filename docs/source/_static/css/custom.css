@@ -1,0 +1,29 @@
+/* Custom CSS */
+
+/* Note: /*
+The CSS below will only work if 'logo_only':True in conf.py, but will require adjusting if False.
+ */
+
+.wy-side-nav-search a .logo {
+    max-width: 200px;
+    max-height: 170px;
+    height: auto;
+    width:auto;
+}
+
+
+
+.wy-nav-top a {
+    color: #131E29;  /* Change the colour of the homepage navigation title on mobiles */
+}
+
+.wy-menu-vertical p.caption {
+
+    color: #9ADBE8; /* Change the colour of captions*/
+}
+
+
+.rst-content code.literal, .highlight .s2, .highlight .s1, .rst-content tt.literal{
+    color: #440099;
+    font-weight: bold;
+}
