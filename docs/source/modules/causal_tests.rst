@@ -42,9 +42,6 @@ We then define a number of causal test cases to apply to the scenario-under-test
 * ``mask_wearing_test = (X={precaution = None}, \Delta = {precaution = Mask}, Y = {-20% < n_infected_t5 < -10% })`` (Mask wearing is expected to result in between 10% and 20% fewer infections).
 * ``hand_washing_test = (X={precaution = None}, \Delta = {precaution = Hand Washing}, Y = {-40% < n_infected_t5 < -25%})`` (Hand washing is expected to result in between 25% and 40% fewer infections).
 
-Data Collection
----------------
-
 - To run these test cases experimentally, we need to execute both ``X`` and ``\Delta(X)`` - that is, with and without the interventions. Since the only difference between these test cases is the intervention, we can conclude that the observed difference in ``n_infected_t5`` was caused by the interventions. While this is the simplest approach, it can be extremely inefficient at scale, particularly when dealing with complex software such as computational models.
 
 - To run these test cases observationally, we need to collect *valid* observational data for the scenario-under-test. This means we can only use executions with between 20 and 30 people, a square environment of size betwen 20x20 and 40x40, and where a single person was initially infected. In addition, this data must contain executions both with and without the intervention. Next, we need to identify any sources of bias in this data and determine a procedure to counteract them. This is achieved automatically using graphical causal inference techniques that identify a set of variables that can be adjusted to obtain a causal estimate. Finally, for any categorical biasing variables, we need to make sure we have executions corresponding to each category otherwise we have a positivity violation (i.e. missing data). In the worst case, this at least guides the user to an area of the system-under-test that should be executed.

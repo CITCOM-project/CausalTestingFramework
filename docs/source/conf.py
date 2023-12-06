@@ -57,9 +57,17 @@ html_css_files = ['css/custom.css']
 # Path to generate documentation from using sphinx AutoAPI
 autoapi_dirs = [os.path.abspath(os.path.join("..", "..", "causal_testing"))]
 
+autoapi_generate_api_docs = True
+autoapi_keep_files = True
+
+# Suppress label warnings
+suppress_warnings = ['autosectionlabel.*']
+
+
 html_logo = '_static/images/CITCOM-logo.png'
 
 html_theme_options = {
     'style_nav_header_background': '#9ADBE8',  # Set the colour using CSS
     'logo_only' : True,
 }
+

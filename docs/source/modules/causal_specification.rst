@@ -40,4 +40,4 @@ there are a couple of requirements that should be satisfied.
 
 -  Collectively, the components of the causal specification provide both contextual information in the form of constraints and requirements,
    as well as causal information in the form of a causal DAG. Later on, these components will be used to design statistical experiments that
-   can answer causal questions about the scenario-under-test, such as ``Does opening a window impair the viruses ability to spread?``
+   can answer causal questions about the scenario-under-test, such as `Does opening a window impair the viruses ability to spread?`

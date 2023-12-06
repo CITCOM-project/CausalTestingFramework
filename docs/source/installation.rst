@@ -1,14 +1,14 @@
 Getting started
-============
+================
 
 Requirements
-------------
+---------------
 * Python >= 3.9.
 * `Microsoft Visual C++ <https://docs.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist>`_ 14.0+ (Windows only).
 
 
 Installation
------------
+-----------------
 The Causal Testing Framework can be installed through either the `Python Package Index (PyPI)`_ (recommended), or directly from source.
 
 .. _Python Package Index (PyPI): https://dl.acm.org/doi/10.1145/3607184

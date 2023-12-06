@@ -20,7 +20,7 @@ An example is provided in `examples/poisson` which contains a README with more d
 
 run_causal_tests.py
 *******************
-`examples/poisson/run_causal_tests.py <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/run_causal_tests.py>`_
+The `examples/poisson/example_run_causal_tests.py <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/example_run_causal_tests.py>`_
 contains python code written by the user to implement scenario specific features
 such as:
 
@@ -34,9 +34,9 @@ Use-case specific information is also declared here such as the paths to the rel
 
 causal_tests.json
 *****************
-`examples/poisson/causal_tests.json <https://github.c#om/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/causal_tests.json>`_ contains Python code written by the user to implement scenario specific features
-is the JSON file that allows for the easy specification of multiple causal tests. Tests can be specified two ways; firstly by specifying a mutation lke in the example tests with the following structure:
-Each test requires:
+The `examples/poisson/causal_tests.json <https://github.com/CITCOM-project/CausalTestingFramework/blob/main/examples/poisson/causal_tests.json>`_ contains Python code written by the user to implement scenario specific features
+is the JSON file that allows for the easy specification of multiple causal tests.
+Tests can be specified two ways; firstly by specifying a mutation lke in the example tests with the following structure:
 
 #. name
 #. mutations
@@ -57,17 +57,22 @@ The second method of specifying a test is to specify the test in a concrete form
 #. expected_effect
 #. skip
 
+
+Alternatively, a ``causal_tests.json`` file can be created from a ``dag.dot`` file using the ``causal_testing/specification/metamorphic_relation.py`` script as follows::
+
+  python causal_testing/specification/metamorphic_relation.py --dag_path dag.dot --output_path causal_tests.json
+
 Run Commands
 ************
 This example uses the ``Argparse`` utility built into the JSON frontend, which allows the frontend to be run from a commandline interface as shown here.
 
 To run the JSON frontend example from the root directory of the project, use::
 
-    python examples\poisson\run_causal_tests.py --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json
+    python examples\poisson\example_run_causal_tests.py --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json
 
 A failure flag `-f` can be specified to stop the framework running if a test is failed::
 
-    python examples\poisson\run_causal_tests.py -f --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json
+    python examples\poisson\example_run_causal_tests.py -f --data_path="examples\poisson\data.csv" --dag_path="examples\poisson\dag.dot" --json_path="examples\poisson\causal_tests.json
 
 There are two main outputs of this frontend, both are controlled by the logging module. Firstly outputs are printed to stdout (terminal).
 Secondly a log file is produced, by default a file called `json_frontend.log` is produced in the directory the script is called from.

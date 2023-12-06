@@ -4,11 +4,12 @@ Welcome to the Causal Testing Framework
 |status| |ci-tests| |code-cov| |docs| |python| |pypi| |doi| |license|
 
 Overview
-*******
+**********
 
 Causal testing is a :term:`causal inference`-driven framework for functional black-box testing. This framework utilises
 graphical causal inference (CI) techniques for the specification and functional testing of software from a black-box
-perspective. In this framework, we use causal :term:`directed acyclic graphs` (DAGs) to express the anticipated cause-effect
+perspective. In this framework, we use causal directed acyclic graphs (DAGs) to express the anticipated cause-effect
+relationships amongst the inputs and outputs of the system-under-test and the supporting mathematical framework to
 relationships amongst the inputs and outputs of the system-under-test and the supporting mathematical framework to
 design statistical procedures capable of making causal inferences. Each causal test case focuses on the causal effect
 of an intervention made to the system-under test. That is, a prescribed change to the input configuration of the
@@ -118,7 +119,7 @@ system-under-test that is expected to cause a change to some output(s).
    :hidden:
    :titlesonly:
 
-   /autoapi/causal_testing/index
+   /autoapi/index
 
 .. toctree::
    :hidden:
@@ -155,7 +156,7 @@ system-under-test that is expected to cause a change to some output(s).
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Credits
 
    credits
