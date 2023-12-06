@@ -76,6 +76,11 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             for adj in fitness_function.surrogate_model.adjustment_set:
                 gene_space.append(var_space[adj])
 
+            gene_types = []
+            gene_types.append(specification.scenario.variables.get(fitness_function.surrogate_model.treatment).datatype)
+            for adj in fitness_function.surrogate_model.adjustment_set:
+                gene_types.append(specification.scenario.variables.get(adj).datatype)
+
             ga = GA(
                 num_generations=200,
                 num_parents_mating=4,
@@ -83,6 +88,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                 sol_per_pop=10,
                 num_genes=1 + len(fitness_function.surrogate_model.adjustment_set),
                 gene_space=gene_space,
+                gene_type=gene_types,
             )
 
             if self.config is not None:
@@ -127,14 +133,14 @@ def build_fitness_func(surrogate, delta):
 
 
 def threaded_search_function(idx):
-    surrogate, delta, constraints, config = pool_vals[idx]
+    surrogate, delta, scenario, config = pool_vals[idx]
 
     var_space = dict()
     var_space[surrogate.treatment] = dict()
     for adj in surrogate.adjustment_set:
         var_space[adj] = dict()
 
-    for relationship in list(constraints):
+    for relationship in list(scenario.constraints):
         rel_split = str(relationship).split(" ")
 
         if rel_split[1] == ">=":
@@ -147,6 +153,11 @@ def threaded_search_function(idx):
     for adj in surrogate.adjustment_set:
         gene_space.append(var_space[adj])
 
+    gene_types = []
+    gene_types.append(scenario.variables.get(surrogate.treatment).datatype)
+    for adj in surrogate.adjustment_set:
+        gene_types.append(scenario.variables.get(adj).datatype)
+
     ga = GA(
         num_generations=200,
         num_parents_mating=4,
@@ -154,6 +165,7 @@ def threaded_search_function(idx):
         sol_per_pop=10,
         num_genes=1 + len(surrogate.adjustment_set),
         gene_space=gene_space,
+        gene_type=gene_types,
     )
 
     if config is not None:
@@ -201,7 +213,7 @@ class MultiProcessGeneticSearchAlgorithm(SearchAlgorithm):
             while len(pool_vals) < num and len(all_fitness_function) > 0:
                 fitness_function = all_fitness_function.pop()
                 pool_vals.append(
-                    (fitness_function.surrogate_model, self.delta, specification.scenario.constraints, self.config)
+                    (fitness_function.surrogate_model, self.delta, specification.scenario, self.config)
                 )
 
             with mp.Pool(processes=num) as pool:

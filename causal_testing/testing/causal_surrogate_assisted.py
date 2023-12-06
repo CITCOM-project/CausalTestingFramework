@@ -57,7 +57,7 @@ class CausalSurrogateAssistedTestCase:
     ):
         data_collector.collect_data()
 
-        for _i in range(max_executions):
+        for i in range(max_executions):
             surrogate_models = self.generate_surrogates(self.specification, data_collector)
             fitness_functions = self.search_algorithm.generate_fitness_functions(surrogate_models)
             candidate_test_case, _fitness, surrogate = self.search_algorithm.search(
@@ -68,18 +68,20 @@ class CausalSurrogateAssistedTestCase:
             test_result = self.simulator.run_with_config(candidate_test_case)
             self.simulator.shutdown()
 
+            if custom_data_aggregator is not None:
+                data_collector.data = custom_data_aggregator(data_collector.data, test_result.data)
+            else:
+                data_collector.data = data_collector.data.append(test_result.data, ignore_index=True)
+
             if test_result.fault:
                 print(
                     f"Fault found between {surrogate.treatment} causing {surrogate.outcome}. Contradiction with expected {surrogate.expected_relationship}."
                 )
-                return test_result
-            else:
-                if custom_data_aggregator is not None:
-                    data_collector.data = custom_data_aggregator(data_collector.data, test_result.data)
-                else:
-                    data_collector.data = data_collector.data.append(test_result.data, ignore_index=True)
+                return test_result, i + 1, data_collector.data
+                
 
         print("No fault found")
+        return "No fault found", i + 1, data_collector.data
 
     def generate_surrogates(
         self, specification: CausalSpecification, data_collector: ObservationalDataCollector
@@ -105,6 +107,6 @@ class CausalSurrogateAssistedTestCase:
                     df=data_collector.data,
                     expected_relationship=edge_metadata["expected"],
                 )
-                surrogate_models.append(surrogate, edge_metadata["expected"])
+                surrogate_models.append(surrogate)
 
         return surrogate_models
