@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 import os
 import multiprocessing as mp
+from pathlib import Path
 
 import random
 from dotenv import load_dotenv
@@ -96,7 +97,7 @@ def main(file):
         constraints = constraints
     )
 
-    dag = CausalDAG("./dag.dot")
+    dag = CausalDAG("dag.dot")
     specification = CausalSpecification(scenario, dag)
 
     ga_config = {
@@ -117,21 +118,21 @@ def main(file):
         constants = [np.float64(const) for const in constants]
         constants[7] = int(constants[7])
 
-    simulator = APSDigitalTwinSimulator(constants, "./util/profile.json", f"./{file}_openaps_temp")
+    simulator = APSDigitalTwinSimulator(constants, str(Path("./util/profile.json")), str(Path(f"./{file}_openaps_temp")))
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(f"./{file}.csv"))
     test_case = CausalSurrogateAssistedTestCase(specification, ga_search, simulator)
 
     res, iter, df = test_case.execute(data_collector)
-    with open(f"./outputs/{file.replace('./datasets/', '')}.txt", "w") as out:
+    with open(str(Path(f"./outputs/{file.replace('./datasets/', '')}.txt")), "w") as out:
         out.write(str(res) + "\n" + str(iter))
-    df.to_csv(f"./outputs/{file.replace('./datasets/', '')}_full.csv")
+    df.to_csv(str(Path(f"./outputs/{file.replace('./datasets/', '')}_full.csv")))
 
     print(f"finished {file}")
 
 if __name__ == "__main__":
     load_dotenv()
 
-    all_traces = os.listdir("./datasets")
+    all_traces = os.listdir(str(Path("./datasets")))
     while len(all_traces) > 0:
         num = 1
         if num > len(all_traces):
@@ -142,7 +143,7 @@ if __name__ == "__main__":
             while len(pool_vals) < num and len(all_traces) > 0:
                 data_trace = all_traces.pop()
                 if data_trace.endswith(".csv"):
-                    if len(pd.read_csv(os.path.join("./datasets", data_trace))) >= 300:
-                        pool_vals.append(f"./datasets/{data_trace[:-4]}")
+                    if len(pd.read_csv(str(Path("./datasets") / data_trace))) >= 300:
+                        pool_vals.append(str(Path(f"./datasets/{data_trace[:-4]}")))
 
             pool.map(main, pool_vals)
