@@ -1,6 +1,6 @@
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.estimators import Estimator, PolynomialRegressionEstimator
-from causal_testing.testing.causal_surrogate_assisted import SearchAlgorithm, SearchFitnessFunction
+from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, SearchFitnessFunction
 
 from pygad import GA
 from operator import itemgetter

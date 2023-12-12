@@ -11,6 +11,7 @@ from typing import Callable, Any
 class SimulationResult:
     data: dict
     fault: bool
+    relationship: str
 
 
 @dataclass
@@ -42,11 +43,11 @@ class CausalSurrogateAssistedTestCase:
     def __init__(
         self,
         specification: CausalSpecification,
-        search_alogrithm: SearchAlgorithm,
+        search_algorithm: SearchAlgorithm,
         simulator: Simulator,
     ):
         self.specification = specification
-        self.search_algorithm = search_alogrithm
+        self.search_algorithm = search_algorithm
         self.simulator = simulator
 
     def execute(
@@ -77,6 +78,7 @@ class CausalSurrogateAssistedTestCase:
                 print(
                     f"Fault found between {surrogate.treatment} causing {surrogate.outcome}. Contradiction with expected {surrogate.expected_relationship}."
                 )
+                test_result.relationship = f"{surrogate.treatment} -> {surrogate.outcome} expected {surrogate.expected_relationship}"
                 return test_result, i + 1, data_collector.data
                 
 

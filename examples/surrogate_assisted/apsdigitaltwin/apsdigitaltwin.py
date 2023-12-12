@@ -3,8 +3,8 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.testing.causal_surrogate_assisted import CausalSurrogateAssistedTestCase, SimulationResult, Simulator
-from causal_testing.testing.surrogate_search_algorithms import GeneticSearchAlgorithm
+from causal_testing.surrogate.causal_surrogate_assisted import CausalSurrogateAssistedTestCase, SimulationResult, Simulator
+from causal_testing.surrogate.surrogate_search_algorithms import GeneticSearchAlgorithm
 from examples.surrogate_assisted.apsdigitaltwin.util.model import Model, OpenAPS, i_label, g_label, s_label
 
 import pandas as pd
@@ -37,9 +37,7 @@ class APSDigitalTwinSimulator(Simulator):
         model_openaps = Model([configuration["start_cob"], 0, 0, configuration["start_bg"], configuration["start_iob"]], self.constants)
         for t in range(1, 121):
             if t % 5 == 1:
-                rate = open_aps.run(model_openaps.history, output_file=self.output_file, faulty=True)
-                if rate == -1:
-                    violation = True
+                rate = open_aps.run(model_openaps.history, output_file=self.output_file)
                 open_aps_output += rate
                 for j in range(5):
                     model_openaps.add_intervention(t + j, i_label, rate / 5.0)
@@ -64,7 +62,9 @@ class APSDigitalTwinSimulator(Simulator):
             "open_aps_output": open_aps_output,
         }
 
-        return SimulationResult(data, violation)
+        violation = max_bg > 200 or min_bg < 50
+
+        return SimulationResult(data, violation, None)
 
 def main(file):
     random.seed(123)

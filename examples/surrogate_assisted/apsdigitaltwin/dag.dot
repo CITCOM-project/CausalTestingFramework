@@ -9,9 +9,14 @@ digraph APS_DAG {
     "start_cob" -> "hyper";
     "start_iob" -> "hyper";
 
+    "start_bg" -> "hypo";
+    "start_cob" -> "hypo";
+    "start_iob" -> "hypo";
+
     "start_bg" -> "open_aps_output" [included=1, expected=positive];
     "start_cob" -> "open_aps_output" [included=1, expected=positive];
     "start_iob" -> "open_aps_output" [included=1, expected=negative];
 
     "open_aps_output" -> "hyper";
+    "open_aps_output" -> "hypo";
 }
