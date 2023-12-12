@@ -1,0 +1,47 @@
+{
+  "variables": [
+    {
+      "name": "pop_size",
+      "datatype": "int",
+      "typestring": "Input",
+      "constraint": 50000
+    },
+    {
+      "name": "pop_infected",
+      "datatype": "int",
+      "typestring": "Input",
+      "constraint": 1000
+    },
+    {
+      "name": "n_days",
+      "datatype": "int",
+      "typestring": "Input",
+      "constraint": 50
+    },
+    {
+      "name": "vaccine",
+      "datatype": "int",
+      "typestring": "Input"
+    },
+    {
+      "name": "cum_infections",
+      "datatype": "int",
+      "typestring": "Output"
+    },
+    {
+      "name": "cum_vaccinations",
+      "datatype": "int",
+      "typestring": "Output"
+    },
+    {
+      "name": "cum_vaccinated",
+      "datatype": "int",
+      "typestring": "Output"
+    },
+    {
+      "name": "max_doses",
+      "datatype": "int",
+      "typestring": "Output"
+    }
+  ]
+}

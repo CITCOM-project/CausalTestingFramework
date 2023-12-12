@@ -1,0 +1,58 @@
+# Model definition file to run the causal testing framework on DAFNI
+# https://docs.secure.dafni.rl.ac.uk/docs/how-to/how-to-write-a-model-definition-file
+
+kind: M
+api_version: v1beta3
+metadata:
+  display_name: Causal Testing Framework
+  name: causal_testing
+  publisher: The CITCOM Team, The University of Sheffield
+  type: model
+  summary: A Causal Inference-Driven Software Testing Framework
+  description: >
+    Causal Testing is a causal inference-driven framework for functional black-box testing. 
+    This framework utilises graphical causal inference (CI) techniques for the specification and functional testing of 
+    software from a black-box perspective. In this framework, we use causal directed acyclic graphs (DAGs) to express 
+    the anticipated cause-effect relationships amongst the inputs and outputs of the system-under-test and the 
+    supporting mathematical framework to design statistical procedures capable of making causal inferences. 
+    Each causal test case focuses on the causal effect of an intervention made to the system-under test.
+  contact_point_name: Dr. Farhad Allian
+  contact_point_email: farhad.allian@sheffield.ac.uk
+  source_code: https://github.com/CITCOM-project/CausalTestingFramework
+  license: https://github.com/CITCOM-project/CausalTestingFramework?tab=MIT-1-ov-file#readme
+    
+
+spec:
+  inputs:
+    parameters:
+      - name: causal_tests
+        title: Causal tests filename
+        description: A .json file containing the causal tests to be used
+        type: string
+        required: true
+      - name: variables
+        title: Variables filename
+        description: A .json file containing the input and output variables to be used
+        type: string
+        required: true
+      - name: dag_file
+        title: DAG filename
+        description: A .dot file containing the input DAG to be used
+        type: string
+        required: true
+
+    dataslots:
+      - name: runtime_data
+        description: >
+          A .csv file containing the input runtime data to be used
+        default:
+          - #TODO
+        path: /inputs/dataslots
+        required: false
+      - name: dag_file
+        description: >
+          A .dot file containing the input DAG to be used
+        default:
+          - #TODO
+        path: /data/tests/inputs
+        required: false
