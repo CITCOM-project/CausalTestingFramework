@@ -36,6 +36,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         for surrogate in surrogate_models:
             contradiction_function = self.contradiction_functions[surrogate.expected_relationship]
 
+            # The returned fitness function after including the contradiction function and surrogate model into the function's scope
             def fitness_function(_ga, solution, idx):
                 surrogate.control_value = solution[0] - self.delta
                 surrogate.treatment_value = solution[0] + self.delta
@@ -212,9 +213,7 @@ class MultiProcessGeneticSearchAlgorithm(SearchAlgorithm):
 
             while len(pool_vals) < num and len(all_fitness_function) > 0:
                 fitness_function = all_fitness_function.pop()
-                pool_vals.append(
-                    (fitness_function.surrogate_model, self.delta, specification.scenario, self.config)
-                )
+                pool_vals.append((fitness_function.surrogate_model, self.delta, specification.scenario, self.config))
 
             with mp.Pool(processes=num) as pool:
                 solutions.extend(pool.map(threaded_search_function, range(len(pool_vals))))

@@ -5,17 +5,18 @@ from causal_testing.testing.estimators import Estimator, PolynomialRegressionEst
 
 from dataclasses import dataclass
 from typing import Callable, Any
+from abc import ABC
 
 
 @dataclass
-class SimulationResult:
+class SimulationResult(ABC):
     data: dict
     fault: bool
     relationship: str
 
 
 @dataclass
-class SearchFitnessFunction:
+class SearchFitnessFunction(ABC):
     fitness_function: Any
     surrogate_model: PolynomialRegressionEstimator
 
@@ -78,9 +79,10 @@ class CausalSurrogateAssistedTestCase:
                 print(
                     f"Fault found between {surrogate.treatment} causing {surrogate.outcome}. Contradiction with expected {surrogate.expected_relationship}."
                 )
-                test_result.relationship = f"{surrogate.treatment} -> {surrogate.outcome} expected {surrogate.expected_relationship}"
+                test_result.relationship = (
+                    f"{surrogate.treatment} -> {surrogate.outcome} expected {surrogate.expected_relationship}"
+                )
                 return test_result, i + 1, data_collector.data
-                
 
         print("No fault found")
         return "No fault found", i + 1, data_collector.data
