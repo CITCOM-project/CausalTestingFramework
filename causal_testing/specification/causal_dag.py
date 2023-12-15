@@ -499,8 +499,9 @@ class CausalDAG(nx.DiGraph):
         if isinstance(scenario.variables[node], Output):
             return True
         return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
-    
-    def remove_hidden_adjustment_sets(self, minimal_adjustment_sets: list[str], scenario: Scenario):
+
+    @staticmethod
+    def remove_hidden_adjustment_sets(minimal_adjustment_sets: list[str], scenario: Scenario):
         return [
             adj for adj in minimal_adjustment_sets if all([not scenario.variables.get(x).hidden for x in adj])
         ]
