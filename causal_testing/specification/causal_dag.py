@@ -501,6 +501,10 @@ class CausalDAG(nx.DiGraph):
 
     @staticmethod
     def remove_hidden_adjustment_sets(minimal_adjustment_sets: list[str], scenario: Scenario):
+        """Remove variables labelled as hidden from adjustment set(s)
+        :param minimal_adjustment_sets: list of minimal adjustment set(s) to have hidden variables removed from
+        :param scenario: The modelling scenario which informs the variables that are hidden
+        """
         return [adj for adj in minimal_adjustment_sets if all(not scenario.variables.get(x).hidden for x in adj)]
 
     def identification(self, base_test_case: BaseTestCase, scenario: Scenario = None):
@@ -508,6 +512,7 @@ class CausalDAG(nx.DiGraph):
 
         :param base_test_case: A base test case instance containing the outcome_variable and the
         treatment_variable required for identification.
+        :param scenario: The modelling scenario relating to the tests
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
