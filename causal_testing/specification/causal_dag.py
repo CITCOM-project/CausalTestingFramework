@@ -125,7 +125,6 @@ def close_separator(
 
 
 class CausalDAG(nx.DiGraph):
-
     """A causal DAG is a directed acyclic graph in which nodes represent random variables and edges represent causality
     between a pair of random variables. We implement a CausalDAG as a networkx DiGraph with an additional check that
     ensures it is acyclic. A CausalDAG must be specified as a dot file.
@@ -502,9 +501,7 @@ class CausalDAG(nx.DiGraph):
 
     @staticmethod
     def remove_hidden_adjustment_sets(minimal_adjustment_sets: list[str], scenario: Scenario):
-        return [
-            adj for adj in minimal_adjustment_sets if all([not scenario.variables.get(x).hidden for x in adj])
-        ]
+        return [adj for adj in minimal_adjustment_sets if all(not scenario.variables.get(x).hidden for x in adj)]
 
     def identification(self, base_test_case: BaseTestCase, scenario: Scenario = None):
         """Identify and return the minimum adjustment set
@@ -525,7 +522,7 @@ class CausalDAG(nx.DiGraph):
             )
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
-        
+
         if scenario is not None:
             minimal_adjustment_sets = self.remove_hidden_adjustment_sets(minimal_adjustment_sets, scenario)
 
