@@ -1,12 +1,15 @@
-from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.testing.estimators import Estimator, PolynomialRegressionEstimator
-from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, SearchFitnessFunction
+"""Module containing implementation of search algorithm for surrogate search """
 
-from pygad import GA
 from operator import itemgetter
+from pygad import GA
+
+from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.testing.estimators import PolynomialRegressionEstimator
+from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, SearchFitnessFunction
 
 
 class GeneticSearchAlgorithm(SearchAlgorithm):
+    """ Implementation of SearchAlgorithm class. Implements genetic search algorithm for surrogate models."""
     def __init__(self, delta=0.05, config: dict = None) -> None:
         super().__init__()
 
@@ -15,7 +18,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         self.contradiction_functions = {
             "positive": lambda x: -1 * x,
             "negative": lambda x: x,
-            "no_effect": lambda x: abs(x),
+            "no_effect": abs,
             "some_effect": lambda x: abs(1 / x),
         }
 
@@ -28,11 +31,11 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             contradiction_function = self.contradiction_functions[surrogate.expected_relationship]
 
             # The returned fitness function after including required variables into the function's scope
-            def fitness_function(_ga, solution, idx):
+            def fitness_function(ga, solution, idx):
                 surrogate.control_value = solution[0] - self.delta
                 surrogate.treatment_value = solution[0] + self.delta
 
-                adjustment_dict = dict()
+                adjustment_dict = {}
                 for i, adjustment in enumerate(surrogate.adjustment_set):
                     adjustment_dict[adjustment] = solution[i + 1]
 
@@ -50,10 +53,10 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         solutions = []
 
         for fitness_function in fitness_functions:
-            var_space = dict()
-            var_space[fitness_function.surrogate_model.treatment] = dict()
+            var_space = {}
+            var_space[fitness_function.surrogate_model.treatment] = {}
             for adj in fitness_function.surrogate_model.adjustment_set:
-                var_space[adj] = dict()
+                var_space[adj] = {}
 
             for relationship in list(specification.scenario.constraints):
                 rel_split = str(relationship).split(" ")
@@ -87,19 +90,18 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                 for k, v in self.config.items():
                     if k == "gene_space":
                         raise Exception(
-                            "Gene space should not be set through config. This is generated from the causal specification"
+                            "Gene space should not be set through config. This is generated from the causal "
+                            "specification"
                         )
                     setattr(ga, k, v)
 
             ga.run()
-            solution, fitness, _idx = ga.best_solution()
+            solution, fitness, _ = ga.best_solution()
 
-            solution_dict = dict()
+            solution_dict = {}
             solution_dict[fitness_function.surrogate_model.treatment] = solution[0]
             for idx, adj in enumerate(fitness_function.surrogate_model.adjustment_set):
                 solution_dict[adj] = solution[idx + 1]
             solutions.append((solution_dict, fitness, fitness_function.surrogate_model))
 
-        return max(
-            solutions, key=itemgetter(1)
-        )  # TODO This can be done better with fitness normalisation between edges
+        return max(solutions, key=itemgetter(1))  # This can be done better with fitness normalisation between edges
