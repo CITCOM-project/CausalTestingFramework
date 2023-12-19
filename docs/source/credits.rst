@@ -33,5 +33,5 @@ Figshare DOI_ for the version used in your research.
 The CITCOM Team
 ***************
 
-- Andrew G. Clark, Michael Foster, Richard Somers, Christopher Wild, Farhad Allian, Neil Walkinshaw.
+- Andrew G. Clark, Michael Foster, Richard Somers, Christopher Wild, Farhad Allian, Robert M. Hierons, Nick Latimer, David Wagg, Neil Walkinshaw.
 
