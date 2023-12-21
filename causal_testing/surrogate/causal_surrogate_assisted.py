@@ -1,3 +1,5 @@
+"""Module containing classes to define and run causal surrogate assisted test cases"""
+
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.base_test_case import BaseTestCase
@@ -10,6 +12,7 @@ from abc import ABC
 
 @dataclass
 class SimulationResult(ABC):
+    """Data class holding the data and result metadata of a simulation"""
     data: dict
     fault: bool
     relationship: str
@@ -17,12 +20,18 @@ class SimulationResult(ABC):
 
 @dataclass
 class SearchFitnessFunction(ABC):
+    """Data class containing the Fitness function and related model"""
     fitness_function: Any
     surrogate_model: PolynomialRegressionEstimator
 
 
 class SearchAlgorithm:
+    """Class to be inherited with the search algorithm consisting of a search function and the fitness function of the
+     space to be searched"""
+
     def generate_fitness_functions(self, surrogate_models: list[Estimator]) -> list[SearchFitnessFunction]:
+        """Generates the fitness function of the search space
+        :param surrogate_models: """
         pass
 
     def search(self, fitness_functions: list[SearchFitnessFunction], specification: CausalSpecification) -> list:
@@ -30,6 +39,9 @@ class SearchAlgorithm:
 
 
 class Simulator:
+    """Class to be inherited with Simulator specific functions to start, shutdown and run the simulation with the give
+     config file"""
+
     def startup(self, **kwargs):
         pass
 
@@ -41,21 +53,23 @@ class Simulator:
 
 
 class CausalSurrogateAssistedTestCase:
+    """A class representing a single causal surrogate assisted test case."""
+
     def __init__(
-        self,
-        specification: CausalSpecification,
-        search_algorithm: SearchAlgorithm,
-        simulator: Simulator,
+            self,
+            specification: CausalSpecification,
+            search_algorithm: SearchAlgorithm,
+            simulator: Simulator,
     ):
         self.specification = specification
         self.search_algorithm = search_algorithm
         self.simulator = simulator
 
     def execute(
-        self,
-        data_collector: ObservationalDataCollector,
-        max_executions: int = 200,
-        custom_data_aggregator: Callable[[dict, dict], dict] = None,
+            self,
+            data_collector: ObservationalDataCollector,
+            max_executions: int = 200,
+            custom_data_aggregator: Callable[[dict, dict], dict] = None,
     ):
         data_collector.collect_data()
 
@@ -77,7 +91,8 @@ class CausalSurrogateAssistedTestCase:
 
             if test_result.fault:
                 print(
-                    f"Fault found between {surrogate.treatment} causing {surrogate.outcome}. Contradiction with expected {surrogate.expected_relationship}."
+                    f"Fault found between {surrogate.treatment} causing {surrogate.outcome}. Contradiction with "
+                    f"expected {surrogate.expected_relationship}."
                 )
                 test_result.relationship = (
                     f"{surrogate.treatment} -> {surrogate.outcome} expected {surrogate.expected_relationship}"
@@ -88,7 +103,7 @@ class CausalSurrogateAssistedTestCase:
         return "No fault found", i + 1, data_collector.data
 
     def generate_surrogates(
-        self, specification: CausalSpecification, data_collector: ObservationalDataCollector
+            self, specification: CausalSpecification, data_collector: ObservationalDataCollector
     ) -> list[SearchFitnessFunction]:
         surrogate_models = []
 
