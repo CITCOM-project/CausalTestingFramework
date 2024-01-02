@@ -71,7 +71,8 @@ class CausalSurrogateAssistedTestCase:
             self.simulator.shutdown()
 
             if custom_data_aggregator is not None:
-                data_collector.data = custom_data_aggregator(data_collector.data, test_result.data)
+                if data_collector.data is not None:
+                    data_collector.data = custom_data_aggregator(data_collector.data, test_result.data)
             else:
                 data_collector.data = data_collector.data.append(test_result.data, ignore_index=True)
 
