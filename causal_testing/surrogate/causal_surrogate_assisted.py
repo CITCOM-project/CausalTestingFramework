@@ -54,7 +54,7 @@ class Simulator:
     def run_with_config(self, configuration) -> SimulationResult:
         """Run the simulator with the given configuration and return the results in the structure of a
         SimulationResult
-        :param configuration:
+        :param configuration: the configuration required to initialise the Simulation
         :return: Simulation results in the structure of the SimulationResult data class"""
 
 
@@ -77,6 +77,12 @@ class CausalSurrogateAssistedTestCase:
             max_executions: int = 200,
             custom_data_aggregator: Callable[[dict, dict], dict] = None,
     ):
+        """ For this specific test case, collect the data, run the simulator, check for faults and return the result
+            and collected data
+            :param data_collector: An ObservationalDataCollector which gathers data relevant to the specified scenario
+            :param max_executions: Maximum number of executions
+            :param custom_data_aggregator:
+            :return: tuple containing SimulationResult or str, execution number and collected data """
         data_collector.collect_data()
 
         for i in range(max_executions):
@@ -112,6 +118,11 @@ class CausalSurrogateAssistedTestCase:
     def generate_surrogates(
             self, specification: CausalSpecification, data_collector: ObservationalDataCollector
     ) -> list[SearchFitnessFunction]:
+        """ Generate a surrogate model for each edge of the dag that specifies it is included in the DAG metadata.
+        :param specification: The Causal Specification (combination of Scenario and Causal Dag)
+        :param data_collector: An ObservationalDataCollector which gathers data relevant to the specified scenario
+        :return: A list of surrogate models
+        """
         surrogate_models = []
 
         for u, v in specification.causal_dag.graph.edges:
