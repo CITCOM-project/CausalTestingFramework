@@ -1,6 +1,6 @@
 import unittest
 from causal_testing.surrogate.causal_surrogate_assisted import SimulationResult, SearchFitnessFunction
-from causal_testing.testing.estimators import Estimator, PolynomialRegressionEstimator
+from causal_testing.testing.estimators import Estimator, CubicSplineRegressionEstimator
 
 class TestSimulationResult(unittest.TestCase):
 
@@ -34,9 +34,9 @@ class TestSearchFitnessFunction(unittest.TestCase):
 
         test_function = lambda x: x **2
 
-        surrogate_model = PolynomialRegressionEstimator()
+        surrogate_model = CubicSplineRegressionEstimator()
 
         search_function = SearchFitnessFunction(fitness_function=test_function, surrogate_model=surrogate_model)
 
         self.assertIsCallable(search_function.fitness_function)
-        self.assertIsInstance(search_function.surrogate_model, PolynomialRegressionEstimator)
+        self.assertIsInstance(search_function.surrogate_model, CubicSplineRegressionEstimator)

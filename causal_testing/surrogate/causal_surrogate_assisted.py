@@ -1,7 +1,7 @@
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.estimators import Estimator, PolynomialRegressionEstimator
+from causal_testing.testing.estimators import Estimator, CubicSplineRegressionEstimator
 
 from dataclasses import dataclass
 from typing import Callable, Any
@@ -18,7 +18,7 @@ class SimulationResult(ABC):
 @dataclass
 class SearchFitnessFunction(ABC):
     fitness_function: Any
-    surrogate_model: PolynomialRegressionEstimator
+    surrogate_model: CubicSplineRegressionEstimator
 
 
 class SearchAlgorithm:
@@ -102,7 +102,7 @@ class CausalSurrogateAssistedTestCase:
 
                 minimal_adjustment_set = specification.causal_dag.identification(base_test_case, specification.scenario)
 
-                surrogate = PolynomialRegressionEstimator(
+                surrogate = CubicSplineRegressionEstimator(
                     u,
                     0,
                     0,
