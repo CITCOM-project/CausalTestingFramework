@@ -31,11 +31,14 @@ class SearchAlgorithm:
 
     def generate_fitness_functions(self, surrogate_models: list[Estimator]) -> list[SearchFitnessFunction]:
         """Generates the fitness function of the search space
-        :param surrogate_models: """
-        pass
+        :param surrogate_models: A list of CubicSplineRegressionEstimator generated for each edge of the DAG
+        :return: A list of fitness functions mapping to each of the surrogate models in the input"""
 
     def search(self, fitness_functions: list[SearchFitnessFunction], specification: CausalSpecification) -> list:
-        pass
+        """Function which implements a search routine which searches for the optimal fitness value for the specified
+        scenario
+        :param fitness_functions: The fitness function to be optimised
+        :param specification:  The Causal Specification (combination of Scenario and Causal Dag)"""
 
 
 class Simulator:
@@ -43,13 +46,16 @@ class Simulator:
      config file"""
 
     def startup(self, **kwargs):
-        pass
+        """Function that when run, initialises and opens the Simulator"""
 
     def shutdown(self, **kwargs):
-        pass
+        """Function to safely exit and shutdown the Simulator"""
 
     def run_with_config(self, configuration) -> SimulationResult:
-        pass
+        """Run the simulator with the given configuration and return the results in the structure of a
+        SimulationResult
+        :param configuration:
+        :return: Simulation results in the structure of the SimulationResult data class"""
 
 
 class CausalSurrogateAssistedTestCase:
