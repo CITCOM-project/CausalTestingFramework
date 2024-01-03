@@ -439,9 +439,9 @@ class LinearRegressionEstimator(Estimator):
         return [ci_low, ci_high]
 
 
-class PolynomialRegressionEstimator(LinearRegressionEstimator):
-    """A Polynomial Regression Estimator is a parametric estimator which restricts the variables in the data to a
-    polynomial combination of parameters and functions of the variables (note these functions need not be polynomial).
+class CubicSplineRegressionEstimator(LinearRegressionEstimator):
+    """A Cubic Spline Regression Estimator is a parametric estimator which restricts the variables in the data to a
+    combination of parameters and basis functions of the variables.
     """
 
     def __init__(
@@ -452,7 +452,7 @@ class PolynomialRegressionEstimator(LinearRegressionEstimator):
             control_value: float,
             adjustment_set: set,
             outcome: str,
-            degree: int,
+            basis: int,
             df: pd.DataFrame = None,
             effect_modifiers: dict[Variable:Any] = None,
             formula: str = None,
@@ -470,7 +470,7 @@ class PolynomialRegressionEstimator(LinearRegressionEstimator):
 
         if formula is None:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            self.formula = f"{outcome} ~ cr({'+'.join(terms)}, df={degree})"
+            self.formula = f"{outcome} ~ cr({'+'.join(terms)}, df={basis})"
 
     def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[float, list[float]]:
         model = self._run_linear_regression()

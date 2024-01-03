@@ -7,6 +7,7 @@ from causal_testing.testing.estimators import (
     CausalForestEstimator,
     LogisticRegressionEstimator,
     InstrumentalVariableEstimator,
+    CubicSplineRegressionEstimator
 )
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
@@ -409,6 +410,43 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(round(cv.estimate_robustness(model)["treatments"], 4), 0.7353)
 
 
+class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
+
+    @classmethod
+
+    def setUpClass(cls):
+
+        super().setUpClass()
+    def test_program_11_3_cublic_spline(self):
+
+        """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
+        https://www.hsph.harvard.edu/miguel-hernan/wp-content/uploads/sites/1268/2023/10/hernanrobins_WhatIf_30sep23.pdf
+        """
+
+        df = self.chapter_11_df.copy()
+
+        cublic_spline_estimator = CubicSplineRegressionEstimator(
+            "treatments", None, None, set(), "outcomes", 3, df)
+
+        model = cublic_spline_estimator._run_linear_regression()
+
+        ate, _ = cublic_spline_estimator.estimate_coefficient()
+
+        self.assertEqual(
+            round(
+                model.params["Intercept"]
+                + 90 * model.params["treatments"]
+                + 90 * 90 * model.params["np.power(treatments, 2)"],
+                1,
+            ),
+            197.1,
+        )
+        # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
+        self.assertEqual(round(model.params["treatments"], 3), round(ate, 3))
+
+
+
+
 class TestCausalForestEstimator(unittest.TestCase):
     """Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].
 
@@ -491,3 +529,5 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         test_results = lr_model.estimate_ate()
         ate = test_results[0]
         self.assertAlmostEqual(ate, 2.0)
+
+

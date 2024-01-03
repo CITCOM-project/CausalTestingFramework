@@ -4,7 +4,7 @@ from operator import itemgetter
 from pygad import GA
 
 from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.testing.estimators import PolynomialRegressionEstimator
+from causal_testing.testing.estimators import Estimator, CubicSplineRegressionEstimator
 from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, SearchFitnessFunction
 
 
@@ -23,7 +23,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         }
 
     def generate_fitness_functions(
-        self, surrogate_models: list[PolynomialRegressionEstimator]
+        self, surrogate_models: list[CubicSplineRegressionEstimator]
     ) -> list[SearchFitnessFunction]:
         fitness_functions = []
 
