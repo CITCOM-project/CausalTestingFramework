@@ -34,6 +34,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             contradiction_function = self.contradiction_functions[surrogate.expected_relationship]
 
             # The returned fitness function after including required variables into the function's scope
+            # Unused arguments are required for pygad's fitness function signature
             def fitness_function(ga, solution, idx): # pylint: disable=unused-argument
                 surrogate.control_value = solution[0] - self.delta
                 surrogate.treatment_value = solution[0] + self.delta
