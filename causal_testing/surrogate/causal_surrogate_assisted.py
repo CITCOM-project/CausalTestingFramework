@@ -88,7 +88,7 @@ class CausalSurrogateAssistedTestCase:
         space which is, therefore, most likely to indicate incorrect behaviour. This cadidate test case is run against
         the simulator, checked for faults and the result returned with collected data
         :param data_collector: An ObservationalDataCollector which gathers data relevant to the specified scenario
-        :param max_executions: Maximum number of executions
+        :param max_executions: Maximum number of simulator executions before exiting the search
         :param custom_data_aggregator:
         :return: tuple containing SimulationResult or str, execution number and collected data"""
         data_collector.collect_data()
