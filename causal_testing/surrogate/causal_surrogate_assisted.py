@@ -1,6 +1,6 @@
 """Module containing classes to define and run causal surrogate assisted test cases"""
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Any
 
@@ -11,7 +11,7 @@ from causal_testing.testing.estimators import Estimator, CubicSplineRegressionEs
 
 
 @dataclass
-class SimulationResult(ABC):
+class SimulationResult:
     """Data class holding the data and result metadata of a simulation"""
 
     data: dict
@@ -20,22 +20,24 @@ class SimulationResult(ABC):
 
 
 @dataclass
-class SearchFitnessFunction(ABC):
+class SearchFitnessFunction:
     """Data class containing the Fitness function and related model"""
 
     fitness_function: Any
     surrogate_model: CubicSplineRegressionEstimator
 
 
-class SearchAlgorithm:
+class SearchAlgorithm(ABC):
     """Class to be inherited with the search algorithm consisting of a search function and the fitness function of the
     space to be searched"""
 
+    @abstractmethod
     def generate_fitness_functions(self, surrogate_models: list[Estimator]) -> list[SearchFitnessFunction]:
         """Generates the fitness function of the search space
         :param surrogate_models: A list of CubicSplineRegressionEstimator generated for each edge of the DAG
         :return: A list of fitness functions mapping to each of the surrogate models in the input"""
 
+    @abstractmethod
     def search(self, fitness_functions: list[SearchFitnessFunction], specification: CausalSpecification) -> list:
         """Function which implements a search routine which searches for the optimal fitness value for the specified
         scenario
@@ -43,16 +45,19 @@ class SearchAlgorithm:
         :param specification:  The Causal Specification (combination of Scenario and Causal Dag)"""
 
 
-class Simulator:
+class Simulator(ABC):
     """Class to be inherited with Simulator specific functions to start, shutdown and run the simulation with the give
     config file"""
 
+    @abstractmethod
     def startup(self, **kwargs):
         """Function that when run, initialises and opens the Simulator"""
 
+    @abstractmethod
     def shutdown(self, **kwargs):
         """Function to safely exit and shutdown the Simulator"""
 
+    @abstractmethod
     def run_with_config(self, configuration: Any) -> SimulationResult:
         """Run the simulator with the given configuration and return the results in the structure of a
         SimulationResult
