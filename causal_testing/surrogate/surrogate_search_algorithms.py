@@ -11,7 +11,7 @@ from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, 
 
 
 class GeneticSearchAlgorithm(SearchAlgorithm):
-    """ Implementation of SearchAlgorithm class. Implements genetic search algorithm for surrogate models."""
+    """Implementation of SearchAlgorithm class. Implements genetic search algorithm for surrogate models."""
 
     def __init__(self, delta=0.05, config: dict = None) -> None:
         super().__init__()
@@ -26,7 +26,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         }
 
     def generate_fitness_functions(
-            self, surrogate_models: list[CubicSplineRegressionEstimator]
+        self, surrogate_models: list[CubicSplineRegressionEstimator]
     ) -> list[SearchFitnessFunction]:
         fitness_functions = []
 
@@ -56,7 +56,6 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         solutions = []
 
         for fitness_function in fitness_functions:
-
             gene_types, gene_space = self.create_gene_types(fitness_function, specification)
 
             ga = GA(
@@ -90,8 +89,9 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         return max(solutions, key=itemgetter(1))  # This can be done better with fitness normalisation between edges
 
     @staticmethod
-    def create_gene_types(fitness_function: SearchFitnessFunction, specification: CausalSpecification) -> tuple[
-        list, list]:
+    def create_gene_types(
+        fitness_function: SearchFitnessFunction, specification: CausalSpecification
+    ) -> tuple[list, list]:
         """Generate the gene_types and gene_space for a given fitness function and specification
         :param fitness_function: Instance of SearchFitnessFunction
         :param specification: The Causal Specification (combination of Scenario and Causal Dag)"""
