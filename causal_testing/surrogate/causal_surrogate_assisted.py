@@ -53,10 +53,10 @@ class Simulator:
     def shutdown(self, **kwargs):
         """Function to safely exit and shutdown the Simulator"""
 
-    def run_with_config(self, configuration) -> SimulationResult:
+    def run_with_config(self, configuration: Any) -> SimulationResult:
         """Run the simulator with the given configuration and return the results in the structure of a
         SimulationResult
-        :param configuration: the configuration required to initialise the Simulation
+        :param configuration: The configuration required to initialise the Simulation
         :return: Simulation results in the structure of the SimulationResult data class"""
 
 
