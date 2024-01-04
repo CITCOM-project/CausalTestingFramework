@@ -1,4 +1,6 @@
 """Module containing implementation of search algorithm for surrogate search """
+# pylint: disable=cell-var-from-loop
+# Fitness functions are required to be iteratively defined, including all variables within.
 
 from operator import itemgetter
 from pygad import GA
