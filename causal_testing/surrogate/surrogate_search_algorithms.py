@@ -4,12 +4,13 @@ from operator import itemgetter
 from pygad import GA
 
 from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.testing.estimators import Estimator, CubicSplineRegressionEstimator
+from causal_testing.testing.estimators import CubicSplineRegressionEstimator
 from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, SearchFitnessFunction
 
 
 class GeneticSearchAlgorithm(SearchAlgorithm):
     """ Implementation of SearchAlgorithm class. Implements genetic search algorithm for surrogate models."""
+
     def __init__(self, delta=0.05, config: dict = None) -> None:
         super().__init__()
 
@@ -23,7 +24,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         }
 
     def generate_fitness_functions(
-        self, surrogate_models: list[CubicSplineRegressionEstimator]
+            self, surrogate_models: list[CubicSplineRegressionEstimator]
     ) -> list[SearchFitnessFunction]:
         fitness_functions = []
 
@@ -53,28 +54,8 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         solutions = []
 
         for fitness_function in fitness_functions:
-            var_space = {}
-            var_space[fitness_function.surrogate_model.treatment] = {}
-            for adj in fitness_function.surrogate_model.adjustment_set:
-                var_space[adj] = {}
 
-            for relationship in list(specification.scenario.constraints):
-                rel_split = str(relationship).split(" ")
-
-                if rel_split[1] == ">=":
-                    var_space[rel_split[0]]["low"] = int(rel_split[2])
-                elif rel_split[1] == "<=":
-                    var_space[rel_split[0]]["high"] = int(rel_split[2])
-
-            gene_space = []
-            gene_space.append(var_space[fitness_function.surrogate_model.treatment])
-            for adj in fitness_function.surrogate_model.adjustment_set:
-                gene_space.append(var_space[adj])
-
-            gene_types = []
-            gene_types.append(specification.scenario.variables.get(fitness_function.surrogate_model.treatment).datatype)
-            for adj in fitness_function.surrogate_model.adjustment_set:
-                gene_types.append(specification.scenario.variables.get(adj).datatype)
+            gene_types, gene_space = self.create_gene_types(fitness_function, specification)
 
             ga = GA(
                 num_generations=200,
@@ -105,3 +86,34 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             solutions.append((solution_dict, fitness, fitness_function.surrogate_model))
 
         return max(solutions, key=itemgetter(1))  # This can be done better with fitness normalisation between edges
+
+    @staticmethod
+    def create_gene_types(fitness_function: SearchFitnessFunction, specification: CausalSpecification) -> tuple[
+        list, list]:
+        """Generate the gene_types and gene_space for a given fitness function and specification
+        :param fitness_function: Instance of SearchFitnessFunction
+        :param specification: The Causal Specification (combination of Scenario and Causal Dag)"""
+
+        var_space = {}
+        var_space[fitness_function.surrogate_model.treatment] = {}
+        for adj in fitness_function.surrogate_model.adjustment_set:
+            var_space[adj] = {}
+
+        for relationship in list(specification.scenario.constraints):
+            rel_split = str(relationship).split(" ")
+
+            if rel_split[1] == ">=":
+                var_space[rel_split[0]]["low"] = int(rel_split[2])
+            elif rel_split[1] == "<=":
+                var_space[rel_split[0]]["high"] = int(rel_split[2])
+
+        gene_space = []
+        gene_space.append(var_space[fitness_function.surrogate_model.treatment])
+        for adj in fitness_function.surrogate_model.adjustment_set:
+            gene_space.append(var_space[adj])
+
+        gene_types = []
+        gene_types.append(specification.scenario.variables.get(fitness_function.surrogate_model.treatment).datatype)
+        for adj in fitness_function.surrogate_model.adjustment_set:
+            gene_types.append(specification.scenario.variables.get(adj).datatype)
+        return gene_types, gene_space
