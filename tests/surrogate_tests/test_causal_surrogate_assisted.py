@@ -34,9 +34,9 @@ class TestSearchFitnessFunction(unittest.TestCase):
 
         test_function = lambda x: x **2
 
-        surrogate_model = CubicSplineRegressionEstimator()
+        surrogate_model = CubicSplineRegressionEstimator("", 0, 0, set(), "", 4)
 
         search_function = SearchFitnessFunction(fitness_function=test_function, surrogate_model=surrogate_model)
 
-        self.assertIsCallable(search_function.fitness_function)
+        self.assertTrue(callable(search_function.fitness_function))
         self.assertIsInstance(search_function.surrogate_model, CubicSplineRegressionEstimator)

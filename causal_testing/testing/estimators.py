@@ -472,12 +472,13 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             self.formula = f"{outcome} ~ cr({'+'.join(terms)}, df={basis})"
 
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[float, list[float]]:
+    def estimate_ate_calculated(self, adjustment_config: dict = None) -> float:
         model = self._run_linear_regression()
 
         x = {"Intercept": 1, self.treatment: self.treatment_value}
-        for k, v in adjustment_config.items():
-            x[k] = v
+        if adjustment_config is not None:
+            for k, v in adjustment_config.items():
+                x[k] = v
         if self.effect_modifiers is not None:
             for k, v in self.effect_modifiers.items():
                 x[k] = v

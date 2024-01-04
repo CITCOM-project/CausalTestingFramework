@@ -421,28 +421,31 @@ class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
 
         """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
         https://www.hsph.harvard.edu/miguel-hernan/wp-content/uploads/sites/1268/2023/10/hernanrobins_WhatIf_30sep23.pdf
+        Slightly modified as Hernan et al. use linear regression for this example.
         """
 
         df = self.chapter_11_df.copy()
 
         cublic_spline_estimator = CubicSplineRegressionEstimator(
-            "treatments", None, None, set(), "outcomes", 3, df)
+            "treatments", 1, 0, set(), "outcomes", 3, df)
 
         model = cublic_spline_estimator._run_linear_regression()
 
-        ate, _ = cublic_spline_estimator.estimate_coefficient()
-
         self.assertEqual(
             round(
-                model.params["Intercept"]
-                + 90 * model.params["treatments"]
-                + 90 * 90 * model.params["np.power(treatments, 2)"],
+                cublic_spline_estimator.model.predict({"Intercept": 1, "treatments": 90}).iloc[0],
                 1,
             ),
-            197.1,
+            195.6,
         )
-        # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(model.params["treatments"], 3), round(ate, 3))
+
+        ate_1 = cublic_spline_estimator.estimate_ate_calculated()
+        cublic_spline_estimator.treatment_value = 2
+        ate_2 = cublic_spline_estimator.estimate_ate_calculated()
+
+        # Doubling the treatemebnt value should roughly but not exactly double the ATE
+        self.assertNotEqual(ate_1 * 2, ate_2)
+        self.assertAlmostEqual(ate_1 * 2, ate_2)
 
 
 
