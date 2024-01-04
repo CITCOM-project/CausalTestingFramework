@@ -71,7 +71,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             if self.config is not None:
                 for k, v in self.config.items():
                     if k == "gene_space":
-                        raise Exception(
+                        raise ValueError(
                             "Gene space should not be set through config. This is generated from the causal "
                             "specification"
                         )
