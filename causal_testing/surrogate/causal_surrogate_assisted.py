@@ -58,7 +58,7 @@ class Simulator(ABC):
         """Function to safely exit and shutdown the Simulator"""
 
     @abstractmethod
-    def run_with_config(self, configuration: Any) -> SimulationResult:
+    def run_with_config(self, configuration: dict) -> SimulationResult:
         """Run the simulator with the given configuration and return the results in the structure of a
         SimulationResult
         :param configuration: The configuration required to initialise the Simulation
@@ -84,8 +84,9 @@ class CausalSurrogateAssistedTestCase:
         max_executions: int = 200,
         custom_data_aggregator: Callable[[dict, dict], dict] = None,
     ):
-        """For this specific test case, collect the data, run the simulator, check for faults and return the result
-        and collected data
+        """For this specific test case, a search algorithm is used to find the most contradictory point in the input
+        space which is, therefore, most likely to indicate incorrect behaviour. This cadidate test case is run against
+        the simulator, checked for faults and the result returned with collected data
         :param data_collector: An ObservationalDataCollector which gathers data relevant to the specified scenario
         :param max_executions: Maximum number of executions
         :param custom_data_aggregator:
