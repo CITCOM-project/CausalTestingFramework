@@ -13,7 +13,7 @@ The paper citation should be the Causal Testing Framework paper_, and the softwa
 Figshare DOI_ for the version used in your research.
 
 .. _paper: https://dl.acm.org/doi/10.1145/3607184
-.. _DOI: https://dl.acm.org/doi/10.1145/3607184
+.. _DOI: https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516
 
 .. code-block:: latex
 
