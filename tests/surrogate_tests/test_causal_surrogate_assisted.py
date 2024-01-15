@@ -1,6 +1,16 @@
 import unittest
-from causal_testing.surrogate.causal_surrogate_assisted import SimulationResult, SearchFitnessFunction
-from causal_testing.testing.estimators import Estimator, CubicSplineRegressionEstimator
+from causal_testing.data_collection.data_collector import ObservationalDataCollector
+from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.specification.scenario import Scenario
+from causal_testing.specification.variable import Input
+from causal_testing.surrogate.causal_surrogate_assisted import SimulationResult, SearchFitnessFunction, CausalSurrogateAssistedTestCase, Simulator
+from causal_testing.surrogate.surrogate_search_algorithms import GeneticSearchAlgorithm
+from causal_testing.testing.estimators import CubicSplineRegressionEstimator
+from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
+import os
+import pandas as pd
+import numpy as np
 
 class TestSimulationResult(unittest.TestCase):
 
@@ -28,7 +38,16 @@ class TestSimulationResult(unittest.TestCase):
 
 class TestSearchFitnessFunction(unittest.TestCase):
 
-    #TODO: complete tests for causal surrogate
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.class_df = load_class_df()
+
+    def setUp(self):
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M [included=1, expected=positive]; M -> Y [included=1, expected=negative]; Z -> M; }"""
+        with open(self.dag_dot_path, "w") as f:
+            f.write(dag_dot)
 
     def test_init_valid_values(self):
 
@@ -40,3 +59,76 @@ class TestSearchFitnessFunction(unittest.TestCase):
 
         self.assertTrue(callable(search_function.fitness_function))
         self.assertIsInstance(search_function.surrogate_model, CubicSplineRegressionEstimator)
+
+    def test_surrogate_model_generation(self):
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(None, None, None)
+
+        df = self.class_df.copy()
+
+        causal_dag = CausalDAG(self.dag_dot_path)
+        z = Input("Z", int)
+        x = Input("X", int)
+        m = Input("M", int)
+        y = Input("Y", int)
+        scenario = Scenario(variables={z, x, m, y})
+        specification = CausalSpecification(scenario, causal_dag)
+
+        surrogate_models = c_s_a_test_case.generate_surrogates(specification, ObservationalDataCollector(scenario, df))
+        self.assertEqual(len(surrogate_models), 2)
+
+        for surrogate in surrogate_models:
+            self.assertIsInstance(surrogate, CubicSplineRegressionEstimator)
+            self.assertNotEqual(surrogate.treatment, "Z")
+            self.assertNotEqual(surrogate.outcome, "Z")
+
+    def test_causal_surrogate_assisted_execution(self):
+        df = self.class_df.copy()
+
+        causal_dag = CausalDAG(self.dag_dot_path)
+        z = Input("Z", int)
+        x = Input("X", int)
+        m = Input("M", int)
+        y = Input("Y", int)
+        scenario = Scenario(variables={z, x, m, y}, constraints={
+            z <= 0, z >= 3,
+            x <= 0, x >= 3,
+            m <= 0, m >= 3
+        })
+        specification = CausalSpecification(scenario, causal_dag)
+
+        search_algorithm = GeneticSearchAlgorithm(config= {
+                "parent_selection_type": "tournament",
+                "K_tournament": 4,
+                "mutation_type": "random",
+                "mutation_percent_genes": 50,
+                "mutation_by_replacement": True,
+            })
+        simulator = TestSimulator()
+
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
+
+        result, iterations, result_data = c_s_a_test_case.execute(ObservationalDataCollector(scenario, df))
+
+        self.assertIsInstance(result, SimulationResult)
+        self.assertEqual(iterations, 1)
+        self.assertEqual(len(result_data), 17)
+
+    def tearDown(self) -> None:
+        remove_temp_dir_if_existent()
+
+def load_class_df():
+    """Get the testing data and put into a dataframe."""
+
+    class_df = pd.DataFrame({"Z": np.arange(16), "X": np.arange(16), "M": np.arange(16, 32), "Y": np.arange(32,16,-1)})
+    return class_df
+
+class TestSimulator():
+
+    def run_with_config(self, configuration: dict) -> SimulationResult:
+        return SimulationResult({"Z": 1, "X": 1, "M": 1, "Y": 1}, True, None)
+    
+    def startup(self):
+        pass
+
+    def shutdown(self):
+        pass

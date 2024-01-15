@@ -531,6 +531,9 @@ class CausalDAG(nx.DiGraph):
         if scenario is not None:
             minimal_adjustment_sets = self.remove_hidden_adjustment_sets(minimal_adjustment_sets, scenario)
 
+        if len(minimal_adjustment_sets) == 0:
+            return set()
+
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set
 

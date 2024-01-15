@@ -105,10 +105,11 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         for relationship in list(specification.scenario.constraints):
             rel_split = str(relationship).split(" ")
 
-            if rel_split[1] == ">=":
-                var_space[rel_split[0]]["low"] = int(rel_split[2])
-            elif rel_split[1] == "<=":
-                var_space[rel_split[0]]["high"] = int(rel_split[2])
+            if rel_split[0] in var_space.keys():
+                if rel_split[1] == ">=":
+                    var_space[rel_split[0]]["low"] = int(rel_split[2])
+                elif rel_split[1] == "<=":
+                    var_space[rel_split[0]]["high"] = int(rel_split[2])
 
         gene_space = []
         gene_space.append(var_space[fitness_function.surrogate_model.treatment])
