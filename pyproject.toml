@@ -27,7 +27,7 @@ dependencies = [
     "statsmodels~=0.13",
     "tabulate~=0.8",
     "pydot~=1.4",
-    pygad~=3.2
+    "pygad~=3.2"
 ]
 dynamic = ["version"]
 
