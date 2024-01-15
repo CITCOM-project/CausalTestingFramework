@@ -4,7 +4,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input
-from causal_testing.surrogate.causal_surrogate_assisted import SimulationResult, SearchFitnessFunction, CausalSurrogateAssistedTestCase, Simulator
+from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, SimulationResult, SearchFitnessFunction, CausalSurrogateAssistedTestCase, Simulator
 from causal_testing.surrogate.surrogate_search_algorithms import GeneticSearchAlgorithm
 from causal_testing.testing.estimators import CubicSplineRegressionEstimator
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
@@ -113,6 +113,101 @@ class TestSearchFitnessFunction(unittest.TestCase):
         self.assertEqual(iterations, 1)
         self.assertEqual(len(result_data), 17)
 
+    def test_causal_surrogate_assisted_execution_failure(self):
+        df = self.class_df.copy()
+
+        causal_dag = CausalDAG(self.dag_dot_path)
+        z = Input("Z", int)
+        x = Input("X", int)
+        m = Input("M", int)
+        y = Input("Y", int)
+        scenario = Scenario(variables={z, x, m, y}, constraints={
+            z <= 0, z >= 3,
+            x <= 0, x >= 3,
+            m <= 0, m >= 3
+        })
+        specification = CausalSpecification(scenario, causal_dag)
+
+        search_algorithm = GeneticSearchAlgorithm(config= {
+                "parent_selection_type": "tournament",
+                "K_tournament": 4,
+                "mutation_type": "random",
+                "mutation_percent_genes": 50,
+                "mutation_by_replacement": True,
+            })
+        simulator = TestSimulatorFailing()
+
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
+
+        result, iterations, result_data = c_s_a_test_case.execute(ObservationalDataCollector(scenario, df), 1)
+
+        self.assertIsInstance(result, str)
+        self.assertEqual(iterations, 1)
+        self.assertEqual(len(result_data), 17)
+
+    def test_causal_surrogate_assisted_execution_custom_aggregator(self):
+        df = self.class_df.copy()
+
+        causal_dag = CausalDAG(self.dag_dot_path)
+        z = Input("Z", int)
+        x = Input("X", int)
+        m = Input("M", int)
+        y = Input("Y", int)
+        scenario = Scenario(variables={z, x, m, y}, constraints={
+            z <= 0, z >= 3,
+            x <= 0, x >= 3,
+            m <= 0, m >= 3
+        })
+        specification = CausalSpecification(scenario, causal_dag)
+
+        search_algorithm = GeneticSearchAlgorithm(config= {
+                "parent_selection_type": "tournament",
+                "K_tournament": 4,
+                "mutation_type": "random",
+                "mutation_percent_genes": 50,
+                "mutation_by_replacement": True,
+            })
+        simulator = TestSimulator()
+
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
+
+        result, iterations, result_data = c_s_a_test_case.execute(ObservationalDataCollector(scenario, df), 
+                                                                    custom_data_aggregator=data_double_aggregator)
+
+        self.assertIsInstance(result, SimulationResult)
+        self.assertEqual(iterations, 1)
+        self.assertEqual(len(result_data), 18)
+
+    def test_causal_surrogate_assisted_execution_incorrect_search_config(self):
+        df = self.class_df.copy()
+
+        causal_dag = CausalDAG(self.dag_dot_path)
+        z = Input("Z", int)
+        x = Input("X", int)
+        m = Input("M", int)
+        y = Input("Y", int)
+        scenario = Scenario(variables={z, x, m, y}, constraints={
+            z <= 0, z >= 3,
+            x <= 0, x >= 3,
+            m <= 0, m >= 3
+        })
+        specification = CausalSpecification(scenario, causal_dag)
+
+        search_algorithm = GeneticSearchAlgorithm(config= {
+                "parent_selection_type": "tournament",
+                "K_tournament": 4,
+                "mutation_type": "random",
+                "mutation_percent_genes": 50,
+                "mutation_by_replacement": True,
+                "gene_space": "Something"
+            })
+        simulator = TestSimulator()
+
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
+
+        self.assertRaises(c_s_a_test_case.execute(ValueError, ObservationalDataCollector(scenario, df), 
+                                                                    custom_data_aggregator=data_double_aggregator))
+
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
 
@@ -122,7 +217,7 @@ def load_class_df():
     class_df = pd.DataFrame({"Z": np.arange(16), "X": np.arange(16), "M": np.arange(16, 32), "Y": np.arange(32,16,-1)})
     return class_df
 
-class TestSimulator():
+class TestSimulator(Simulator):
 
     def run_with_config(self, configuration: dict) -> SimulationResult:
         return SimulationResult({"Z": 1, "X": 1, "M": 1, "Y": 1}, True, None)
@@ -132,3 +227,17 @@ class TestSimulator():
 
     def shutdown(self):
         pass
+
+class TestSimulatorFailing(Simulator):
+
+    def run_with_config(self, configuration: dict) -> SimulationResult:
+        return SimulationResult({"Z": 1, "X": 1, "M": 1, "Y": 1}, False, None)
+    
+    def startup(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+def data_double_aggregator(data, new_data):
+    return data.append(new_data, ignore_index=True).append(new_data, ignore_index=True)
