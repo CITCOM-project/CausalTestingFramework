@@ -205,7 +205,7 @@ class TestSearchFitnessFunction(unittest.TestCase):
 
         c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
 
-        self.assertRaises(c_s_a_test_case.execute(ValueError, ObservationalDataCollector(scenario, df), 
+        self.assertRaises(ValueError, c_s_a_test_case.execute(ObservationalDataCollector(scenario, df), 
                                                                     custom_data_aggregator=data_double_aggregator))
 
     def tearDown(self) -> None:
