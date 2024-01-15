@@ -205,8 +205,9 @@ class TestSearchFitnessFunction(unittest.TestCase):
 
         c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
 
-        self.assertRaises(ValueError, c_s_a_test_case.execute(ObservationalDataCollector(scenario, df), 
-                                                                    custom_data_aggregator=data_double_aggregator))
+        self.assertRaises(ValueError, c_s_a_test_case.execute, 
+                          data_collector=ObservationalDataCollector(scenario, df),
+                          custom_data_aggregator=data_double_aggregator)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
