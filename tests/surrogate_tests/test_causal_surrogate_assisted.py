@@ -4,7 +4,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input
-from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, SimulationResult, SearchFitnessFunction, CausalSurrogateAssistedTestCase, Simulator
+from causal_testing.surrogate.causal_surrogate_assisted import SimulationResult, CausalSurrogateAssistedTestCase, Simulator
 from causal_testing.surrogate.surrogate_search_algorithms import GeneticSearchAlgorithm
 from causal_testing.testing.estimators import CubicSplineRegressionEstimator
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
@@ -36,7 +36,7 @@ class TestSimulationResult(unittest.TestCase):
 
                     self.assertEqual(result.relationship, relationship)
 
-class TestSearchFitnessFunction(unittest.TestCase):
+class TestCausalSurrogate(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -48,17 +48,6 @@ class TestSearchFitnessFunction(unittest.TestCase):
         dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M [included=1, expected=positive]; M -> Y [included=1, expected=negative]; Z -> M; }"""
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
-
-    def test_init_valid_values(self):
-
-        test_function = lambda x: x **2
-
-        surrogate_model = CubicSplineRegressionEstimator("", 0, 0, set(), "", 4)
-
-        search_function = SearchFitnessFunction(fitness_function=test_function, surrogate_model=surrogate_model)
-
-        self.assertTrue(callable(search_function.fitness_function))
-        self.assertIsInstance(search_function.surrogate_model, CubicSplineRegressionEstimator)
 
     def test_surrogate_model_generation(self):
         c_s_a_test_case = CausalSurrogateAssistedTestCase(None, None, None)

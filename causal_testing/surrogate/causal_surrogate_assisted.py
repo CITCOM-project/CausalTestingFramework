@@ -19,29 +19,15 @@ class SimulationResult:
     relationship: str
 
 
-@dataclass
-class SearchFitnessFunction:
-    """Data class containing the Fitness function and related model"""
-
-    fitness_function: Any
-    surrogate_model: CubicSplineRegressionEstimator
-
-
 class SearchAlgorithm(ABC):
     """Class to be inherited with the search algorithm consisting of a search function and the fitness function of the
     space to be searched"""
 
     @abstractmethod
-    def generate_fitness_functions(self, surrogate_models: list[Estimator]) -> list[SearchFitnessFunction]:
-        """Generates the fitness function of the search space
-        :param surrogate_models: A list of CubicSplineRegressionEstimator generated for each edge of the DAG
-        :return: A list of fitness functions mapping to each of the surrogate models in the input"""
-
-    @abstractmethod
-    def search(self, fitness_functions: list[SearchFitnessFunction], specification: CausalSpecification) -> list:
+    def search(self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification) -> list:
         """Function which implements a search routine which searches for the optimal fitness value for the specified
         scenario
-        :param fitness_functions: The fitness function to be optimised
+        :param surrogate_models: The surrogate models to be searched
         :param specification:  The Causal Specification (combination of Scenario and Causal Dag)"""
 
 
@@ -95,8 +81,7 @@ class CausalSurrogateAssistedTestCase:
 
         for i in range(max_executions):
             surrogate_models = self.generate_surrogates(self.specification, data_collector)
-            fitness_functions = self.search_algorithm.generate_fitness_functions(surrogate_models)
-            candidate_test_case, _, surrogate = self.search_algorithm.search(fitness_functions, self.specification)
+            candidate_test_case, _, surrogate = self.search_algorithm.search(surrogate_models, self.specification)
 
             self.simulator.startup()
             test_result = self.simulator.run_with_config(candidate_test_case)
@@ -123,7 +108,7 @@ class CausalSurrogateAssistedTestCase:
 
     def generate_surrogates(
         self, specification: CausalSpecification, data_collector: ObservationalDataCollector
-    ) -> list[SearchFitnessFunction]:
+    ) -> list[CubicSplineRegressionEstimator]:
         """Generate a surrogate model for each edge of the dag that specifies it is included in the DAG metadata.
         :param specification: The Causal Specification (combination of Scenario and Causal Dag)
         :param data_collector: An ObservationalDataCollector which gathers data relevant to the specified scenario

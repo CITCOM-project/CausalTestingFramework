@@ -7,7 +7,7 @@ from pygad import GA
 
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.estimators import CubicSplineRegressionEstimator
-from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm, SearchFitnessFunction
+from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm
 
 
 class GeneticSearchAlgorithm(SearchAlgorithm):
@@ -25,15 +25,15 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             "some_effect": lambda x: abs(1 / x),
         }
 
-    def generate_fitness_functions(
-        self, surrogate_models: list[CubicSplineRegressionEstimator]
-    ) -> list[SearchFitnessFunction]:
-        fitness_functions = []
+    def search(
+            self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification
+    ) -> list:
+        solutions = []
 
         for surrogate in surrogate_models:
             contradiction_function = self.contradiction_functions[surrogate.expected_relationship]
 
-            # The returned fitness function after including required variables into the function's scope
+            # The GA fitness function after including required variables into the function's scope
             # Unused arguments are required for pygad's fitness function signature
             def fitness_function(ga, solution, idx): # pylint: disable=unused-argument
                 surrogate.control_value = solution[0] - self.delta
@@ -46,25 +46,15 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                 ate = surrogate.estimate_ate_calculated(adjustment_dict)
 
                 return contradiction_function(ate)
-
-            search_fitness_function = SearchFitnessFunction(fitness_function, surrogate)
-
-            fitness_functions.append(search_fitness_function)
-
-        return fitness_functions
-
-    def search(self, fitness_functions: list[SearchFitnessFunction], specification: CausalSpecification) -> list:
-        solutions = []
-
-        for fitness_function in fitness_functions:
-            gene_types, gene_space = self.create_gene_types(fitness_function, specification)
+            
+            gene_types, gene_space = self.create_gene_types(surrogate, specification)
 
             ga = GA(
                 num_generations=200,
                 num_parents_mating=4,
-                fitness_func=fitness_function.fitness_function,
+                fitness_func=fitness_function,
                 sol_per_pop=10,
-                num_genes=1 + len(fitness_function.surrogate_model.adjustment_set),
+                num_genes=1 + len(surrogate.adjustment_set),
                 gene_space=gene_space,
                 gene_type=gene_types,
             )
@@ -82,24 +72,24 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             solution, fitness, _ = ga.best_solution()
 
             solution_dict = {}
-            solution_dict[fitness_function.surrogate_model.treatment] = solution[0]
-            for idx, adj in enumerate(fitness_function.surrogate_model.adjustment_set):
+            solution_dict[surrogate.treatment] = solution[0]
+            for idx, adj in enumerate(surrogate.adjustment_set):
                 solution_dict[adj] = solution[idx + 1]
-            solutions.append((solution_dict, fitness, fitness_function.surrogate_model))
+            solutions.append((solution_dict, fitness, surrogate))
 
         return max(solutions, key=itemgetter(1))  # This can be done better with fitness normalisation between edges
 
     @staticmethod
     def create_gene_types(
-        fitness_function: SearchFitnessFunction, specification: CausalSpecification
+        surrogate_model: CubicSplineRegressionEstimator, specification: CausalSpecification
     ) -> tuple[list, list]:
         """Generate the gene_types and gene_space for a given fitness function and specification
-        :param fitness_function: Instance of SearchFitnessFunction
+        :param surrogate_model: Instance of a CubicSplineRegressionEstimator
         :param specification: The Causal Specification (combination of Scenario and Causal Dag)"""
 
         var_space = {}
-        var_space[fitness_function.surrogate_model.treatment] = {}
-        for adj in fitness_function.surrogate_model.adjustment_set:
+        var_space[surrogate_model.treatment] = {}
+        for adj in surrogate_model.adjustment_set:
             var_space[adj] = {}
 
         for relationship in list(specification.scenario.constraints):
@@ -112,12 +102,12 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                     var_space[rel_split[0]]["high"] = int(rel_split[2])
 
         gene_space = []
-        gene_space.append(var_space[fitness_function.surrogate_model.treatment])
-        for adj in fitness_function.surrogate_model.adjustment_set:
+        gene_space.append(var_space[surrogate_model.treatment])
+        for adj in surrogate_model.adjustment_set:
             gene_space.append(var_space[adj])
 
         gene_types = []
-        gene_types.append(specification.scenario.variables.get(fitness_function.surrogate_model.treatment).datatype)
-        for adj in fitness_function.surrogate_model.adjustment_set:
+        gene_types.append(specification.scenario.variables.get(surrogate_model.treatment).datatype)
+        for adj in surrogate_model.adjustment_set:
             gene_types.append(specification.scenario.variables.get(adj).datatype)
         return gene_types, gene_space
