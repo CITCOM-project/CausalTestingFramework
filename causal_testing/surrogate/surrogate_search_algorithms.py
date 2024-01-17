@@ -1,7 +1,7 @@
 """Module containing implementation of search algorithm for surrogate search """
 # pylint: disable=cell-var-from-loop
-# pylint: disable=too-few-public-methods
 # pylint: disable=too-many-locals
+# pylint: disable=R0903
 # Fitness functions are required to be iteratively defined, including all variables within.
 
 from operator import itemgetter
