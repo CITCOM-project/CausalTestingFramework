@@ -1,5 +1,4 @@
 ../*
 ../!causal_testing
-../!LICENSE
-./!inputs
 ./!main_dafni.py
+./!data/

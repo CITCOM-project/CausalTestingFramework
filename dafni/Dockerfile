@@ -11,22 +11,23 @@ ENV PYTHONUNBUFFERED=1
 #Label maintainer
 LABEL maintainer="Dr. Farhad Allian - The University of Sheffield"
 
-# Copy the source code and test files from build into the container
-COPY --chown=nobody ./causal_testing /usr/src/app/
-COPY --chown=nobody ./dafni/inputs /usr/src/app/inputs/
-COPY --chown=nobody ./dafni/main_dafni.py /usr/src/app/
+# Create a folder for the source code/outputs
+RUN mkdir -p ./causal_testing
+RUN mkdir -p ./data/outputs
 
-# Change the working directory
-WORKDIR /usr/src/app/
+# Copy the source code and test files from build into the container
+COPY --chown=nobody  ../causal_testing ./causal_testing
+COPY --chown=nobody ./dafni/main_dafni.py ./
+COPY --chown=nobody ./dafni/data/inputs ./data/inputs
 
 # Install core dependencies using PyPi
 RUN pip install causal-testing-framework --no-cache-dir
 
-# Use the necessaary environment variables for the script's inputs
-ENV VARIABLES=./inputs/variables.json \
-    CAUSAL_TESTS=./inputs/causal_tests.json \
-    DATA_PATH=./inputs/simulated_data.csv \
-    DAG_PATH=./inputs/dag.dot
+#For local testing purposes
+ENV VARIABLES_PATH=./data/inputs/variables.json \
+    CAUSAL_TESTS=./data/inputs/causal_tests.json \
+    DATA_PATH=./data/inputs/runtime_data.csv \
+    DAG_PATH=./data/inputs/dag.dot
 
 # Define the entrypoint/commands
 CMD python main_dafni.py --variables_path $VARIABLES_PATH --dag_path $DAG_PATH --data_path $DATA_PATH --tests_path $CAUSAL_TESTS

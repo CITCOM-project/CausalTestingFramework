@@ -1,5 +1,3 @@
-import warnings
-warnings.filterwarnings("ignore", message=".*The 'nopython' keyword.*")
 import os
 from pathlib import Path
 import argparse
@@ -70,16 +68,15 @@ def get_args(test_args=None) -> argparse.Namespace:
 
     if args.output_path is None:
 
-        args.output_path = "./outputs/results/"+"_".join([os.path.splitext(os.path.basename(x))[0]
-                                                          for x in args.data_path]) + "_results.json"
+        args.output_path = "./data/outputs/causal_tests_results.json"
 
-        Path(args.output_path).parent.mkdir(exist_ok=True, parents=True)
+        Path(args.output_path).parent.mkdir(exist_ok=True)
 
     else:
 
         args.output_path = Path(args.output_path)
 
-        args.output_path.parent.mkdir(exist_ok=True, parents=True)
+        args.output_path.parent.mkdir(exist_ok=True)
 
     return args
 
@@ -93,7 +90,9 @@ def read_variables(variables_path: Path) -> dict:
     """
     if not variables_path.exists() or variables_path.is_dir():
 
-        raise ValidationError(f"Cannot find a valid settings file at {variables_path.absolute()}.")
+        raise FileNotFoundError
+
+        print(f"JSON file not found at the specified location: {variables_path}")
 
     else:
 
@@ -126,7 +125,12 @@ def validate_variables(data_dict: dict) -> tuple:
         for variable, _inputs in zip(variables, inputs):
 
             if "constraint" in variable:
+
                 constraints.add(_inputs.z3 == variable["constraint"])
+
+    else:
+
+        raise ValidationError("Cannot find the variables defined by the causal tests.")
 
     return inputs, outputs, constraints
 
@@ -137,9 +141,9 @@ def main():
     """
     args = get_args()
 
-    # Step 0: Read in the runtime dataset(s)
-
     try:
+
+        # Step 0: Read in the runtime dataset(s)
 
         data_frame = pd.concat([pd.read_csv(d) for d in args.data_path])
 
@@ -191,7 +195,8 @@ def main():
 
             test["result"].pop("control_value")
 
-        with open(f"{args.output_path}", "w") as f:
+
+        with open(args.output_path, "w") as f:
 
             print(json.dumps(test_outcomes, indent=2), file=f)
 
