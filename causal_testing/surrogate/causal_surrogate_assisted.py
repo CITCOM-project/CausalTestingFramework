@@ -2,12 +2,12 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, Any
+from typing import Callable
 
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.estimators import Estimator, CubicSplineRegressionEstimator
+from causal_testing.testing.estimators import CubicSplineRegressionEstimator
 
 
 @dataclass
@@ -24,7 +24,9 @@ class SearchAlgorithm(ABC):
     space to be searched"""
 
     @abstractmethod
-    def search(self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification) -> list:
+    def search(
+        self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification
+    ) -> list:
         """Function which implements a search routine which searches for the optimal fitness value for the specified
         scenario
         :param surrogate_models: The surrogate models to be searched
