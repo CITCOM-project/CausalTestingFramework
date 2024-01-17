@@ -14,7 +14,6 @@ from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm
 class GeneticSearchAlgorithm(SearchAlgorithm):
     """Implementation of SearchAlgorithm class. Implements genetic search algorithm for surrogate models."""
 
-    # pylint: disable=too-few-public-methods
     def __init__(self, delta=0.05, config: dict = None) -> None:
         super().__init__()
 

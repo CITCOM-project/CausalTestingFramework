@@ -1,3 +1,5 @@
+# pylint: disable=too-few-public-methods
+
 """Module containing classes to define and run causal surrogate assisted test cases"""
 
 from abc import ABC, abstractmethod
