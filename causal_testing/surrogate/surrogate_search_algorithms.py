@@ -1,6 +1,4 @@
 """Module containing implementation of search algorithm for surrogate search """
-# pylint: disable=cell-var-from-loop
-# pylint: disable=too-many-locals
 # Fitness functions are required to be iteratively defined, including all variables within.
 
 from operator import itemgetter
@@ -26,6 +24,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             "some_effect": lambda x: abs(1 / x),
         }
 
+    # pylint: disable=too-many-locals
     def search(
             self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification
     ) -> list:
@@ -36,6 +35,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
 
             # The GA fitness function after including required variables into the function's scope
             # Unused arguments are required for pygad's fitness function signature
+            #pylint: disable=cell-var-from-loop
             def fitness_function(ga, solution, idx): # pylint: disable=unused-argument
                 surrogate.control_value = solution[0] - self.delta
                 surrogate.treatment_value = solution[0] + self.delta

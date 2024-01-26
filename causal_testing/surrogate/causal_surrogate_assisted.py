@@ -1,5 +1,3 @@
-# pylint: disable=too-few-public-methods
-
 """Module containing classes to define and run causal surrogate assisted test cases"""
 
 from abc import ABC, abstractmethod
@@ -21,7 +19,7 @@ class SimulationResult:
     relationship: str
 
 
-class SearchAlgorithm(ABC):
+class SearchAlgorithm(ABC): # pylint: disable=too-few-public-methods
     """Class to be inherited with the search algorithm consisting of a search function and the fitness function of the
     space to be searched"""
 
