@@ -2,6 +2,9 @@ import unittest
 import os
 import networkx as nx
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
+from causal_testing.specification.scenario import Scenario
+from causal_testing.specification.variable import Input, Output
+from causal_testing.testing.base_test_case import BaseTestCase
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 
 
@@ -425,6 +428,37 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         # Convert list of sets to set of frozen sets for comparison
         min_separators = set(frozenset(min_separator) for min_separator in min_separators)
         self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
+
+    def tearDown(self) -> None:
+        remove_temp_dir_if_existent()
+
+
+class TestHiddenVariableDAG(unittest.TestCase):
+    """
+    Test the CausalDAG identification for the exclusion of hidden variables.
+    """
+
+    def setUp(self) -> None:
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }"""
+        with open(self.dag_dot_path, "w") as f:
+            f.write(dag_dot)
+
+    def test_hidden_varaible_adjustment_sets(self):
+        """Test whether identification produces different adjustment sets depending on if a variable is hidden."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        z = Input("Z", int)
+        x = Input("X", int)
+        m = Input("M", int)
+
+        scenario = Scenario(variables={z, x, m})
+        adjustment_sets = causal_dag.identification(BaseTestCase(x, m), scenario)
+
+        z.hidden = True
+        adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), scenario)
+
+        self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
