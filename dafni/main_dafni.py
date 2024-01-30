@@ -1,4 +1,9 @@
-import os
+"""
+
+Entrypoint script to run the causal testing framework on DAFNI
+
+"""
+
 from pathlib import Path
 import argparse
 import json
@@ -14,7 +19,6 @@ class ValidationError(Exception):
     """
     Custom class to capture validation errors in this script
     """
-    pass
 
 
 def get_args(test_args=None) -> argparse.Namespace:
@@ -24,20 +28,22 @@ def get_args(test_args=None) -> argparse.Namespace:
     :returns:
             - argparse.Namespace - A Namsespace consisting of the arguments to this script
     """
-    parser = argparse.ArgumentParser(description="A script for running the causal testing famework on DAFNI.")
+    parser = argparse.ArgumentParser(description="A script for running the CTF on DAFNI.")
 
     parser.add_argument(
         "--data_path", required=True,
         help="Path to the input runtime data (.csv)", nargs="+")
 
     parser.add_argument('--tests_path', required=True,
-                        help='Path to the input configuration file containing the causal tests (.json)')
+                        help='Input configuration file path '
+                             'containing the causal tests (.json)')
 
     parser.add_argument('--variables_path', required=True,
-                        help='Path to the input configuration file containing the predefined variables (.json)')
+                        help='Input configuration file path '
+                             'containing the predefined variables (.json)')
 
     parser.add_argument("--dag_path", required=True,
-                        help="Path to the input file containing a valid DAG (.dot). "
+                        help="Input configuration file path containing a valid DAG (.dot). "
                              "Note: this must be supplied if the --tests argument isn't provided.")
 
     parser.add_argument('--output_path', required=False, help='Path to the output directory.')
@@ -81,7 +87,7 @@ def get_args(test_args=None) -> argparse.Namespace:
     return args
 
 
-def read_variables(variables_path: Path) -> dict:
+def read_variables(variables_path: Path) -> FileNotFoundError | dict:
     """
     Function to read the variables.json file specified by the user
     :param variables_path: A Path object of the user-specified file path
@@ -90,17 +96,15 @@ def read_variables(variables_path: Path) -> dict:
     """
     if not variables_path.exists() or variables_path.is_dir():
 
-        raise FileNotFoundError
-
         print(f"JSON file not found at the specified location: {variables_path}")
 
-    else:
+        raise FileNotFoundError
 
-        with variables_path.open('r') as file:
+    with variables_path.open('r') as file:
 
-            inputs = json.load(file)
+        inputs = json.load(file)
 
-        return inputs
+    return inputs
 
 
 def validate_variables(data_dict: dict) -> tuple:
@@ -108,26 +112,27 @@ def validate_variables(data_dict: dict) -> tuple:
     Function to validate the variables defined in the causal tests
     :param data_dict: A dictionary consisting of the pre-defined variables for the causal tests
     :returns:
-            - tuple - Tuple consisting of the inputs, outputs and constraints to pass into the modelling scenario
+    - Tuple containing the inputs, outputs and constraints to pass into the modelling scenario
     """
     if data_dict["variables"]:
 
         variables = data_dict["variables"]
 
-        inputs = [Input(variable["name"], eval(variable["datatype"])) for variable in variables if
+        inputs = [Input(variable["name"], eval(variable["datatype"]))
+                  for variable in variables if
                   variable["typestring"] == "Input"]
 
-        outputs = [Output(variable["name"], eval(variable["datatype"])) for variable in variables if
+        outputs = [Output(variable["name"], eval(variable["datatype"]))
+                   for variable in variables if
                    variable["typestring"] == "Output"]
 
         constraints = set()
 
-        for variable, _inputs in zip(variables, inputs):
+        for variable, input_var in zip(variables, inputs):
 
             if "constraint" in variable:
 
-                constraints.add(_inputs.z3 == variable["constraint"])
-
+                constraints.add(input_var.z3 == variable["constraint"])
     else:
 
         raise ValidationError("Cannot find the variables defined by the causal tests.")
@@ -180,7 +185,8 @@ def main():
         json_utility.setup(scenario=modelling_scenario, data=data_frame)
 
         # Step 7: Run the causal tests
-        test_outcomes = json_utility.run_json_tests(effects=expected_outcome_effects, mutates={}, estimators=estimators,
+        test_outcomes = json_utility.run_json_tests(effects=expected_outcome_effects,
+                                                    mutates={}, estimators=estimators,
                                                     f_flag=args.f)
 
         # Step 8: Update, print and save the final outputs
@@ -196,7 +202,7 @@ def main():
             test["result"].pop("control_value")
 
 
-        with open(args.output_path, "w") as f:
+        with open(args.output_path, "w", encoding="utf-8") as f:
 
             print(json.dumps(test_outcomes, indent=2), file=f)
 
@@ -208,7 +214,8 @@ def main():
 
     else:
 
-        print(f"Execution successful. Output file saved at {Path(args.output_path).parent.resolve()}")
+        print(f"Execution successful. "
+              f"Output file saved at {Path(args.output_path).parent.resolve()}")
 
 
 if __name__ == "__main__":
