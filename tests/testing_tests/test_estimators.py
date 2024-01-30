@@ -124,16 +124,14 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         logistic_regression_estimator = LogisticRegressionEstimator(
             "length_in", 65, 55, {"large_gauge"}, "completed", df
         )
-        ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config = {"large_gauge": 0})
+        ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
         self.assertEqual(round(ate, 4), -0.3388)
 
     def test_ate_invalid_adjustment(self):
         df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, {}, "completed", df)
         with self.assertRaises(ValueError):
-            ate, _ = logistic_regression_estimator.estimate_ate(
-                adjustment_config = {"large_gauge": 0}
-            )
+            ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
 
     def test_ate_effect_modifiers(self):
         df = self.scarf_df.copy()
@@ -214,6 +212,13 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.nhefs_df = load_nhefs_df()
         cls.chapter_11_df = load_chapter_11_df()
+
+    def test_query(self):
+        df = self.nhefs_df
+        linear_regression_estimator = LinearRegressionEstimator(
+            "treatments", None, None, set(), "outcomes", df, query="sex==1"
+        )
+        self.assertTrue(linear_regression_estimator.df.sex.all())
 
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
@@ -394,7 +399,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # for term_to_square in terms_to_square:
 
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
-            adjustment_config = {k: self.nhefs_df.mean()[k] for k in covariates}
+            adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates}
         )
         self.assertEqual(round(ate, 1), 3.5)
         self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [1.9, 5])
