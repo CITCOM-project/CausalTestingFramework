@@ -50,14 +50,16 @@ class Estimator(ABC):
         df: pd.DataFrame = None,
         effect_modifiers: dict[str:Any] = None,
         alpha: float = 0.05,
+        query: str = "",
     ):
         self.treatment = treatment
         self.treatment_value = treatment_value
         self.control_value = control_value
         self.adjustment_set = adjustment_set
         self.outcome = outcome
-        self.df = df
         self.alpha = alpha
+        self.df = df.query(query) if query else df
+
         if effect_modifiers is None:
             self.effect_modifiers = {}
         elif isinstance(effect_modifiers, dict):
@@ -65,6 +67,8 @@ class Estimator(ABC):
         else:
             raise ValueError(f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable")
         self.modelling_assumptions = []
+        if query:
+            self.modelling_assumptions.append(query)
         self.add_modelling_assumptions()
         logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
@@ -100,8 +104,18 @@ class LogisticRegressionEstimator(Estimator):
         df: pd.DataFrame = None,
         effect_modifiers: dict[str:Any] = None,
         formula: str = None,
+        query: str = "",
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
+        super().__init__(
+            treatment=treatment,
+            treatment_value=treatment_value,
+            control_value=control_value,
+            adjustment_set=adjustment_set,
+            outcome=outcome,
+            df=df,
+            effect_modifiers=effect_modifiers,
+            query=query,
+        )
 
         self.model = None
 
@@ -116,13 +130,13 @@ class LogisticRegressionEstimator(Estimator):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions += (
+        self.modelling_assumptions.append(
             "The variables in the data must fit a shape which can be expressed as a linear"
             "combination of parameters and functions of variables. Note that these functions"
             "do not need to be linear."
         )
-        self.modelling_assumptions += "The outcome must be binary."
-        self.modelling_assumptions += "Independently and identically distributed errors."
+        self.modelling_assumptions.append("The outcome must be binary.")
+        self.modelling_assumptions.append("Independently and identically distributed errors.")
 
     def _run_logistic_regression(self, data) -> RegressionResultsWrapper:
         """Run logistic regression of the treatment and adjustment set against the outcome and return the model.
@@ -291,9 +305,18 @@ class LinearRegressionEstimator(Estimator):
         effect_modifiers: dict[Variable:Any] = None,
         formula: str = None,
         alpha: float = 0.05,
+        query: str = "",
     ):
         super().__init__(
-            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha
+            treatment,
+            treatment_value,
+            control_value,
+            adjustment_set,
+            outcome,
+            df,
+            effect_modifiers,
+            alpha=alpha,
+            query=query,
         )
 
         self.model = None
@@ -314,7 +337,7 @@ class LinearRegressionEstimator(Estimator):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions += (
+        self.modelling_assumptions.append(
             "The variables in the data must fit a shape which can be expressed as a linear"
             "combination of parameters and functions of variables. Note that these functions"
             "do not need to be linear."
@@ -468,13 +491,17 @@ class InstrumentalVariableEstimator(Estimator):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions += """The instrument and the treatment, and the treatment and the outcome must be
+        self.modelling_assumptions.append(
+            """The instrument and the treatment, and the treatment and the outcome must be
         related linearly in the form Y = aX + b."""
-        self.modelling_assumptions += """The three IV conditions must hold
+        )
+        self.modelling_assumptions.append(
+            """The three IV conditions must hold
             (i) Instrument is associated with treatment
             (ii) Instrument does not affect outcome except through its potential effect on treatment
             (iii) Instrument and outcome do not share causes
         """
+        )
 
     def estimate_iv_coefficient(self, df):
         """
@@ -517,7 +544,7 @@ class CausalForestEstimator(Estimator):
 
         :return self: Update self.modelling_assumptions
         """
-        self.modelling_assumptions += "Non-parametric estimator: no restrictions imposed on the data."
+        self.modelling_assumptions.append("Non-parametric estimator: no restrictions imposed on the data.")
 
     def estimate_ate(self) -> float:
         """Estimate the average treatment effect.

@@ -301,9 +301,6 @@ class JsonUtility:
         """Create the necessary inputs for a single test case
         :param causal_test_case: The concrete test case to be executed
         :param test: Single JSON test definition stored in a mapping (dict)
-        :param conditions: A list of conditions which should be applied to the
-        data. Conditions should be in the query format detailed at
-        https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html
         :returns:
                 - estimation_model - Estimator instance for the test being run
         """
@@ -315,6 +312,7 @@ class JsonUtility:
                     "formulas"
                 )
             estimator_kwargs["formula"] = test["formula"]
+            estimator_kwargs["query"] = test["query"] if "query" in test else ""
             estimator_kwargs["adjustment_set"] = None
         else:
             minimal_adjustment_set = self.causal_specification.causal_dag.identification(
@@ -328,6 +326,7 @@ class JsonUtility:
         estimator_kwargs["control_value"] = causal_test_case.control_value
         estimator_kwargs["outcome"] = causal_test_case.outcome_variable.name
         estimator_kwargs["effect_modifiers"] = causal_test_case.effect_modifier_configuration
+        estimator_kwargs["df"] = self.data_collector.collect_data()
         estimator_kwargs["alpha"] = test["alpha"] if "alpha" in test else 0.05
 
         estimation_model = test["estimator"](**estimator_kwargs)
