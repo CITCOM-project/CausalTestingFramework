@@ -59,9 +59,10 @@ class CausalTestResult:
             f"Treatment value: {self.estimator.treatment_value}\n"
             f"Outcome: {self.estimator.outcome}\n"
             f"Adjustment set: {self.adjustment_set}\n"
-            f"Formula: {self.estimator.formula}\n"
-            f"{self.test_value.type}: {result_str}\n"
         )
+        if hasattr(self.estimator, "formula"):
+            base_str += f"Formula: {self.estimator.formula}\n"
+        base_str += f"{self.test_value.type}: {result_str}\n"
         confidence_str = ""
         if self.confidence_intervals:
             ci_str = " " + str(self.confidence_intervals)

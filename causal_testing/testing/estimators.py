@@ -480,8 +480,20 @@ class InstrumentalVariableEstimator(Estimator):
         df: pd.DataFrame = None,
         intercept: int = 1,
         effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
+        alpha: float = 0.05,
+        query: str = "",
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, None)
+        super().__init__(
+            treatment=treatment,
+            treatment_value=treatment_value,
+            control_value=control_value,
+            adjustment_set=adjustment_set,
+            outcome=outcome,
+            df=df,
+            effect_modifiers=None,
+            alpha=alpha,
+            query=query,
+        )
         self.intercept = intercept
         self.model = None
         self.instrument = instrument
