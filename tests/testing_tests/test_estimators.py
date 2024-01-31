@@ -7,6 +7,7 @@ from causal_testing.testing.estimators import (
     CausalForestEstimator,
     LogisticRegressionEstimator,
     InstrumentalVariableEstimator,
+    CubicSplineRegressionEstimator
 )
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
@@ -414,6 +415,46 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(round(cv.estimate_robustness(model)["treatments"], 4), 0.7353)
 
 
+class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
+
+    @classmethod
+
+    def setUpClass(cls):
+
+        super().setUpClass()
+    def test_program_11_3_cublic_spline(self):
+
+        """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
+        https://www.hsph.harvard.edu/miguel-hernan/wp-content/uploads/sites/1268/2023/10/hernanrobins_WhatIf_30sep23.pdf
+        Slightly modified as Hernan et al. use linear regression for this example.
+        """
+
+        df = self.chapter_11_df.copy()
+
+        cublic_spline_estimator = CubicSplineRegressionEstimator(
+            "treatments", 1, 0, set(), "outcomes", 3, df)
+
+        model = cublic_spline_estimator._run_linear_regression()
+
+        self.assertEqual(
+            round(
+                cublic_spline_estimator.model.predict({"Intercept": 1, "treatments": 90}).iloc[0],
+                1,
+            ),
+            195.6,
+        )
+
+        ate_1 = cublic_spline_estimator.estimate_ate_calculated()
+        cublic_spline_estimator.treatment_value = 2
+        ate_2 = cublic_spline_estimator.estimate_ate_calculated()
+
+        # Doubling the treatemebnt value should roughly but not exactly double the ATE
+        self.assertNotEqual(ate_1 * 2, ate_2)
+        self.assertAlmostEqual(ate_1 * 2, ate_2)
+
+
+
+
 class TestCausalForestEstimator(unittest.TestCase):
     """Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].
 
@@ -496,3 +537,5 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         test_results = lr_model.estimate_ate()
         ate = test_results[0]
         self.assertAlmostEqual(ate, 2.0)
+
+
