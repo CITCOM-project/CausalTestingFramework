@@ -352,7 +352,7 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         newline = "\n"
         treatment = [self.treatment]
-        if str(self.df.dtypes[self.treatment]) == "object":
+        if self.treatment in self.df.dtypes and str(self.df.dtypes[self.treatment]) == "object":
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         assert set(treatment).issubset(
@@ -360,7 +360,7 @@ class LinearRegressionEstimator(Estimator):
         ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
-        if str(self.df.dtypes[self.treatment]) != "object":
+        if self.treatment not in self.df.dtypes or str(self.df.dtypes[self.treatment]) != "object":
             unit_effect = unit_effect[0]
             ci_low = ci_low[0]
             ci_high = ci_high[0]
