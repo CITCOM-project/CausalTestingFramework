@@ -11,7 +11,7 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from econml.dml import CausalForestDML
 from patsy import dmatrix  # pylint: disable = no-name-in-module
-
+from patsy import ModelDesc
 from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
@@ -351,7 +351,8 @@ class LinearRegressionEstimator(Estimator):
         """
         model = self._run_linear_regression()
         newline = "\n"
-        if self.treatment in self.df.dtypes and str(self.df.dtypes[self.treatment]) == "object":
+        patsy_md = ModelDesc.from_formula(self.treatment)
+        if any((self.df.dtypes[factor.name()] == 'object' for factor in patsy_md.rhs_termlist[1].factors)):
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         else:
