@@ -199,7 +199,7 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
             instrument="Z",
         )
         coefficient, [low, high] = iv_estimator.estimate_coefficient()
-        self.assertEqual(coefficient, 2)
+        self.assertEqual(coefficient[0], 2)
 
 
 class TestLinearRegressionEstimator(unittest.TestCase):
@@ -364,8 +364,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate()
-        self.assertEqual(round(ate, 1), 3.5)
-        self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
+        self.assertEqual(round(ate[0], 1), 3.5)
+        self.assertEqual([round(ci_low[0], 1), round(ci_high[0], 1)], [2.6, 4.3])
 
     def test_program_15_no_interaction_ate_calculated(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -402,8 +402,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
             adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates}
         )
-        self.assertEqual(round(ate, 1), 3.5)
-        self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [1.9, 5])
+        self.assertEqual(round(ate[0], 1), 3.5)
+        self.assertEqual([round(ci_low[0], 1), round(ci_high[0], 1)], [1.9, 5])
 
     def test_program_11_2_with_robustness_validation(self):
         """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
@@ -449,8 +449,8 @@ class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
         ate_2 = cublic_spline_estimator.estimate_ate_calculated()
 
         # Doubling the treatemebnt value should roughly but not exactly double the ATE
-        self.assertNotEqual(ate_1 * 2, ate_2)
-        self.assertAlmostEqual(ate_1 * 2, ate_2)
+        self.assertNotEqual(ate_1[0] * 2, ate_2[0])
+        self.assertAlmostEqual(ate_1[0] * 2, ate_2[0])
 
 
 
@@ -488,8 +488,8 @@ class TestCausalForestEstimator(unittest.TestCase):
         }
         causal_forest = CausalForestEstimator("qsmk", 1, 0, covariates, "wt82_71", df, {"smokeintensity": 40})
         ate, _ = causal_forest.estimate_ate()
-        self.assertGreater(round(ate, 1), 2.5)
-        self.assertLess(round(ate, 1), 4.5)
+        self.assertGreater(round(ate[0], 1), 2.5)
+        self.assertLess(round(ate[0], 1), 4.5)
 
     def test_program_15_cate(self):
         """Test whether our causal forest implementation produces the similar CATE to program 15.1 (p. 163, 184)."""
@@ -535,7 +535,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
             "X1", 1, 0, {"X2"}, "Y", effect_modifiers={x2.name: 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
         )
         test_results = lr_model.estimate_ate()
-        ate = test_results[0]
+        ate = test_results[0][0]
         self.assertAlmostEqual(ate, 2.0)
 
 
