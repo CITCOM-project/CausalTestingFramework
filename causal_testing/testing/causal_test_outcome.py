@@ -53,7 +53,7 @@ class NoEffect(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.test_value.type == "ate":
-            return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < self.atol)
+            return (res.ci_low() < 0 < res.ci_high()) or (abs(res.test_value.value) < self.atol)[0]
         if res.test_value.type == "coefficient":
             ci_low = res.ci_low() if isinstance(res.ci_low(), Iterable) else [res.ci_low()]
             ci_high = res.ci_high() if isinstance(res.ci_high(), Iterable) else [res.ci_high()]
