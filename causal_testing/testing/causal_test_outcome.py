@@ -5,6 +5,7 @@ ExactValue, Positive, Negative, SomeEffect, NoEffect"""
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import numpy as np
+import pandas as pd
 
 from causal_testing.testing.causal_test_result import CausalTestResult
 
@@ -57,7 +58,7 @@ class NoEffect(CausalTestOutcome):
             ci_low = res.ci_low() if isinstance(res.ci_low(), Iterable) else [res.ci_low()]
             ci_high = res.ci_high() if isinstance(res.ci_high(), Iterable) else [res.ci_high()]
             value = res.test_value.value if isinstance(res.ci_high(), Iterable) else [res.test_value.value]
-
+            value = value[0] if isinstance(value[0], pd.Series) else value
             return (
                 sum(
                     not ((ci_low < 0 < ci_high) or abs(v) < self.atol)
