@@ -101,7 +101,7 @@ class CausalTestResult:
         if self.confidence_intervals:
             try:
                 return self.confidence_intervals[0][0]
-            except TypeError:
+            except IndexError:
                 return self.confidence_intervals[0]
         return None
 
@@ -109,7 +109,7 @@ class CausalTestResult:
         """Return the higher bracket of the confidence intervals."""
         try:
             return self.confidence_intervals[1][0]
-        except TypeError:
+        except IndexError:
             return self.confidence_intervals[1]
         return None
 
