@@ -492,7 +492,7 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             self.formula = f"{outcome} ~ cr({'+'.join(terms)}, df={basis})"
 
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> float:
+    def estimate_ate_calculated(self, adjustment_config: dict = None) -> pd.Series:
         model = self._run_linear_regression()
 
         x = {"Intercept": 1, self.treatment: self.treatment_value}
@@ -508,7 +508,7 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
         x[self.treatment] = self.control_value
         control = model.predict(x).iloc[0]
 
-        return treatment - control
+        return pd.Series(treatment - control)
 
 
 class InstrumentalVariableEstimator(Estimator):
@@ -564,7 +564,7 @@ class InstrumentalVariableEstimator(Estimator):
         """
         )
 
-    def estimate_iv_coefficient(self, df):
+    def estimate_iv_coefficient(self, df) -> float:
         """
         Estimate the linear regression coefficient of the treatment on the
         outcome.
@@ -578,7 +578,7 @@ class InstrumentalVariableEstimator(Estimator):
         # Estimate the coefficient of I on X by cancelling
         return ab / a
 
-    def estimate_coefficient(self, bootstrap_size=100):
+    def estimate_coefficient(self, bootstrap_size=100) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """
         Estimate the unit ate (i.e. coefficient) of the treatment on the
         outcome.
@@ -587,10 +587,10 @@ class InstrumentalVariableEstimator(Estimator):
             [self.estimate_iv_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
         )
         bound = ceil((bootstrap_size * self.alpha) / 2)
-        ci_low = bootstraps[bound]
-        ci_high = bootstraps[bootstrap_size - bound]
+        ci_low = pd.Series(bootstraps[bound])
+        ci_high = pd.Series(bootstraps[bootstrap_size - bound])
 
-        return self.estimate_iv_coefficient(self.df), (ci_low, ci_high)
+        return pd.Series(self.estimate_iv_coefficient(self.df)), [ci_low, ci_high]
 
 
 class CausalForestEstimator(Estimator):
@@ -607,7 +607,7 @@ class CausalForestEstimator(Estimator):
         """
         self.modelling_assumptions.append("Non-parametric estimator: no restrictions imposed on the data.")
 
-    def estimate_ate(self) -> float:
+    def estimate_ate(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the average treatment effect.
 
         :return ate, confidence_intervals: The average treatment effect and 95% confidence intervals.
@@ -635,9 +635,9 @@ class CausalForestEstimator(Estimator):
         model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
 
         # Obtain the ATE and 95% confidence intervals
-        ate = model.ate(effect_modifier_df, T0=self.control_value, T1=self.treatment_value)
+        ate = pd.Series(model.ate(effect_modifier_df, T0=self.control_value, T1=self.treatment_value))
         ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_value, T1=self.treatment_value)
-        ci_low, ci_high = ate_interval[0], ate_interval[1]
+        ci_low, ci_high = pd.Series(ate_interval[0]), pd.Series(ate_interval[1])
         return ate, [ci_low, ci_high]
 
     def estimate_cates(self) -> pd.DataFrame:
