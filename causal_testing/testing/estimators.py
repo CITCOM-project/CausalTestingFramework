@@ -343,7 +343,7 @@ class LinearRegressionEstimator(Estimator):
             "do not need to be linear."
         )
 
-    def estimate_coefficient(self) -> float:
+    def estimate_coefficient(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
         caused by a unit change in treatment.
 
@@ -364,7 +364,7 @@ class LinearRegressionEstimator(Estimator):
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
         return unit_effect, [ci_low, ci_high]
 
-    def estimate_ate(self) -> tuple[float, list[float, float], float]:
+    def estimate_ate(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -413,7 +413,7 @@ class LinearRegressionEstimator(Estimator):
 
         return y.iloc[1], y.iloc[0]
 
-    def estimate_risk_ratio(self, adjustment_config: dict = None) -> tuple[float, list[float, float]]:
+    def estimate_risk_ratio(self, adjustment_config: dict = None) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -426,9 +426,7 @@ class LinearRegressionEstimator(Estimator):
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"])
         return pd.Series(treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
 
-        return (treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
-
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[float, list[float, float]]:
+    def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
