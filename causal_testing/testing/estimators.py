@@ -384,7 +384,7 @@ class LinearRegressionEstimator(Estimator):
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
         ate = pd.Series(t_test_results.effect[0])
         confidence_intervals = list(t_test_results.conf_int(alpha=self.alpha).flatten())
-        confidence_intervals = (pd.Series(interval) for interval in confidence_intervals)
+        confidence_intervals = [pd.Series(interval) for interval in confidence_intervals]
         return ate, confidence_intervals
 
     def estimate_control_treatment(self, adjustment_config: dict = None) -> tuple[pd.Series, pd.Series]:
