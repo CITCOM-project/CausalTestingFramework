@@ -382,8 +382,9 @@ class LinearRegressionEstimator(Estimator):
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
-        ate = t_test_results.effect[0]
+        ate = pd.Series(t_test_results.effect[0])
         confidence_intervals = list(t_test_results.conf_int(alpha=self.alpha).flatten())
+        confidence_intervals = (pd.Series(interval) for interval in confidence_intervals)
         return ate, confidence_intervals
 
     def estimate_control_treatment(self, adjustment_config: dict = None) -> tuple[pd.Series, pd.Series]:
@@ -421,8 +422,9 @@ class LinearRegressionEstimator(Estimator):
         if adjustment_config is None:
             adjustment_config = {}
         control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
-        ci_low = treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"]
-        ci_high = treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"]
+        ci_low = pd.Series(treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"])
+        ci_high = pd.Series(treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"])
+        return pd.Series(treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
 
         return (treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
 
@@ -437,10 +439,9 @@ class LinearRegressionEstimator(Estimator):
         if adjustment_config is None:
             adjustment_config = {}
         control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
-        ci_low = treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"]
-        ci_high = treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"]
-
-        return (treatment_outcome["mean"] - control_outcome["mean"]), [ci_low, ci_high]
+        ci_low = pd.Series(treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"])
+        ci_high = pd.Series(treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"])
+        return pd.Series(treatment_outcome["mean"] - control_outcome["mean"]), [ci_low, ci_high]
 
     def _run_linear_regression(self) -> RegressionResultsWrapper:
         """Run linear regression of the treatment and adjustment set against the outcome and return the model.
