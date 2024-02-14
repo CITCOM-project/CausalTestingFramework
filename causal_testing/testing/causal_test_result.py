@@ -101,8 +101,7 @@ class CausalTestResult:
         if self.confidence_intervals:
             if isinstance(self.confidence_intervals[0], pd.Series):
                 return self.confidence_intervals[0][0]
-            else:
-                return self.confidence_intervals[0]
+            return self.confidence_intervals[0]
         return None
 
     def ci_high(self):
@@ -110,8 +109,7 @@ class CausalTestResult:
         if self.confidence_intervals:
             if isinstance(self.confidence_intervals[1], pd.Series):
                 return self.confidence_intervals[1][0]
-            else:
-                return self.confidence_intervals[1]
+            return self.confidence_intervals[1]
         return None
 
     def ci_valid(self) -> bool:
