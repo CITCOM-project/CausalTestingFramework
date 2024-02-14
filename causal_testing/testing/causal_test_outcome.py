@@ -78,9 +78,11 @@ class ExactValue(SomeEffect):
     def __init__(self, value: float, atol: float = None):
         self.value = value
         if atol is None:
-            self.atol = value * 0.05
+            self.atol = abs(value * 0.05)
         else:
             self.atol = atol
+        if self.atol < 0:
+            raise ValueError("Tolerance must be an absolute value.")
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_valid():

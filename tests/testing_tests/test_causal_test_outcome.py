@@ -190,6 +190,10 @@ class TestCausalTestOutcome(unittest.TestCase):
         ev = ExactValue(5, 0.1)
         self.assertFalse(ev.apply(ctr))
 
+    def test_invalid_atol(self):
+        with self.assertRaises(ValueError):
+            ExactValue(5, -0.1)
+
     def test_invalid(self):
         test_value = TestValue(type="invalid", value=pd.Series(5.05))
         ctr = CausalTestResult(
