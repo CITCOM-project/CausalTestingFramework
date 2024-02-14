@@ -98,10 +98,9 @@ class Positive(SomeEffect):
         if res.ci_valid() and not super().apply(res):
             return False
         if res.test_value.type in {"ate", "coefficient"}:
-            return bool(res.test_value.value > 0)
+            return bool(res.test_value.value[0] > 0)
         if res.test_value.type == "risk_ratio":
-            return bool(res.test_value.value > 1)
-        # Dead code but necessary for pylint
+            return bool(res.test_value.value[0] > 1)
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
 
@@ -112,8 +111,8 @@ class Negative(SomeEffect):
         if res.ci_valid() and not super().apply(res):
             return False
         if res.test_value.type in {"ate", "coefficient"}:
-            return bool(res.test_value.value < 0)
+            return bool(res.test_value.value[0] < 0)
         if res.test_value.type == "risk_ratio":
-            return bool(res.test_value.value < 1)
+            return bool(res.test_value.value[0] < 1)
         # Dead code but necessary for pylint
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
