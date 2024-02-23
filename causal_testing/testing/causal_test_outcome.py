@@ -56,7 +56,6 @@ class NoEffect(CausalTestOutcome):
                        zip(res.ci_low(), res.ci_high(), res.test_value.value))
         elif res.test_value.type == "coefficient" or res.test_value.type == "ate":
             value = res.test_value.value if isinstance(res.ci_high(), Iterable) else [res.test_value.value]
-            value = value[0] if isinstance(value[0], pd.Series) else value
             return (
                     sum(
                         not ((ci_low < 0 < ci_high) or abs(v) < self.atol)
