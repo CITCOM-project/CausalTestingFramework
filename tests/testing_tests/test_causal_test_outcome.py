@@ -107,7 +107,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[-1, 1],
+            confidence_intervals=[pd.Series(-1), pd.Series(1)],
             effect_modifier_configuration=None,
         )
         ev = Positive()
@@ -274,8 +274,8 @@ class TestCausalTestOutcome(unittest.TestCase):
                 "adjustment_set": set(),
                 "effect_estimate": 0,
                 "effect_measure": "ate",
-                "ci_low": -0.1,
-                "ci_high": 0.2,
+                "ci_low": [-0.1],
+                "ci_high": [0.2],
             },
         )
 
@@ -298,8 +298,8 @@ class TestCausalTestOutcome(unittest.TestCase):
                 "adjustment_set": set(),
                 "effect_estimate": 0,
                 "effect_measure": "ate",
-                "ci_low": -0.1,
-                "ci_high": 0.2,
+                "ci_low": [-0.1],
+                "ci_high": [0.2],
             },
         )
 
