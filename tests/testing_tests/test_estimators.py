@@ -7,7 +7,7 @@ from causal_testing.testing.estimators import (
     CausalForestEstimator,
     LogisticRegressionEstimator,
     InstrumentalVariableEstimator,
-    CubicSplineRegressionEstimator
+    CubicSplineRegressionEstimator,
 )
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
@@ -78,21 +78,7 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.scarf_df = pd.DataFrame(
-            [
-                {"length_in": 55, "large_gauge": 1, "color": "orange", "completed": 1},
-                {"length_in": 55, "large_gauge": 0, "color": "orange", "completed": 1},
-                {"length_in": 55, "large_gauge": 0, "color": "brown", "completed": 1},
-                {"length_in": 60, "large_gauge": 0, "color": "brown", "completed": 1},
-                {"length_in": 60, "large_gauge": 0, "color": "grey", "completed": 0},
-                {"length_in": 70, "large_gauge": 0, "color": "grey", "completed": 1},
-                {"length_in": 70, "large_gauge": 0, "color": "orange", "completed": 0},
-                {"length_in": 82, "large_gauge": 1, "color": "grey", "completed": 1},
-                {"length_in": 82, "large_gauge": 0, "color": "brown", "completed": 0},
-                {"length_in": 82, "large_gauge": 0, "color": "orange", "completed": 0},
-                {"length_in": 82, "large_gauge": 1, "color": "brown", "completed": 0},
-            ]
-        )
+        cls.scarf_df = pd.read_csv("tests/data/scarf_data.csv")
 
     # Yes, this probably shouldn't be in here, but it uses the scarf data so it makes more sense to put it
     # here than duplicating the scarf data for a single test
@@ -416,12 +402,11 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 
 
 class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
-
     @classmethod
-
     def setUpClass(cls):
 
         super().setUpClass()
+
     def test_program_11_3_cublic_spline(self):
 
         """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
@@ -431,8 +416,7 @@ class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
 
         df = self.chapter_11_df.copy()
 
-        cublic_spline_estimator = CubicSplineRegressionEstimator(
-            "treatments", 1, 0, set(), "outcomes", 3, df)
+        cublic_spline_estimator = CubicSplineRegressionEstimator("treatments", 1, 0, set(), "outcomes", 3, df)
 
         model = cublic_spline_estimator._run_linear_regression()
 
@@ -451,8 +435,6 @@ class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
         # Doubling the treatemebnt value should roughly but not exactly double the ATE
         self.assertNotEqual(ate_1[0] * 2, ate_2[0])
         self.assertAlmostEqual(ate_1[0] * 2, ate_2[0])
-
-
 
 
 class TestCausalForestEstimator(unittest.TestCase):
@@ -527,15 +509,29 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         df = pd.DataFrame({"X1": np.random.uniform(-1000, 1000, 1000), "X2": np.random.uniform(-1000, 1000, 1000)})
         df["Y"] = 2 * df["X1"] - 3 * df["X2"] + 2 * df["X1"] * df["X2"] + 10
         cls.df = df
+        cls.scarf_df = pd.read_csv("tests/data/scarf_data.csv")
 
     def test_X1_effect(self):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
-        x2 = Input("X2", float)
         lr_model = LinearRegressionEstimator(
-            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={x2.name: 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
+            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={"x2": 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
         )
         test_results = lr_model.estimate_ate()
         ate = test_results[0][0]
         self.assertAlmostEqual(ate, 2.0)
 
+    def test_categorical_confidence_intervals(self):
+        lr_model = LinearRegressionEstimator(
+            treatment="color",
+            control_value=None,
+            treatment_value=None,
+            adjustment_set={},
+            outcome="length_in",
+            df=self.scarf_df,
+        )
+        coefficients, [ci_low, ci_high] = lr_model.estimate_coefficient()
 
+        # The precise values don't really matter. This test is primarily intended to make sure the return type is correct.
+        self.assertTrue(coefficients.round(2).equals(pd.Series({"color[T.grey]": 0.92, "color[T.orange]": -4.25})))
+        self.assertTrue(ci_low.round(2).equals(pd.Series({"color[T.grey]": -22.12, "color[T.orange]": -25.58})))
+        self.assertTrue(ci_high.round(2).equals(pd.Series({"color[T.grey]": 23.95, "color[T.orange]": 17.08})))
