@@ -217,7 +217,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(model.params["treatments"], 1), round(ate[0], 1))
+        self.assertTrue(all(round(model.params["treatments"], 1) == round(ate_single, 1) for ate_single in ate))
 
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
@@ -237,7 +237,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             197.1,
         )
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(model.params["treatments"], 3), round(ate[0], 3))
+        self.assertTrue(all(round(model.params["treatments"], 3) == round(ate_single, 3) for ate_single in ate))
 
     def test_program_15_1A(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
@@ -315,6 +315,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_coefficient()
+
         self.assertEqual(round(ate[0], 1), 3.5)
         self.assertEqual([round(ci_low[0], 1), round(ci_high[0], 1)], [2.6, 4.3])
 
