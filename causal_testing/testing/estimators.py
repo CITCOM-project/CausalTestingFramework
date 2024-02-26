@@ -453,8 +453,8 @@ class LinearRegressionEstimator(Estimator):
     def _get_confidence_intervals(self, model, treatment):
         confidence_intervals = model.conf_int(alpha=self.alpha, cols=None)
         ci_low, ci_high = (
-            confidence_intervals[0].loc[treatment],
-            confidence_intervals[1].loc[treatment],
+            pd.Series(confidence_intervals[0].loc[treatment]),
+            pd.Series(confidence_intervals[1].loc[treatment]),
         )
         return [ci_low, ci_high]
 

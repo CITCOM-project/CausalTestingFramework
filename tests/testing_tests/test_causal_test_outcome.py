@@ -107,7 +107,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[-1, 1],
+            confidence_intervals=[pd.Series(-1), pd.Series(1)],
             effect_modifier_configuration=None,
         )
         ev = Positive()
@@ -151,7 +151,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[-1, 1],
+            confidence_intervals=[pd.Series(-1), pd.Series(1)],
             effect_modifier_configuration=None,
         )
         ev = Negative()
@@ -173,7 +173,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[4, 6],
+            confidence_intervals=[pd.Series(4), pd.Series(6)],
             effect_modifier_configuration=None,
         )
         ev = ExactValue(5, 0.1)
@@ -199,7 +199,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[4.8, 6.7],
+            confidence_intervals=[pd.Series(4.8), pd.Series(6.7)],
             effect_modifier_configuration=None,
         )
         with self.assertRaises(ValueError):
@@ -216,7 +216,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[4.8, 6.7],
+            confidence_intervals=[pd.Series(4.8), pd.Series(6.7)],
             effect_modifier_configuration=None,
         )
         self.assertTrue(SomeEffect().apply(ctr))
@@ -227,7 +227,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[4.8, 6.7],
+            confidence_intervals=[pd.Series(4.8), pd.Series(6.7)],
             effect_modifier_configuration=None,
         )
         self.assertTrue(SomeEffect().apply(ctr))
@@ -238,7 +238,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[4.8, 6.7],
+            confidence_intervals=[pd.Series(4.8), pd.Series(6.7)],
             effect_modifier_configuration=None,
         )
         self.assertTrue(SomeEffect().apply(ctr))
@@ -249,7 +249,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[-0.1, 0.2],
+            confidence_intervals=[pd.Series(-0.1), pd.Series(0.2)],
             effect_modifier_configuration=None,
         )
         self.assertFalse(SomeEffect().apply(ctr))
@@ -260,7 +260,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[-0.1, 0.2],
+            confidence_intervals=[pd.Series(-0.1), pd.Series(0.2)],
             effect_modifier_configuration=None,
         )
         ev = SomeEffect()
@@ -274,8 +274,8 @@ class TestCausalTestOutcome(unittest.TestCase):
                 "adjustment_set": set(),
                 "effect_estimate": 0,
                 "effect_measure": "ate",
-                "ci_low": -0.1,
-                "ci_high": 0.2,
+                "ci_low": [-0.1],
+                "ci_high": [0.2],
             },
         )
 
@@ -284,7 +284,7 @@ class TestCausalTestOutcome(unittest.TestCase):
         ctr = CausalTestResult(
             estimator=self.estimator,
             test_value=test_value,
-            confidence_intervals=[-0.1, 0.2],
+            confidence_intervals=[pd.Series(-0.1), pd.Series(0.2)],
             effect_modifier_configuration=None,
         )
         ev = SomeEffect()
@@ -298,8 +298,8 @@ class TestCausalTestOutcome(unittest.TestCase):
                 "adjustment_set": set(),
                 "effect_estimate": 0,
                 "effect_measure": "ate",
-                "ci_low": -0.1,
-                "ci_high": 0.2,
+                "ci_low": [-0.1],
+                "ci_high": [0.2],
             },
         )
 
