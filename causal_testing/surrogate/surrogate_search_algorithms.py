@@ -46,7 +46,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
 
                 ate = surrogate.estimate_ate_calculated(adjustment_dict)
 
-                return contradiction_function(ate)
+                return contradiction_function(ate[0])
 
             gene_types, gene_space = self.create_gene_types(surrogate, specification)
 
