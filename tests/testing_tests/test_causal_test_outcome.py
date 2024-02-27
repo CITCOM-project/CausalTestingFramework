@@ -322,3 +322,16 @@ class TestCausalTestOutcome(unittest.TestCase):
         cv = CausalValidator()
         e_value = cv.estimate_e_value_using_ci(0.8, [0.2, 0.9])
         self.assertEqual(round(e_value, 4), 1.4625)
+
+    def test_multiple_value_exception_caught(self):
+        test_value = TestValue(type="ate", value=pd.Series([0, 1]))
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=[None, None],
+            effect_modifier_configuration=None,
+        )
+        with self.assertRaises(ValueError):
+            Positive().apply(ctr)
+        with self.assertRaises(ValueError):
+            Negative().apply(ctr)
