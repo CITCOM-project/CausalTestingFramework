@@ -5,7 +5,6 @@ ExactValue, Positive, Negative, SomeEffect, NoEffect"""
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import numpy as np
-import pandas as pd
 
 from causal_testing.testing.causal_test_result import CausalTestResult
 
