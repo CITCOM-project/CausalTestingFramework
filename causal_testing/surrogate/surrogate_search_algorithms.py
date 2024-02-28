@@ -35,8 +35,8 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
 
             # The GA fitness function after including required variables into the function's scope
             # Unused arguments are required for pygad's fitness function signature
-            #pylint: disable=cell-var-from-loop
-            def fitness_function(ga, solution, idx): # pylint: disable=unused-argument
+            # pylint: disable=cell-var-from-loop
+            def fitness_function(ga, solution, idx):  # pylint: disable=unused-argument
                 surrogate.control_value = solution[0] - self.delta
                 surrogate.treatment_value = solution[0] + self.delta
 
@@ -45,7 +45,9 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                     adjustment_dict[adjustment] = solution[i + 1]
 
                 ate = surrogate.estimate_ate_calculated(adjustment_dict)
-
+                if len(ate) > 1:
+                    raise ValueError(
+                        "Multiple ate values provided but currently only single values supported in this method")
                 return contradiction_function(ate[0])
 
             gene_types, gene_space = self.create_gene_types(surrogate, specification)
@@ -82,7 +84,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
 
     @staticmethod
     def create_gene_types(
-        surrogate_model: CubicSplineRegressionEstimator, specification: CausalSpecification
+            surrogate_model: CubicSplineRegressionEstimator, specification: CausalSpecification
     ) -> tuple[list, list]:
         """Generate the gene_types and gene_space for a given fitness function and specification
         :param surrogate_model: Instance of a CubicSplineRegressionEstimator
