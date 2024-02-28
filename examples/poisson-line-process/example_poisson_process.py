@@ -198,8 +198,8 @@ def test_poisson_width_num_shapes(save=False):
                 "treatment": treatment_value,
                 "intensity": i,
                 "ate": causal_test_result.test_value.value,
-                "ci_low": min(causal_test_result.confidence_intervals),
-                "ci_high": max(causal_test_result.confidence_intervals),
+                "ci_low": causal_test_result.confidence_intervals[0][0],
+                "ci_high": causal_test_result.confidence_intervals[1][0],
             }
             width_num_shapes_results.append(results)
     width_num_shapes_results = pd.DataFrame(width_num_shapes_results)
