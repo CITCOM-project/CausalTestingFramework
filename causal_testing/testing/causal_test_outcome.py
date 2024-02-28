@@ -89,7 +89,8 @@ class ExactValue(SomeEffect):
 
 
 class Positive(SomeEffect):
-    """An extension of TestOutcome representing that the expected causal effect should be positive."""
+    """An extension of TestOutcome representing that the expected causal effect should be positive.
+    Currently only single values are supported for the test value"""
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_valid() and not super().apply(res):
@@ -104,7 +105,8 @@ class Positive(SomeEffect):
 
 
 class Negative(SomeEffect):
-    """An extension of TestOutcome representing that the expected causal effect should be negative."""
+    """An extension of TestOutcome representing that the expected causal effect should be negative.
+    Currently only single values are supported for the test value"""
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_valid() and not super().apply(res):
