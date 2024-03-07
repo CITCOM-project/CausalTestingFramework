@@ -99,13 +99,14 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             rel_split = str(relationship).split(" ")
 
             if rel_split[0] in var_space:
+                datatype = specification.scenario.variables.get(rel_split[0]).datatype
                 if rel_split[1] == ">=":
-                    var_space[rel_split[0]]["low"] = int(rel_split[2])
+                    var_space[rel_split[0]]["low"] = datatype(rel_split[2])
                 elif rel_split[1] == "<=":
-                    if specification.scenario.variables.get(rel_split[0]).datatype == int:
+                    if datatype == int:
                         var_space[rel_split[0]]["high"] = int(rel_split[2]) + 1
                     else:
-                        var_space[rel_split[0]]["high"] = int(rel_split[2])
+                        var_space[rel_split[0]]["high"] = datatype(rel_split[2])
 
         gene_space = []
         gene_space.append(var_space[surrogate_model.treatment])
