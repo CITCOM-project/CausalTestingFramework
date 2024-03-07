@@ -56,7 +56,7 @@ class TestCausalSurrogate(unittest.TestCase):
 
         causal_dag = CausalDAG(self.dag_dot_path)
         z = Input("Z", int)
-        x = Input("X", int)
+        x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y})
@@ -75,7 +75,7 @@ class TestCausalSurrogate(unittest.TestCase):
 
         causal_dag = CausalDAG(self.dag_dot_path)
         z = Input("Z", int)
-        x = Input("X", int)
+        x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y}, constraints={
@@ -107,7 +107,7 @@ class TestCausalSurrogate(unittest.TestCase):
 
         causal_dag = CausalDAG(self.dag_dot_path)
         z = Input("Z", int)
-        x = Input("X", int)
+        x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y}, constraints={
@@ -139,7 +139,7 @@ class TestCausalSurrogate(unittest.TestCase):
 
         causal_dag = CausalDAG(self.dag_dot_path)
         z = Input("Z", int)
-        x = Input("X", int)
+        x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y}, constraints={
@@ -172,7 +172,7 @@ class TestCausalSurrogate(unittest.TestCase):
 
         causal_dag = CausalDAG(self.dag_dot_path)
         z = Input("Z", int)
-        x = Input("X", int)
+        x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y}, constraints={
