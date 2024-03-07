@@ -3,7 +3,7 @@ from causal_testing.data_collection.data_collector import ObservationalDataColle
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Input
+from causal_testing.specification.variable import Input, Output
 from causal_testing.surrogate.causal_surrogate_assisted import SimulationResult, CausalSurrogateAssistedTestCase, Simulator
 from causal_testing.surrogate.surrogate_search_algorithms import GeneticSearchAlgorithm
 from causal_testing.testing.estimators import CubicSplineRegressionEstimator
@@ -58,7 +58,7 @@ class TestCausalSurrogate(unittest.TestCase):
         z = Input("Z", int)
         x = Input("X", int)
         m = Input("M", int)
-        y = Input("Y", int)
+        y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y})
         specification = CausalSpecification(scenario, causal_dag)
 
@@ -77,7 +77,7 @@ class TestCausalSurrogate(unittest.TestCase):
         z = Input("Z", int)
         x = Input("X", int)
         m = Input("M", int)
-        y = Input("Y", int)
+        y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y}, constraints={
             z <= 0, z >= 3,
             x <= 0, x >= 3,
@@ -109,7 +109,7 @@ class TestCausalSurrogate(unittest.TestCase):
         z = Input("Z", int)
         x = Input("X", int)
         m = Input("M", int)
-        y = Input("Y", int)
+        y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y}, constraints={
             z <= 0, z >= 3,
             x <= 0, x >= 3,
@@ -141,7 +141,7 @@ class TestCausalSurrogate(unittest.TestCase):
         z = Input("Z", int)
         x = Input("X", int)
         m = Input("M", int)
-        y = Input("Y", int)
+        y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y}, constraints={
             z <= 0, z >= 3,
             x <= 0, x >= 3,
@@ -174,7 +174,7 @@ class TestCausalSurrogate(unittest.TestCase):
         z = Input("Z", int)
         x = Input("X", int)
         m = Input("M", int)
-        y = Input("Y", int)
+        y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y}, constraints={
             z <= 0, z >= 3,
             x <= 0, x >= 3,
