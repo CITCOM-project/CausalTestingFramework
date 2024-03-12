@@ -134,7 +134,7 @@ class CausalDAG(nx.DiGraph):
         super().__init__(**attr)
         if dot_path:
             with open(dot_path, 'r', encoding='utf-8') as file:
-                dot_content = file.read().replace('\n', '')
+                dot_content = file.read().replace('\n', '') # Remove any newlines before creating the pydot_graph.
             pydot_graph = pydot.graph_from_dot_data(dot_content)
             self.graph = nx.DiGraph(nx.drawing.nx_pydot.from_pydot(pydot_graph[0]))
         else:
