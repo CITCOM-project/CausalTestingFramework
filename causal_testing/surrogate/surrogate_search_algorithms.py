@@ -107,6 +107,8 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                         var_space[rel_split[0]]["high"] = int(rel_split[2]) + 1
                     else:
                         var_space[rel_split[0]]["high"] = datatype(rel_split[2])
+            else:
+                raise ValueError(f"Value {rel_split[0]} not found in var_space")
 
         gene_space = []
         gene_space.append(var_space[surrogate_model.treatment])
