@@ -27,7 +27,7 @@ class CausalTestResult:
         self,
         estimator: Estimator,
         test_value: TestValue,
-        confidence_intervals: [float, float] = None,
+        confidence_intervals: [pd.Series, pd.Series] = None,
         effect_modifier_configuration: {Variable: Any} = None,
         adequacy=None,
     ):
@@ -99,12 +99,16 @@ class CausalTestResult:
     def ci_low(self):
         """Return the lower bracket of the confidence intervals."""
         if self.confidence_intervals:
+            if isinstance(self.confidence_intervals[0], pd.Series):
+                return self.confidence_intervals[0].to_list()
             return self.confidence_intervals[0]
         return None
 
     def ci_high(self):
         """Return the higher bracket of the confidence intervals."""
         if self.confidence_intervals:
+            if isinstance(self.confidence_intervals[1], pd.Series):
+                return self.confidence_intervals[1].to_list()
             return self.confidence_intervals[1]
         return None
 

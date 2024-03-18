@@ -276,8 +276,8 @@ def setup(observational_data):
 
 def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=None, col=None):
     # Get the CATE as a percentage for association and causation
-    ate = results_dict["causation"]["ate"]
-    association_ate = results_dict["association"]["ate"]
+    ate = results_dict["causation"]["ate"][0]
+    association_ate = results_dict["association"]["ate"][0]
 
     causation_df = results_dict["causation"]["df"]
     association_df = results_dict["association"]["df"]
@@ -288,11 +288,10 @@ def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=No
     # Get 95% confidence intervals for association and causation
     ate_cis = results_dict["causation"]["cis"]
     association_ate_cis = results_dict["association"]["cis"]
-    percentage_causal_ate_cis = [round(((ci / causation_df["cum_infections"].mean()) * 100), 3) for ci in ate_cis]
+    percentage_causal_ate_cis = [round(((ci[0] / causation_df["cum_infections"].mean()) * 100), 3) for ci in ate_cis]
     percentage_association_ate_cis = [
-        round(((ci / association_df["cum_infections"].mean()) * 100), 3) for ci in association_ate_cis
+        round(((ci[0] / association_df["cum_infections"].mean()) * 100), 3) for ci in association_ate_cis
     ]
-
     # Convert confidence intervals to errors for plotting
     percentage_causal_errs = [
         percentage_ate - percentage_causal_ate_cis[0],
@@ -314,9 +313,9 @@ def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=No
     if "counterfactual" in results_dict.keys():
         cf_ate = results_dict["counterfactual"]["ate"]
         cf_df = results_dict["counterfactual"]["df"]
-        percentage_cf_ate = round((cf_ate / cf_df["cum_infections"].mean()) * 100, 3)
+        percentage_cf_ate = round((cf_ate[0] / cf_df["cum_infections"].mean()) * 100, 3)
         cf_ate_cis = results_dict["counterfactual"]["cis"]
-        percentage_cf_cis = [round(((ci / cf_df["cum_infections"].mean()) * 100), 3) for ci in cf_ate_cis]
+        percentage_cf_cis = [round(((ci[0] / cf_df["cum_infections"].mean()) * 100), 3) for ci in cf_ate_cis]
         percentage_cf_errs = [percentage_cf_ate - percentage_cf_cis[0], percentage_cf_cis[1] - percentage_cf_ate]
         xs = [0.5, 1.5, 2.5]
         ys = [association_percentage_ate, percentage_ate, percentage_cf_ate]

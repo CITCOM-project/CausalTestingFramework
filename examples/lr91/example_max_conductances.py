@@ -164,8 +164,8 @@ def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = False, show: b
         before_underscore, after_underscore = treatment.split("_")
         after_underscore_braces = f"{{{after_underscore}}}"
         latex_compatible_treatment_str = rf"${before_underscore}_{after_underscore_braces}$"
-        cis_low = [c[0] for c in cis]
-        cis_high = [c[1] for c in cis]
+        cis_low = [c[0][0] for c in cis]
+        cis_high = [c[1][0] for c in cis]
         axes.fill_between(
             xs, cis_low, cis_high, alpha=0.2, color=input_colors[treatment], label=latex_compatible_treatment_str
         )
