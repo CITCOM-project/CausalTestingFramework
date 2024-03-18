@@ -32,9 +32,7 @@ jobs:
       DAFNI_PARENT_ID: ${{ secrets.DAFNI_PARENT_ID }}
       DAFNI_USERNAME: ${{ secrets.DAFNI_USERNAME }}
       DAFNI_PASSWORD: ${{ secrets.DAFNI_PASSWORD }}
-      CTF_VERSION: |
-        version=${{ github.event.release.tag_name }}
-        version=${version%%.*}
+      CTF_VERSION: ${{ github.event.release.tag_name[1:2] }}
 
     steps:
       - uses: actions/checkout@v3
@@ -43,8 +41,8 @@ jobs:
           python-version: 3.9
       - name: Build the container
         run: |
-          docker build -t ctf:${version} -f ./dafni/Dockerfile .
-          docker save ctf:${version}  | gzip > ctf${version}.tar.gz
+          docker build -t ctf:${CTF_VERSION} -f ./dafni/Dockerfile .
+          docker save ctf:${CTF_VERSION}  | gzip > ctf${CTF_VERSION}.tar.gz
 
       - name: Install DAFNI-CLI and log in
         run: |
@@ -53,5 +51,5 @@ jobs:
 
       - name: Upload to DAFNI
         run: |
-          dafni upload model ./dafni/model_definition.yaml ctf${version}.tar.gz --version-message "Version ${version}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
+          dafni upload model ./dafni/model_definition.yaml ctf${CTF_VERSION}.tar.gz --version-message "Version ${CTF_VERSION}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
           dafni logout
