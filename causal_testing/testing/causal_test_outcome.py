@@ -29,10 +29,12 @@ class SomeEffect(CausalTestOutcome):
     def apply(self, res: CausalTestResult) -> bool:
         if res.test_value.type == "risk_ratio":
             return any(
-                1 < ci_low < ci_high or ci_low < ci_high < 1 for ci_low, ci_high in zip(res.ci_low(), res.ci_high()))
-        if res.test_value.type in ('coefficient', 'ate'):
+                1 < ci_low < ci_high or ci_low < ci_high < 1 for ci_low, ci_high in zip(res.ci_low(), res.ci_high())
+            )
+        if res.test_value.type in ("coefficient", "ate"):
             return any(
-                0 < ci_low < ci_high or ci_low < ci_high < 0 for ci_low, ci_high in zip(res.ci_low(), res.ci_high()))
+                0 < ci_low < ci_high or ci_low < ci_high < 0 for ci_low, ci_high in zip(res.ci_low(), res.ci_high())
+            )
 
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
@@ -51,17 +53,19 @@ class NoEffect(CausalTestOutcome):
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.test_value.type == "risk_ratio":
-            return any(ci_low < 1 < ci_high or np.isclose(value, 1.0, atol=self.atol) for ci_low, ci_high, value in
-                       zip(res.ci_low(), res.ci_high(), res.test_value.value))
-        if res.test_value.type in ('coefficient', 'ate'):
+            return any(
+                ci_low < 1 < ci_high or np.isclose(value, 1.0, atol=self.atol)
+                for ci_low, ci_high, value in zip(res.ci_low(), res.ci_high(), res.test_value.value)
+            )
+        if res.test_value.type in ("coefficient", "ate"):
             value = res.test_value.value if isinstance(res.ci_high(), Iterable) else [res.test_value.value]
             return (
-                    sum(
-                        not ((ci_low < 0 < ci_high) or abs(v) < self.atol)
-                        for ci_low, ci_high, v in zip(res.ci_low(), res.ci_high(), value)
-                    )
-                    / len(value)
-                    < self.ctol
+                sum(
+                    not ((ci_low < 0 < ci_high) or abs(v) < self.atol)
+                    for ci_low, ci_high, v in zip(res.ci_low(), res.ci_high(), value)
+                )
+                / len(value)
+                < self.ctol
             )
 
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
