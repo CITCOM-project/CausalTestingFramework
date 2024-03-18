@@ -33,7 +33,7 @@ jobs:
       DAFNI_USERNAME: ${{ secrets.DAFNI_USERNAME }}
       DAFNI_PASSWORD: ${{ secrets.DAFNI_PASSWORD }}
       CTF_VERSION: |
-        version="${{ github.event.release.tag_name }}"
+        version=${{ github.event.release.tag_name }}
         version=${version%%.*}
 
     steps:
