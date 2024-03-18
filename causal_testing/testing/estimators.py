@@ -356,7 +356,7 @@ class LinearRegressionEstimator(Estimator):
             (
                 self.df.dtypes[factor.name()] == "object"
                 for factor in patsy_md.rhs_termlist[1].factors
-                # TODO: Remove the requirement for this as it prevents us from discovering categoricals within I(...) blocks
+                # We want to remove this long term as it prevents us from discovering categoricals within I(...) blocks
                 if factor in self.df
             )
         ):
