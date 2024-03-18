@@ -19,9 +19,13 @@ jobs:
         run: |
           if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
             echo "The Causal Testing Framework has been published to PyPI"
+            latest_tag=$(git describe --tags --abbrev=0)
+            echo "Latest tag: $latest_tag"
+            echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
           else
             echo "The Causal Testing Framework has not been published to PyPI"
           fi
+        
 
 
   build_and_upload:
@@ -32,7 +36,6 @@ jobs:
       DAFNI_PARENT_ID: ${{ secrets.DAFNI_PARENT_ID }}
       DAFNI_USERNAME: ${{ secrets.DAFNI_USERNAME }}
       DAFNI_PASSWORD: ${{ secrets.DAFNI_PASSWORD }}
-      CTF_VERSION: ${{ github.event.release.tag_name }}
 
     steps:
       - uses: actions/checkout@v3
@@ -51,5 +54,5 @@ jobs:
 
       - name: Upload to DAFNI
         run: |
-          dafni upload model ./dafni/model_definition.yaml ctf-gh.tar.gz --version-message "Version ${{ env.CTF_VERSION }}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
+          dafni upload model ./dafni/model_definition.yaml ctf-gh.tar.gz --version-message "Version {{ env.LATEST_TAG }}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
           dafni logout
