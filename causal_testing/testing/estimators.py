@@ -357,7 +357,7 @@ class LinearRegressionEstimator(Estimator):
                 self.df.dtypes[factor.name()] == "object"
                 for factor in patsy_md.rhs_termlist[1].factors
                 # We want to remove this long term as it prevents us from discovering categoricals within I(...) blocks
-                if factor in self.df
+                if factor.name() in self.df.dtypes
             )
         ):
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
