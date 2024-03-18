@@ -2,40 +2,21 @@ name: Containerise and Upload to DAFNI
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["publish-to-pypi"]
-    branches: main
-    types: [completed]
+  release:
+    types: [published]
+
 
 jobs:
 
-  check_publish_to_pypi:
-    name: Check Publish to PyPI
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check if Publish to PyPI succeeded
-        id: check_publish
-        run: |
-          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
-            echo "The Causal Testing Framework has been published to PyPI"
-            latest_tag=$(git describe --tags --abbrev=0)
-            echo "Latest tag: $latest_tag"
-            echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
-          else
-            echo "The Causal Testing Framework has not been published to PyPI"
-          fi
-        
-
-
   build_and_upload:
     name: Docker Build
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.check_publish_to_pypi.outputs.check_publish == 'success' }}
+    if: ${{ github.event_name == 'release' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     env:
       DAFNI_PARENT_ID: ${{ secrets.DAFNI_PARENT_ID }}
       DAFNI_USERNAME: ${{ secrets.DAFNI_USERNAME }}
       DAFNI_PASSWORD: ${{ secrets.DAFNI_PASSWORD }}
+      CTF_VERSION: ${{ github.event.release.tag_name }}
 
     steps:
       - uses: actions/checkout@v3
@@ -54,5 +35,5 @@ jobs:
 
       - name: Upload to DAFNI
         run: |
-          dafni upload model ./dafni/model_definition.yaml ctf-gh.tar.gz --version-message "Version {{ env.LATEST_TAG }}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
+          dafni upload model ./dafni/model_definition.yaml ctf-gh.tar.gz --version-message "Version ${{ env.CTF_VERSION }}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
           dafni logout
