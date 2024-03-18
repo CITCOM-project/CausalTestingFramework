@@ -42,5 +42,5 @@ jobs:
 
       - name: Upload to DAFNI
         run: |
-          dafni upload model ./dafni/model_definition.yaml ctf-${VERSION}.tar.gz --version-message "Version ${CTF_VERSION}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
+          dafni upload model ./dafni/model_definition.yaml ctf-${{ env.VERSION }}.tar.gz --version-message "Version ${{ env.CTF_VERSION }}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
           dafni logout
