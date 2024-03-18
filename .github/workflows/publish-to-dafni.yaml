@@ -32,7 +32,7 @@ jobs:
       DAFNI_PARENT_ID: ${{ secrets.DAFNI_PARENT_ID }}
       DAFNI_USERNAME: ${{ secrets.DAFNI_USERNAME }}
       DAFNI_PASSWORD: ${{ secrets.DAFNI_PASSWORD }}
-      CTF_VERSION: "${{ github.event.release.tag_name | replace('.', '') }}"
+      CTF_VERSION: ${{ github.event.release.tag_name.replace('.', '') }}
 
     steps:
       - uses: actions/checkout@v3
