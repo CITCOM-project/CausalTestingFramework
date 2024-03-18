@@ -352,7 +352,14 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         newline = "\n"
         patsy_md = ModelDesc.from_formula(self.treatment)
-        if any((self.df.dtypes[factor.name()] == 'object' for factor in patsy_md.rhs_termlist[1].factors)):
+        if any(
+            (
+                self.df.dtypes[factor.name()] == "object"
+                for factor in patsy_md.rhs_termlist[1].factors
+                # We want to remove this long term as it prevents us from discovering categoricals within I(...) blocks
+                if factor.name() in self.df.dtypes
+            )
+        ):
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         else:

@@ -133,8 +133,8 @@ class CausalDAG(nx.DiGraph):
     def __init__(self, dot_path: str = None, **attr):
         super().__init__(**attr)
         if dot_path:
-            with open(dot_path, 'r', encoding='utf-8') as file:
-                dot_content = file.read().replace('\n', '')
+            with open(dot_path, "r", encoding="utf-8") as file:
+                dot_content = file.read().replace("\n", "")
             # Previously, we used pydot_graph_from_file() to read in the dot_path directly, however,
             # this method does not currently have a way of removing spurious nodes.
             # Workaround: Read in the file using open(), remove new lines, and then create the pydot_graph.
