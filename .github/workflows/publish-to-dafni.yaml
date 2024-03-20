@@ -2,47 +2,46 @@ name: Containerise and Upload to DAFNI
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["publish-to-pypi"]
-    branches: main
-    types: [completed]
+  release:
+    types: [published]
 
 jobs:
-
-  check_publish_to_pypi:
-    name: Check Publish to PyPI
+  get_release_version:
+    name: Get Release Version
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.get_release.outputs.version }}
     steps:
-      - name: Check if Publish to PyPI succeeded
-        id: check_publish
-        run: |
-          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
-            echo "The Causal Testing Framework has been published to PyPI"
-          else
-            echo "The Causal Testing Framework has not been published to PyPI"
-          fi
+      - name: Checkout code
+        uses: actions/checkout@v3
 
+      - name: Get release version
+        id: get_release
+        run: |
+          export VERSION=$(curl -sSL https://api.github.com/repos/CITCOM-project/CausalTestingFramework/releases/latest | jq -r '.tag_name' | head -c 2)
+          echo "::set-output name=version::$VERSION"
 
   build_and_upload:
     name: Docker Build
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.check_publish_to_pypi.outputs.check_publish == 'success' }}
+    needs: get_release_version
+    if: ${{ github.event_name == 'release' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     env:
       DAFNI_PARENT_ID: ${{ secrets.DAFNI_PARENT_ID }}
       DAFNI_USERNAME: ${{ secrets.DAFNI_USERNAME }}
       DAFNI_PASSWORD: ${{ secrets.DAFNI_PASSWORD }}
-      CTF_VERSION: "${{ github.event.release.tag_name | replace('.', '') }}"
+      VERSION: ${{ needs.get_release_version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
         with:
           python-version: 3.9
+
       - name: Build the container
         run: |
-          docker build -t ctf:${CTF_VERSION} -f ./dafni/Dockerfile .
-          docker save ctf:${CTF_VERSION}  | gzip > ctf${CTF_VERSION}.tar.gz
+          docker build -t ctf:${{ env.VERSION }} -f ./dafni/Dockerfile .
+          docker save ctf:${{ env.VERSION }} | gzip > ctf-dafni-${{ env.VERSION }}.tar.gz
 
       - name: Install DAFNI-CLI and log in
         run: |
@@ -51,5 +50,5 @@ jobs:
 
       - name: Upload to DAFNI
         run: |
-          dafni upload model ./dafni/model_definition.yaml ctf${CTF_VERSION}.tar.gz --version-message "Version ${CTF_VERSION}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
+          dafni upload model ./dafni/model_definition.yaml ctf-dafni-${{ env.VERSION }}.tar.gz --version-message "Causal Testing Framework ${{ env.VERSION }}. Uploaded via Github Actions." --parent-id ${{ env.DAFNI_PARENT_ID }} -y
           dafni logout
