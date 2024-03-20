@@ -6,15 +6,31 @@ on:
     types: [published]
 
 jobs:
+  get_release_version:
+    name: Get Release Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_release.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get release version
+        id: get_release
+        run: |
+          export VERSION=$(curl -sSL https://api.github.com/repos/CITCOM-project/CausalTestingFramework/releases/latest | jq -r '.tag_name' | head -c 2)
+          echo "::set-output name=version::$VERSION"
 
   build_and_upload:
     name: Docker Build
+    needs: get_release_version
     if: ${{ github.event_name == 'release' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     env:
       DAFNI_PARENT_ID: ${{ secrets.DAFNI_PARENT_ID }}
       DAFNI_USERNAME: ${{ secrets.DAFNI_USERNAME }}
       DAFNI_PASSWORD: ${{ secrets.DAFNI_PASSWORD }}
+      VERSION: ${{ needs.get_release_version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v3
@@ -22,18 +38,10 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Set CTF_VERSION and VERSION
-        run: |
-          TAG=${{ github.event.release.tag_name }}
-          CTF_VERSION="$TAG"
-          VERSION=$(echo "$TAG" | sed 's/v//; s/\.[0-9]*$//')
-          echo "CTF_VERSION=${CTF_VERSION}" >> $GITHUB_ENV
-          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
-
       - name: Build the container
         run: |
-          docker build -t ctf:VERSION -f ./dafni/Dockerfile .
-          docker save ctf:VERSION  | gzip > ctf-${VERSION}.tar.gz
+          docker build -t ctf:${{ env.VERSION }} -f ./dafni/Dockerfile .
+          docker save ctf:${{ env.VERSION }} | gzip > ctf-dafni-${{ env.VERSION }}.tar.gz
 
       - name: Install DAFNI-CLI and log in
         run: |
@@ -42,5 +50,5 @@ jobs:
 
       - name: Upload to DAFNI
         run: |
-          dafni upload model ./dafni/model_definition.yaml ctf-${{ env.VERSION }}.tar.gz --version-message "Version ${{ env.CTF_VERSION }}. Uploaded via Github." --parent-id ${DAFNI_PARENT_ID} -y
+          dafni upload model ./dafni/model_definition.yaml ctf-dafni-${{ env.VERSION }}.tar.gz --version-message "Causal Testing Framework ${{ env.VERSION }}. Uploaded via Github Actions." --parent-id ${{ env.DAFNI_PARENT_ID }} -y
           dafni logout
