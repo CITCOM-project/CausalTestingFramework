@@ -23,9 +23,46 @@ system-under-test that is expected to cause a change to some output(s).
 
 ## Installation
 
-See the Read the Docs site for [installation
-instructions](https://causal-testing-framework.readthedocs.io/en/latest/installation.html).
+### Requirements
+- Python >= 3.9.
 
-## Documentation
+- Microsoft Visual C++ 14.0+ (Windows only).
 
-Further information on causal inference, the code, usage and more can be found on the [docs](https://causal-testing-framework.readthedocs.io/en/latest/)
+To install the latest stable release of the Causal Testing Framework:
+
+``pip install causal-testing-framework``
+
+or if you want to install with the development packages/tools:
+
+``pip install causal-testing-framework[dev]``
+
+Alternatively, you can install directly via source:
+
+```shell
+git clone https://github.com/CITCOM-project/CausalTestingFramework
+cd CausalTestingFramework
+```
+then to install a specific release:
+
+```shell
+git fetch --all --tags --prune
+git checkout tags/<tag> -b <branch>
+pip install . # For core API only
+pip install -e . # For editable install, useful for development work
+```
+
+For more information on how to use the Causal Testing Framework, please refer to our [documentation](https://causal-testing-framework.readthedocs.io/en/latest/?badge=latest).  
+## How to Cite
+If you use our framework in your work, please cite the following:
+
+``This research has used version X.Y.Z (software citation) of the 
+Causal Testing Framework (paper citation).``
+
+The paper citation should be the Causal Testing Framework [paper](https://dl.acm.org/doi/10.1145/3607184), 
+and the software citation should be the specific Figshare [DOI](https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516) of the version used in your work.
+
+## Acknowledgements 
+
+The Causal Testing Framework is supported by the UK's Engineering and Physical Sciences Research Council (EPSRC),
+with the project name [CITCOM](https://gow.epsrc.ukri.org/NGBOViewGrant.aspx?GrantRef=EP/T030526/1) - "_Causal Inference for Testing of Computational Models_" 
+under the grant EP/T030526/1.
