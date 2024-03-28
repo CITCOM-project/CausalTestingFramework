@@ -61,6 +61,22 @@ Causal Testing Framework (paper citation).``
 The paper citation should be the Causal Testing Framework [paper](https://dl.acm.org/doi/10.1145/3607184), 
 and the software citation should be the specific Figshare [DOI](https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516) of the version used in your work.
 
+
+## How to Contribute
+
+To contribute to our work, please ensure the following:
+
+1. [Fork the repository](https://help.github.com/articles/fork-a-repo/) into your own GitHub account, and [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) it to your local machine.
+2. [Create a new branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository) in your forked repository. Give this branch an appropriate name, and create commits that describe the changes.
+3. [Push your changes](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository) to your new branch in your remote fork, compare with `CausalTestingFramework/main`, and ensure conflicts are resolved as necessary.
+4. Create a draft [pull request](https://docs.github.com/en/get-started/quickstart/hello-world#opening-a-pull-request) from your branch, and ensure you have [linked](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls) it to any relevant issues in your description. 
+
+We use the [pytest](https://pytest.org/en/latest/) framework as our testing suite, [pylint](https://pypi.org/project/pylint/) for our code analyser, and [black](https://pypi.org/project/black/) for our code formatting.
+To find the other (optional) developer dependencies, please check `pyproject.toml`.
+
+
+
+
 ## Acknowledgements 
 
 The Causal Testing Framework is supported by the UK's Engineering and Physical Sciences Research Council (EPSRC),
