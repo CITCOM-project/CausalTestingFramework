@@ -1,0 +1,131 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning,shapes,calc,fit,overlay-beamer-styles}
+
+\usepackage{dsfont,pifont}
+\newcommand*{\expe}{\mathds{E}}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage[default]{FiraSans}
+
+\begin{document}
+
+\tikzset{
+  node/.style={circle, draw, minimum size=3ex, inner sep=0.2},
+  edge/.style={->,> = latex'},
+}
+
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+\begin{tikzpicture}
+  \scriptsize
+
+  \begin{scope}[name prefix=scenario-, local bounding box=specification]
+    % Causal DAG
+    \begin{scope}[name prefix=dag-]
+      \node[node] (x1) at (0,0) {$X_2$};
+      \node[node] (x2) at (0,1) {$X_1$};
+      \node[node] (i) at (0.5,0.5) {$I$};
+      \node[node] (y1) at (1.2,0) {$Y_1$};
+      \node[node] (y2) at (1.2,0.5) {$Y_2$};
+      \node[node] (y3) at (1.2,1) {$Y_3$};
+
+      \draw[edge] (x1) to (i);
+      \draw[edge] (x2) to (i);
+      \draw[edge] (i) to (y1);
+      \draw[edge] (i) to (y2);
+      \draw[edge] (i) to (y3);
+      \draw[edge] (x1) to (y1);
+      \draw[edge] (x2) to (y3);
+      \node[draw=none, rectangle] (nodes) [fit=(x1) (x2) (y1) (y2) (y3) (i)] {};
+      \node[draw=none, rectangle, anchor=south] (title) at (nodes.north) {Causal DAG};
+    \end{scope}
+    \node[draw, rectangle] (dag) [fit=(dag-nodes) (dag-title)] {};
+
+    \begin{scope}[name prefix=scenario-, shift={($(dag.east |- dag-title.north)+(0.3, 0)$)}, anchor=north west]
+      \node[draw=none, rectangle] (title) at (0, 0) {Modelling Scenario};
+      \node[anchor=north] (constraints) at (title.south) {$\{ x_1 < 5, x_2 = \text{``UK''} \}$};
+    \end{scope}
+    \node[draw, rectangle] (scenario) [fit=(scenario-title) (scenario-constraints)] {};
+
+    \node[draw=none, rectangle] (scenario) [fit=(dag) (scenario)] {};
+    \node[draw=none, rectangle, anchor=south] (title) at (scenario.north) {Causal Specification};
+  \end{scope}
+  \node[draw, rectangle] [fit=(scenario-scenario) (scenario-title)] {};
+
+  \begin{scope}[name prefix=test-, local bounding box=test-case, shift={($(specification.south)+(0, -1)$)}]
+    \node[draw=none, rectangle, anchor=north] (title) at (0, 0) {Causal Test Case};
+    \node[anchor=north] (tuple) at (title.south) {$(X=i, \Delta=\text{increase}, Y=y_1)$};
+    \coordinate (left) at (scenario-scenario.east |- {(0, 0)});
+    \coordinate (right) at (scenario-scenario.west |- {(0, 0)});
+    \node[draw, rectangle] [fit=(title) (tuple) (left) (right)] {};
+  \end{scope}
+
+  \begin{scope}[name prefix=data-, local bounding box=test-data, shift={($(test-case.south)+(0, -1)$)}]
+    \node[draw=none, rectangle, anchor=north] (title) at (0, 0) {Test Data};
+    \node[anchor=north] (table) at (title.south) {
+      \begin{tabular}{rrrrrr}
+        \toprule
+        $X_1$ & $X_2$  & $I$ & $Y_1$ & $Y_2$ & $Y_3$ \\
+        \midrule
+        1.2   & ``UK'' & 0.3  & 7.8   & 4     & 100   \\
+        3.2   & ``UK'' & 0.1  & 7.6   & 8     & 95    \\
+        \multicolumn{6}{c}{$\vdots$}                 \\
+        \bottomrule
+      \end{tabular}
+    };
+    \coordinate (left) at (scenario-scenario.east |- {(0, 0)});
+    \coordinate (right) at (scenario-scenario.west |- {(0, 0)});
+    \node[draw, rectangle] [fit=(title) (table) (left) (right)] {};
+  \end{scope}
+
+  \begin{scope}[name prefix=estimand-, local bounding box=estimand, anchor=south, shift={($(test-case.east |- test-tuple.south) + (1, 0)$)}]
+    \node[anchor=south west] (eqn) at (0,0) {
+      $\Delta Y=\expe{[I=0 | X_1]} - \expe{[I=1 | X_1]} $
+    };
+    \node[draw=none, rectangle, anchor=south] (title) at (eqn.north) {Statistical Estimand};
+    \node[draw, rectangle] [fit=(estimand-title) (estimand-eqn)] {};
+  \end{scope}
+
+  \begin{scope}[name prefix=estimate-, local bounding box=estimate, shift={($(estimand.east)+(1, 0)$)}]
+    \node[draw=none, rectangle, anchor=south west] (title) at (0, 0) {Causal Estimate};
+    \node[anchor=north] (table) at (title.south) {
+      $\Delta Y=5$
+    };
+    \coordinate (top) at ({(0, 0)} |- test-title.north);
+    \coordinate (bot) at ({(0, 0)} |- estimand-eqn.south);
+    \node[draw, rectangle] [fit=(title) (table) (top) (bot)] {};
+  \end{scope}
+
+  \begin{scope}[name prefix=oracle-, local bounding box=test-oracle, shift={($(estimate.east) + (1.75, -0.2)$)}]
+    \begin{scope}[shift={(0,0)}, local bounding box=brain, scale=1.2]
+      \input{brain}
+    \end{scope}
+    \node[draw=none, rectangle, anchor=south] (title) at (brain.north) {Test Oracle};
+
+    \node[draw, rectangle] [fit=(title) (brain)] {};
+  \end{scope}
+
+  \begin{scope}[name prefix=outcome-, local bounding box=test-outcome, shift={($(brain.east |- estimate.east) + (1, 0)$)}]
+    \node[draw=none, rectangle, anchor=south west] (title) at (0,0) {Test Outcomes};
+    \node[draw=none, anchor=north] (ok) at (title.south) {\cmark ~ \xmark};
+
+    \coordinate (top) at ({(0, 0)} |- test-title.north);
+    \coordinate (bot) at ({(0, 0)} |- estimand-eqn.south);
+    \node[draw, rectangle] (test-outcome) [fit=(outcome-title) (outcome-ok) (top) (bot)] {};
+  \end{scope}
+
+  \draw[edge, dashed] ($(specification.east) + (0.1, 0)$) -- (estimand.north |- specification.east) -- (estimand.north);
+  \draw[edge, dashed] (test-case) -- (estimand);
+
+  \draw[edge, dashed] ($(test-data.east) + (0.1, 0)$) -- (estimate.south |- test-data.east) -- (estimate.south);
+  \draw[edge, dashed] (estimand) -- (estimate);
+
+  \draw[edge, dashed] (estimate) -- (test-oracle.west |- estimate);
+  \draw[edge, dashed] (test-oracle.east |- test-outcome) -- (test-outcome);
+\end{tikzpicture}
+
+
+\end{document}
