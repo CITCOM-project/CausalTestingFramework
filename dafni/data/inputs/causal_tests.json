@@ -1,0 +1,136 @@
+{
+  "tests": [
+    {
+      "name": "max_doses _||_ cum_vaccinations",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "max_doses"
+      ],
+      "expected_effect": {
+        "cum_vaccinations": "NoEffect"
+      },
+      "formula": "cum_vaccinations ~ max_doses",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "max_doses _||_ cum_vaccinated",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "max_doses"
+      ],
+      "expected_effect": {
+        "cum_vaccinated": "NoEffect"
+      },
+      "formula": "cum_vaccinated ~ max_doses",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "max_doses _||_ cum_infections",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "max_doses"
+      ],
+      "expected_effect": {
+        "cum_infections": "NoEffect"
+      },
+      "formula": "cum_infections ~ max_doses",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "vaccine --> cum_vaccinations",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "vaccine"
+      ],
+      "expected_effect": {
+        "cum_vaccinations": "SomeEffect"
+      },
+      "formula": "cum_vaccinations ~ vaccine",
+      "skip": false
+    },
+    {
+      "name": "vaccine --> cum_vaccinated",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "vaccine"
+      ],
+      "expected_effect": {
+        "cum_vaccinated": "SomeEffect"
+      },
+      "formula": "cum_vaccinated ~ vaccine",
+      "skip": false
+    },
+    {
+      "name": "vaccine --> cum_infections",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "vaccine"
+      ],
+      "expected_effect": {
+        "cum_infections": "SomeEffect"
+      },
+      "formula": "cum_infections ~ vaccine",
+      "skip": false
+    },
+    {
+      "name": "cum_vaccinations _||_ cum_vaccinated | ['vaccine']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "cum_vaccinations"
+      ],
+      "expected_effect": {
+        "cum_vaccinated": "NoEffect"
+      },
+      "formula": "cum_vaccinated ~ cum_vaccinations + vaccine",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "cum_vaccinations _||_ cum_infections | ['vaccine']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "cum_vaccinations"
+      ],
+      "expected_effect": {
+        "cum_infections": "NoEffect"
+      },
+      "formula": "cum_infections ~ cum_vaccinations + vaccine",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "cum_vaccinated _||_ cum_infections | ['vaccine']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "mutations": [
+        "cum_vaccinated"
+      ],
+      "expected_effect": {
+        "cum_infections": "NoEffect"
+      },
+      "formula": "cum_infections ~ cum_vaccinated + vaccine",
+      "alpha": 0.05,
+      "skip": false
+    }
+  ]
+}

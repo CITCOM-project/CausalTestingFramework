@@ -1,0 +1,39 @@
+name: Continuous Integration Tests Draft PR (pytest)
+# This duplicate ci workflow is required so the badge in the README.md is not effected by draft PRs
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    if: github.event.pull_request.draft == true
+    name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        python-version: ["3.9"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python using Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and dependencies
+        run: |
+          python --version
+          pip install -e .
+          pip install -e .[test]
+          pip install pytest pytest-cov
+        shell: bash -l {0}
+      - name: Test with pytest
+        run: |
+          pytest --cov=causal_testing --cov-report=xml
+        shell: bash -l {0}
+      - name: "Upload coverage to Codecov"
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}

@@ -98,7 +98,7 @@ class TestCausalTestSuite(unittest.TestCase):
 
         causal_test_results = self.test_suite.execute_test_suite(self.data_collector, self.causal_specification)
         causal_test_case_result = causal_test_results[self.base_test_case]
-        self.assertAlmostEqual(causal_test_case_result["LinearRegressionEstimator"][0].test_value.value, 4, delta=1e-10)
+        self.assertAlmostEqual(causal_test_case_result["LinearRegressionEstimator"][0].test_value.value[0], 4, delta=1e-10)
 
     # Without CausalForestEstimator we now only have 2 estimators. Unfortunately LogicisticRegressionEstimator does not
     # currently work with TestSuite. So for now removed test

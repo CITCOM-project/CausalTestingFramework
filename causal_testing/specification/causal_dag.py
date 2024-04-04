@@ -125,7 +125,6 @@ def close_separator(
 
 
 class CausalDAG(nx.DiGraph):
-
     """A causal DAG is a directed acyclic graph in which nodes represent random variables and edges represent causality
     between a pair of random variables. We implement a CausalDAG as a networkx DiGraph with an additional check that
     ensures it is acyclic. A CausalDAG must be specified as a dot file.
@@ -500,11 +499,20 @@ class CausalDAG(nx.DiGraph):
             return True
         return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
 
-    def identification(self, base_test_case: BaseTestCase):
+    @staticmethod
+    def remove_hidden_adjustment_sets(minimal_adjustment_sets: list[str], scenario: Scenario):
+        """Remove variables labelled as hidden from adjustment set(s)
+        :param minimal_adjustment_sets: list of minimal adjustment set(s) to have hidden variables removed from
+        :param scenario: The modelling scenario which informs the variables that are hidden
+        """
+        return [adj for adj in minimal_adjustment_sets if all(not scenario.variables.get(x).hidden for x in adj)]
+
+    def identification(self, base_test_case: BaseTestCase, scenario: Scenario = None):
         """Identify and return the minimum adjustment set
 
         :param base_test_case: A base test case instance containing the outcome_variable and the
         treatment_variable required for identification.
+        :param scenario: The modelling scenario relating to the tests
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
@@ -519,6 +527,12 @@ class CausalDAG(nx.DiGraph):
             )
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
+
+        if scenario is not None:
+            minimal_adjustment_sets = self.remove_hidden_adjustment_sets(minimal_adjustment_sets, scenario)
+
+        if len(minimal_adjustment_sets) == 0:
+            return set()
 
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set

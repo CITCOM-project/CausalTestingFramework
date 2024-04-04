@@ -9,8 +9,9 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-from patsy import dmatrix
-
+from econml.dml import CausalForestDML
+from patsy import dmatrix  # pylint: disable = no-name-in-module
+from patsy import ModelDesc
 from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
@@ -49,14 +50,16 @@ class Estimator(ABC):
         df: pd.DataFrame = None,
         effect_modifiers: dict[str:Any] = None,
         alpha: float = 0.05,
+        query: str = "",
     ):
         self.treatment = treatment
         self.treatment_value = treatment_value
         self.control_value = control_value
         self.adjustment_set = adjustment_set
         self.outcome = outcome
-        self.df = df
         self.alpha = alpha
+        self.df = df.query(query) if query else df
+
         if effect_modifiers is None:
             self.effect_modifiers = {}
         elif isinstance(effect_modifiers, dict):
@@ -64,6 +67,8 @@ class Estimator(ABC):
         else:
             raise ValueError(f"Unsupported type for effect_modifiers {effect_modifiers}. Expected iterable")
         self.modelling_assumptions = []
+        if query:
+            self.modelling_assumptions.append(query)
         self.add_modelling_assumptions()
         logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
@@ -99,8 +104,18 @@ class LogisticRegressionEstimator(Estimator):
         df: pd.DataFrame = None,
         effect_modifiers: dict[str:Any] = None,
         formula: str = None,
+        query: str = "",
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers)
+        super().__init__(
+            treatment=treatment,
+            treatment_value=treatment_value,
+            control_value=control_value,
+            adjustment_set=adjustment_set,
+            outcome=outcome,
+            df=df,
+            effect_modifiers=effect_modifiers,
+            query=query,
+        )
 
         self.model = None
 
@@ -115,13 +130,13 @@ class LogisticRegressionEstimator(Estimator):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions += (
+        self.modelling_assumptions.append(
             "The variables in the data must fit a shape which can be expressed as a linear"
             "combination of parameters and functions of variables. Note that these functions"
             "do not need to be linear."
         )
-        self.modelling_assumptions += "The outcome must be binary."
-        self.modelling_assumptions += "Independently and identically distributed errors."
+        self.modelling_assumptions.append("The outcome must be binary.")
+        self.modelling_assumptions.append("Independently and identically distributed errors.")
 
     def _run_logistic_regression(self, data) -> RegressionResultsWrapper:
         """Run logistic regression of the treatment and adjustment set against the outcome and return the model.
@@ -290,9 +305,18 @@ class LinearRegressionEstimator(Estimator):
         effect_modifiers: dict[Variable:Any] = None,
         formula: str = None,
         alpha: float = 0.05,
+        query: str = "",
     ):
         super().__init__(
-            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, alpha=alpha
+            treatment,
+            treatment_value,
+            control_value,
+            adjustment_set,
+            outcome,
+            df,
+            effect_modifiers,
+            alpha=alpha,
+            query=query,
         )
 
         self.model = None
@@ -313,13 +337,13 @@ class LinearRegressionEstimator(Estimator):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions += (
+        self.modelling_assumptions.append(
             "The variables in the data must fit a shape which can be expressed as a linear"
             "combination of parameters and functions of variables. Note that these functions"
             "do not need to be linear."
         )
 
-    def estimate_coefficient(self) -> float:
+    def estimate_coefficient(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
         caused by a unit change in treatment.
 
@@ -327,22 +351,20 @@ class LinearRegressionEstimator(Estimator):
         """
         model = self._run_linear_regression()
         newline = "\n"
-        treatment = [self.treatment]
-        if str(self.df.dtypes[self.treatment]) == "object":
+        patsy_md = ModelDesc.from_formula(self.treatment)
+        if any((self.df.dtypes[factor.name()] == 'object' for factor in patsy_md.rhs_termlist[1].factors)):
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
+        else:
+            treatment = [self.treatment]
         assert set(treatment).issubset(
             model.params.index.tolist()
         ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
-        if str(self.df.dtypes[self.treatment]) != "object":
-            unit_effect = unit_effect[0]
-            ci_low = ci_low[0]
-            ci_high = ci_high[0]
         return unit_effect, [ci_low, ci_high]
 
-    def estimate_ate(self) -> tuple[float, list[float, float], float]:
+    def estimate_ate(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -360,8 +382,9 @@ class LinearRegressionEstimator(Estimator):
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
-        ate = t_test_results.effect[0]
+        ate = pd.Series(t_test_results.effect[0])
         confidence_intervals = list(t_test_results.conf_int(alpha=self.alpha).flatten())
+        confidence_intervals = [pd.Series(interval) for interval in confidence_intervals]
         return ate, confidence_intervals
 
     def estimate_control_treatment(self, adjustment_config: dict = None) -> tuple[pd.Series, pd.Series]:
@@ -390,7 +413,7 @@ class LinearRegressionEstimator(Estimator):
 
         return y.iloc[1], y.iloc[0]
 
-    def estimate_risk_ratio(self, adjustment_config: dict = None) -> tuple[float, list[float, float]]:
+    def estimate_risk_ratio(self, adjustment_config: dict = None) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -399,12 +422,11 @@ class LinearRegressionEstimator(Estimator):
         if adjustment_config is None:
             adjustment_config = {}
         control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
-        ci_low = treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"]
-        ci_high = treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"]
+        ci_low = pd.Series(treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"])
+        ci_high = pd.Series(treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"])
+        return pd.Series(treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
 
-        return (treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
-
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[float, list[float, float]]:
+    def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
@@ -415,10 +437,9 @@ class LinearRegressionEstimator(Estimator):
         if adjustment_config is None:
             adjustment_config = {}
         control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
-        ci_low = treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"]
-        ci_high = treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"]
-
-        return (treatment_outcome["mean"] - control_outcome["mean"]), [ci_low, ci_high]
+        ci_low = pd.Series(treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"])
+        ci_high = pd.Series(treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"])
+        return pd.Series(treatment_outcome["mean"] - control_outcome["mean"]), [ci_low, ci_high]
 
     def _run_linear_regression(self) -> RegressionResultsWrapper:
         """Run linear regression of the treatment and adjustment set against the outcome and return the model.
@@ -432,10 +453,62 @@ class LinearRegressionEstimator(Estimator):
     def _get_confidence_intervals(self, model, treatment):
         confidence_intervals = model.conf_int(alpha=self.alpha, cols=None)
         ci_low, ci_high = (
-            confidence_intervals[0].loc[treatment],
-            confidence_intervals[1].loc[treatment],
+            pd.Series(confidence_intervals[0].loc[treatment]),
+            pd.Series(confidence_intervals[1].loc[treatment]),
         )
         return [ci_low, ci_high]
+
+
+class CubicSplineRegressionEstimator(LinearRegressionEstimator):
+    """A Cubic Spline Regression Estimator is a parametric estimator which restricts the variables in the data to a
+    combination of parameters and basis functions of the variables.
+    """
+
+    def __init__(
+        # pylint: disable=too-many-arguments
+        self,
+        treatment: str,
+        treatment_value: float,
+        control_value: float,
+        adjustment_set: set,
+        outcome: str,
+        basis: int,
+        df: pd.DataFrame = None,
+        effect_modifiers: dict[Variable:Any] = None,
+        formula: str = None,
+        alpha: float = 0.05,
+        expected_relationship=None,
+    ):
+        super().__init__(
+            treatment, treatment_value, control_value, adjustment_set, outcome, df, effect_modifiers, formula, alpha
+        )
+
+        self.expected_relationship = expected_relationship
+
+        if effect_modifiers is None:
+            effect_modifiers = []
+
+        if formula is None:
+            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            self.formula = f"{outcome} ~ cr({'+'.join(terms)}, df={basis})"
+
+    def estimate_ate_calculated(self, adjustment_config: dict = None) -> pd.Series:
+        model = self._run_linear_regression()
+
+        x = {"Intercept": 1, self.treatment: self.treatment_value}
+        if adjustment_config is not None:
+            for k, v in adjustment_config.items():
+                x[k] = v
+        if self.effect_modifiers is not None:
+            for k, v in self.effect_modifiers.items():
+                x[k] = v
+
+        treatment = model.predict(x).iloc[0]
+
+        x[self.treatment] = self.control_value
+        control = model.predict(x).iloc[0]
+
+        return pd.Series(treatment - control)
 
 
 class InstrumentalVariableEstimator(Estimator):
@@ -456,8 +529,20 @@ class InstrumentalVariableEstimator(Estimator):
         df: pd.DataFrame = None,
         intercept: int = 1,
         effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
+        alpha: float = 0.05,
+        query: str = "",
     ):
-        super().__init__(treatment, treatment_value, control_value, adjustment_set, outcome, df, None)
+        super().__init__(
+            treatment=treatment,
+            treatment_value=treatment_value,
+            control_value=control_value,
+            adjustment_set=adjustment_set,
+            outcome=outcome,
+            df=df,
+            effect_modifiers=None,
+            alpha=alpha,
+            query=query,
+        )
         self.intercept = intercept
         self.model = None
         self.instrument = instrument
@@ -467,15 +552,19 @@ class InstrumentalVariableEstimator(Estimator):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions += """The instrument and the treatment, and the treatment and the outcome must be
+        self.modelling_assumptions.append(
+            """The instrument and the treatment, and the treatment and the outcome must be
         related linearly in the form Y = aX + b."""
-        self.modelling_assumptions += """The three IV conditions must hold
+        )
+        self.modelling_assumptions.append(
+            """The three IV conditions must hold
             (i) Instrument is associated with treatment
             (ii) Instrument does not affect outcome except through its potential effect on treatment
             (iii) Instrument and outcome do not share causes
         """
+        )
 
-    def estimate_iv_coefficient(self, df):
+    def estimate_iv_coefficient(self, df) -> float:
         """
         Estimate the linear regression coefficient of the treatment on the
         outcome.
@@ -489,7 +578,7 @@ class InstrumentalVariableEstimator(Estimator):
         # Estimate the coefficient of I on X by cancelling
         return ab / a
 
-    def estimate_coefficient(self, bootstrap_size=100):
+    def estimate_coefficient(self, bootstrap_size=100) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """
         Estimate the unit ate (i.e. coefficient) of the treatment on the
         outcome.
@@ -498,8 +587,8 @@ class InstrumentalVariableEstimator(Estimator):
             [self.estimate_iv_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
         )
         bound = ceil((bootstrap_size * self.alpha) / 2)
-        ci_low = bootstraps[bound]
-        ci_high = bootstraps[bootstrap_size - bound]
+        ci_low = pd.Series(bootstraps[bound])
+        ci_high = pd.Series(bootstraps[bootstrap_size - bound])
 
-        return self.estimate_iv_coefficient(self.df), (ci_low, ci_high)
+        return pd.Series(self.estimate_iv_coefficient(self.df)), [ci_low, ci_high]
 

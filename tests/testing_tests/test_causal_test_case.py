@@ -127,7 +127,7 @@ class TestCausalTestExecution(unittest.TestCase):
             self.df,
         )
         causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        self.assertAlmostEqual(causal_test_result.test_value.value, 4, delta=1e-10)
+        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_direct_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -154,7 +154,7 @@ class TestCausalTestExecution(unittest.TestCase):
             self.df,
         )
         causal_test_result = causal_test_case.execute_test(estimation_model, self.data_collector)
-        self.assertAlmostEqual(causal_test_result.test_value.value, 4, delta=1e-10)
+        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_coefficient(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -169,7 +169,7 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         self.causal_test_case.estimate_type = "coefficient"
         causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        self.assertEqual(int(causal_test_result.test_value.value), 0)
+        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series({'D': 0.0}), atol=1e-1)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -184,7 +184,7 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         self.causal_test_case.estimate_type = "risk_ratio"
         causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        self.assertEqual(int(causal_test_result.test_value.value), 0)
+        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(0.0), atol=1)
 
     def test_invalid_estimate_type(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -214,7 +214,7 @@ class TestCausalTestExecution(unittest.TestCase):
             formula=f"C ~ A + {'+'.join(self.minimal_adjustment_set)} + (D ** 2)",
         )
         causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        self.assertAlmostEqual(round(causal_test_result.test_value.value, 1), 4, delta=1)
+        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()
