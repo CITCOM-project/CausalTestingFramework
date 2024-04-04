@@ -4,9 +4,15 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
 
 jobs:
   build:
+    if: github.event.pull_request.draft == false # Filter out draft PRs
     name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:

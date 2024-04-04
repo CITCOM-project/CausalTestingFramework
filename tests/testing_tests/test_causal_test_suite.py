@@ -2,8 +2,7 @@ import unittest
 import os
 import numpy as np
 import pandas as pd
-from causal_testing.testing.causal_test_engine import CausalTestEngine
-from causal_testing.testing.causal_test_engine import CausalTestSuite
+from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.specification.variable import Input, Output
@@ -61,6 +60,9 @@ class TestCausalTestSuite(unittest.TestCase):
         self.test_suite.add_test_object(
             base_test_case=self.base_test_case, causal_test_case_list=test_list, estimators_classes=self.estimators
         )
+        self.causal_specification = CausalSpecification(self.scenario, self.causal_dag)
+
+        self.data_collector = ObservationalDataCollector(self.scenario, self.df)
 
     def test_adding_test_object(self):
         "test an object can be added to the test_suite using the add_test_object function"
@@ -93,11 +95,10 @@ class TestCausalTestSuite(unittest.TestCase):
 
     def test_execute_test_suite_single_base_test_case(self):
         """Check that the test suite can return the correct results from dummy data for a single base_test-case"""
-        causal_test_engine = self.create_causal_test_engine()
 
-        causal_test_results = causal_test_engine.execute_test_suite(test_suite=self.test_suite)
+        causal_test_results = self.test_suite.execute_test_suite(self.data_collector, self.causal_specification)
         causal_test_case_result = causal_test_results[self.base_test_case]
-        self.assertAlmostEqual(causal_test_case_result["LinearRegressionEstimator"][0].test_value.value, 4, delta=1e-10)
+        self.assertAlmostEqual(causal_test_case_result["LinearRegressionEstimator"][0].test_value.value[0], 4, delta=1e-10)
 
     def test_execute_test_suite_multiple_estimators(self):
         """Check that executing a test suite with multiple estimators returns correct results for the dummy data
@@ -109,21 +110,9 @@ class TestCausalTestSuite(unittest.TestCase):
         test_suite_2_estimators.add_test_object(
             base_test_case=self.base_test_case, causal_test_case_list=test_list, estimators_classes=estimators
         )
-        causal_test_engine = self.create_causal_test_engine()
-        causal_test_results = causal_test_engine.execute_test_suite(test_suite=test_suite_2_estimators)
+        causal_test_results = test_suite_2_estimators.execute_test_suite(self.data_collector, self.causal_specification)
         causal_test_case_result = causal_test_results[self.base_test_case]
         linear_regression_result = causal_test_case_result["LinearRegressionEstimator"][0]
         causal_forrest_result = causal_test_case_result["CausalForestEstimator"][0]
-        self.assertAlmostEqual(linear_regression_result.test_value.value, 4, delta=1e-1)
-        self.assertAlmostEqual(causal_forrest_result.test_value.value, 4, delta=1e-1)
-
-    def create_causal_test_engine(self):
-        """
-        Creating test engine is relatively computationally complex, this function allows for it to
-        easily be made in only the tests that require it.
-        """
-        causal_specification = CausalSpecification(self.scenario, self.causal_dag)
-
-        data_collector = ObservationalDataCollector(self.scenario, self.df)
-        causal_test_engine = CausalTestEngine(causal_specification, data_collector)
-        return causal_test_engine
+        self.assertAlmostEqual(linear_regression_result.test_value.value[0], 4, delta=1e-1)
+        self.assertAlmostEqual(causal_forrest_result.test_value.value[0], 4, delta=1e-1)

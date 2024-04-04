@@ -1,0 +1,215 @@
+[
+  {
+    "name": "max_doses _||_ cum_vaccinations",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "max_doses"
+    ],
+    "expected_effect": {
+      "cum_vaccinations": "NoEffect"
+    },
+    "formula": "cum_vaccinations ~ max_doses",
+    "alpha": 0.05,
+    "skip": false,
+    "failed": true,
+    "result": {
+      "treatment": "max_doses",
+      "outcome": "cum_vaccinations",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": 252628.1066666667,
+      "ci_low": 252271.33332001517,
+      "ci_high": 252984.8800133182
+    }
+  },
+  {
+    "name": "max_doses _||_ cum_vaccinated",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "max_doses"
+    ],
+    "expected_effect": {
+      "cum_vaccinated": "NoEffect"
+    },
+    "formula": "cum_vaccinated ~ max_doses",
+    "alpha": 0.05,
+    "skip": false,
+    "failed": true,
+    "result": {
+      "treatment": "max_doses",
+      "outcome": "cum_vaccinated",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": 213111.93333333335,
+      "ci_low": 212755.15056812647,
+      "ci_high": 213468.71609854023
+    }
+  },
+  {
+    "name": "max_doses _||_ cum_infections",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "max_doses"
+    ],
+    "expected_effect": {
+      "cum_infections": "NoEffect"
+    },
+    "formula": "cum_infections ~ max_doses",
+    "alpha": 0.05,
+    "skip": false,
+    "failed": true,
+    "result": {
+      "treatment": "max_doses",
+      "outcome": "cum_infections",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": 2666.3066666666664,
+      "ci_low": 2619.972040648758,
+      "ci_high": 2712.6412926845746
+    }
+  },
+  {
+    "name": "vaccine --> cum_vaccinations",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "vaccine"
+    ],
+    "expected_effect": {
+      "cum_vaccinations": "SomeEffect"
+    },
+    "formula": "cum_vaccinations ~ vaccine",
+    "skip": false,
+    "failed": false,
+    "result": {
+      "treatment": "vaccine",
+      "outcome": "cum_vaccinations",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": 315785.1333333332,
+      "ci_low": 315339.1666500188,
+      "ci_high": 316231.1000166476
+    }
+  },
+  {
+    "name": "vaccine --> cum_vaccinated",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "vaccine"
+    ],
+    "expected_effect": {
+      "cum_vaccinated": "SomeEffect"
+    },
+    "formula": "cum_vaccinated ~ vaccine",
+    "skip": false,
+    "failed": false,
+    "result": {
+      "treatment": "vaccine",
+      "outcome": "cum_vaccinated",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": 266389.91666666657,
+      "ci_low": 265943.93821015797,
+      "ci_high": 266835.89512317517
+    }
+  },
+  {
+    "name": "vaccine --> cum_infections",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "vaccine"
+    ],
+    "expected_effect": {
+      "cum_infections": "SomeEffect"
+    },
+    "formula": "cum_infections ~ vaccine",
+    "skip": false,
+    "failed": false,
+    "result": {
+      "treatment": "vaccine",
+      "outcome": "cum_infections",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": 3332.883333333332,
+      "ci_low": 3274.9650508109467,
+      "ci_high": 3390.801615855717
+    }
+  },
+  {
+    "name": "cum_vaccinations _||_ cum_vaccinated | ['vaccine']",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "cum_vaccinations"
+    ],
+    "expected_effect": {
+      "cum_vaccinated": "NoEffect"
+    },
+    "formula": "cum_vaccinated ~ cum_vaccinations + vaccine",
+    "alpha": 0.05,
+    "skip": false,
+    "failed": true,
+    "result": {
+      "treatment": "cum_vaccinations",
+      "outcome": "cum_vaccinated",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": 0.9998656401531605,
+      "ci_low": 0.9929245394499968,
+      "ci_high": 1.0068067408563242
+    }
+  },
+  {
+    "name": "cum_vaccinations _||_ cum_infections | ['vaccine']",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "cum_vaccinations"
+    ],
+    "expected_effect": {
+      "cum_infections": "NoEffect"
+    },
+    "formula": "cum_infections ~ cum_vaccinations + vaccine",
+    "alpha": 0.05,
+    "skip": false,
+    "failed": false,
+    "result": {
+      "treatment": "cum_vaccinations",
+      "outcome": "cum_infections",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": -0.006416682407515084,
+      "ci_low": -0.05663010083886572,
+      "ci_high": 0.043796736023835554
+    }
+  },
+  {
+    "name": "cum_vaccinated _||_ cum_infections | ['vaccine']",
+    "estimate_type": "coefficient",
+    "effect": "direct",
+    "mutations": [
+      "cum_vaccinated"
+    ],
+    "expected_effect": {
+      "cum_infections": "NoEffect"
+    },
+    "formula": "cum_infections ~ cum_vaccinated + vaccine",
+    "alpha": 0.05,
+    "skip": false,
+    "failed": false,
+    "result": {
+      "treatment": "cum_vaccinated",
+      "outcome": "cum_infections",
+      "adjustment_set": [],
+      "effect_measure": "coefficient",
+      "effect_estimate": -0.006176900588291234,
+      "ci_low": -0.05639349612119588,
+      "ci_high": 0.04403969494461341
+    }
+  }
+]

@@ -2,6 +2,9 @@ import unittest
 import os
 import networkx as nx
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
+from causal_testing.specification.scenario import Scenario
+from causal_testing.specification.variable import Input, Output
+from causal_testing.testing.base_test_case import BaseTestCase
 from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 
 
@@ -174,18 +177,19 @@ class TestDAGIdentification(unittest.TestCase):
         """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
         causal_dag = CausalDAG(self.dag_dot_path)
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(["X1", "X2"], ["Y"])
-        edges = set([
-                    ("X1", "X2"),
-                    ("X2", "V"),
-                    ("X2", "D2"),
-                    ("D1", "D2"),
-                    ("D1", "Y"),
-                    ("Y", "D3"),
-                    ("Z", "X2"),
-                    ("Z", "Y"),
-                ])
-        self.assertTrue(
-            set(proper_backdoor_graph.graph.edges).issubset(edges))
+        edges = set(
+            [
+                ("X1", "X2"),
+                ("X2", "V"),
+                ("X2", "D2"),
+                ("D1", "D2"),
+                ("D1", "Y"),
+                ("Y", "D3"),
+                ("Z", "X2"),
+                ("Z", "Y"),
+            ]
+        )
+        self.assertTrue(set(proper_backdoor_graph.graph.edges).issubset(edges))
 
     def test_constructive_backdoor_criterion_should_hold(self):
         """Test whether the constructive criterion holds when it should."""
@@ -195,7 +199,7 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertTrue(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_proper_backdoor_graph(
-            self,
+        self,
     ):
         """Test whether the constructive criterion fails when the adjustment set is not a d-separator."""
         causal_dag = CausalDAG(self.dag_dot_path)
@@ -204,7 +208,7 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
 
     def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_causal_path(
-            self,
+        self,
     ):
         """Test whether the constructive criterion holds when the adjustment set Z contains a descendent of a variable
         on a proper causal path between X and Y."""
@@ -424,6 +428,37 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         # Convert list of sets to set of frozen sets for comparison
         min_separators = set(frozenset(min_separator) for min_separator in min_separators)
         self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
+
+    def tearDown(self) -> None:
+        remove_temp_dir_if_existent()
+
+
+class TestHiddenVariableDAG(unittest.TestCase):
+    """
+    Test the CausalDAG identification for the exclusion of hidden variables.
+    """
+
+    def setUp(self) -> None:
+        temp_dir_path = create_temp_dir_if_non_existent()
+        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }"""
+        with open(self.dag_dot_path, "w") as f:
+            f.write(dag_dot)
+
+    def test_hidden_varaible_adjustment_sets(self):
+        """Test whether identification produces different adjustment sets depending on if a variable is hidden."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        z = Input("Z", int)
+        x = Input("X", int)
+        m = Input("M", int)
+
+        scenario = Scenario(variables={z, x, m})
+        adjustment_sets = causal_dag.identification(BaseTestCase(x, m), scenario)
+
+        z.hidden = True
+        adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), scenario)
+
+        self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
 
     def tearDown(self) -> None:
         remove_temp_dir_if_existent()

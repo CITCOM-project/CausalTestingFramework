@@ -62,6 +62,7 @@ class DataCollector(ABC):
             solver.push()
             # Check that the row does not violate any scenario constraints
             # Need to explicitly cast variables to their specified type. Z3 will not take e.g. np.int64 to be an int.
+            # Check that the row does not violate any scenario constraints
             model = [
                 self.scenario.variables[var].z3
                 == self.scenario.variables[var].z3_val(self.scenario.variables[var].z3, row[var])
@@ -149,7 +150,6 @@ class ObservationalDataCollector(DataCollector):
 
         :return: A pandas dataframe containing execution data that is valid for the scenario-under-test.
         """
-
         execution_data_df = self.data
         for meta in self.scenario.metas():
             if meta.name not in self.data:

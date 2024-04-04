@@ -14,7 +14,7 @@ To run this case study:
 1. Ensure all project dependencies are installed by running `pip install .` from the top
 level of this directory (instructions are provided in the project README).
 2. Change directory to `causal_testing/examples/covasim_/doubling_beta`.
-3. Run the command `python test_beta.py`.
+3. Run the command `python example_beta.py`.
 
 This will print out a series of test results covering a range of different causal questions that correspond to those
 in Table 3 of the paper.

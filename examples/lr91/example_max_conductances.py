@@ -8,7 +8,6 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect
-from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from matplotlib.pyplot import rcParams
@@ -138,17 +137,14 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     # 7. Create a data collector
     data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
 
-    # 8. Create an instance of the causal test engine
-    causal_test_engine = CausalTestEngine(causal_specification, data_collector)
-
-    # 9. Obtain the minimal adjustment set from the causal DAG
+    # 8. Obtain the minimal adjustment set from the causal DAG
     minimal_adjustment_set = causal_dag.identification(base_test_case)
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_var.name, treatment_val, control_val, minimal_adjustment_set, "APD90"
     )
 
-    # 10. Run the causal test and print results
-    causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case)
+    # 9. Run the causal test and print results
+    causal_test_result = causal_test_case.execute_test(linear_regression_estimator, data_collector)
     logger.info("%s", causal_test_result)
     return causal_test_result.test_value.value, causal_test_result.confidence_intervals
 
@@ -168,8 +164,8 @@ def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = False, show: b
         before_underscore, after_underscore = treatment.split("_")
         after_underscore_braces = f"{{{after_underscore}}}"
         latex_compatible_treatment_str = rf"${before_underscore}_{after_underscore_braces}$"
-        cis_low = [c[0] for c in cis]
-        cis_high = [c[1] for c in cis]
+        cis_low = [c[0][0] for c in cis]
+        cis_high = [c[1][0] for c in cis]
         axes.fill_between(
             xs, cis_low, cis_high, alpha=0.2, color=input_colors[treatment], label=latex_compatible_treatment_str
         )
@@ -198,4 +194,4 @@ def normalise_data(df, columns=None):
 
 
 if __name__ == "__main__":
-    test_sensitivity_analysis(show=True)
+    test_sensitivity_analysis()

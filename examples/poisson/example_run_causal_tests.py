@@ -157,7 +157,7 @@ def test_run_causal_tests():
     dag_path = f"{ROOT}/dag.dot"
     data_path = f"{ROOT}/data.csv"
 
-    json_utility = JsonUtility(output_path)  # Create an instance of the extended JsonUtility class
+    json_utility = JsonUtility(output_path, output_overwrite=True)  # Create an instance of the extended JsonUtility class
     json_utility.set_paths(
         json_path, dag_path, [data_path]
     )  # Set the path to the data.csv, dag.dot and causal_tests.json file

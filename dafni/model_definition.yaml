@@ -1,0 +1,65 @@
+# Model definition file to run the causal testing framework on DAFNI
+# https://docs.secure.dafni.rl.ac.uk/docs/how-to/how-to-write-a-model-definition-file
+
+kind: M
+api_version: v1beta3
+metadata:
+  display_name: Causal Testing Framework
+  name: causal-testing-framework
+  publisher: The CITCOM Team, The University of Sheffield
+  type: model
+  summary: A Causal Inference-Driven Software Testing Framework
+  description: >
+    Causal Testing is a causal inference-driven framework for functional black-box testing. 
+    This framework utilises graphical causal inference (CI) techniques for the specification and functional testing of 
+    software from a black-box perspective. In this framework, we use causal directed acyclic graphs (DAGs) to express 
+    the anticipated cause-effect relationships amongst the inputs and outputs of the system-under-test and the 
+    supporting mathematical framework to design statistical procedures capable of making causal inferences. 
+    Each causal test case focuses on the causal effect of an intervention made to the system-under test.
+  contact_point_name: Farhad Allian
+  contact_point_email: farhad.allian@sheffield.ac.uk
+  source_code: https://github.com/CITCOM-project/CausalTestingFramework
+  licence: https://github.com/CITCOM-project/CausalTestingFramework?tab=MIT-1-ov-file#readme
+
+
+spec:
+  inputs:
+    dataslots:
+      - name: Runtime csv data
+        description: >
+          A .csv file containing the input runtime data to be used
+        default:
+          - 2b7336cd-eb68-4c1f-8f91-26d8969b8cb3
+        path: inputs/
+        required: true
+
+      - name: DAG data
+        description: >
+          A .dot file containing the input DAG to be used
+        default:
+          - 74665fdb-43a2-4c51-b81e-d5299b38bf8c
+        path: inputs/
+        required: true
+
+      - name: Causal tests
+        description: >
+          A .JSON file containing the input causal tests to be used
+        default:
+          - 6f2f7c1f-81b4-4804-8f86-cca304dc7f66
+        path: inputs/
+        required: true
+
+      - name: Variables
+        description: >
+          A .JSON file containing the input variables to be used
+        default:
+          - 02e755c8-952b-461a-a914-4f4ffbe2edf1
+        path: inputs/
+        required: true
+
+  outputs:
+      datasets:
+        - name: causal_test_results.json
+          type: json
+          description: >
+            A JSON file containing the output causal test results.

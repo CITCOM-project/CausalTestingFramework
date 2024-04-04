@@ -7,6 +7,7 @@ from causal_testing.testing.estimators import (
     CausalForestEstimator,
     LogisticRegressionEstimator,
     InstrumentalVariableEstimator,
+    CubicSplineRegressionEstimator,
 )
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
@@ -77,28 +78,14 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.scarf_df = pd.DataFrame(
-            [
-                {"length_in": 55, "large_gauge": 1, "color": "orange", "completed": 1},
-                {"length_in": 55, "large_gauge": 0, "color": "orange", "completed": 1},
-                {"length_in": 55, "large_gauge": 0, "color": "brown", "completed": 1},
-                {"length_in": 60, "large_gauge": 0, "color": "brown", "completed": 1},
-                {"length_in": 60, "large_gauge": 0, "color": "grey", "completed": 0},
-                {"length_in": 70, "large_gauge": 0, "color": "grey", "completed": 1},
-                {"length_in": 70, "large_gauge": 0, "color": "orange", "completed": 0},
-                {"length_in": 82, "large_gauge": 1, "color": "grey", "completed": 1},
-                {"length_in": 82, "large_gauge": 0, "color": "brown", "completed": 0},
-                {"length_in": 82, "large_gauge": 0, "color": "orange", "completed": 0},
-                {"length_in": 82, "large_gauge": 1, "color": "brown", "completed": 0},
-            ]
-        )
+        cls.scarf_df = pd.read_csv("tests/data/scarf_data.csv")
 
     # Yes, this probably shouldn't be in here, but it uses the scarf data so it makes more sense to put it
     # here than duplicating the scarf data for a single test
     def test_linear_regression_categorical_ate(self):
         df = self.scarf_df.copy()
         logistic_regression_estimator = LinearRegressionEstimator("color", None, None, set(), "completed", df)
-        ate, confidence = logistic_regression_estimator.estimate_unit_ate()
+        ate, confidence = logistic_regression_estimator.estimate_coefficient()
         self.assertTrue(all([ci_low < 0 < ci_high for ci_low, ci_high in zip(confidence[0], confidence[1])]))
 
     def test_ate(self):
@@ -124,14 +111,14 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
         logistic_regression_estimator = LogisticRegressionEstimator(
             "length_in", 65, 55, {"large_gauge"}, "completed", df
         )
-        ate, _ = logistic_regression_estimator.estimate_ate(estimator_params={"adjustment_config": {"large_gauge": 0}})
+        ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
         self.assertEqual(round(ate, 4), -0.3388)
 
     def test_ate_invalid_adjustment(self):
         df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, {}, "completed", df)
         with self.assertRaises(ValueError):
-            ate, _ = logistic_regression_estimator.estimate_ate(estimator_params={"adjustment_config": {"large_gauge": 0}})
+            ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
 
     def test_ate_effect_modifiers(self):
         df = self.scarf_df.copy()
@@ -184,7 +171,7 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         )
         self.assertEqual(iv_estimator.estimate_coefficient(self.df), 2)
 
-    def test_estimate_unit_ate(self):
+    def test_estimate_coefficient(self):
         """
         Test we get the correct coefficient.
         """
@@ -197,8 +184,8 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
             outcome="Y",
             instrument="Z",
         )
-        unit_ate, [low, high] = iv_estimator.estimate_unit_ate()
-        self.assertEqual(unit_ate, 2)
+        coefficient, [low, high] = iv_estimator.estimate_coefficient()
+        self.assertEqual(coefficient[0], 2)
 
 
 class TestLinearRegressionEstimator(unittest.TestCase):
@@ -213,17 +200,24 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         cls.nhefs_df = load_nhefs_df()
         cls.chapter_11_df = load_chapter_11_df()
 
+    def test_query(self):
+        df = self.nhefs_df
+        linear_regression_estimator = LinearRegressionEstimator(
+            "treatments", None, None, set(), "outcomes", df, query="sex==1"
+        )
+        self.assertTrue(linear_regression_estimator.df.sex.all())
+
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
         linear_regression_estimator = LinearRegressionEstimator("treatments", None, None, set(), "outcomes", df)
         model = linear_regression_estimator._run_linear_regression()
-        ate, _ = linear_regression_estimator.estimate_unit_ate()
+        ate, _ = linear_regression_estimator.estimate_coefficient()
 
         self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(model.params["treatments"], 1), round(ate, 1))
+        self.assertTrue(all(round(model.params["treatments"], 1) == round(ate_single, 1) for ate_single in ate))
 
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
@@ -232,7 +226,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "treatments", None, None, set(), "outcomes", df, formula="outcomes ~ treatments + np.power(treatments, 2)"
         )
         model = linear_regression_estimator._run_linear_regression()
-        ate, _ = linear_regression_estimator.estimate_unit_ate()
+        ate, _ = linear_regression_estimator.estimate_coefficient()
         self.assertEqual(
             round(
                 model.params["Intercept"]
@@ -243,7 +237,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             197.1,
         )
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertEqual(round(model.params["treatments"], 3), round(ate, 3))
+        self.assertTrue(all(round(model.params["treatments"], 3) == round(ate_single, 3) for ate_single in ate))
 
     def test_program_15_1A(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
@@ -320,9 +314,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
-        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_unit_ate()
-        self.assertEqual(round(ate, 1), 3.5)
-        self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
+        ate, [ci_low, ci_high] = linear_regression_estimator.estimate_coefficient()
+
+        self.assertEqual(round(ate[0], 1), 3.5)
+        self.assertEqual([round(ci_low[0], 1), round(ci_high[0], 1)], [2.6, 4.3])
 
     def test_program_15_no_interaction_ate(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -356,8 +351,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate()
-        self.assertEqual(round(ate, 1), 3.5)
-        self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [2.6, 4.3])
+        self.assertEqual(round(ate[0], 1), 3.5)
+        self.assertEqual([round(ci_low[0], 1), round(ci_high[0], 1)], [2.6, 4.3])
 
     def test_program_15_no_interaction_ate_calculated(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -390,11 +385,12 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
+
         ate, [ci_low, ci_high] = linear_regression_estimator.estimate_ate_calculated(
-            {k: self.nhefs_df.mean()[k] for k in covariates}
+            adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates}
         )
-        self.assertEqual(round(ate, 1), 3.5)
-        self.assertEqual([round(ci_low, 1), round(ci_high, 1)], [1.9, 5])
+        self.assertEqual(round(ate[0], 1), 3.5)
+        self.assertEqual([round(ci_low[0], 1), round(ci_high[0], 1)], [1.9, 5])
 
     def test_program_11_2_with_robustness_validation(self):
         """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
@@ -404,6 +400,42 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 
         cv = CausalValidator()
         self.assertEqual(round(cv.estimate_robustness(model)["treatments"], 4), 0.7353)
+
+
+class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
+    @classmethod
+    def setUpClass(cls):
+
+        super().setUpClass()
+
+    def test_program_11_3_cublic_spline(self):
+
+        """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
+        https://www.hsph.harvard.edu/miguel-hernan/wp-content/uploads/sites/1268/2023/10/hernanrobins_WhatIf_30sep23.pdf
+        Slightly modified as Hernan et al. use linear regression for this example.
+        """
+
+        df = self.chapter_11_df.copy()
+
+        cublic_spline_estimator = CubicSplineRegressionEstimator("treatments", 1, 0, set(), "outcomes", 3, df)
+
+        model = cublic_spline_estimator._run_linear_regression()
+
+        self.assertEqual(
+            round(
+                cublic_spline_estimator.model.predict({"Intercept": 1, "treatments": 90}).iloc[0],
+                1,
+            ),
+            195.6,
+        )
+
+        ate_1 = cublic_spline_estimator.estimate_ate_calculated()
+        cublic_spline_estimator.treatment_value = 2
+        ate_2 = cublic_spline_estimator.estimate_ate_calculated()
+
+        # Doubling the treatemebnt value should roughly but not exactly double the ATE
+        self.assertNotEqual(ate_1[0] * 2, ate_2[0])
+        self.assertAlmostEqual(ate_1[0] * 2, ate_2[0])
 
 
 class TestCausalForestEstimator(unittest.TestCase):
@@ -439,8 +471,8 @@ class TestCausalForestEstimator(unittest.TestCase):
         }
         causal_forest = CausalForestEstimator("qsmk", 1, 0, covariates, "wt82_71", df, {"smokeintensity": 40})
         ate, _ = causal_forest.estimate_ate()
-        self.assertGreater(round(ate, 1), 2.5)
-        self.assertLess(round(ate, 1), 4.5)
+        self.assertGreater(round(ate[0], 1), 2.5)
+        self.assertLess(round(ate[0], 1), 4.5)
 
     def test_program_15_cate(self):
         """Test whether our causal forest implementation produces the similar CATE to program 15.1 (p. 163, 184)."""
@@ -478,13 +510,29 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         df = pd.DataFrame({"X1": np.random.uniform(-1000, 1000, 1000), "X2": np.random.uniform(-1000, 1000, 1000)})
         df["Y"] = 2 * df["X1"] - 3 * df["X2"] + 2 * df["X1"] * df["X2"] + 10
         cls.df = df
+        cls.scarf_df = pd.read_csv("tests/data/scarf_data.csv")
 
     def test_X1_effect(self):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
-        x2 = Input("X2", float)
         lr_model = LinearRegressionEstimator(
-            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={x2.name: 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
+            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={"x2": 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
         )
         test_results = lr_model.estimate_ate()
-        ate = test_results[0]
+        ate = test_results[0][0]
         self.assertAlmostEqual(ate, 2.0)
+
+    def test_categorical_confidence_intervals(self):
+        lr_model = LinearRegressionEstimator(
+            treatment="color",
+            control_value=None,
+            treatment_value=None,
+            adjustment_set={},
+            outcome="length_in",
+            df=self.scarf_df,
+        )
+        coefficients, [ci_low, ci_high] = lr_model.estimate_coefficient()
+
+        # The precise values don't really matter. This test is primarily intended to make sure the return type is correct.
+        self.assertTrue(coefficients.round(2).equals(pd.Series({"color[T.grey]": 0.92, "color[T.orange]": -4.25})))
+        self.assertTrue(ci_low.round(2).equals(pd.Series({"color[T.grey]": -22.12, "color[T.orange]": -25.58})))
+        self.assertTrue(ci_high.round(2).equals(pd.Series({"color[T.grey]": 23.95, "color[T.orange]": 17.08})))

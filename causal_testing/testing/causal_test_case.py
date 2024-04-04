@@ -1,10 +1,15 @@
 """This module contains the CausalTestCase class, a class that holds the information required for a causal test"""
 import logging
 from typing import Any
+import numpy as np
 
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.estimators import Estimator
+from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
+from causal_testing.data_collection.data_collector import DataCollector
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +19,8 @@ class CausalTestCase:
     """
     A CausalTestCase extends the information held in a BaseTestCase. As well as storing the treatment and outcome
     variables, a CausalTestCase stores the values of these variables. Also the outcome variable and value are
-    specified.
-
-    The goal of a CausalTestCase is to test whether the intervention made to the control via the treatment causes the
-    model-under-test to produce the expected change. The CausalTestCase structure is designed for execution using the
-    CausalTestEngine, using either execute_test() function to execute a single test case or packing CausalTestCases into
-    a CausalTestSuite and executing them as a batch using the execute_test_suite() function.
+    specified. The goal of a CausalTestCase is to test whether the intervention made to the control via the treatment
+               causes the model-under-test to produce the expected change.
     """
 
     def __init__(
@@ -57,21 +58,43 @@ class CausalTestCase:
         else:
             self.effect_modifier_configuration = {}
 
-    def get_treatment_variable(self):
-        """Return the treatment variable name (as string) for this causal test case"""
-        return self.treatment_variable.name
+    def execute_test(self, estimator: type(Estimator), data_collector: DataCollector) -> CausalTestResult:
+        """Execute a causal test case and return the causal test result.
 
-    def get_outcome_variable(self):
-        """Return the outcome variable name (as string) for this causal test case."""
-        return self.outcome_variable.name
+        :param estimator: A reference to an Estimator class.
+        :param data_collector: The data collector to be used which provides a dataframe for the Estimator
+        :return causal_test_result: A CausalTestResult for the executed causal test case.
+        """
+        if estimator.df is None:
+            estimator.df = data_collector.collect_data()
 
-    def get_control_value(self):
-        """Return a the control value of the treatment variable in this causal test case."""
-        return self.control_value
+        causal_test_result = self._return_causal_test_results(estimator)
+        return causal_test_result
 
-    def get_treatment_value(self):
-        """Return the treatment value of the treatment variable in this causal test case."""
-        return self.treatment_value
+    def _return_causal_test_results(self, estimator) -> CausalTestResult:
+        """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
+
+        :param estimator: An Estimator class object
+        :return: a CausalTestResult object containing the confidence intervals
+        """
+        if not hasattr(estimator, f"estimate_{self.estimate_type}"):
+            raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
+        estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
+        try:
+            effect, confidence_intervals = estimate_effect(**self.estimate_params)
+            return CausalTestResult(
+                estimator=estimator,
+                test_value=TestValue(self.estimate_type, effect),
+                effect_modifier_configuration=self.effect_modifier_configuration,
+                confidence_intervals=confidence_intervals,
+            )
+        except np.linalg.LinAlgError:
+            return CausalTestResult(
+                estimator=estimator,
+                test_value=TestValue(self.estimate_type, "LinAlgError"),
+                effect_modifier_configuration=self.effect_modifier_configuration,
+                confidence_intervals=None,
+            )
 
     def __str__(self):
         treatment_config = {self.treatment_variable.name: self.treatment_value}

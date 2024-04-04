@@ -1,3 +1,4 @@
+from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -8,7 +9,6 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
-from causal_testing.testing.causal_test_engine import CausalTestEngine
 from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from matplotlib.pyplot import rcParams
@@ -31,8 +31,8 @@ logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 # }
 # rcParams.update(rc_fonts)
 
-ROOT = os.path.realpath(os.path.dirname(__file__))
-OBSERVATIONAL_DATA_PATH = f"{ROOT}/data/10k_observational_data.csv"
+ROOT = Path(os.path.realpath(os.path.dirname(__file__)))
+OBSERVATIONAL_DATA_PATH = ROOT / "data" / "10k_observational_data.csv"
 
 
 def doubling_beta_CATE_on_csv(
@@ -50,9 +50,9 @@ def doubling_beta_CATE_on_csv(
     """
     results_dict = {"association": {}, "causation": {}}
 
-    # Read in the observational data, perform identification, and setup the causal_test_engine
+    # Read in the observational data, perform identification
     past_execution_df = pd.read_csv(observational_data_path)
-    _, causal_test_engine, causal_test_case = engine_setup(observational_data_path)
+    data_collector, _, causal_test_case, causal_specification = setup(past_execution_df)
 
     linear_regression_estimator = LinearRegressionEstimator(
         "beta",
@@ -65,7 +65,9 @@ def doubling_beta_CATE_on_csv(
     )
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    causal_test_result = causal_test_engine.execute_test(linear_regression_estimator, causal_test_case)
+    causal_test_result = causal_test_case.execute_test(
+        estimator=linear_regression_estimator, data_collector=data_collector
+    )
 
     # Repeat for association estimate (no adjustment)
     no_adjustment_linear_regression_estimator = LinearRegressionEstimator(
@@ -77,8 +79,8 @@ def doubling_beta_CATE_on_csv(
         df=past_execution_df,
         formula="cum_infections ~ beta + np.power(beta, 2)",
     )
-    association_test_result = causal_test_engine.execute_test(
-        no_adjustment_linear_regression_estimator, causal_test_case
+    association_test_result = causal_test_case.execute_test(
+        estimator=no_adjustment_linear_regression_estimator, data_collector=data_collector
     )
 
     # Store results for plotting
@@ -109,9 +111,10 @@ def doubling_beta_CATE_on_csv(
             df=counterfactual_past_execution_df,
             formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts",
         )
-        counterfactual_causal_test_result = causal_test_engine.execute_test(
-            linear_regression_estimator, causal_test_case
+        counterfactual_causal_test_result = causal_test_case.execute_test(
+            estimator=linear_regression_estimator, data_collector=data_collector
         )
+
         results_dict["counterfactual"] = {
             "ate": counterfactual_causal_test_result.test_value.value,
             "cis": counterfactual_causal_test_result.confidence_intervals,
@@ -218,7 +221,7 @@ def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: b
     age_contact_fig.savefig(outpath_base_str + "age_contact_executions.pdf", format="pdf")
 
 
-def engine_setup(observational_data_path):
+def setup(observational_data):
     # 1. Read in the Causal DAG
     causal_dag = CausalDAG(f"{ROOT}/dag.dot")
 
@@ -263,21 +266,18 @@ def engine_setup(observational_data_path):
     )
 
     # 7. Create a data collector
-    data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
+    data_collector = ObservationalDataCollector(scenario, observational_data)
 
-    # 8. Create an instance of the causal test engine
-    causal_test_engine = CausalTestEngine(causal_specification, data_collector)
-
-    # 9. Obtain the minimal adjustment set for the base test case from the causal DAG
+    # 8. Obtain the minimal adjustment set for the base test case from the causal DAG
     minimal_adjustment_set = causal_dag.identification(base_test_case)
 
-    return minimal_adjustment_set, causal_test_engine, causal_test_case
+    return data_collector, minimal_adjustment_set, causal_test_case, causal_specification
 
 
 def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=None, col=None):
     # Get the CATE as a percentage for association and causation
-    ate = results_dict["causation"]["ate"]
-    association_ate = results_dict["association"]["ate"]
+    ate = results_dict["causation"]["ate"][0]
+    association_ate = results_dict["association"]["ate"][0]
 
     causation_df = results_dict["causation"]["df"]
     association_df = results_dict["association"]["df"]
@@ -288,11 +288,10 @@ def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=No
     # Get 95% confidence intervals for association and causation
     ate_cis = results_dict["causation"]["cis"]
     association_ate_cis = results_dict["association"]["cis"]
-    percentage_causal_ate_cis = [round(((ci / causation_df["cum_infections"].mean()) * 100), 3) for ci in ate_cis]
+    percentage_causal_ate_cis = [round(((ci[0] / causation_df["cum_infections"].mean()) * 100), 3) for ci in ate_cis]
     percentage_association_ate_cis = [
-        round(((ci / association_df["cum_infections"].mean()) * 100), 3) for ci in association_ate_cis
+        round(((ci[0] / association_df["cum_infections"].mean()) * 100), 3) for ci in association_ate_cis
     ]
-
     # Convert confidence intervals to errors for plotting
     percentage_causal_errs = [
         percentage_ate - percentage_causal_ate_cis[0],
@@ -314,9 +313,9 @@ def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=No
     if "counterfactual" in results_dict.keys():
         cf_ate = results_dict["counterfactual"]["ate"]
         cf_df = results_dict["counterfactual"]["df"]
-        percentage_cf_ate = round((cf_ate / cf_df["cum_infections"].mean()) * 100, 3)
+        percentage_cf_ate = round((cf_ate[0] / cf_df["cum_infections"].mean()) * 100, 3)
         cf_ate_cis = results_dict["counterfactual"]["cis"]
-        percentage_cf_cis = [round(((ci / cf_df["cum_infections"].mean()) * 100), 3) for ci in cf_ate_cis]
+        percentage_cf_cis = [round(((ci[0] / cf_df["cum_infections"].mean()) * 100), 3) for ci in cf_ate_cis]
         percentage_cf_errs = [percentage_cf_ate - percentage_cf_cis[0], percentage_cf_cis[1] - percentage_cf_ate]
         xs = [0.5, 1.5, 2.5]
         ys = [association_percentage_ate, percentage_ate, percentage_cf_ate]

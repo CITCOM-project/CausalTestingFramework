@@ -66,7 +66,7 @@ def list_all_min_sep(
         # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
         if treatment_node_set_neighbours.difference(outcome_node_set):
             # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
-            node = set(sample(treatment_node_set_neighbours.difference(outcome_node_set), 1))
+            node = set(sample(sorted(treatment_node_set_neighbours.difference(outcome_node_set)), 1))
 
             # 7.2. Add this node to the treatment node set and recurse (left branch)
             yield from list_all_min_sep(
@@ -125,7 +125,6 @@ def close_separator(
 
 
 class CausalDAG(nx.DiGraph):
-
     """A causal DAG is a directed acyclic graph in which nodes represent random variables and edges represent causality
     between a pair of random variables. We implement a CausalDAG as a networkx DiGraph with an additional check that
     ensures it is acyclic. A CausalDAG must be specified as a dot file.
@@ -134,7 +133,12 @@ class CausalDAG(nx.DiGraph):
     def __init__(self, dot_path: str = None, **attr):
         super().__init__(**attr)
         if dot_path:
-            pydot_graph = pydot.graph_from_dot_file(dot_path)
+            with open(dot_path, "r", encoding="utf-8") as file:
+                dot_content = file.read().replace("\n", "")
+            # Previously, we used pydot_graph_from_file() to read in the dot_path directly, however,
+            # this method does not currently have a way of removing spurious nodes.
+            # Workaround: Read in the file using open(), remove new lines, and then create the pydot_graph.
+            pydot_graph = pydot.graph_from_dot_data(dot_content)
             self.graph = nx.DiGraph(nx.drawing.nx_pydot.from_pydot(pydot_graph[0]))
         else:
             self.graph = nx.DiGraph()
@@ -500,11 +504,20 @@ class CausalDAG(nx.DiGraph):
             return True
         return any((self.depends_on_outputs(n, scenario) for n in self.graph.predecessors(node)))
 
-    def identification(self, base_test_case: BaseTestCase):
+    @staticmethod
+    def remove_hidden_adjustment_sets(minimal_adjustment_sets: list[str], scenario: Scenario):
+        """Remove variables labelled as hidden from adjustment set(s)
+        :param minimal_adjustment_sets: list of minimal adjustment set(s) to have hidden variables removed from
+        :param scenario: The modelling scenario which informs the variables that are hidden
+        """
+        return [adj for adj in minimal_adjustment_sets if all(not scenario.variables.get(x).hidden for x in adj)]
+
+    def identification(self, base_test_case: BaseTestCase, scenario: Scenario = None):
         """Identify and return the minimum adjustment set
 
         :param base_test_case: A base test case instance containing the outcome_variable and the
         treatment_variable required for identification.
+        :param scenario: The modelling scenario relating to the tests
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
@@ -519,6 +532,12 @@ class CausalDAG(nx.DiGraph):
             )
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
+
+        if scenario is not None:
+            minimal_adjustment_sets = self.remove_hidden_adjustment_sets(minimal_adjustment_sets, scenario)
+
+        if len(minimal_adjustment_sets) == 0:
+            return set()
 
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return minimal_adjustment_set

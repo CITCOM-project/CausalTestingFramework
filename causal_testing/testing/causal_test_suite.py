@@ -1,10 +1,17 @@
 """This module contains the CausalTestSuite class, for details on using it:
 https://causal-testing-framework.readthedocs.io/en/latest/test_suite.html"""
+import logging
+
 from collections import UserDict
 from typing import Type, Iterable
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.estimators import Estimator
+from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.data_collection.data_collector import DataCollector
+from causal_testing.specification.causal_specification import CausalSpecification
+
+logger = logging.getLogger(__name__)
 
 
 class CausalTestSuite(UserDict):
@@ -15,7 +22,7 @@ class CausalTestSuite(UserDict):
     and the values are test objects. Test Objects hold a causal_test_case_list which is a list of causal_test_cases
     which provide control and treatment values, and an iterator of Estimator Class References
 
-    This dictionary can be fed into the CausalTestEngines execute_test_suite function which will iterate over all the
+    This dictionary can be fed into the execute_test_suite function which will iterate over all the
     base_test_case's and execute each causal_test_case with each iterator.
     """
 
@@ -37,3 +44,44 @@ class CausalTestSuite(UserDict):
         """
         test_object = {"tests": causal_test_case_list, "estimators": estimators_classes, "estimate_type": estimate_type}
         self.data[base_test_case] = test_object
+
+    def execute_test_suite(
+        self, data_collector: DataCollector, causal_specification: CausalSpecification
+    ) -> dict[str, CausalTestResult]:
+        """Execute a suite of causal tests and return the results in a list
+        :param data_collector: The data collector to be used for the test_suite. Can be observational, experimental or
+         custom
+        :param causal_specification:
+        :return: A dictionary where each key is the name of the estimators specified and the values are lists of
+                causal_test_result objects
+        """
+        if data_collector.data.empty:
+            raise ValueError("No data has been loaded. Please call load_data prior to executing a causal test case.")
+        test_suite_results = {}
+        for edge in self:
+            logger.info("treatment: %s", edge.treatment_variable)
+            logger.info("outcome: %s", edge.outcome_variable)
+            minimal_adjustment_set = causal_specification.causal_dag.identification(edge)
+            minimal_adjustment_set = minimal_adjustment_set - set(edge.treatment_variable.name)
+            minimal_adjustment_set = minimal_adjustment_set - set(edge.outcome_variable.name)
+
+            estimators = self[edge]["estimators"]
+            tests = self[edge]["tests"]
+            results = {}
+            for estimator_class in estimators:
+                causal_test_results = []
+
+                for test in tests:
+                    estimator = estimator_class(
+                        test.treatment_variable.name,
+                        test.treatment_value,
+                        test.control_value,
+                        minimal_adjustment_set,
+                        test.outcome_variable.name,
+                    )
+                    causal_test_result = test.execute_test(estimator, data_collector)
+                    causal_test_results.append(causal_test_result)
+
+                results[estimator_class.__name__] = causal_test_results
+            test_suite_results[edge] = results
+        return test_suite_results
