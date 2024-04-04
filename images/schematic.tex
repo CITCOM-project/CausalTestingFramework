@@ -84,7 +84,8 @@
   \end{scope}
 
     \begin{scope}[name prefix=data-, local bounding box=test-data, shift={($(estimate.north)+(0, 1)$)},]
-    \node[anchor=south] (table) at (0,0) {
+    \node[draw=none, rectangle] (title) at (estimate |- scenario-title) {Test Data};
+    \node[anchor=north] (table) at (title.south) {
       \begin{tabular}{rrrrrr}
         \toprule
         $X_1$ & $X_2$  & $I$ & $Y_1$ & $Y_2$ & $Y_3$ \\
@@ -95,7 +96,6 @@
         \bottomrule
       \end{tabular}
     };
-    \node[draw=none, rectangle, anchor=south] (title) at (table.north) {Test Data};
     \node[draw, rectangle] [fit=(title) (table)] {};
   \end{scope}
 
