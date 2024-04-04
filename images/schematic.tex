@@ -83,15 +83,15 @@
     \node[draw, rectangle] [fit=(title) (table) (top) (bot)] {};
   \end{scope}
 
-    \begin{scope}[name prefix=data-, local bounding box=test-data, shift={($(estimate.north)+(0, 1)$)},]
+  \begin{scope}[name prefix=data-, local bounding box=test-data, shift={($(estimate.north)+(0, 1)$)},]
     \node[draw=none, rectangle] (title) at (estimate |- scenario-title) {Test Data};
     \node[anchor=north] (table) at (title.south) {
       \begin{tabular}{rrrrrr}
         \toprule
         $X_1$ & $X_2$  & $I$ & $Y_1$ & $Y_2$ & $Y_3$ \\
         \midrule
-        1.2   & ``UK'' & 0.3  & 7.8   & 4     & 100   \\
-        3.2   & ``UK'' & 0.1  & 7.6   & 8     & 95    \\
+        1.2   & ``UK'' & 0.3 & 7.8   & 4     & 100   \\
+        3.2   & ``UK'' & 0.1 & 7.6   & 8     & 95    \\
         \multicolumn{6}{c}{$\vdots$}                 \\
         \bottomrule
       \end{tabular}
@@ -101,27 +101,27 @@
 
   \begin{scope}[name prefix=oracle-, local bounding box=test-oracle, shift={($(estimate.east) + (1.54, -0.4)$)}]
     \begin{scope}[shift={(0,0)}, local bounding box=brain, scale=1.2]
-    \begin{scope}[shift={(-7.6932,3.5256)}, local bounding box=brain]
-    \path[draw,line width=0.025cm] (8.162, -2.8955) circle (0.066cm);
-    \path[draw,line width=0.025cm] (8.0485, -3.2243) circle (0.066cm);
-    \path[draw,line width=0.025cm] (8.0346, -3.5296) circle (0.066cm);
-    \path[draw,line width=0.025cm] (8.2166, -3.757) circle (0.066cm);
-    \path[draw,line width=0.025cm] (7.6556, -3.7827) circle (0.066cm);
-    \path[draw,line width=0.025cm] (7.6315, -3.5091) circle (0.066cm);
-    \path[draw,line width=0.025cm] (7.4451, -3.2224) circle (0.066cm);
-    \path[draw,line width=0.025cm] (7.6247, -2.9461) circle (0.066cm);
+      \begin{scope}[shift={(-7.6932,3.5256)}, local bounding box=brain]
+        \path[draw,line width=0.025cm] (8.162, -2.8955) circle (0.066cm);
+        \path[draw,line width=0.025cm] (8.0485, -3.2243) circle (0.066cm);
+        \path[draw,line width=0.025cm] (8.0346, -3.5296) circle (0.066cm);
+        \path[draw,line width=0.025cm] (8.2166, -3.757) circle (0.066cm);
+        \path[draw,line width=0.025cm] (7.6556, -3.7827) circle (0.066cm);
+        \path[draw,line width=0.025cm] (7.6315, -3.5091) circle (0.066cm);
+        \path[draw,line width=0.025cm] (7.4451, -3.2224) circle (0.066cm);
+        \path[draw,line width=0.025cm] (7.6247, -2.9461) circle (0.066cm);
 
-    \path[draw,line width=0.025cm,miter limit=4.0] (7.6932, -2.6331) -- (7.3637, -2.8234) -- (7.3637, -3.0567) -- (7.1749, -3.1656) -- (7.1749, -3.5256) -- (7.3341, -3.6175) -- (7.3341, -3.8517) -- (7.6883, -4.0562) -- (7.868, -3.9669) -- (8.0478, -4.0562) -- (8.4019, -3.8517) -- (8.4019, -3.6175) -- (8.5611, -3.5256) -- (8.5611, -3.1656) -- (8.3724, -3.0567) -- (8.3724, -2.8234) -- (8.0429, -2.6331) -- (7.868, -2.7341) -- cycle;
-    \path[draw,line width=0.025cm,miter limit=4.0] (7.868, -3.9669) -- (7.868, -2.7341);
-    \path[draw,line width=0.025cm] (7.5588, -2.9461) -- (7.3637, -2.9461);
-    \path[draw,line width=0.025cm] (7.4451, -3.1565) -- (7.4451, -2.9461);
-    \path[draw,line width=0.025cm] (7.6316, -3.4431) -- (7.6316, -3.2116) -- (7.868, -3.2116);
-    \path[draw,line width=0.025cm] (7.5897, -3.7827) -- (7.4177, -3.7827) -- (7.4177, -3.523) -- (7.1749, -3.523);
-    \path[draw,line width=0.025cm] (8.162, -2.9614) -- (8.162, -3.0534) -- (7.868, -3.0534);
-    \path[draw,line width=0.025cm] (8.0485, -3.1584) -- (8.0485, -3.0534);
-    \path[draw,line width=0.025cm] (8.1005, -3.5296) -- (8.313, -3.5296) -- (8.313, -3.3442) -- (8.5611, -3.3442);
-    \path[draw,line width=0.025cm] (8.1507, -3.757) -- (8.0477, -3.757) -- (8.0477, -4.0561);
-    \end{scope}
+        \path[draw,line width=0.025cm,miter limit=4.0] (7.6932, -2.6331) -- (7.3637, -2.8234) -- (7.3637, -3.0567) -- (7.1749, -3.1656) -- (7.1749, -3.5256) -- (7.3341, -3.6175) -- (7.3341, -3.8517) -- (7.6883, -4.0562) -- (7.868, -3.9669) -- (8.0478, -4.0562) -- (8.4019, -3.8517) -- (8.4019, -3.6175) -- (8.5611, -3.5256) -- (8.5611, -3.1656) -- (8.3724, -3.0567) -- (8.3724, -2.8234) -- (8.0429, -2.6331) -- (7.868, -2.7341) -- cycle;
+        \path[draw,line width=0.025cm,miter limit=4.0] (7.868, -3.9669) -- (7.868, -2.7341);
+        \path[draw,line width=0.025cm] (7.5588, -2.9461) -- (7.3637, -2.9461);
+        \path[draw,line width=0.025cm] (7.4451, -3.1565) -- (7.4451, -2.9461);
+        \path[draw,line width=0.025cm] (7.6316, -3.4431) -- (7.6316, -3.2116) -- (7.868, -3.2116);
+        \path[draw,line width=0.025cm] (7.5897, -3.7827) -- (7.4177, -3.7827) -- (7.4177, -3.523) -- (7.1749, -3.523);
+        \path[draw,line width=0.025cm] (8.162, -2.9614) -- (8.162, -3.0534) -- (7.868, -3.0534);
+        \path[draw,line width=0.025cm] (8.0485, -3.1584) -- (8.0485, -3.0534);
+        \path[draw,line width=0.025cm] (8.1005, -3.5296) -- (8.313, -3.5296) -- (8.313, -3.3442) -- (8.5611, -3.3442);
+        \path[draw,line width=0.025cm] (8.1507, -3.757) -- (8.0477, -3.757) -- (8.0477, -4.0561);
+      \end{scope}
     \end{scope}
     \node[draw=none, rectangle, anchor=south] (title) at (brain.north) {Test Oracle};
 
