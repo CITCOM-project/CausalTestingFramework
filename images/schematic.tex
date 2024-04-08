@@ -1,8 +1,7 @@
 \documentclass{standalone}
 
 \usepackage{tikz}
-\usetikzlibrary{arrows,positioning,shapes,calc,fit,overlay-beamer-styles}
-
+\usetikzlibrary{arrows,positioning,shapes,calc,fit,overlay-beamer-styles, backgrounds}
 \usepackage{dsfont,pifont}
 \newcommand*{\expe}{\mathds{E}}
 \usepackage{amsmath}
@@ -21,18 +20,17 @@
 \newcommand{\cmark}{\ding{51}}%
 \newcommand{\xmark}{\ding{55}}%
 
-\begin{tikzpicture}
-  \scriptsize
+\begin{tikzpicture}[background rectangle/.style={fill=black}, show background rectangle, color=white]
 
   \begin{scope}[name prefix=scenario-, local bounding box=specification]
     % Causal DAG
     \begin{scope}[name prefix=dag-]
-      \node[node] (x1) at (0,0) {$X_2$};
-      \node[node] (x2) at (0,1) {$X_1$};
+      \node[node] (x1) at (-0.1,-0.2) {$X_1$};
+      \node[node] (x2) at (-0.1, 1.2) {$X_2$};
       \node[node] (i) at (0.5,0.5) {$I$};
-      \node[node] (y1) at (1.2,0) {$Y_1$};
-      \node[node] (y2) at (1.2,0.5) {$Y_2$};
-      \node[node] (y3) at (1.2,1) {$Y_3$};
+      \node[node] (y1) at (1.3,-0.2) {$Y_{1}$};
+      \node[node] (y2) at (1.3,0.5) {$Y_2$};
+      \node[node] (y3) at (1.3,1.2) {$Y_3$};
 
       \draw[edge] (x1) to (i);
       \draw[edge] (x2) to (i);
@@ -57,7 +55,7 @@
   \end{scope}
   \node[draw, rectangle] [fit=(scenario-scenario) (scenario-title)] {};
 
-  \begin{scope}[name prefix=test-, local bounding box=test-case, shift={($(specification.south)+(0, -1)$)}]
+  \begin{scope}[name prefix=test-, local bounding box=test-case, shift={($(scenario-specification.south)+(0, -1)$)}]
     \node[draw=none, rectangle, anchor=north] (title) at (0, 0) {Causal Test Case};
     \node[anchor=north] (tuple) at (title.south) {$(X=i, \Delta=\text{increase}, Y=y_1)$};
     \coordinate (left) at (scenario-scenario.east |- {(0, 0)});
@@ -65,7 +63,7 @@
     \node[draw, rectangle] [fit=(title) (tuple) (left) (right)] {};
   \end{scope}
 
-  \begin{scope}[name prefix=estimand-, local bounding box=estimand, anchor=south, shift={($(test-case.east |- test-tuple.south) + (1, 0)$)}]
+  \begin{scope}[name prefix=estimand-, local bounding box=estimand, anchor=south, shift={($(test-test-case.east |- test-tuple.south) + (1, 0)$)}]
     \node[anchor=south west] (eqn) at (0,0) {
       $\Delta Y=\expe{[I=0 | X_1]} - \expe{[I=1 | X_1]} $
     };
@@ -73,7 +71,7 @@
     \node[draw, rectangle] [fit=(estimand-title) (estimand-eqn)] {};
   \end{scope}
 
-  \begin{scope}[name prefix=estimate-, local bounding box=estimate, shift={($(estimand.east)+(1, 0)$)}]
+  \begin{scope}[name prefix=estimate-, local bounding box=estimate, shift={($(estimand-estimand.east)+(1, 0)$)}]
     \node[draw=none, rectangle, anchor=south west] (title) at (0, 0) {Causal Estimate};
     \node[anchor=north] (table) at (title.south) {
       $\Delta Y=5$
@@ -83,8 +81,8 @@
     \node[draw, rectangle] [fit=(title) (table) (top) (bot)] {};
   \end{scope}
 
-  \begin{scope}[name prefix=data-, local bounding box=test-data, shift={($(estimate.north)+(0, 1)$)},]
-    \node[draw=none, rectangle] (title) at (estimate |- scenario-title) {Test Data};
+  \begin{scope}[name prefix=data-, local bounding box=test-data, shift={($(estimate-estimate.north)+(0, 1)$)},]
+    \node[draw=none, rectangle] (title) at (estimate-estimate |- scenario-title) {Test Data};
     \node[anchor=north] (table) at (title.south) {
       \begin{tabular}{rrrrrr}
         \toprule
@@ -99,7 +97,7 @@
     \node[draw, rectangle] [fit=(title) (table)] {};
   \end{scope}
 
-  \begin{scope}[name prefix=oracle-, local bounding box=test-oracle, shift={($(estimate.east) + (1.54, -0.4)$)}]
+  \begin{scope}[name prefix=oracle-, local bounding box=test-oracle, shift={($(estimate-estimate.east) + (1.54, -0.4)$)}]
     \begin{scope}[shift={(0,0)}, local bounding box=brain, scale=1.2]
       \begin{scope}[shift={(-7.6932,3.5256)}, local bounding box=brain]
         \path[draw,line width=0.025cm] (8.162, -2.8955) circle (0.066cm);
@@ -128,7 +126,7 @@
     \node[draw, rectangle] [fit=(title) (brain)] {};
   \end{scope}
 
-  \begin{scope}[name prefix=outcome-, local bounding box=test-outcome, shift={($(brain.east |- estimate.east) + (1, 0)$)}]
+  \begin{scope}[name prefix=outcome-, local bounding box=test-outcome, shift={($(oracle-brain.east |- estimate-estimate.east) + (1, 0)$)}]
     \node[draw=none, rectangle, anchor=south west] (title) at (0,0) {Test Outcomes};
     \node[draw=none, anchor=north] (ok) at (title.south) {\cmark ~ \xmark};
 
@@ -137,13 +135,13 @@
     \node[draw, rectangle] (test-outcome) [fit=(outcome-title) (outcome-ok) (top) (bot)] {};
   \end{scope}
 
-  \draw[edge, dashed] ($(specification.east) + (0.1, 0)$) -- (estimand.north |- specification.east) -- (estimand.north);
-  \draw[edge, dashed] (test-case) -- (estimand);
+  \draw[edge, dashed] ($(scenario-specification.east) + (0.15, 0)$) -- (estimand-estimand.north |- scenario-specification.east) -- (estimand-estimand.north);
+  \draw[edge, dashed] (test-test-case) -- (estimand-estimand);
 
-  \draw[edge, dashed] (test-data.south) -- (estimate.north);
-  \draw[edge, dashed] (estimand) -- (estimate);
+  \draw[edge, dashed] (data-test-data.south) -- (estimate-estimate.north);
+  \draw[edge, dashed] (estimand-estimand) -- (estimate-estimate);
 
-  \draw[edge, dashed] (estimate) -- (test-oracle.west |- estimate);
-  \draw[edge, dashed] (test-oracle.east |- test-outcome) -- (test-outcome);
+  \draw[edge, dashed] (estimate-estimate) -- (oracle-test-oracle.west |- estimate-estimate);
+  \draw[edge, dashed] (oracle-test-oracle.east |- outcome-test-outcome) -- (outcome-test-outcome);
 \end{tikzpicture}
 \end{document}
