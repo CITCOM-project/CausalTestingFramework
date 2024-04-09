@@ -92,8 +92,6 @@ system-under-test that is expected to cause a change to some output(s).
    :hidden:
    :caption: Home
 
-   self
-
 .. toctree::
    :hidden:
    :maxdepth: 1
