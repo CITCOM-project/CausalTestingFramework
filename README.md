@@ -25,7 +25,7 @@ system-under-test that is expected to cause a change to some output(s).
 ## Installation
 
 ### Requirements
-- Python >= 3.9.
+- Python 3.9 and 3.10 only.
 
 - Microsoft Visual C++ 14.0+ (Windows only).
 
@@ -91,7 +91,7 @@ and the software citation should contain the specific Figshare [DOI](https://ord
     
     ```
     @ARTICLE{Wild2023,
-    author = {Wild, Christopher and Foster, Michael and Walkinshaw, Neil and Clark, Andrew G. and Allian, Farhad and Somers, Richard},
+    author = {Foster, Michael and Clark, Andrew G. and Somers, Richard and Wild, Christopher and Allian, Farhad and Hierons, Robert M. and Wagg, David and Walkinshaw, Neil},
     title = {CITCOM Software Release},
     year = {2023},
     month = {nov},
