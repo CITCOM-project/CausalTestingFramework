@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-from econml.dml import CausalForestDML
 from patsy import dmatrix  # pylint: disable = no-name-in-module
 from patsy import ModelDesc
 from sklearn.ensemble import GradientBoostingRegressor
