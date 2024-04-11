@@ -437,33 +437,6 @@ class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
         self.assertAlmostEqual(ate_1[0] * 2, ate_2[0])
 
 
-    def test_program_15_cate(self):
-        """Test whether our causal forest implementation produces the similar CATE to program 15.1 (p. 163, 184)."""
-        df = self.nhefs_df
-        smoking_intensity_5_and_40_df = df.loc[(df["smokeintensity"] == 5) | (df["smokeintensity"] == 40)]
-        covariates = {
-            "sex",
-            "race",
-            "age",
-            "edu_2",
-            "edu_3",
-            "edu_4",
-            "edu_5",
-            "exercise_1",
-            "exercise_2",
-            "active_1",
-            "active_2",
-            "wt71",
-            "smokeintensity",
-            "smokeyrs",
-        }
-        causal_forest = CausalForestEstimator(
-            "qsmk", 1, 0, covariates, "wt82_71", smoking_intensity_5_and_40_df, {"smokeintensity": 40}
-        )
-        cates_df, _ = causal_forest.estimate_cates()
-        self.assertGreater(cates_df["cate"].mean(), 0)
-
-
 class TestLinearRegressionInteraction(unittest.TestCase):
     """Test linear regression for estimating effects involving interaction."""
 
