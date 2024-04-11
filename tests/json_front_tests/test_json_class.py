@@ -6,7 +6,6 @@ import os
 
 from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
-from tests.test_helpers import remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
@@ -321,7 +320,6 @@ class TestJsonClass(unittest.TestCase):
             self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
         if os.path.exists("temp_out.txt"):
             os.remove("temp_out.txt")
 

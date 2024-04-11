@@ -10,7 +10,6 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.testing.causal_test_adequacy import DAGAdequacy
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
-from tests.test_helpers import remove_temp_dir_if_existent
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
@@ -255,6 +254,5 @@ class TestCausalTestAdequacy(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
         if os.path.exists("temp_out.txt"):
             os.remove("temp_out.txt")

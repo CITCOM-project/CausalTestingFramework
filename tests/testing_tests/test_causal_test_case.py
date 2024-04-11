@@ -1,9 +1,10 @@
 import unittest
 import os
+import tempfile
+import shutil
 import pandas as pd
 import numpy as np
 
-from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.specification.causal_specification import CausalSpecification, Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
@@ -44,9 +45,6 @@ class TestCausalTestCase(unittest.TestCase):
             " {Output: C::float}: ExactValue: 4±0.2.",
         )
 
-    def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
-
 
 class TestCausalTestExecution(unittest.TestCase):
     """Test the causal test execution workflow using observational data.
@@ -57,8 +55,8 @@ class TestCausalTestExecution(unittest.TestCase):
 
     def setUp(self) -> None:
         # 1. Create Causal DAG
-        temp_dir_path = create_temp_dir_if_non_existent()
-        dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { A -> C; D -> A; D -> C}"""
         with open(dag_dot_path, "w") as file:
             file.write(dag_dot)
@@ -88,7 +86,7 @@ class TestCausalTestExecution(unittest.TestCase):
         df = pd.DataFrame({"D": list(np.random.normal(60, 10, 1000))})  # D = exogenous
         df["A"] = [1 if d > 50 else 0 for d in df["D"]]
         df["C"] = df["D"] + (4 * (df["A"] + 2))  # C = (4*(A+2)) + D
-        self.observational_data_csv_path = os.path.join(temp_dir_path, "observational_data.csv")
+        self.observational_data_csv_path = os.path.join(self.temp_dir_path, "observational_data.csv")
         df.to_csv(self.observational_data_csv_path, index=False)
 
         # 5. Create observational data collector
@@ -100,6 +98,9 @@ class TestCausalTestExecution(unittest.TestCase):
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
         self.control_value = 0
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.temp_dir_path)
 
     def test_check_minimum_adjustment_set(self):
         """Check that the minimum adjustment set is correctly made"""
@@ -215,6 +216,3 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1)
-
-    def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
