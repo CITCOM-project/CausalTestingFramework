@@ -1,5 +1,6 @@
 """This module contains the Estimator abstract class, as well as its concrete extensions: LogisticRegressionEstimator,
 LinearRegressionEstimator"""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
@@ -351,7 +352,7 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         newline = "\n"
         patsy_md = ModelDesc.from_formula(self.treatment)
-        if any((self.df.dtypes[factor.name()] == 'object' for factor in patsy_md.rhs_termlist[1].factors)):
+        if any((self.df.dtypes[factor.name()] == "object" for factor in patsy_md.rhs_termlist[1].factors)):
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         else:
@@ -590,4 +591,3 @@ class InstrumentalVariableEstimator(Estimator):
         ci_high = pd.Series(bootstraps[bootstrap_size - bound])
 
         return pd.Series(self.estimate_iv_coefficient(self.df)), [ci_low, ci_high]
-

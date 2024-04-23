@@ -73,9 +73,11 @@ class MetamorphicRelation:
                 source_follow_up_test_inputs[[follow_up_input]]
                 .rename(columns={follow_up_input: self.treatment_var})
                 .to_dict(orient="records"),
-                test_inputs.to_dict(orient="records")
-                if not test_inputs.empty
-                else [{}] * len(source_follow_up_test_inputs),
+                (
+                    test_inputs.to_dict(orient="records")
+                    if not test_inputs.empty
+                    else [{}] * len(source_follow_up_test_inputs)
+                ),
             )
         ]
 

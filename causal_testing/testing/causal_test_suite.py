@@ -1,5 +1,6 @@
 """This module contains the CausalTestSuite class, for details on using it:
 https://causal-testing-framework.readthedocs.io/en/latest/test_suite.html"""
+
 import logging
 
 from collections import UserDict

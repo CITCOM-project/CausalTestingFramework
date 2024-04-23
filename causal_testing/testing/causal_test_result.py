@@ -1,6 +1,7 @@
 """This module contains the CausalTestResult class, which is a container for the results of a causal test, and the
 TestValue dataclass.
 """
+
 from typing import Any
 from dataclasses import dataclass
 import pandas as pd
@@ -86,9 +87,11 @@ class CausalTestResult:
             "outcome": self.estimator.outcome,
             "adjustment_set": list(self.adjustment_set) if json else self.adjustment_set,
             "effect_measure": self.test_value.type,
-            "effect_estimate": self.test_value.value.to_dict()
-            if json and hasattr(self.test_value.value, "to_dict")
-            else self.test_value.value,
+            "effect_estimate": (
+                self.test_value.value.to_dict()
+                if json and hasattr(self.test_value.value, "to_dict")
+                else self.test_value.value
+            ),
             "ci_low": self.ci_low().to_dict() if json and hasattr(self.ci_low(), "to_dict") else self.ci_low(),
             "ci_high": self.ci_high().to_dict() if json and hasattr(self.ci_high(), "to_dict") else self.ci_high(),
         }

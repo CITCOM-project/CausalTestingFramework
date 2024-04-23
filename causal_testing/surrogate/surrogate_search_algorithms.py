@@ -1,4 +1,5 @@
 """Module containing implementation of search algorithm for surrogate search """
+
 # Fitness functions are required to be iteratively defined, including all variables within.
 
 from operator import itemgetter
@@ -26,7 +27,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
 
     # pylint: disable=too-many-locals
     def search(
-            self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification
+        self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification
     ) -> list:
         solutions = []
 
@@ -47,7 +48,8 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                 ate = surrogate.estimate_ate_calculated(adjustment_dict)
                 if len(ate) > 1:
                     raise ValueError(
-                        "Multiple ate values provided but currently only single values supported in this method")
+                        "Multiple ate values provided but currently only single values supported in this method"
+                    )
                 return contradiction_function(ate[0])
 
             gene_types, gene_space = self.create_gene_types(surrogate, specification)
@@ -84,7 +86,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
 
     @staticmethod
     def create_gene_types(
-            surrogate_model: CubicSplineRegressionEstimator, specification: CausalSpecification
+        surrogate_model: CubicSplineRegressionEstimator, specification: CausalSpecification
     ) -> tuple[list, list]:
         """Generate the gene_types and gene_space for a given fitness function and specification
         :param surrogate_model: Instance of a CubicSplineRegressionEstimator

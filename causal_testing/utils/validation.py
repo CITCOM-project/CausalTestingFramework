@@ -1,4 +1,5 @@
 """This module contains the CausalValidator class for performing Quantitive Bias Analysis techniques"""
+
 import math
 import numpy as np
 from scipy.stats import t
