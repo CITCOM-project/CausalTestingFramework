@@ -12,7 +12,6 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from patsy import dmatrix  # pylint: disable = no-name-in-module
 from patsy import ModelDesc
-from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
