@@ -35,8 +35,8 @@ class TestCausalDAGIssue90(unittest.TestCase):
 
 class TestIVAssumptions(unittest.TestCase):
     def setUp(self) -> None:
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { I -> X; X -> Y; U -> X; U -> Y;}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
@@ -63,7 +63,9 @@ class TestIVAssumptions(unittest.TestCase):
         causal_dag.graph.add_edge("U", "I")
         with self.assertRaises(ValueError):
             causal_dag.check_iv_assumptions("X", "Y", "I")
-
+    
+    def tearDown(self) -> None:
+        shutil.rmtree(self.temp_dir_path)
 
 class TestCausalDAG(unittest.TestCase):
     """
@@ -74,8 +76,8 @@ class TestCausalDAG(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C;}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
@@ -107,7 +109,7 @@ class TestCausalDAG(unittest.TestCase):
         self.assertEqual(causal_dag.to_dot_string(), """digraph G {\nA -> B;\nB -> C;\nD -> A;\nD -> C;\n}""")
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
+        shutil.rmtree(self.temp_dir_path)
 
 
 class TestCyclicCausalDAG(unittest.TestCase):
@@ -116,8 +118,8 @@ class TestCyclicCausalDAG(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C; C -> A;}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
@@ -127,7 +129,7 @@ class TestCyclicCausalDAG(unittest.TestCase):
         self.assertRaises(nx.HasACycle, CausalDAG, self.dag_dot_path)
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
+        shutil.rmtree(self.temp_dir_path)
 
 
 class TestDAGDirectEffectIdentification(unittest.TestCase):
@@ -136,8 +138,8 @@ class TestDAGDirectEffectIdentification(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
@@ -152,7 +154,9 @@ class TestDAGDirectEffectIdentification(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X2"], ["D1"])
         self.assertEqual(list(adjustment_sets), [set()])
-
+    
+    def tearDown(self) -> None:
+        shutil.rmtree(self.temp_dir_path)
 
 class TestDAGIdentification(unittest.TestCase):
     """
@@ -160,8 +164,8 @@ class TestDAGIdentification(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
@@ -339,8 +343,7 @@ class TestDAGIdentification(unittest.TestCase):
         self.assertEqual(adjustment_sets, [{"aa"}, {"la"}, {"va"}])
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
-
+        shutil.rmtree(self.temp_dir_path)
 
 class TestDependsOnOutputs(unittest.TestCase):
     """
@@ -352,8 +355,8 @@ class TestDependsOnOutputs(unittest.TestCase):
         from causal_testing.specification.variable import Input, Output, Meta
         from causal_testing.specification.scenario import Scenario
 
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C}"""
         f = open(self.dag_dot_path, "w")
         f.write(dag_dot)
@@ -391,7 +394,7 @@ class TestDependsOnOutputs(unittest.TestCase):
         self.assertFalse(causal_dag.depends_on_outputs("D", self.scenario))
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
+        shutil.rmtree(self.temp_dir_path)
 
 
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
@@ -431,9 +434,6 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         min_separators = set(frozenset(min_separator) for min_separator in min_separators)
         self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
 
-    def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
-
 
 class TestHiddenVariableDAG(unittest.TestCase):
     """
@@ -441,8 +441,8 @@ class TestHiddenVariableDAG(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }"""
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
@@ -463,4 +463,4 @@ class TestHiddenVariableDAG(unittest.TestCase):
         self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
+        shutil.rmtree(self.temp_dir_path)
