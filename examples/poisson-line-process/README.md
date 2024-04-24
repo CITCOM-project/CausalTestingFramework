@@ -6,6 +6,6 @@ To run this case study:
 1. Ensure all project dependencies are installed by running `pip install .` in the top level directory
    (instructions are provided in the project README).
 2. Change directory to `causal_testing/examples/poisson-line-process`.
-3. Run the command `python test_poisson_process.py`
+3. Run the command `python example_poisson_process.py`
 
 This should print a series of causal test results and produce two CSV files. `intensity_num_shapes_results_random_1000.csv` corresponds to table 1, and `width_num_shapes_results_random_1000.csv` relates to our findings regarding the relationship of width and `P_u`.

@@ -10,7 +10,6 @@ Causal testing is a :term:`causal inference`-driven framework for functional bla
 graphical causal inference (CI) techniques for the specification and functional testing of software from a black-box
 perspective. In this framework, we use causal directed acyclic graphs (DAGs) to express the anticipated cause-effect
 relationships amongst the inputs and outputs of the system-under-test and the supporting mathematical framework to
-relationships amongst the inputs and outputs of the system-under-test and the supporting mathematical framework to
 design statistical procedures capable of making causal inferences. Each causal test case focuses on the causal effect
 of an intervention made to the system-under test. That is, a prescribed change to the input configuration of the
 system-under-test that is expected to cause a change to some output(s).
@@ -37,7 +36,7 @@ system-under-test that is expected to cause a change to some output(s).
    }
 
    .zoom-container.zoomed {
-       transform: scale(2);
+       transform: scale(4);
        cursor: zoom-out;
    }
 
@@ -84,7 +83,7 @@ system-under-test that is expected to cause a change to some output(s).
 
 .. container:: zoom-container
 
-   .. image:: /images/workflow.png
+   .. image:: /images/schematic.png
       :class: zoomable-image
       :alt: Zoomable Image
 
@@ -92,8 +91,6 @@ system-under-test that is expected to cause a change to some output(s).
 .. toctree::
    :hidden:
    :caption: Home
-
-   self
 
 .. toctree::
    :hidden:
