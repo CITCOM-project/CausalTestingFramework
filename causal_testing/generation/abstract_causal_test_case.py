@@ -1,4 +1,5 @@
 """This module contains the class AbstractCausalTestCase, which generates concrete test cases"""
+
 import itertools
 import logging
 from enum import Enum

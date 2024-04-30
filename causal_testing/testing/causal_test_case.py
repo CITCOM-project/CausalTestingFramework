@@ -1,4 +1,5 @@
 """This module contains the CausalTestCase class, a class that holds the information required for a causal test"""
+
 import logging
 from typing import Any
 import numpy as np

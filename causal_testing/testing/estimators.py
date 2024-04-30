@@ -1,5 +1,6 @@
 """This module contains the Estimator abstract class, as well as its concrete extensions: LogisticRegressionEstimator,
-LinearRegressionEstimator and CausalForestEstimator"""
+LinearRegressionEstimator"""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
@@ -9,10 +10,8 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-from econml.dml import CausalForestDML
 from patsy import dmatrix  # pylint: disable = no-name-in-module
 from patsy import ModelDesc
-from sklearn.ensemble import GradientBoostingRegressor
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
@@ -352,6 +351,7 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
         newline = "\n"
         patsy_md = ModelDesc.from_formula(self.treatment)
+
         if any(
             (
                 self.df.dtypes[factor.name()] == "object"
@@ -360,6 +360,7 @@ class LinearRegressionEstimator(Estimator):
                 if factor.name() in self.df.dtypes
             )
         ):
+
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         else:
@@ -598,101 +599,3 @@ class InstrumentalVariableEstimator(Estimator):
         ci_high = pd.Series(bootstraps[bootstrap_size - bound])
 
         return pd.Series(self.estimate_iv_coefficient(self.df)), [ci_low, ci_high]
-
-
-class CausalForestEstimator(Estimator):
-    """A causal random forest estimator is a non-parametric estimator which recursively partitions the covariate space
-    to learn a low-dimensional representation of treatment effect heterogeneity. This form of estimator is best suited
-    to the estimation of heterogeneous treatment effects i.e. the estimated effect for every sample rather than the
-    population average.
-    """
-
-    def add_modelling_assumptions(self):
-        """Add any modelling assumptions to the estimator.
-
-        :return self: Update self.modelling_assumptions
-        """
-        self.modelling_assumptions.append("Non-parametric estimator: no restrictions imposed on the data.")
-
-    def estimate_ate(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
-        """Estimate the average treatment effect.
-
-        :return ate, confidence_intervals: The average treatment effect and 95% confidence intervals.
-        """
-        # Remove any NA containing rows
-        reduced_df = self.df.copy()
-        necessary_cols = [self.treatment] + list(self.adjustment_set) + [self.outcome]
-        missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
-        reduced_df = reduced_df[~missing_rows]
-
-        # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
-        if self.effect_modifiers:
-            effect_modifier_df = reduced_df[list(self.effect_modifiers)]
-        else:
-            effect_modifier_df = reduced_df[list(self.adjustment_set)]
-        confounders_df = reduced_df[list(self.adjustment_set)]
-        treatment_df = np.ravel(reduced_df[[self.treatment]])
-        outcome_df = np.ravel(reduced_df[[self.outcome]])
-
-        # Fit the model to the data using a gradient boosting regressor for both the treatment and outcome model
-        model = CausalForestDML(
-            model_y=GradientBoostingRegressor(),
-            model_t=GradientBoostingRegressor(),
-        )
-        model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
-
-        # Obtain the ATE and 95% confidence intervals
-        ate = pd.Series(model.ate(effect_modifier_df, T0=self.control_value, T1=self.treatment_value))
-        ate_interval = model.ate_interval(effect_modifier_df, T0=self.control_value, T1=self.treatment_value)
-        ci_low, ci_high = pd.Series(ate_interval[0]), pd.Series(ate_interval[1])
-        return ate, [ci_low, ci_high]
-
-    def estimate_cates(self) -> pd.DataFrame:
-        """Estimate the conditional average treatment effect for each sample in the data as a function of a set of
-        covariates (X) i.e. effect modifiers. That is, the predicted change in outcome caused by the intervention
-        (change in treatment from control to treatment value) for every execution of the system-under-test, taking into
-        account the value of each effect modifier X. As a result, for every unique setting of the set of covariates X,
-        we expect a different CATE.
-
-        :return results_df: A dataframe containing a conditional average treatment effect, 95% confidence intervals, and
-        the covariate (effect modifier) values for each sample.
-        """
-
-        # Remove any NA containing rows
-        reduced_df = self.df.copy()
-        necessary_cols = [self.treatment] + list(self.adjustment_set) + [self.outcome]
-        missing_rows = reduced_df[necessary_cols].isnull().any(axis=1)
-        reduced_df = reduced_df[~missing_rows]
-
-        # Split data into effect modifiers (X), confounders (W), treatments (T), and outcome (Y)
-        if self.effect_modifiers:
-            effect_modifier_df = reduced_df[list(self.effect_modifiers)]
-        else:
-            raise ValueError("CATE requires the user to define a set of effect modifiers.")
-
-        if self.adjustment_set:
-            confounders_df = reduced_df[list(self.adjustment_set)]
-        else:
-            confounders_df = None
-        treatment_df = reduced_df[[self.treatment]]
-        outcome_df = reduced_df[[self.outcome]]
-
-        # Fit a model to the data
-        model = CausalForestDML(model_y=GradientBoostingRegressor(), model_t=GradientBoostingRegressor())
-        model.fit(outcome_df, treatment_df, X=effect_modifier_df, W=confounders_df)
-
-        # Obtain CATES and confidence intervals
-        conditional_ates = model.effect(effect_modifier_df, T0=self.control_value, T1=self.treatment_value).flatten()
-        [ci_low, ci_high] = model.effect_interval(
-            effect_modifier_df, T0=self.control_value, T1=self.treatment_value, alpha=self.alpha
-        )
-
-        # Merge results into a dataframe (CATE, confidence intervals, and effect modifier values)
-        results_df = pd.DataFrame(columns=["cate", "ci_low", "ci_high"])
-        results_df["cate"] = list(conditional_ates)
-        results_df["ci_low"] = list(ci_low.flatten())
-        results_df["ci_high"] = list(ci_high.flatten())
-        effect_modifier_df.reset_index(drop=True, inplace=True)
-        results_df[list(self.effect_modifiers)] = effect_modifier_df
-        results_df.sort_values(by=list(self.effect_modifiers), inplace=True)
-        return results_df, None

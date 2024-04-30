@@ -1,4 +1,5 @@
 """Module containing implementation of search algorithm for surrogate search """
+
 # Fitness functions are required to be iteratively defined, including all variables within.
 
 from operator import itemgetter

@@ -3,7 +3,7 @@ import pandas as pd
 import scipy
 import os
 
-from causal_testing.testing.estimators import LinearRegressionEstimator, CausalForestEstimator
+from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.causal_test_outcome import ExactValue, Positive, Negative, NoEffect, CausalTestOutcome
 from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.json_front.json_class import JsonUtility
@@ -127,7 +127,6 @@ effects = {
 
 estimators = {
     "WidthHeightEstimator": WidthHeightEstimator,
-    "CausalForestEstimator": CausalForestEstimator,
     "LinearRegressionEstimator": LinearRegressionEstimator,
 }
 

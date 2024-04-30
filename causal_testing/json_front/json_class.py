@@ -108,9 +108,9 @@ class JsonUtility:
                 self.scenario.variables[variable]: effects[effect]
                 for variable, effect in test["expected_effect"].items()
             },
-            effect_modifiers={self.scenario.variables[v] for v in test["effect_modifiers"]}
-            if "effect_modifiers" in test
-            else {},
+            effect_modifiers=(
+                {self.scenario.variables[v] for v in test["effect_modifiers"]} if "effect_modifiers" in test else {}
+            ),
             estimate_type=test["estimate_type"],
             effect=test.get("effect", "total"),
         )

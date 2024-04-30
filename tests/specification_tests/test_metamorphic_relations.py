@@ -1,10 +1,9 @@
 import unittest
 import os
-
+import shutil, tempfile
 import pandas as pd
 from itertools import combinations
 
-from tests.test_helpers import create_temp_dir_if_non_existent
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import Scenario
 from causal_testing.specification.metamorphic_relation import (
@@ -69,8 +68,8 @@ class BuggyProgramUnderTestEDC(ExperimentalDataCollector):
 
 class TestMetamorphicRelation(unittest.TestCase):
     def setUp(self) -> None:
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph DAG { rankdir=LR; X1 -> Z; Z -> M; M -> Y; X2 -> Z; X3 -> M;}"""
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
@@ -87,6 +86,9 @@ class TestMetamorphicRelation(unittest.TestCase):
         self.data_collector = ProgramUnderTestEDC(
             self.scenario, self.default_control_input_config, self.default_treatment_input_config
         )
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.temp_dir_path)
 
     def test_should_cause_metamorphic_relations_correct_spec(self):
         """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program."""

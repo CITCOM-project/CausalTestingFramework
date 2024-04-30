@@ -7,8 +7,9 @@ from causal_testing.specification.variable import Input, Output
 from causal_testing.surrogate.causal_surrogate_assisted import SimulationResult, CausalSurrogateAssistedTestCase, Simulator
 from causal_testing.surrogate.surrogate_search_algorithms import GeneticSearchAlgorithm
 from causal_testing.testing.estimators import CubicSplineRegressionEstimator
-from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
+
 import os
+import shutil, tempfile
 import pandas as pd
 import numpy as np
 
@@ -43,8 +44,8 @@ class TestCausalSurrogate(unittest.TestCase):
         cls.class_df = load_class_df()
 
     def setUp(self):
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M [included=1, expected=positive]; M -> Y [included=1, expected=negative]; Z -> M; }"""
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
@@ -199,7 +200,7 @@ class TestCausalSurrogate(unittest.TestCase):
                           custom_data_aggregator=data_double_aggregator)
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
+        shutil.rmtree(self.temp_dir_path)
 
 def load_class_df():
     """Get the testing data and put into a dataframe."""

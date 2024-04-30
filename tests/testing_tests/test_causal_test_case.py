@@ -1,16 +1,17 @@
 import unittest
 import os
+import tempfile
+import shutil
 import pandas as pd
 import numpy as np
 
-from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 from causal_testing.specification.causal_specification import CausalSpecification, Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue
-from causal_testing.testing.estimators import CausalForestEstimator, LinearRegressionEstimator
+from causal_testing.testing.estimators import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
@@ -44,9 +45,6 @@ class TestCausalTestCase(unittest.TestCase):
             " {Output: C::float}: ExactValue: 4±0.2.",
         )
 
-    def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
-
 
 class TestCausalTestExecution(unittest.TestCase):
     """Test the causal test execution workflow using observational data.
@@ -57,8 +55,8 @@ class TestCausalTestExecution(unittest.TestCase):
 
     def setUp(self) -> None:
         # 1. Create Causal DAG
-        temp_dir_path = create_temp_dir_if_non_existent()
-        dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
+        self.temp_dir_path = tempfile.mkdtemp()
+        dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { A -> C; D -> A; D -> C}"""
         with open(dag_dot_path, "w") as file:
             file.write(dag_dot)
@@ -88,7 +86,7 @@ class TestCausalTestExecution(unittest.TestCase):
         df = pd.DataFrame({"D": list(np.random.normal(60, 10, 1000))})  # D = exogenous
         df["A"] = [1 if d > 50 else 0 for d in df["D"]]
         df["C"] = df["D"] + (4 * (df["A"] + 2))  # C = (4*(A+2)) + D
-        self.observational_data_csv_path = os.path.join(temp_dir_path, "observational_data.csv")
+        self.observational_data_csv_path = os.path.join(self.temp_dir_path, "observational_data.csv")
         df.to_csv(self.observational_data_csv_path, index=False)
 
         # 5. Create observational data collector
@@ -101,24 +99,14 @@ class TestCausalTestExecution(unittest.TestCase):
         self.treatment_value = 1
         self.control_value = 0
 
+    def tearDown(self) -> None:
+        shutil.rmtree(self.temp_dir_path)
+
     def test_check_minimum_adjustment_set(self):
         """Check that the minimum adjustment set is correctly made"""
         minimal_adjustment_set = self.causal_dag.identification(self.base_test_case)
         self.assertEqual(minimal_adjustment_set, {"D"})
 
-    def test_execute_test_observational_causal_forest_estimator(self):
-        """Check that executing the causal test case returns the correct results for the dummy data using a causal
-        forest estimator."""
-        estimation_model = CausalForestEstimator(
-            "A",
-            self.treatment_value,
-            self.control_value,
-            self.minimal_adjustment_set,
-            "C",
-            self.df,
-        )
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1)
 
     def test_invalid_causal_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -228,33 +216,3 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
         pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1)
-
-    def test_execute_observational_causal_forest_estimator_cates(self):
-        """Check that executing the causal test case returns the correct conditional average treatment effects for
-        dummy data with effect multiplicative effect modification. C ~ (4*(A+2) + D)*M"""
-        # Add some effect modifier M that has a multiplicative effect on C
-        self.df["M"] = np.random.randint(1, 5, len(self.df))
-        self.df["C"] *= self.df["M"]
-        estimation_model = CausalForestEstimator(
-            "A",
-            self.treatment_value,
-            self.control_value,
-            self.minimal_adjustment_set,
-            "C",
-            self.df,
-            effect_modifiers={"M": None},
-        )
-        self.causal_test_case.estimate_type = "cates"
-        causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        causal_test_result = causal_test_result.test_value.value
-        # Check that each effect modifier's strata has a greater ATE than the last (ascending order)
-        causal_test_result_m1 = causal_test_result.loc[causal_test_result["M"] == 1]
-        causal_test_result_m2 = causal_test_result.loc[causal_test_result["M"] == 2]
-        causal_test_result_m3 = causal_test_result.loc[causal_test_result["M"] == 3]
-        causal_test_result_m4 = causal_test_result.loc[causal_test_result["M"] == 4]
-        self.assertLess(causal_test_result_m1["cate"].mean(), causal_test_result_m2["cate"].mean())
-        self.assertLess(causal_test_result_m2["cate"].mean(), causal_test_result_m3["cate"].mean())
-        self.assertLess(causal_test_result_m3["cate"].mean(), causal_test_result_m4["cate"].mean())
-
-    def tearDown(self) -> None:
-        remove_temp_dir_if_existent()

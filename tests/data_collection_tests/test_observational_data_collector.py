@@ -1,5 +1,6 @@
 import unittest
 import os
+import shutil, tempfile
 import pandas as pd
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import Scenario
@@ -7,7 +8,6 @@ from causal_testing.specification.variable import Input, Output, Meta
 from scipy.stats import uniform, rv_discrete
 from enum import Enum
 import random
-from tests.test_helpers import create_temp_dir_if_non_existent, remove_temp_dir_if_existent
 
 
 class TestObservationalDataCollector(unittest.TestCase):
@@ -17,9 +17,9 @@ class TestObservationalDataCollector(unittest.TestCase):
             GREEN = "GREEN"
             BLUE = "BLUE"
 
-        temp_dir_path = create_temp_dir_if_non_existent()
-        self.dag_dot_path = os.path.join(temp_dir_path, "dag.dot")
-        self.observational_df_path = os.path.join(temp_dir_path, "observational_data.csv")
+        self.temp_dir_path = tempfile.mkdtemp()
+        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
+        self.observational_df_path = os.path.join(self.temp_dir_path, "observational_data.csv")
         # Y = 3*X1 + X2*X3 + 10
         self.observational_df = pd.DataFrame(
             {"X1": [1, 2, 3, 4], "X2": [5, 6, 7, 8], "X3": [10, 20, 30, 40], "Y2": ["RED", "GREEN", "BLUE", "BLUE"]}
@@ -66,7 +66,7 @@ class TestObservationalDataCollector(unittest.TestCase):
         assert all((m == 2 * x1 for x1, m in zip(data["X1"], data["M"])))
 
     def tearDown(self) -> None:
-        remove_temp_dir_if_existent()
+        shutil.rmtree(self.temp_dir_path)
 
 
 if __name__ == "__main__":
