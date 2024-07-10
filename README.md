@@ -25,7 +25,7 @@ system-under-test that is expected to cause a change to some output(s).
 ## Installation
 
 ### Requirements
-- Python 3.9 and 3.10 only.
+- Python 3.9, 3.10, 3.11 and 3.12
 
 - Microsoft Visual C++ 14.0+ (Windows only).
 
