@@ -20,25 +20,23 @@ jobs:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python using Miniconda
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
-      - name: Install package and dependencies
-        run: |
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
           python --version
+          python -m pip install --upgrade pip
           pip install -e .
           pip install -e .[test]
           pip install pytest pytest-cov
-        shell: bash -l {0}
-      - name: Test with pytest
-        run: |
-          pytest --cov=causal_testing --cov-report=xml
-        shell: bash -l {0}
-      - name: "Upload coverage to Codecov"
-        uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Test with pytest
+      run: |
+        pytest --cov=causal_testing --cov-report=xml
+    - name: "Upload coverage to Codecov"
+      uses: codecov/codecov-action@v2
+      with:
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
