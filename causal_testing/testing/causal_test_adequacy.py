@@ -71,14 +71,21 @@ class DataAdequacy:
     """
 
     def __init__(
-        self, test_case: CausalTestCase, estimator: Estimator, data_collector: DataCollector, bootstrap_size: int = 100
+        self,
+        test_case: CausalTestCase,
+        estimator: Estimator,
+        data_collector: DataCollector,
+        bootstrap_size: int = 100,
+        group_by=None,
     ):
         self.test_case = test_case
         self.estimator = estimator
         self.data_collector = data_collector
         self.kurtosis = None
         self.outcomes = None
+        self.successful = None
         self.bootstrap_size = bootstrap_size
+        self.group_by = group_by
 
     def measure_adequacy(self):
         """
@@ -87,11 +94,14 @@ class DataAdequacy:
         results = []
         for i in range(self.bootstrap_size):
             estimator = deepcopy(self.estimator)
-            estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
-            # try:
+
+            if self.group_by is not None:
+                ids = pd.Series(estimator.df[self.group_by].unique())
+                ids = ids.sample(len(ids), replace=True, random_state=i)
+                estimator.df = estimator.df[estimator.df[self.group_by].isin(ids)]
+            else:
+                estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
             results.append(self.test_case.execute_test(estimator, self.data_collector))
-            # except np.LinAlgError:
-            # continue
         outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
         results = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
 
@@ -111,8 +121,14 @@ class DataAdequacy:
 
         effect_estimate = pd.concat(results["effect_estimate"].tolist(), axis=1).transpose().reset_index(drop=True)
         self.kurtosis = effect_estimate.kurtosis()
-        self.outcomes = sum(outcomes)
+        self.outcomes = sum(filter(lambda x: x is not None, outcomes))
+        self.successful = sum([x is not None for x in outcomes])
 
     def to_dict(self):
         "Returns the adequacy object as a dictionary."
-        return {"kurtosis": self.kurtosis.to_dict(), "bootstrap_size": self.bootstrap_size, "passing": self.outcomes}
+        return {
+            "kurtosis": self.kurtosis.to_dict(),
+            "bootstrap_size": self.bootstrap_size,
+            "passing": self.outcomes,
+            "successful": self.successful,
+        }

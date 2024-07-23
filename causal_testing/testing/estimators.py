@@ -14,8 +14,10 @@ from patsy import dmatrix  # pylint: disable = no-name-in-module
 from patsy import ModelDesc
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
+from lifelines import CoxPHFitter
 
 from causal_testing.specification.variable import Variable
+from causal_testing.specification.capabilities import TreatmentSequence, Capability
 
 logger = logging.getLogger(__name__)
 
@@ -360,7 +362,6 @@ class LinearRegressionEstimator(Estimator):
                 if factor.name() in self.df.dtypes
             )
         ):
-
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
             treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
         else:
@@ -599,3 +600,241 @@ class InstrumentalVariableEstimator(Estimator):
         ci_high = pd.Series(bootstraps[bootstrap_size - bound])
 
         return pd.Series(self.estimate_iv_coefficient(self.df)), [ci_low, ci_high]
+
+
+class IPCWEstimator(Estimator):
+    """
+    Class to perform inverse probability of censoring weighting (IPCW) estimation
+    for sequences of treatments over time-varying data.
+    """
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        timesteps_per_intervention: int,
+        control_strategy: TreatmentSequence,
+        treatment_strategy: TreatmentSequence,
+        outcome: str,
+        min: float,
+        max: float,
+        fitBLswitch_formula: str,
+        fitBLTDswitch_formula: str,
+        eligibility=None,
+        alpha: float = 0.05,
+        query: str = "",
+    ):
+        super().__init__(
+            [c.variable for c in treatment_strategy.capabilities],
+            [c.value for c in treatment_strategy.capabilities],
+            [c.value for c in control_strategy.capabilities],
+            None,
+            outcome,
+            df,
+            None,
+            alpha=alpha,
+            query=query,
+        )
+        self.timesteps_per_intervention = timesteps_per_intervention
+        self.control_strategy = control_strategy
+        self.treatment_strategy = treatment_strategy
+        self.outcome = outcome
+        self.min = min
+        self.max = max
+        self.timesteps_per_intervention = timesteps_per_intervention
+        self.fitBLswitch_formula = fitBLswitch_formula
+        self.fitBLTDswitch_formula = fitBLTDswitch_formula
+        self.eligibility = eligibility
+        self.df = self.preprocess_data(df)
+
+    def add_modelling_assumptions(self):
+        self.modelling_assumptions.append("The variables in the data vary over time.")
+
+    def setup_xo_t_do(self, strategy_assigned: list, strategy_followed: list, eligible: pd.Series):
+        """
+        Return a binary sequence with each bit representing whether the current
+        index is the time point at which the individual diverted from the
+        assigned treatment strategy (and thus should be censored).
+
+        :param strategy_assigned - the assigned treatment strategy
+        :param strategy_followed - the strategy followed by the individual
+        :param eligible - binary sequence represnting the eligibility of the individual at each time step
+        """
+        strategy_assigned = [1] + strategy_assigned + [1]
+        strategy_followed = [1] + strategy_followed + [1]
+
+        mask = (
+            pd.Series(strategy_assigned, index=eligible.index) != pd.Series(strategy_followed, index=eligible.index)
+        ).astype("boolean")
+        mask = mask | ~eligible
+        mask.reset_index(inplace=True, drop=True)
+        false = mask.loc[mask == True]
+        if false.empty:
+            return np.zeros(len(mask))
+        else:
+            mask = (mask * 1).tolist()
+            cutoff = false.index[0] + 1
+            return mask[:cutoff] + ([None] * (len(mask) - cutoff))
+
+    def setup_fault_t_do(self, individual: pd.DataFrame):
+        """
+        Return a binary sequence with each bit representing whether the current
+        index is the time point at which the event of interest (i.e. a fault)
+        occurred.
+        """
+        fault = individual[individual["within_safe_range"] == False]
+        fault_t_do = pd.Series(np.zeros(len(individual)), index=individual.index)
+
+        if not fault.empty:
+            fault_time = individual["time"].loc[fault.index[0]]
+            # Ceiling to nearest observation point
+            fault_time = ceil(fault_time / self.timesteps_per_intervention) * self.timesteps_per_intervention
+            # Set the correct observation point to be the fault time of doing (fault_t_do)
+            observations = individual.loc[
+                (individual["time"] % self.timesteps_per_intervention == 0) & (individual["time"] < fault_time)
+            ]
+            if not observations.empty:
+                fault_t_do.loc[observations.index[0]] = 1
+        assert sum(fault_t_do) <= 1, f"Multiple fault times for\n{individual}"
+
+        return pd.DataFrame({"fault_t_do": fault_t_do})
+
+    def setup_fault_time(self, individual, perturbation=-0.001):
+        """
+        Return the time at which the event of interest (i.e. a fault) occurred.
+        """
+        fault = individual[individual["within_safe_range"] == False]
+        fault_time = (
+            individual["time"].loc[fault.index[0]]
+            if not fault.empty
+            else (individual["time"].max() + self.timesteps_per_intervention)
+        )
+        return pd.DataFrame({"fault_time": np.repeat(fault_time + perturbation, len(individual))})
+
+    def preprocess_data(self, df):
+        """
+        Set up the treatment-specific columns in the data that are needed to estimate the hazard ratio.
+        """
+        df["trtrand"] = None  # treatment/control arm
+        df["xo_t_do"] = None  # did the individual deviate from the treatment of interest here?
+        df["eligible"] = df.eval(self.eligibility) if self.eligibility is not None else True
+
+        # when did a fault occur?
+        df["within_safe_range"] = df[self.outcome].between(self.min, self.max)
+        df["fault_time"] = df.groupby("id")[["within_safe_range", "time"]].apply(self.setup_fault_time).values
+        df["fault_t_do"] = df.groupby("id")[["id", "time", "within_safe_range"]].apply(self.setup_fault_t_do).values
+        assert not pd.isnull(df["fault_time"]).any()
+
+        living_runs = df.query("fault_time > 0").loc[
+            (df["time"] % self.timesteps_per_intervention == 0) & (df["time"] <= self.control_strategy.total_time())
+        ]
+
+        individuals = []
+        new_id = 0
+        logging.debug("  Preprocessing groups")
+        for id, individual in living_runs.groupby("id"):
+            assert (
+                sum(individual["fault_t_do"]) <= 1
+            ), f"Error initialising fault_t_do for individual\n{individual[['id', 'time', 'fault_time', 'fault_t_do']]}\nwith fault at {individual.fault_time.iloc[0]}"
+
+            strategy_followed = [
+                Capability(
+                    c.variable,
+                    individual.loc[individual["time"] == c.start_time, c.variable].values[0],
+                    c.start_time,
+                    c.end_time,
+                )
+                for c in self.treatment_strategy.capabilities
+            ]
+
+            # Control flow:
+            # Individuals that start off in both arms, need cloning (hence incrementing the ID within the if statement)
+            # Individuals that don't start off in either arm are left out
+            for inx, strategy_assigned in [(0, self.control_strategy), (1, self.treatment_strategy)]:
+                if strategy_assigned.capabilities[0] == strategy_followed[0] and individual.eligible.iloc[0]:
+                    individual["id"] = new_id
+                    new_id += 1
+                    individual["trtrand"] = inx
+                    individual["xo_t_do"] = self.setup_xo_t_do(
+                        strategy_assigned.capabilities, strategy_followed, individual["eligible"]
+                    )
+                    individuals.append(individual.loc[individual["time"] <= individual["fault_time"]].copy())
+        if len(individuals) == 0:
+            raise ValueError("No individuals followed either strategy.")
+        return pd.concat(individuals)
+
+    def estimate_hazard_ratio(self):
+        """
+        Estimate the hazard ratio.
+        """
+
+        if self.df["fault_t_do"].sum() == 0:
+            raise ValueError("No recorded faults")
+
+        logging.debug(f"  {int(self.df['fault_t_do'].sum())}/{len(self.df.groupby('id'))} faulty runs observed")
+
+        # Use logistic regression to predict switching given baseline covariates
+        logging.debug(f"  predict switching given baseline covariates: {self.fitBLswitch_formula}")
+        fitBLswitch = smf.logit(self.fitBLswitch_formula, data=self.df).fit()
+
+        # Estimate the probability of switching for each patient-observation included in the regression.
+        novCEA = pd.DataFrame()
+        novCEA["pxo1"] = fitBLswitch.predict(self.df)
+
+        # Use logistic regression to predict switching given baseline and time-updated covariates (model S12)
+        logging.debug(f"  predict switching given baseline and time-updated covariates: {self.fitBLTDswitch_formula}")
+
+        fitBLTDswitch = smf.logit(
+            self.fitBLTDswitch_formula,
+            data=self.df,
+        ).fit()
+
+        # Estimate the probability of switching for each patient-observation included in the regression.
+        novCEA["pxo2"] = fitBLTDswitch.predict(self.df)
+
+        # IPCW step 3: For each individual at each time, compute the inverse probability of remaining uncensored
+        # Estimate the probabilities of remaining ‘un-switched’ and hence the weights
+
+        novCEA["num"] = 1 - novCEA["pxo1"]
+        novCEA["denom"] = 1 - novCEA["pxo2"]
+        prod = (
+            pd.concat([self.df, novCEA], axis=1).sort_values(["id", "time"]).groupby("id")[["num", "denom"]].cumprod()
+        )
+        novCEA["num"] = prod["num"]
+        novCEA["denom"] = prod["denom"]
+
+        assert not novCEA["num"].isnull().any(), f"{len(novCEA['num'].isnull())} null numerator values"
+        assert not novCEA["denom"].isnull().any(), f"{len(novCEA['denom'].isnull())} null denom values"
+
+        novCEA["weight"] = 1 / novCEA["denom"]
+        novCEA["sweight"] = novCEA["num"] / novCEA["denom"]
+
+        novCEA_KM = novCEA.loc[self.df["xo_t_do"] == 0].copy()
+        novCEA_KM["tin"] = self.df["time"]
+        novCEA_KM["tout"] = pd.concat(
+            [(self.df["time"] + self.timesteps_per_intervention), self.df["fault_time"]], axis=1
+        ).min(axis=1)
+
+        assert (
+            novCEA_KM["tin"] <= novCEA_KM["tout"]
+        ).all(), f"Left before joining\n{novCEA_KM.loc[novCEA_KM['tin'] >= novCEA_KM['tout']]}"
+
+        novCEA_KM.dropna(axis=1, inplace=True)
+        novCEA_KM.replace([float("inf")], 100, inplace=True)
+
+        #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
+        # Estimate the KM graph and IPCW hazard ratio using Cox regression.
+        cox_ph = CoxPHFitter(alpha=self.alpha)
+
+        cox_ph.fit(
+            df=pd.concat([self.df, novCEA_KM], axis=1),
+            duration_col="tout",
+            event_col="fault_t_do",
+            weights_col="weight",
+            cluster_col="id",
+            robust=True,
+            formula="trtrand",
+            entry_col="tin",
+        )
+        ci_low, ci_high = sorted(np.exp(cox_ph.confidence_intervals_).T["trtrand"].tolist())
+
+        return (cox_ph.hazard_ratios_["trtrand"], ([ci_low], [ci_high]))
