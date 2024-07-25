@@ -5,6 +5,8 @@ This module contains code to measure various aspects of causal test adequacy.
 from itertools import combinations
 from copy import deepcopy
 import pandas as pd
+from numpy.linalg import LinAlgError
+from lifelines.exceptions import ConvergenceError
 
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.data_collection.data_collector import DataCollector
@@ -101,7 +103,12 @@ class DataAdequacy:
                 estimator.df = estimator.df[estimator.df[self.group_by].isin(ids)]
             else:
                 estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
-            results.append(self.test_case.execute_test(estimator, self.data_collector))
+            try:
+                results.append(self.test_case.execute_test(estimator, self.data_collector))
+            except LinAlgError:
+                continue
+            except ConvergenceError:
+                continue
         outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
         results = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
 

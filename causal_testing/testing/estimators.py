@@ -760,47 +760,31 @@ class IPCWEstimator(Estimator):
                     individuals.append(individual.loc[individual["time"] <= individual["fault_time"]].copy())
         if len(individuals) == 0:
             raise ValueError("No individuals followed either strategy.")
-        return pd.concat(individuals)
 
-    def estimate_hazard_ratio(self):
-        """
-        Estimate the hazard ratio.
-        """
+        novCEA = pd.concat(individuals)
 
-        if self.df["fault_t_do"].sum() == 0:
+        if novCEA["fault_t_do"].sum() == 0:
             raise ValueError("No recorded faults")
 
-        logging.debug(f"  {int(self.df['fault_t_do'].sum())}/{len(self.df.groupby('id'))} faulty runs observed")
-
         # Use logistic regression to predict switching given baseline covariates
-        logging.debug(f"  predict switching given baseline covariates: {self.fitBLswitch_formula}")
-        fitBLswitch = smf.logit(self.fitBLswitch_formula, data=self.df).fit()
+        fitBLswitch = smf.logit(self.fitBLswitch_formula, data=novCEA).fit()
 
-        # Estimate the probability of switching for each patient-observation included in the regression.
-        novCEA = pd.DataFrame()
-        novCEA["pxo1"] = fitBLswitch.predict(self.df)
+        novCEA["pxo1"] = fitBLswitch.predict(novCEA)
 
         # Use logistic regression to predict switching given baseline and time-updated covariates (model S12)
-        logging.debug(f"  predict switching given baseline and time-updated covariates: {self.fitBLTDswitch_formula}")
-
         fitBLTDswitch = smf.logit(
             self.fitBLTDswitch_formula,
-            data=self.df,
+            data=novCEA,
         ).fit()
 
-        # Estimate the probability of switching for each patient-observation included in the regression.
-        novCEA["pxo2"] = fitBLTDswitch.predict(self.df)
+        novCEA["pxo2"] = fitBLTDswitch.predict(novCEA)
 
         # IPCW step 3: For each individual at each time, compute the inverse probability of remaining uncensored
         # Estimate the probabilities of remaining ‘un-switched’ and hence the weights
 
         novCEA["num"] = 1 - novCEA["pxo1"]
         novCEA["denom"] = 1 - novCEA["pxo2"]
-        prod = (
-            pd.concat([self.df, novCEA], axis=1).sort_values(["id", "time"]).groupby("id")[["num", "denom"]].cumprod()
-        )
-        novCEA["num"] = prod["num"]
-        novCEA["denom"] = prod["denom"]
+        novCEA[["num", "denom"]] = novCEA.sort_values(["id", "time"]).groupby("id")[["num", "denom"]].cumprod()
 
         assert not novCEA["num"].isnull().any(), f"{len(novCEA['num'].isnull())} null numerator values"
         assert not novCEA["denom"].isnull().any(), f"{len(novCEA['denom'].isnull())} null denom values"
@@ -808,25 +792,28 @@ class IPCWEstimator(Estimator):
         novCEA["weight"] = 1 / novCEA["denom"]
         novCEA["sweight"] = novCEA["num"] / novCEA["denom"]
 
-        novCEA_KM = novCEA.loc[self.df["xo_t_do"] == 0].copy()
-        novCEA_KM["tin"] = self.df["time"]
+        novCEA_KM = novCEA.loc[novCEA["xo_t_do"] == 0].copy()
+        novCEA_KM["tin"] = novCEA_KM["time"]
         novCEA_KM["tout"] = pd.concat(
-            [(self.df["time"] + self.timesteps_per_intervention), self.df["fault_time"]], axis=1
+            [(novCEA_KM["time"] + self.timesteps_per_intervention), novCEA_KM["fault_time"]], axis=1
         ).min(axis=1)
 
         assert (
             novCEA_KM["tin"] <= novCEA_KM["tout"]
         ).all(), f"Left before joining\n{novCEA_KM.loc[novCEA_KM['tin'] >= novCEA_KM['tout']]}"
 
-        novCEA_KM.dropna(axis=1, inplace=True)
-        novCEA_KM.replace([float("inf")], 100, inplace=True)
+        return novCEA_KM
+
+    def estimate_hazard_ratio(self):
+        """
+        Estimate the hazard ratio.
+        """
 
         #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
         # Estimate the KM graph and IPCW hazard ratio using Cox regression.
-        cox_ph = CoxPHFitter(alpha=self.alpha)
-
+        cox_ph = CoxPHFitter()
         cox_ph.fit(
-            df=pd.concat([self.df, novCEA_KM], axis=1),
+            df=self.df,
             duration_col="tout",
             event_col="fault_t_do",
             weights_col="weight",
@@ -835,6 +822,7 @@ class IPCWEstimator(Estimator):
             formula="trtrand",
             entry_col="tin",
         )
-        ci_low, ci_high = sorted(np.exp(cox_ph.confidence_intervals_).T["trtrand"].tolist())
 
-        return (cox_ph.hazard_ratios_["trtrand"], ([ci_low], [ci_high]))
+        ci_low, ci_high = [np.exp(cox_ph.confidence_intervals_)[col] for col in cox_ph.confidence_intervals_.columns]
+
+        return (cox_ph.hazard_ratios_, (ci_low, ci_high))
