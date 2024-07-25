@@ -7,9 +7,11 @@ from causal_testing.testing.estimators import (
     LogisticRegressionEstimator,
     InstrumentalVariableEstimator,
     CubicSplineRegressionEstimator,
+    IPCWEstimator,
 )
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
+from causal_testing.specification.capabilities import TreatmentSequence
 
 
 def plot_results_df(df):
@@ -404,11 +406,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
     @classmethod
     def setUpClass(cls):
-
         super().setUpClass()
 
     def test_program_11_3_cublic_spline(self):
-
         """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
         https://www.hsph.harvard.edu/miguel-hernan/wp-content/uploads/sites/1268/2023/10/hernanrobins_WhatIf_30sep23.pdf
         Slightly modified as Hernan et al. use linear regression for this example.
@@ -472,3 +472,31 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         self.assertTrue(coefficients.round(2).equals(pd.Series({"color[T.grey]": 0.92, "color[T.orange]": -4.25})))
         self.assertTrue(ci_low.round(2).equals(pd.Series({"color[T.grey]": -22.12, "color[T.orange]": -25.58})))
         self.assertTrue(ci_high.round(2).equals(pd.Series({"color[T.grey]": 23.95, "color[T.orange]": 17.08})))
+
+
+class TestIPCWEstimator(unittest.TestCase):
+    """
+    Test the IPCW estimator class
+    """
+
+    def test_estimate_hazard_ratio(self):
+        timesteps_per_intervention = 1
+        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
+        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        outcome = "outcome"
+        fit_bl_switch_formula = "xo_t_do ~ time"
+        df = pd.read_csv("tests/data/temporal_data.csv")
+        df["ok"] = df["outcome"] == 1
+        estimation_model = IPCWEstimator(
+            df,
+            timesteps_per_intervention,
+            control_strategy,
+            treatment_strategy,
+            outcome,
+            "ok",
+            fit_bl_switch_formula=fit_bl_switch_formula,
+            fit_bltd_switch_formula=fit_bl_switch_formula,
+            eligibility=None,
+        )
+        estimate, intervals = estimation_model.estimate_hazard_ratio()
+        self.assertEqual(estimate["trtrand"], 1.0)

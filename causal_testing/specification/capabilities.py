@@ -1,3 +1,7 @@
+"""
+This module contains the Capability and TreatmentSequence classes to implement
+treatment sequences that operate over time.
+"""
 from causal_testing.specification.variable import Variable
 
 
@@ -14,7 +18,7 @@ class Capability:
 
     def __eq__(self, other):
         return (
-            type(other) == type(self)
+            isinstance(other, type(self))
             and self.variable == other.variable
             and self.value == other.value
             and self.start_time == other.start_time
@@ -44,7 +48,7 @@ class TreatmentSequence:
             )
         ]
         # This is a bodge so that causal test adequacy works
-        self.name = tuple([c.variable for c in self.capabilities])
+        self.name = tuple(c.variable for c in self.capabilities)
 
     def set_value(self, index: int, value: float):
         """
