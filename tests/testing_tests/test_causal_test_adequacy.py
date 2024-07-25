@@ -70,7 +70,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
         )
         self.assertEqual(
             test_results[0]["result"].adequacy.to_dict(),
-            {"kurtosis": {"test_input": 0.0}, "bootstrap_size": 100, "passing": 100},
+            {"kurtosis": {"test_input": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
         )
 
     def test_data_adequacy_cateogorical(self):
@@ -103,7 +103,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
         print(test_results[0]["result"])
         self.assertEqual(
             test_results[0]["result"].adequacy.to_dict(),
-            {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100},
+            {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
         )
 
     def test_dag_adequacy_dependent(self):
