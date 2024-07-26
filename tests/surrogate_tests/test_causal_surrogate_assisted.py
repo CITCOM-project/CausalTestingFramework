@@ -231,4 +231,7 @@ class TestSimulatorFailing(Simulator):
         pass
 
 def data_double_aggregator(data, new_data):
-    return data.append(new_data, ignore_index=True).append(new_data, ignore_index=True)
+    """Previously used data.append(new_data), however, pandas version >2 requires pd.concat() since append is now a private method. 
+       Converting new_data to a pd.DataFrame is required to use pd.concat(). """
+    new_data = pd.DataFrame([new_data])
+    return pd.concat([data, new_data, new_data], ignore_index=True)
