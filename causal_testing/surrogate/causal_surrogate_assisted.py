@@ -8,7 +8,7 @@ from causal_testing.data_collection.data_collector import ObservationalDataColle
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.estimators import CubicSplineRegressionEstimator
-
+import pandas as pd
 
 @dataclass
 class SimulationResult:
@@ -17,6 +17,11 @@ class SimulationResult:
     data: dict
     fault: bool
     relationship: str
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Convert the simulation result data to a pandas DataFrame"""
+        data_as_lists = {k: v if isinstance(v, list) else [v] for k,v in self.data.items()}
+        return pd.DataFrame(data_as_lists)
 
 
 class SearchAlgorithm(ABC):  # pylint: disable=too-few-public-methods
@@ -87,14 +92,14 @@ class CausalSurrogateAssistedTestCase:
 
             self.simulator.startup()
             test_result = self.simulator.run_with_config(candidate_test_case)
+            test_result_df = test_result.to_dataframe()
             self.simulator.shutdown()
 
             if custom_data_aggregator is not None:
                 if data_collector.data is not None:
                     data_collector.data = custom_data_aggregator(data_collector.data, test_result.data)
             else:
-                data_collector.data = data_collector.data.append(test_result.data, ignore_index=True)
-
+                data_collector.data = pd.concat([data_collector.data, test_result_df], ignore_index=True)
             if test_result.fault:
                 print(
                     f"Fault found between {surrogate.treatment} causing {surrogate.outcome}. Contradiction with "
