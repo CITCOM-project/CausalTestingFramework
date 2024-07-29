@@ -3,7 +3,7 @@ Getting started
 
 Requirements
 ---------------
-* Python 3.9 and 3.10 only.
+* Python 3.9, 3.10, 3.11 and 3.12
 * `Microsoft Visual C++ <https://docs.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist>`_ 14.0+ (Windows only).
 
 
