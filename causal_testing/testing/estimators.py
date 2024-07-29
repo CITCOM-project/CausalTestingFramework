@@ -622,7 +622,6 @@ class IPCWEstimator(Estimator):
         fit_bltd_switch_formula: str,
         eligibility=None,
         alpha: float = 0.05,
-        query: str = "",
     ):
         super().__init__(
             [c.variable for c in treatment_strategy.capabilities],
@@ -633,7 +632,7 @@ class IPCWEstimator(Estimator):
             df,
             None,
             alpha=alpha,
-            query=query,
+            query="",
         )
         self.timesteps_per_intervention = timesteps_per_intervention
         self.control_strategy = control_strategy
@@ -645,6 +644,7 @@ class IPCWEstimator(Estimator):
         self.fit_bltd_switch_formula = fit_bltd_switch_formula
         self.eligibility = eligibility
         self.df = df
+        self.preprocess_data()
 
     def add_modelling_assumptions(self):
         self.modelling_assumptions.append("The variables in the data vary over time.")
@@ -764,27 +764,27 @@ class IPCWEstimator(Estimator):
         if len(individuals) == 0:
             raise ValueError("No individuals followed either strategy.")
 
-        return pd.concat(individuals)
+        self.df = pd.concat(individuals)
 
     def estimate_hazard_ratio(self):
         """
         Estimate the hazard ratio.
         """
 
-        preprocessed_data = self.preprocess_data()
-
-        if preprocessed_data["fault_t_do"].sum() == 0:
+        if self.df["fault_t_do"].sum() == 0:
             raise ValueError("No recorded faults")
 
+        preprocessed_data = self.df.loc[self.df["xo_t_do"] == 0].copy()
+
         # Use logistic regression to predict switching given baseline covariates
-        fit_bl_switch = smf.logit(self.fit_bl_switch_formula, data=preprocessed_data).fit()
+        fit_bl_switch = smf.logit(self.fit_bl_switch_formula, data=self.df).fit()
 
         preprocessed_data["pxo1"] = fit_bl_switch.predict(preprocessed_data)
 
         # Use logistic regression to predict switching given baseline and time-updated covariates (model S12)
         fit_bltd_switch = smf.logit(
             self.fit_bltd_switch_formula,
-            data=preprocessed_data,
+            data=self.df,
         ).fit()
 
         preprocessed_data["pxo2"] = fit_bltd_switch.predict(preprocessed_data)
@@ -808,23 +808,21 @@ class IPCWEstimator(Estimator):
         preprocessed_data["weight"] = 1 / preprocessed_data["denom"]
         preprocessed_data["sweight"] = preprocessed_data["num"] / preprocessed_data["denom"]
 
-        preprocessed_data_km = preprocessed_data.loc[preprocessed_data["xo_t_do"] == 0].copy()
-        preprocessed_data_km["tin"] = preprocessed_data_km["time"]
-        preprocessed_data_km["tout"] = pd.concat(
-            [(preprocessed_data_km["time"] + self.timesteps_per_intervention), preprocessed_data_km["fault_time"]],
+        preprocessed_data["tin"] = preprocessed_data["time"]
+        preprocessed_data["tout"] = pd.concat(
+            [(preprocessed_data["time"] + self.timesteps_per_intervention), preprocessed_data["fault_time"]],
             axis=1,
         ).min(axis=1)
 
-        assert (preprocessed_data_km["tin"] <= preprocessed_data_km["tout"]).all(), (
-            f"Left before joining\n"
-            f"{preprocessed_data_km.loc[preprocessed_data_km['tin'] >= preprocessed_data_km['tout']]}"
+        assert (preprocessed_data["tin"] <= preprocessed_data["tout"]).all(), (
+            f"Left before joining\n" f"{preprocessed_data.loc[preprocessed_data['tin'] >= preprocessed_data['tout']]}"
         )
 
         #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
         # Estimate the KM graph and IPCW hazard ratio using Cox regression.
         cox_ph = CoxPHFitter()
         cox_ph.fit(
-            df=preprocessed_data_km,
+            df=preprocessed_data,
             duration_col="tout",
             event_col="fault_t_do",
             weights_col="weight",

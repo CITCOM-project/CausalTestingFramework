@@ -107,6 +107,8 @@ class DataAdequacy:
                 continue
             except ConvergenceError:
                 continue
+            except ValueError:
+                continue
         outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
         results = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
 
