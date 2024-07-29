@@ -35,7 +35,7 @@ def load_nhefs_df():
     """Get the NHEFS data from chapter 12 and put into a dataframe. NHEFS = National Health and Nutrition Examination
     Survey Data I Epidemiological Follow-up Study."""
 
-    nhefs_df = pd.read_csv("tests/data/nhefs.csv")
+    nhefs_df = pd.read_csv("tests/resources/data/nhefs.csv")
     nhefs_df["one"] = 1
     nhefs_df["zero"] = 0
     edu_dummies = pd.get_dummies(nhefs_df.education, prefix="edu")
@@ -79,7 +79,7 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.scarf_df = pd.read_csv("tests/data/scarf_data.csv")
+        cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
 
     # Yes, this probably shouldn't be in here, but it uses the scarf data so it makes more sense to put it
     # here than duplicating the scarf data for a single test
@@ -446,7 +446,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         df = pd.DataFrame({"X1": np.random.uniform(-1000, 1000, 1000), "X2": np.random.uniform(-1000, 1000, 1000)})
         df["Y"] = 2 * df["X1"] - 3 * df["X2"] + 2 * df["X1"] * df["X2"] + 10
         cls.df = df
-        cls.scarf_df = pd.read_csv("tests/data/scarf_data.csv")
+        cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
 
     def test_X1_effect(self):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
@@ -485,7 +485,7 @@ class TestIPCWEstimator(unittest.TestCase):
         treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
         outcome = "outcome"
         fit_bl_switch_formula = "xo_t_do ~ time"
-        df = pd.read_csv("tests/data/temporal_data.csv")
+        df = pd.read_csv("tests/resources/data/temporal_data.csv")
         df["ok"] = df["outcome"] == 1
         estimation_model = IPCWEstimator(
             df,
@@ -500,3 +500,48 @@ class TestIPCWEstimator(unittest.TestCase):
         )
         estimate, intervals = estimation_model.estimate_hazard_ratio()
         self.assertEqual(estimate["trtrand"], 1.0)
+
+    def test_invalid_treatment_strategies(self):
+        timesteps_per_intervention = 1
+        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
+        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        outcome = "outcome"
+        fit_bl_switch_formula = "xo_t_do ~ time"
+        df = pd.read_csv("tests/resources/data/temporal_data.csv")
+        df["t"] = (["1", "0"] * len(df))[: len(df)]
+        df["ok"] = df["outcome"] == 1
+        with self.assertRaises(ValueError):
+            estimation_model = IPCWEstimator(
+                df,
+                timesteps_per_intervention,
+                control_strategy,
+                treatment_strategy,
+                outcome,
+                "ok",
+                fit_bl_switch_formula=fit_bl_switch_formula,
+                fit_bltd_switch_formula=fit_bl_switch_formula,
+                eligibility=None,
+            )
+
+    def test_invalid_fault_t_do(self):
+        timesteps_per_intervention = 1
+        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
+        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        outcome = "outcome"
+        fit_bl_switch_formula = "xo_t_do ~ time"
+        df = pd.read_csv("tests/resources/data/temporal_data.csv")
+        df["ok"] = df["outcome"] == 1
+        estimation_model = IPCWEstimator(
+            df,
+            timesteps_per_intervention,
+            control_strategy,
+            treatment_strategy,
+            outcome,
+            "ok",
+            fit_bl_switch_formula=fit_bl_switch_formula,
+            fit_bltd_switch_formula=fit_bl_switch_formula,
+            eligibility=None,
+        )
+        estimation_model.df["fault_t_do"] = 0
+        with self.assertRaises(ValueError):
+            estimate, intervals = estimation_model.estimate_hazard_ratio()
