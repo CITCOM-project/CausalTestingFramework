@@ -382,7 +382,6 @@ class LinearRegressionEstimator(Estimator):
 
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
-        
 
         # For Pandas version > 2, we need to explicitly state that the dataframe takes floating-point values
         individuals = individuals.astype(float)
