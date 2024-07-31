@@ -1,8 +1,4 @@
 import unittest
-from enum import Enum
-import z3
-from scipy.stats import norm, kstest
-
 from causal_testing.specification.capabilities import Capability, TreatmentSequence
 
 

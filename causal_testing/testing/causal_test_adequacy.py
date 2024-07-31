@@ -12,6 +12,9 @@ from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_case import CausalTestCase
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class DAGAdequacy:
@@ -104,10 +107,13 @@ class DataAdequacy:
             try:
                 results.append(self.test_case.execute_test(estimator, None))
             except LinAlgError:
+                logger.warning("Adequacy LinAlgError")
                 continue
             except ConvergenceError:
+                logger.warning("Adequacy ConvergenceError")
                 continue
-            except ValueError:
+            except ValueError as e:
+                logger.warning(f"Adequacy ValueError: {e}")
                 continue
         outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
         results = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]

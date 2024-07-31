@@ -3,6 +3,7 @@ This module contains the Capability and TreatmentSequence classes to implement
 treatment sequences that operate over time.
 """
 from causal_testing.specification.variable import Variable
+from typing import Any
 
 
 class Capability:
@@ -10,7 +11,7 @@ class Capability:
     Data class to encapsulate temporal interventions.
     """
 
-    def __init__(self, variable: Variable, value: any, start_time: int, end_time: float):
+    def __init__(self, variable: Variable, value: Any, start_time: int, end_time: int):
         self.variable = variable
         self.value = value
         self.start_time = start_time

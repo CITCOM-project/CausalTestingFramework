@@ -697,7 +697,7 @@ class IPCWEstimator(Estimator):
 
         return pd.DataFrame({"fault_t_do": fault_t_do})
 
-    def setup_fault_time(self, individual, perturbation=-0.001):
+    def setup_fault_time(self, individual: pd.DataFrame, perturbation: float = -0.001):
         """
         Return the time at which the event of interest (i.e. a fault) occurred.
         """
