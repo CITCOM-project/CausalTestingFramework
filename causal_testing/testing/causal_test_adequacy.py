@@ -2,6 +2,7 @@
 This module contains code to measure various aspects of causal test adequacy.
 """
 
+import logging
 from itertools import combinations
 from copy import deepcopy
 import pandas as pd
@@ -12,7 +13,6 @@ from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_case import CausalTestCase
-import logging
 
 logger = logging.getLogger(__name__)
 
