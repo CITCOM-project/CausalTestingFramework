@@ -276,7 +276,7 @@ class JsonUtility:
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
         if "coverage" in test and test["coverage"]:
-            adequacy_metric = DataAdequacy(causal_test_case, estimation_model, self.data_collector)
+            adequacy_metric = DataAdequacy(causal_test_case, estimation_model)
             adequacy_metric.measure_adequacy()
             causal_test_result.adequacy = adequacy_metric
 

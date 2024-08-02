@@ -92,7 +92,7 @@ class CausalTestCase:
         except np.linalg.LinAlgError:
             return CausalTestResult(
                 estimator=estimator,
-                test_value=TestValue(self.estimate_type, "LinAlgError"),
+                test_value=TestValue(self.estimate_type, None),
                 effect_modifier_configuration=self.effect_modifier_configuration,
                 confidence_intervals=None,
             )

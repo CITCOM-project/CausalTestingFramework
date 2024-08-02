@@ -3,17 +3,20 @@ from pathlib import Path
 from statistics import StatisticsError
 import scipy
 import os
+import pandas as pd
 
-from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.testing.estimators import LinearRegressionEstimator, IPCWEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.testing.causal_test_adequacy import DAGAdequacy
-from causal_testing.testing.causal_test_outcome import NoEffect, Positive
+from causal_testing.testing.causal_test_outcome import NoEffect, Positive, SomeEffect
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.specification.capabilities import TreatmentSequence
+from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
 
 class TestCausalTestAdequacy(unittest.TestCase):
@@ -70,7 +73,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
         )
         self.assertEqual(
             test_results[0]["result"].adequacy.to_dict(),
-            {"kurtosis": {"test_input": 0.0}, "bootstrap_size": 100, "passing": 100},
+            {"kurtosis": {"test_input": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
         )
 
     def test_data_adequacy_cateogorical(self):
@@ -103,7 +106,49 @@ class TestCausalTestAdequacy(unittest.TestCase):
         print(test_results[0]["result"])
         self.assertEqual(
             test_results[0]["result"].adequacy.to_dict(),
-            {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100},
+            {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
+        )
+
+    def test_data_adequacy_group_by(self):
+        timesteps_per_intervention = 1
+        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
+        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        outcome = "outcome"
+        fit_bl_switch_formula = "xo_t_do ~ time"
+        df = pd.read_csv("tests/resources/data/temporal_data.csv")
+        df["ok"] = df["outcome"] == 1
+        estimation_model = IPCWEstimator(
+            df,
+            timesteps_per_intervention,
+            control_strategy,
+            treatment_strategy,
+            outcome,
+            "ok",
+            fit_bl_switch_formula=fit_bl_switch_formula,
+            fit_bltd_switch_formula=fit_bl_switch_formula,
+            eligibility=None,
+        )
+        base_test_case = BaseTestCase(
+            treatment_variable=control_strategy,
+            outcome_variable=outcome,
+            effect="temporal",
+        )
+
+        causal_test_case = CausalTestCase(
+            base_test_case=base_test_case,
+            expected_causal_effect=SomeEffect(),
+            control_value=control_strategy,
+            treatment_value=treatment_strategy,
+            estimate_type="hazard_ratio",
+        )
+        causal_test_result = causal_test_case.execute_test(estimation_model, None)
+        adequacy_metric = DataAdequacy(causal_test_case, estimation_model, group_by="id")
+        adequacy_metric.measure_adequacy()
+        causal_test_result.adequacy = adequacy_metric
+        print(causal_test_result.adequacy.to_dict())
+        self.assertEqual(
+            causal_test_result.adequacy.to_dict(),
+            {"kurtosis": {"trtrand": 0.0}, "bootstrap_size": 100, "passing": 0, "successful": 95},
         )
 
     def test_dag_adequacy_dependent(self):

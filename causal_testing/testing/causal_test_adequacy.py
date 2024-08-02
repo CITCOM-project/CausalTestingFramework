@@ -2,15 +2,19 @@
 This module contains code to measure various aspects of causal test adequacy.
 """
 
+import logging
 from itertools import combinations
 from copy import deepcopy
 import pandas as pd
+from numpy.linalg import LinAlgError
+from lifelines.exceptions import ConvergenceError
 
 from causal_testing.testing.causal_test_suite import CausalTestSuite
-from causal_testing.data_collection.data_collector import DataCollector
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.estimators import Estimator
 from causal_testing.testing.causal_test_case import CausalTestCase
+
+logger = logging.getLogger(__name__)
 
 
 class DAGAdequacy:
@@ -70,15 +74,21 @@ class DataAdequacy:
     - Zero kurtosis is optimal.
     """
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(
-        self, test_case: CausalTestCase, estimator: Estimator, data_collector: DataCollector, bootstrap_size: int = 100
+        self,
+        test_case: CausalTestCase,
+        estimator: Estimator,
+        bootstrap_size: int = 100,
+        group_by=None,
     ):
         self.test_case = test_case
         self.estimator = estimator
-        self.data_collector = data_collector
         self.kurtosis = None
         self.outcomes = None
+        self.successful = None
         self.bootstrap_size = bootstrap_size
+        self.group_by = group_by
 
     def measure_adequacy(self):
         """
@@ -87,11 +97,24 @@ class DataAdequacy:
         results = []
         for i in range(self.bootstrap_size):
             estimator = deepcopy(self.estimator)
-            estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
-            # try:
-            results.append(self.test_case.execute_test(estimator, self.data_collector))
-            # except np.LinAlgError:
-            # continue
+
+            if self.group_by is not None:
+                ids = pd.Series(estimator.df[self.group_by].unique())
+                ids = ids.sample(len(ids), replace=True, random_state=i)
+                estimator.df = estimator.df[estimator.df[self.group_by].isin(ids)]
+            else:
+                estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
+            try:
+                results.append(self.test_case.execute_test(estimator, None))
+            except LinAlgError:
+                logger.warning("Adequacy LinAlgError")
+                continue
+            except ConvergenceError:
+                logger.warning("Adequacy ConvergenceError")
+                continue
+            except ValueError as e:
+                logger.warning(f"Adequacy ValueError: {e}")
+                continue
         outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
         results = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
 
@@ -111,8 +134,14 @@ class DataAdequacy:
 
         effect_estimate = pd.concat(results["effect_estimate"].tolist(), axis=1).transpose().reset_index(drop=True)
         self.kurtosis = effect_estimate.kurtosis()
-        self.outcomes = sum(outcomes)
+        self.outcomes = sum(filter(lambda x: x is not None, outcomes))
+        self.successful = sum(x is not None for x in outcomes)
 
     def to_dict(self):
         "Returns the adequacy object as a dictionary."
-        return {"kurtosis": self.kurtosis.to_dict(), "bootstrap_size": self.bootstrap_size, "passing": self.outcomes}
+        return {
+            "kurtosis": self.kurtosis.to_dict(),
+            "bootstrap_size": self.bootstrap_size,
+            "passing": self.outcomes,
+            "successful": self.successful,
+        }

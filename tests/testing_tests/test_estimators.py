@@ -7,9 +7,11 @@ from causal_testing.testing.estimators import (
     LogisticRegressionEstimator,
     InstrumentalVariableEstimator,
     CubicSplineRegressionEstimator,
+    IPCWEstimator,
 )
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
+from causal_testing.specification.capabilities import TreatmentSequence
 
 
 def plot_results_df(df):
@@ -33,7 +35,7 @@ def load_nhefs_df():
     """Get the NHEFS data from chapter 12 and put into a dataframe. NHEFS = National Health and Nutrition Examination
     Survey Data I Epidemiological Follow-up Study."""
 
-    nhefs_df = pd.read_csv("tests/data/nhefs.csv")
+    nhefs_df = pd.read_csv("tests/resources/data/nhefs.csv")
     nhefs_df["one"] = 1
     nhefs_df["zero"] = 0
     edu_dummies = pd.get_dummies(nhefs_df.education, prefix="edu")
@@ -77,7 +79,7 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.scarf_df = pd.read_csv("tests/data/scarf_data.csv")
+        cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
 
     # Yes, this probably shouldn't be in here, but it uses the scarf data so it makes more sense to put it
     # here than duplicating the scarf data for a single test
@@ -404,11 +406,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
     @classmethod
     def setUpClass(cls):
-
         super().setUpClass()
 
     def test_program_11_3_cublic_spline(self):
-
         """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
         https://www.hsph.harvard.edu/miguel-hernan/wp-content/uploads/sites/1268/2023/10/hernanrobins_WhatIf_30sep23.pdf
         Slightly modified as Hernan et al. use linear regression for this example.
@@ -446,7 +446,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         df = pd.DataFrame({"X1": np.random.uniform(-1000, 1000, 1000), "X2": np.random.uniform(-1000, 1000, 1000)})
         df["Y"] = 2 * df["X1"] - 3 * df["X2"] + 2 * df["X1"] * df["X2"] + 10
         cls.df = df
-        cls.scarf_df = pd.read_csv("tests/data/scarf_data.csv")
+        cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
 
     def test_X1_effect(self):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
@@ -472,3 +472,76 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         self.assertTrue(coefficients.round(2).equals(pd.Series({"color[T.grey]": 0.92, "color[T.orange]": -4.25})))
         self.assertTrue(ci_low.round(2).equals(pd.Series({"color[T.grey]": -22.12, "color[T.orange]": -25.58})))
         self.assertTrue(ci_high.round(2).equals(pd.Series({"color[T.grey]": 23.95, "color[T.orange]": 17.08})))
+
+
+class TestIPCWEstimator(unittest.TestCase):
+    """
+    Test the IPCW estimator class
+    """
+
+    def test_estimate_hazard_ratio(self):
+        timesteps_per_intervention = 1
+        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
+        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        outcome = "outcome"
+        fit_bl_switch_formula = "xo_t_do ~ time"
+        df = pd.read_csv("tests/resources/data/temporal_data.csv")
+        df["ok"] = df["outcome"] == 1
+        estimation_model = IPCWEstimator(
+            df,
+            timesteps_per_intervention,
+            control_strategy,
+            treatment_strategy,
+            outcome,
+            "ok",
+            fit_bl_switch_formula=fit_bl_switch_formula,
+            fit_bltd_switch_formula=fit_bl_switch_formula,
+            eligibility=None,
+        )
+        estimate, intervals = estimation_model.estimate_hazard_ratio()
+        self.assertEqual(estimate["trtrand"], 1.0)
+
+    def test_invalid_treatment_strategies(self):
+        timesteps_per_intervention = 1
+        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
+        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        outcome = "outcome"
+        fit_bl_switch_formula = "xo_t_do ~ time"
+        df = pd.read_csv("tests/resources/data/temporal_data.csv")
+        df["t"] = (["1", "0"] * len(df))[: len(df)]
+        df["ok"] = df["outcome"] == 1
+        with self.assertRaises(ValueError):
+            estimation_model = IPCWEstimator(
+                df,
+                timesteps_per_intervention,
+                control_strategy,
+                treatment_strategy,
+                outcome,
+                "ok",
+                fit_bl_switch_formula=fit_bl_switch_formula,
+                fit_bltd_switch_formula=fit_bl_switch_formula,
+                eligibility=None,
+            )
+
+    def test_invalid_fault_t_do(self):
+        timesteps_per_intervention = 1
+        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
+        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        outcome = "outcome"
+        fit_bl_switch_formula = "xo_t_do ~ time"
+        df = pd.read_csv("tests/resources/data/temporal_data.csv")
+        df["ok"] = df["outcome"] == 1
+        estimation_model = IPCWEstimator(
+            df,
+            timesteps_per_intervention,
+            control_strategy,
+            treatment_strategy,
+            outcome,
+            "ok",
+            fit_bl_switch_formula=fit_bl_switch_formula,
+            fit_bltd_switch_formula=fit_bl_switch_formula,
+            eligibility=None,
+        )
+        estimation_model.df["fault_t_do"] = 0
+        with self.assertRaises(ValueError):
+            estimate, intervals = estimation_model.estimate_hazard_ratio()
