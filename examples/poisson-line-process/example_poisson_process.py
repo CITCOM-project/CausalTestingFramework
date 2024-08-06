@@ -5,7 +5,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue, Positive
-from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator, Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
 import pandas as pd

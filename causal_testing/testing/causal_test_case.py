@@ -7,7 +7,7 @@ import numpy as np
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.estimators import Estimator
+from causal_testing.estimation.estimator import Estimator
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.data_collection.data_collector import DataCollector
 

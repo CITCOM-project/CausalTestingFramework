@@ -2,33 +2,11 @@ import unittest
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from causal_testing.testing.estimators import (
-    LinearRegressionEstimator,
-    LogisticRegressionEstimator,
-    InstrumentalVariableEstimator,
-    CubicSplineRegressionEstimator,
-    IPCWEstimator,
-)
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
 from causal_testing.specification.capabilities import TreatmentSequence
 
-
-def plot_results_df(df):
-    """A helper method to plot results dataframe for estimators, where the df parameter must have columns for the cate,
-    ci_low, and ci_high.
-
-    :param df: A dataframe containing the columns cate, ci_low, and ci_high, where each row is an observation.
-    :return: Plot the treatment effect with confidence intervals for each observation.
-    """
-
-    df.sort_values("smokeintensity", inplace=True, ascending=True)
-    df.reset_index(inplace=True, drop=True)
-    plt.scatter(df["smokeintensity"], df["cate"], label="CATE", color="black")
-    plt.fill_between(df["smokeintensity"], df["ci_low"], df["ci_high"], alpha=0.2)
-    plt.ylabel("Weight Change (kg) caused by stopping smoking")
-    plt.xlabel("Smoke intensity (cigarettes smoked per day)")
-    plt.show()
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 
 
 def load_nhefs_df():
@@ -72,123 +50,6 @@ def load_chapter_11_df():
     return chapter_11_df
 
 
-class TestLogisticRegressionEstimator(unittest.TestCase):
-    """Test the logistic regression estimator against the scarf example from
-    https://investigate.ai/regression/logistic-regression/.
-    """
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
-
-    # Yes, this probably shouldn't be in here, but it uses the scarf data so it makes more sense to put it
-    # here than duplicating the scarf data for a single test
-    def test_linear_regression_categorical_ate(self):
-        df = self.scarf_df.copy()
-        logistic_regression_estimator = LinearRegressionEstimator("color", None, None, set(), "completed", df)
-        ate, confidence = logistic_regression_estimator.estimate_coefficient()
-        self.assertTrue(all([ci_low < 0 < ci_high for ci_low, ci_high in zip(confidence[0], confidence[1])]))
-
-    def test_ate(self):
-        df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
-        ate, _ = logistic_regression_estimator.estimate_ate()
-        self.assertEqual(round(ate, 4), -0.1987)
-
-    def test_risk_ratio(self):
-        df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
-        rr, _ = logistic_regression_estimator.estimate_risk_ratio()
-        self.assertEqual(round(rr, 4), 0.7664)
-
-    def test_odds_ratio(self):
-        df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
-        odds = logistic_regression_estimator.estimate_unit_odds_ratio()
-        self.assertEqual(round(odds, 4), 0.8948)
-
-    def test_ate_adjustment(self):
-        df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator(
-            "length_in", 65, 55, {"large_gauge"}, "completed", df
-        )
-        ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
-        self.assertEqual(round(ate, 4), -0.3388)
-
-    def test_ate_invalid_adjustment(self):
-        df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, {}, "completed", df)
-        with self.assertRaises(ValueError):
-            ate, _ = logistic_regression_estimator.estimate_ate(adjustment_config={"large_gauge": 0})
-
-    def test_ate_effect_modifiers(self):
-        df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator(
-            "length_in", 65, 55, set(), "completed", df, effect_modifiers={"large_gauge": 0}
-        )
-        ate, _ = logistic_regression_estimator.estimate_ate()
-        self.assertEqual(round(ate, 4), -0.3388)
-
-    def test_ate_effect_modifiers_formula(self):
-        df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator(
-            "length_in",
-            65,
-            55,
-            set(),
-            "completed",
-            df,
-            effect_modifiers={"large_gauge": 0},
-            formula="completed ~ length_in + large_gauge",
-        )
-        ate, _ = logistic_regression_estimator.estimate_ate()
-        self.assertEqual(round(ate, 4), -0.3388)
-
-
-class TestInstrumentalVariableEstimator(unittest.TestCase):
-    """
-    Test the instrumental variable estimator.
-    """
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        Z = np.linspace(0, 10)
-        X = 2 * Z
-        Y = 2 * X
-        cls.df = pd.DataFrame({"Z": Z, "X": X, "Y": Y})
-
-    def test_estimate_coefficient(self):
-        """
-        Test we get the correct coefficient.
-        """
-        iv_estimator = InstrumentalVariableEstimator(
-            df=self.df,
-            treatment="X",
-            treatment_value=None,
-            control_value=None,
-            adjustment_set=set(),
-            outcome="Y",
-            instrument="Z",
-        )
-        self.assertEqual(iv_estimator.estimate_coefficient(self.df), 2)
-
-    def test_estimate_coefficient(self):
-        """
-        Test we get the correct coefficient.
-        """
-        iv_estimator = InstrumentalVariableEstimator(
-            df=self.df,
-            treatment="X",
-            treatment_value=None,
-            control_value=None,
-            adjustment_set=set(),
-            outcome="Y",
-            instrument="Z",
-        )
-        coefficient, [low, high] = iv_estimator.estimate_coefficient()
-        self.assertEqual(coefficient[0], 2)
-
-
 class TestLinearRegressionEstimator(unittest.TestCase):
     """Test the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].
 
@@ -200,6 +61,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.nhefs_df = load_nhefs_df()
         cls.chapter_11_df = load_chapter_11_df()
+        cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
 
     def test_query(self):
         df = self.nhefs_df
@@ -207,6 +69,12 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "treatments", None, None, set(), "outcomes", df, query="sex==1"
         )
         self.assertTrue(linear_regression_estimator.df.sex.all())
+
+    def test_linear_regression_categorical_ate(self):
+        df = self.scarf_df.copy()
+        logistic_regression_estimator = LinearRegressionEstimator("color", None, None, set(), "completed", df)
+        ate, confidence = logistic_regression_estimator.estimate_coefficient()
+        self.assertTrue(all([ci_low < 0 < ci_high for ci_low, ci_high in zip(confidence[0], confidence[1])]))
 
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
@@ -418,40 +286,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(round(ci_high[0], 2), 0.50)
 
 
-class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-    def test_program_11_3_cublic_spline(self):
-        """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
-        https://www.hsph.harvard.edu/miguel-hernan/wp-content/uploads/sites/1268/2023/10/hernanrobins_WhatIf_30sep23.pdf
-        Slightly modified as Hernan et al. use linear regression for this example.
-        """
-
-        df = self.chapter_11_df.copy()
-
-        cublic_spline_estimator = CubicSplineRegressionEstimator("treatments", 1, 0, set(), "outcomes", 3, df)
-
-        model = cublic_spline_estimator._run_linear_regression()
-
-        self.assertEqual(
-            round(
-                cublic_spline_estimator.model.predict({"Intercept": 1, "treatments": 90}).iloc[0],
-                1,
-            ),
-            195.6,
-        )
-
-        ate_1 = cublic_spline_estimator.estimate_ate_calculated()
-        cublic_spline_estimator.treatment_value = 2
-        ate_2 = cublic_spline_estimator.estimate_ate_calculated()
-
-        # Doubling the treatemebnt value should roughly but not exactly double the ATE
-        self.assertNotEqual(ate_1[0] * 2, ate_2[0])
-        self.assertAlmostEqual(ate_1[0] * 2, ate_2[0])
-
-
 class TestLinearRegressionInteraction(unittest.TestCase):
     """Test linear regression for estimating effects involving interaction."""
 
@@ -487,76 +321,3 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         self.assertTrue(coefficients.round(2).equals(pd.Series({"color[T.grey]": 0.92, "color[T.orange]": -4.25})))
         self.assertTrue(ci_low.round(2).equals(pd.Series({"color[T.grey]": -22.12, "color[T.orange]": -25.58})))
         self.assertTrue(ci_high.round(2).equals(pd.Series({"color[T.grey]": 23.95, "color[T.orange]": 17.08})))
-
-
-class TestIPCWEstimator(unittest.TestCase):
-    """
-    Test the IPCW estimator class
-    """
-
-    def test_estimate_hazard_ratio(self):
-        timesteps_per_intervention = 1
-        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
-        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
-        outcome = "outcome"
-        fit_bl_switch_formula = "xo_t_do ~ time"
-        df = pd.read_csv("tests/resources/data/temporal_data.csv")
-        df["ok"] = df["outcome"] == 1
-        estimation_model = IPCWEstimator(
-            df,
-            timesteps_per_intervention,
-            control_strategy,
-            treatment_strategy,
-            outcome,
-            "ok",
-            fit_bl_switch_formula=fit_bl_switch_formula,
-            fit_bltd_switch_formula=fit_bl_switch_formula,
-            eligibility=None,
-        )
-        estimate, intervals = estimation_model.estimate_hazard_ratio()
-        self.assertEqual(estimate["trtrand"], 1.0)
-
-    def test_invalid_treatment_strategies(self):
-        timesteps_per_intervention = 1
-        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
-        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
-        outcome = "outcome"
-        fit_bl_switch_formula = "xo_t_do ~ time"
-        df = pd.read_csv("tests/resources/data/temporal_data.csv")
-        df["t"] = (["1", "0"] * len(df))[: len(df)]
-        df["ok"] = df["outcome"] == 1
-        with self.assertRaises(ValueError):
-            estimation_model = IPCWEstimator(
-                df,
-                timesteps_per_intervention,
-                control_strategy,
-                treatment_strategy,
-                outcome,
-                "ok",
-                fit_bl_switch_formula=fit_bl_switch_formula,
-                fit_bltd_switch_formula=fit_bl_switch_formula,
-                eligibility=None,
-            )
-
-    def test_invalid_fault_t_do(self):
-        timesteps_per_intervention = 1
-        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
-        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
-        outcome = "outcome"
-        fit_bl_switch_formula = "xo_t_do ~ time"
-        df = pd.read_csv("tests/resources/data/temporal_data.csv")
-        df["ok"] = df["outcome"] == 1
-        estimation_model = IPCWEstimator(
-            df,
-            timesteps_per_intervention,
-            control_strategy,
-            treatment_strategy,
-            outcome,
-            "ok",
-            fit_bl_switch_formula=fit_bl_switch_formula,
-            fit_bltd_switch_formula=fit_bl_switch_formula,
-            eligibility=None,
-        )
-        estimation_model.df["fault_t_do"] = 0
-        with self.assertRaises(ValueError):
-            estimate, intervals = estimation_model.estimate_hazard_ratio()

@@ -87,7 +87,7 @@ the `documentation <https://causal-testing-framework.readthedocs.io/en/latest/au
 
 .. code-block:: python
 
-   from causal_testing.testing.estimators import LinearRegressionEstimator
+   from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 
    minimal_adjustment_set = causal_dag.identification(base_test_case)
    estimation_model =  LinearRegressionEstimator(treatment=treatment, control=control, treatment_value=1, control_value=0, adjustment_set = minimal_adjustment_set, df = obs_df)

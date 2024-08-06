@@ -4,7 +4,7 @@ from statistics import StatisticsError
 import scipy
 import os
 
-from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator, Estimator
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta

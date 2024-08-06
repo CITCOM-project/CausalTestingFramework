@@ -7,7 +7,8 @@ import pandas as pd
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.estimators import CubicSplineRegressionEstimator
+from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
+
 
 @dataclass
 class SimulationResult:
@@ -19,7 +20,7 @@ class SimulationResult:
 
     def to_dataframe(self) -> pd.DataFrame:
         """Convert the simulation result data to a pandas DataFrame"""
-        data_as_lists = {k: v if isinstance(v, list) else [v] for k,v in self.data.items()}
+        data_as_lists = {k: v if isinstance(v, list) else [v] for k, v in self.data.items()}
         return pd.DataFrame(data_as_lists)
 
 

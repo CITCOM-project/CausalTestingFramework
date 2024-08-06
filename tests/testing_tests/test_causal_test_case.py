@@ -11,7 +11,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue
-from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
