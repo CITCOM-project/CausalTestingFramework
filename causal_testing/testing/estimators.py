@@ -18,6 +18,7 @@ from lifelines import CoxPHFitter
 
 from causal_testing.specification.variable import Variable
 from causal_testing.specification.capabilities import TreatmentSequence, Capability
+from causal_testing.gp.gp import GP
 
 logger = logging.getLogger(__name__)
 
@@ -333,6 +334,19 @@ class LinearRegressionEstimator(Estimator):
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
 
+    def gp_formula(self, ngen=100, mu=20, lambda_=10, extra_operators=None, sympy_conversions=None, seeds=None, seed=0):
+        gp = GP(
+            df=self.df,
+            features=sorted(list(self.adjustment_set.union([self.treatment]))),
+            outcome=self.outcome,
+            extra_operators=extra_operators,
+            sympy_conversions=sympy_conversions,
+            seed=seed,
+        )
+        formula = gp.eaMuPlusLambda(ngen=ngen, mu=mu, lambda_=lambda_, seeds=seeds)
+        formula = gp.simplify(formula)
+        self.formula = f"{self.outcome} ~ I({formula}) - 1"
+
     def add_modelling_assumptions(self):
         """
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
@@ -421,7 +435,13 @@ class LinearRegressionEstimator(Estimator):
             if str(x.dtypes[col]) == "object":
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
         x = x[model.params.index]
+
+        # This is a hack for "I(...)" equations
+        x[self.treatment] = [self.treatment_value, self.control_value]
+
         y = model.get_prediction(x).summary_frame()
+        print("=== Y ===")
+        print(y)
 
         return y.iloc[1], y.iloc[0]
 

@@ -402,6 +402,21 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         cv = CausalValidator()
         self.assertEqual(round(cv.estimate_robustness(model)["treatments"], 4), 0.7353)
 
+    def test_gp(self):
+        df = pd.DataFrame()
+        df["X"] = np.arange(10)
+        df["Y"] = 1 / (df["X"] + 1)
+        linear_regression_estimator = LinearRegressionEstimator("X", 0, 1, set(), "Y", df.astype(float))
+        linear_regression_estimator.gp_formula(seed=1)
+        self.assertEqual(
+            linear_regression_estimator.formula,
+            "Y ~ I((2.606801258739728e-17*X + 0.626132756132756)/(0.6261327561327561*X + 0.626132756132756)) - 1",
+        )
+        ate, (ci_low, ci_high) = linear_regression_estimator.estimate_ate_calculated()
+        self.assertEqual(round(ate[0], 2), 0.50)
+        self.assertEqual(round(ci_low[0], 2), 0.50)
+        self.assertEqual(round(ci_high[0], 2), 0.50)
+
 
 class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
     @classmethod
