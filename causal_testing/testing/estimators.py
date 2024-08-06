@@ -424,7 +424,6 @@ class LinearRegressionEstimator(Estimator):
         model = self._run_linear_regression()
 
         x = pd.DataFrame(columns=self.df.columns)
-        x[self.treatment] = [self.treatment_value, self.control_value]
         x["Intercept"] = 1  # self.intercept
         for k, v in adjustment_config.items():
             x[k] = v
@@ -436,12 +435,9 @@ class LinearRegressionEstimator(Estimator):
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
         x = x[model.params.index]
 
-        # This is a hack for "I(...)" equations
         x[self.treatment] = [self.treatment_value, self.control_value]
 
         y = model.get_prediction(x).summary_frame()
-        print("=== Y ===")
-        print(y)
 
         return y.iloc[1], y.iloc[0]
 
