@@ -63,20 +63,21 @@ class LinearRegressionEstimator(Estimator):
     def gp_formula(
         self,
         ngen: int = 100,
-        mu: int = 20,
-        lambda_: int = 10,
+        pop_size: int = 20,
+        num_offspring: int = 10,
         extra_operators: list = None,
         sympy_conversions: dict = None,
+        max_order: int = 0,
         seeds: list = None,
         seed: int = 0,
     ):
-        # pylint: disable=too-many-arguments,invalid-name
+        # pylint: disable=too-many-arguments
         """
         Use Genetic Programming (GP) to infer the regression equation from the data.
 
         :param ngen: The maximum number of GP generations to run for.
         :param mu: The GP population size.
-        :param lambda_: The number of offspring per generation.
+        :param num_offspring: The number of offspring per generation.
         :param extra_operators: Additional operators for the GP (defaults are +, *, and 1/x). Operations should be of
                                 the form (fun, numArgs), e.g. (add, 2).
         :param sympy_conversions: Dictionary of conversions of extra_operators for sympy,
@@ -85,16 +86,17 @@ class LinearRegressionEstimator(Estimator):
                       probably logarithmic, you can put that in).
         :param seed: Random seed for the GP.
         """
-        gp = GP(
+        self.gp = GP(
             df=self.df,
             features=sorted(list(self.adjustment_set.union([self.treatment]))),
             outcome=self.outcome,
             extra_operators=extra_operators,
             sympy_conversions=sympy_conversions,
             seed=seed,
+            max_order=max_order,
         )
-        formula = gp.run_gp(ngen=ngen, pop_size=mu, num_offspring=lambda_, seeds=seeds)
-        formula = gp.simplify(formula)
+        formula = self.gp.run_gp(ngen=ngen, pop_size=num_offspring, num_offspring=num_offspring, seeds=seeds)
+        formula = self.gp.simplify(formula)
         self.formula = f"{self.outcome} ~ I({formula}) - 1"
 
     def add_modelling_assumptions(self):

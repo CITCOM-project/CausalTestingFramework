@@ -85,32 +85,45 @@ class GP:
         df: pd.DataFrame,
         features: list,
         outcome: str,
+        max_order: int = 0,
         extra_operators: list = None,
         sympy_conversions: dict = None,
         seed=0,
     ):
         # pylint: disable=too-many-arguments
         random.seed(seed)
-        np.random.seed(seed)
         self.df = df
         self.features = features
         self.outcome = outcome
+        self.max_order = max_order
         self.seed = seed
         self.pset = gp.PrimitiveSet("MAIN", len(self.features))
         self.pset.renameArguments(**{f"ARG{i}": f for i, f in enumerate(self.features)})
 
-        standard_operators = [(add, 2), (mul, 2), (reciprocal, 1)]
+        standard_operators = [(add, 2), (mul, 2)]
         if extra_operators is None:
             extra_operators = [(log, 1), (reciprocal, 1)]
-        for operator, num_args in standard_operators + extra_operators:
-            self.pset.addPrimitive(operator, num_args)
         if sympy_conversions is None:
             sympy_conversions = {}
+        for operator, num_args in standard_operators + extra_operators:
+            self.pset.addPrimitive(operator, num_args)
+
         self.sympy_conversions = {
             "mul": lambda x1, x2: f"Mul({x1},{x2})",
             "add": lambda x1, x2: f"Add({x1},{x2})",
             "reciprocal": lambda x1: f"Pow({x1},-1)",
         } | sympy_conversions
+
+        for i in range(self.max_order):
+            print("Adding in order", i)
+            name = f"power_{i}"
+            self.pset.addPrimitive(lambda x: power(x, i), 1, name=name)
+            if name in self.sympy_conversions:
+                raise ValueError(
+                    f"You have provided a function called {name}, which is reserved for raising to power"
+                    f"{i}. Please choose a different name for your function."
+                )
+            self.sympy_conversions[name] = lambda x1: f"Pow({x1},{i})"
 
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
