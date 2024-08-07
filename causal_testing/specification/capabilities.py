@@ -2,6 +2,7 @@
 This module contains the Capability and TreatmentSequence classes to implement
 treatment sequences that operate over time.
 """
+
 from typing import Any
 from causal_testing.specification.variable import Variable
 

@@ -1,22 +1,11 @@
-"""This module contains the InstrumentalVariableEstimator class, for estimating continuous outcomes with unobservable confounding."""
+"""This module contains the InstrumentalVariableEstimator class, for estimating
+continuous outcomes with unobservable confounding."""
 
 import logging
-from abc import ABC, abstractmethod
-from typing import Any
 from math import ceil
-
-import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from patsy import dmatrix  # pylint: disable = no-name-in-module
-from patsy import ModelDesc
-from statsmodels.regression.linear_model import RegressionResultsWrapper
-from statsmodels.tools.sm_exceptions import PerfectSeparationError
-from lifelines import CoxPHFitter
 
-from causal_testing.specification.variable import Variable
-from causal_testing.specification.capabilities import TreatmentSequence, Capability
 from causal_testing.estimation.estimator import Estimator
 
 logger = logging.getLogger(__name__)

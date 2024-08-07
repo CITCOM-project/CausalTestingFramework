@@ -1,22 +1,15 @@
 """This module contains the LinearRegressionEstimator for estimating continuous outcomes."""
 
 import logging
-from abc import ABC, abstractmethod
 from typing import Any
-from math import ceil
 
-import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from patsy import dmatrix  # pylint: disable = no-name-in-module
 from patsy import ModelDesc
 from statsmodels.regression.linear_model import RegressionResultsWrapper
-from statsmodels.tools.sm_exceptions import PerfectSeparationError
-from lifelines import CoxPHFitter
 
 from causal_testing.specification.variable import Variable
-from causal_testing.specification.capabilities import TreatmentSequence, Capability
 from causal_testing.estimation.gp import GP
 from causal_testing.estimation.estimator import Estimator
 
@@ -67,7 +60,31 @@ class LinearRegressionEstimator(Estimator):
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
 
-    def gp_formula(self, ngen=100, mu=20, lambda_=10, extra_operators=None, sympy_conversions=None, seeds=None, seed=0):
+    def gp_formula(
+        self,
+        ngen: int = 100,
+        mu: int = 20,
+        lambda_: int = 10,
+        extra_operators: list = None,
+        sympy_conversions: dict = None,
+        seeds: list = None,
+        seed: int = 0,
+    ):
+        # pylint: disable=too-many-arguments,invalid-name
+        """
+        Use Genetic Programming (GP) to infer the regression equation from the data.
+
+        :param ngen: The maximum number of GP generations to run for.
+        :param mu: The GP population size.
+        :param lambda_: The number of offspring per generation.
+        :param extra_operators: Additional operators for the GP (defaults are +, *, and 1/x). Operations should be of
+                                the form (fun, numArgs), e.g. (add, 2).
+        :param sympy_conversions: Dictionary of conversions of extra_operators for sympy,
+                                  e.g. `"mul": lambda *args_: "Mul({},{})".format(*args_)`.
+        :param seeds: Seed individuals for the population (e.g. if you think that the relationship between X and Y is
+                      probably logarithmic, you can put that in).
+        :param seed: Random seed for the GP.
+        """
         gp = GP(
             df=self.df,
             features=sorted(list(self.adjustment_set.union([self.treatment]))),
@@ -76,7 +93,7 @@ class LinearRegressionEstimator(Estimator):
             sympy_conversions=sympy_conversions,
             seed=seed,
         )
-        formula = gp.eaMuPlusLambda(ngen=ngen, mu=mu, lambda_=lambda_, seeds=seeds)
+        formula = gp.run_gp(ngen=ngen, pop_size=mu, num_offspring=lambda_, seeds=seeds)
         formula = gp.simplify(formula)
         self.formula = f"{self.outcome} ~ I({formula}) - 1"
 
@@ -159,6 +176,8 @@ class LinearRegressionEstimator(Estimator):
         x = pd.DataFrame(columns=self.df.columns)
         x[self.treatment] = [self.treatment_value, self.control_value]
         x["Intercept"] = 1  # self.intercept
+
+        print(x[self.treatment])
         for k, v in adjustment_config.items():
             x[k] = v
         for k, v in self.effect_modifiers.items():
