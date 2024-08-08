@@ -75,12 +75,20 @@ def mut_insert(expression: gp.PrimitiveTree, pset: gp.PrimitiveSet):
     return (expression,)
 
 
-def create_power_function(power):
-    def power_func(x):
-        return power(x, power)
+def create_power_function(order: int):
+    """
+    Creates a power operator and its corresponding sympy conversion.
 
-    def sympy_conversion(x1):
-        return f"Pow({x1},{i})"
+    :param order: The order of the power, e.g. `order=2` will give x^2.
+
+    :return: A pair consisting of the power function and the sympy conversion
+    """
+
+    def power_func(x):
+        return power(x, order)
+
+    def sympy_conversion(x):
+        return f"Pow({x},{order})"
 
     return power_func, sympy_conversion
 
@@ -100,7 +108,8 @@ class GP:
         sympy_conversions: dict = None,
         seed=0,
     ):
-        # pylint: disable=too-many-arguments,too-many-instance-attributes
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-instance-attributes
         random.seed(seed)
         self.df = df
         self.features = features
