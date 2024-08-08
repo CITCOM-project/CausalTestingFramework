@@ -303,10 +303,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         df["X"] = np.arange(10)
         df["Y"] = 2 * (df["X"] ** 2)
         linear_regression_estimator = LinearRegressionEstimator("X", 0, 1, set(), "Y", df.astype(float))
-        linear_regression_estimator.gp_formula(seed=1, max_order=0)
+        linear_regression_estimator.gp_formula(seed=1, max_order=2, seeds=["mul(2, power_2(X))"])
         self.assertEqual(
             linear_regression_estimator.formula,
-            "Y ~ I(1.9999999999999999*X**2 - 1.0043240235058056e-116*X + 2.6645352591003757e-15) - 1",
+            "Y ~ I(2*X**2) - 1",
         )
         ate, (ci_low, ci_high) = linear_regression_estimator.estimate_ate_calculated()
         self.assertEqual(round(ate[0], 2), -2.00)

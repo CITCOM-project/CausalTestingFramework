@@ -134,7 +134,7 @@ class GP:
             "reciprocal": lambda x1: f"Pow({x1},-1)",
         } | sympy_conversions
 
-        for i in range(self.max_order):
+        for i in range(self.max_order + 1):
             name = f"power_{i}"
             func, conversion = create_power_function(i)
             self.pset.addPrimitive(func, 1, name=name)
@@ -145,6 +145,7 @@ class GP:
                 )
             self.sympy_conversions[name] = conversion
 
+        print(self.pset.mapping)
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 
