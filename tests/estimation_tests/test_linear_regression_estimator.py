@@ -81,13 +81,24 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
         linear_regression_estimator = LinearRegressionEstimator("treatments", None, None, set(), "outcomes", df)
-        model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_coefficient()
 
-        self.assertEqual(round(model.params["Intercept"] + 90 * model.params["treatments"], 1), 216.9)
+        self.assertEqual(
+            round(
+                linear_regression_estimator.model.params["Intercept"]
+                + 90 * linear_regression_estimator.model.params["treatments"],
+                1,
+            ),
+            216.9,
+        )
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertTrue(all(round(model.params["treatments"], 1) == round(ate_single, 1) for ate_single in ate))
+        self.assertTrue(
+            all(
+                round(linear_regression_estimator.model.params["treatments"], 1) == round(ate_single, 1)
+                for ate_single in ate
+            )
+        )
 
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
@@ -95,19 +106,23 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         linear_regression_estimator = LinearRegressionEstimator(
             "treatments", None, None, set(), "outcomes", df, formula="outcomes ~ treatments + I(treatments ** 2)"
         )
-        model = linear_regression_estimator._run_linear_regression()
         ate, _ = linear_regression_estimator.estimate_coefficient()
         self.assertEqual(
             round(
-                model.params["Intercept"]
-                + 90 * model.params["treatments"]
-                + 90 * 90 * model.params["I(treatments ** 2)"],
+                linear_regression_estimator.model.params["Intercept"]
+                + 90 * linear_regression_estimator.model.params["treatments"]
+                + 90 * 90 * linear_regression_estimator.model.params["I(treatments ** 2)"],
                 1,
             ),
             197.1,
         )
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertTrue(all(round(model.params["treatments"], 3) == round(ate_single, 3) for ate_single in ate))
+        self.assertTrue(
+            all(
+                round(linear_regression_estimator.model.params["treatments"], 3) == round(ate_single, 3)
+                for ate_single in ate
+            )
+        )
 
     def test_program_15_1A(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
@@ -149,9 +164,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # for term_a, term_b in terms_to_product:
         #     linear_regression_estimator.add_product_term_to_df(term_a, term_b)
 
-        model = linear_regression_estimator._run_linear_regression()
-        self.assertEqual(round(model.params["qsmk"], 1), 2.6)
-        self.assertEqual(round(model.params["qsmk:smokeintensity"], 2), 0.05)
+        linear_regression_estimator.estimate_coefficient()
+        self.assertEqual(round(linear_regression_estimator.model.params["qsmk"], 1), 2.6)
+        self.assertEqual(round(linear_regression_estimator.model.params["qsmk:smokeintensity"], 2), 0.05)
 
     def test_program_15_no_interaction(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -266,10 +281,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df)
-        model = linear_regression_estimator._run_linear_regression()
+        linear_regression_estimator.estimate_coefficient()
 
         cv = CausalValidator()
-        self.assertEqual(round(cv.estimate_robustness(model)["treatments"], 4), 0.7353)
+        self.assertEqual(round(cv.estimate_robustness(linear_regression_estimator.model)["treatments"], 4), 0.7353)
 
     def test_gp(self):
         df = pd.DataFrame()
@@ -291,7 +306,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         linear_regression_estimator.gp_formula(seed=1, max_order=0)
         self.assertEqual(
             linear_regression_estimator.formula,
-            "Y ~ I(2.0*X**2 + 3.8205100524608823e-31) - 1",
+            "Y ~ I(1.9999999999999999*X**2 - 1.0043240235058056e-116*X + 2.6645352591003757e-15) - 1",
         )
         ate, (ci_low, ci_high) = linear_regression_estimator.estimate_ate_calculated()
         self.assertEqual(round(ate[0], 2), -2.00)

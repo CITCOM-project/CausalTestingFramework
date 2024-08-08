@@ -47,7 +47,8 @@ class LogisticRegressionEstimator(Estimator):
         )
 
         self.model = None
-
+        if effect_modifiers is None:
+            effect_modifiers = []
         if formula is not None:
             self.formula = formula
         else:

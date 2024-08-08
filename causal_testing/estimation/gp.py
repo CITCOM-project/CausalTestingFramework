@@ -98,6 +98,8 @@ class GP:
     Object to perform genetic programming.
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(
         self,
         df: pd.DataFrame,
@@ -109,7 +111,6 @@ class GP:
         seed=0,
     ):
         # pylint: disable=too-many-arguments
-        # pylint: disable=too-many-instance-attributes
         random.seed(seed)
         self.df = df
         self.features = features
