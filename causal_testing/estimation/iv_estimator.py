@@ -19,6 +19,7 @@ class InstrumentalVariableEstimator(Estimator):
 
     def __init__(
         # pylint: disable=too-many-arguments
+        # pylint: disable=duplicate-code
         self,
         treatment: str,
         treatment_value: float,
@@ -27,8 +28,6 @@ class InstrumentalVariableEstimator(Estimator):
         outcome: str,
         instrument: str,
         df: pd.DataFrame = None,
-        intercept: int = 1,
-        effect_modifiers: dict = None,  # Not used (yet?). Needed for compatibility
         alpha: float = 0.05,
         query: str = "",
     ):
@@ -43,8 +42,7 @@ class InstrumentalVariableEstimator(Estimator):
             alpha=alpha,
             query=query,
         )
-        self.intercept = intercept
-        self.model = None
+
         self.instrument = instrument
 
     def add_modelling_assumptions(self):

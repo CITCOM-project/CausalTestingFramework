@@ -34,6 +34,24 @@ class LogisticRegressionEstimator(RegressionEstimator):
         self.modelling_assumptions.append("The outcome must be binary.")
         self.modelling_assumptions.append("Independently and identically distributed errors.")
 
+    def _predict(self, data=None, adjustment_config: dict = None) -> pd.DataFrame:
+        """Estimate the outcomes under control and treatment.
+
+        :param data: The data to use, defaults to `self.df`. Controllable for boostrap sampling.
+        :param: adjustment_config: The values of the adjustment variables to use.
+
+        :return: The estimated outcome under control and treatment, with confidence intervals in the form of a
+                 dataframe with columns "predicted", "se", "ci_lower", and "ci_upper".
+        """
+        if adjustment_config is None:
+            adjustment_config = {}
+        if set(self.adjustment_set) != set(adjustment_config):
+            raise ValueError(
+                f"Invalid adjustment configuration {adjustment_config}. Must specify values for {self.adjustment_set}"
+            )
+
+        return super()._predict(data, adjustment_config)
+
     def estimate_control_treatment(
         self, adjustment_config: dict = None, bootstrap_size: int = 100
     ) -> tuple[pd.Series, pd.Series]:

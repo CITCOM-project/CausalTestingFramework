@@ -88,7 +88,7 @@ class RegressionEstimator(Estimator):
         self.model = model
         return model
 
-    def _predict(self, data=None, adjustment_config: dict = None) -> tuple[pd.Series, pd.Series]:
+    def _predict(self, data=None, adjustment_config: dict = None) -> pd.DataFrame:
         """Estimate the outcomes under control and treatment.
 
         :param data: The data to use, defaults to `self.df`. Controllable for boostrap sampling.
