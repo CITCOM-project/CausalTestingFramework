@@ -5,7 +5,8 @@ import scipy
 import os
 import pandas as pd
 
-from causal_testing.testing.estimators import LinearRegressionEstimator, IPCWEstimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.ipcw_estimator import IPCWEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite

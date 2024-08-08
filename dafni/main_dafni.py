@@ -11,7 +11,7 @@ import pandas as pd
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect, SomeEffect
-from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.json_front.json_class import JsonUtility
 
 
@@ -30,35 +30,38 @@ def get_args(test_args=None) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(description="A script for running the CTF on DAFNI.")
 
-    parser.add_argument(
-        "--data_path", required=True,
-        help="Path to the input runtime data (.csv)", nargs="+")
-
-    parser.add_argument('--tests_path', required=True,
-                        help='Input configuration file path '
-                             'containing the causal tests (.json)')
-
-    parser.add_argument('--variables_path', required=True,
-                        help='Input configuration file path '
-                             'containing the predefined variables (.json)')
-
-    parser.add_argument("--dag_path", required=True,
-                        help="Input configuration file path containing a valid DAG (.dot). "
-                             "Note: this must be supplied if the --tests argument isn't provided.")
-
-    parser.add_argument('--output_path', required=False, help='Path to the output directory.')
+    parser.add_argument("--data_path", required=True, help="Path to the input runtime data (.csv)", nargs="+")
 
     parser.add_argument(
-        "-f",
-        default=False,
-        help="(Optional) Failure flag to step the framework from running if a test has failed.")
+        "--tests_path", required=True, help="Input configuration file path " "containing the causal tests (.json)"
+    )
+
+    parser.add_argument(
+        "--variables_path",
+        required=True,
+        help="Input configuration file path " "containing the predefined variables (.json)",
+    )
+
+    parser.add_argument(
+        "--dag_path",
+        required=True,
+        help="Input configuration file path containing a valid DAG (.dot). "
+        "Note: this must be supplied if the --tests argument isn't provided.",
+    )
+
+    parser.add_argument("--output_path", required=False, help="Path to the output directory.")
+
+    parser.add_argument(
+        "-f", default=False, help="(Optional) Failure flag to step the framework from running if a test has failed."
+    )
 
     parser.add_argument(
         "-w",
         default=False,
         help="(Optional) Specify to overwrite any existing output files. "
-             "This can lead to the loss of existing outputs if not "
-             "careful")
+        "This can lead to the loss of existing outputs if not "
+        "careful",
+    )
 
     args = parser.parse_args(test_args)
 
@@ -100,7 +103,7 @@ def read_variables(variables_path: Path) -> FileNotFoundError | dict:
 
         raise FileNotFoundError
 
-    with variables_path.open('r') as file:
+    with variables_path.open("r") as file:
 
         inputs = json.load(file)
 
@@ -118,13 +121,17 @@ def validate_variables(data_dict: dict) -> tuple:
 
         variables = data_dict["variables"]
 
-        inputs = [Input(variable["name"], eval(variable["datatype"]))
-                  for variable in variables if
-                  variable["typestring"] == "Input"]
+        inputs = [
+            Input(variable["name"], eval(variable["datatype"]))
+            for variable in variables
+            if variable["typestring"] == "Input"
+        ]
 
-        outputs = [Output(variable["name"], eval(variable["datatype"]))
-                   for variable in variables if
-                   variable["typestring"] == "Output"]
+        outputs = [
+            Output(variable["name"], eval(variable["datatype"]))
+            for variable in variables
+            if variable["typestring"] == "Output"
+        ]
 
         constraints = set()
 
@@ -172,7 +179,8 @@ def main():
             "Positive": Positive(),
             "Negative": Negative(),
             "NoEffect": NoEffect(),
-            "SomeEffect": SomeEffect()}
+            "SomeEffect": SomeEffect(),
+        }
 
         # Step 4: Call the JSONUtility class to perform the causal tests
 
@@ -185,9 +193,9 @@ def main():
         json_utility.setup(scenario=modelling_scenario, data=data_frame)
 
         # Step 7: Run the causal tests
-        test_outcomes = json_utility.run_json_tests(effects=expected_outcome_effects,
-                                                    mutates={}, estimators=estimators,
-                                                    f_flag=args.f)
+        test_outcomes = json_utility.run_json_tests(
+            effects=expected_outcome_effects, mutates={}, estimators=estimators, f_flag=args.f
+        )
 
         # Step 8: Update, print and save the final outputs
 
@@ -201,7 +209,6 @@ def main():
 
             test["result"].pop("control_value")
 
-
         with open(args.output_path, "w", encoding="utf-8") as f:
 
             print(json.dumps(test_outcomes, indent=2), file=f)
@@ -214,8 +221,7 @@ def main():
 
     else:
 
-        print(f"Execution successful. "
-              f"Output file saved at {Path(args.output_path).parent.resolve()}")
+        print(f"Execution successful. " f"Output file saved at {Path(args.output_path).parent.resolve()}")
 
 
 if __name__ == "__main__":
