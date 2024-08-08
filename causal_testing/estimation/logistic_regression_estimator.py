@@ -1,12 +1,9 @@
 """This module contains the LogisticRegressionEstimator class for estimating categorical outcomes."""
 
 import logging
-from math import ceil
 
 import numpy as np
-import pandas as pd
 import statsmodels.formula.api as smf
-from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
 from causal_testing.estimation.regression_estimator import RegressionEstimator
 
