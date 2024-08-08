@@ -5,21 +5,21 @@ from typing import Any
 
 import pandas as pd
 import statsmodels.formula.api as smf
-from patsy import dmatrix  # pylint: disable = no-name-in-module
-from patsy import ModelDesc
-from statsmodels.regression.linear_model import RegressionResultsWrapper
+from patsy import dmatrix, ModelDesc  # pylint: disable = no-name-in-module
 
 from causal_testing.specification.variable import Variable
 from causal_testing.estimation.gp import GP
-from causal_testing.estimation.estimator import Estimator
+from causal_testing.estimation.regression_estimator import RegressionEstimator
 
 logger = logging.getLogger(__name__)
 
 
-class LinearRegressionEstimator(Estimator):
+class LinearRegressionEstimator(RegressionEstimator):
     """A Linear Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
+
+    regressor = smf.ols
 
     def __init__(
         # pylint: disable=too-many-arguments
@@ -35,6 +35,7 @@ class LinearRegressionEstimator(Estimator):
         alpha: float = 0.05,
         query: str = "",
     ):
+        # pylint: disable=too-many-arguments
         super().__init__(
             treatment,
             treatment_value,
@@ -43,20 +44,10 @@ class LinearRegressionEstimator(Estimator):
             outcome,
             df,
             effect_modifiers,
-            alpha=alpha,
-            query=query,
+            formula,
+            alpha,
+            query,
         )
-
-        self.model = None
-        if effect_modifiers is None:
-            effect_modifiers = []
-
-        if formula is not None:
-            self.formula = formula
-        else:
-            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(terms)}"
-
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
 
@@ -118,7 +109,7 @@ class LinearRegressionEstimator(Estimator):
 
         :return: The unit average treatment effect and the 95% Wald confidence intervals.
         """
-        model = self._run_linear_regression()
+        model = self._run_regression()
         newline = "\n"
         patsy_md = ModelDesc.from_formula(self.treatment)
 
@@ -147,7 +138,7 @@ class LinearRegressionEstimator(Estimator):
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
-        model = self._run_linear_regression()
+        model = self._run_regression()
 
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
@@ -167,37 +158,6 @@ class LinearRegressionEstimator(Estimator):
         confidence_intervals = [pd.Series(interval) for interval in confidence_intervals]
         return ate, confidence_intervals
 
-    def estimate_control_treatment(self, adjustment_config: dict = None) -> tuple[pd.Series, pd.Series]:
-        """Estimate the outcomes under control and treatment.
-
-        :return: The estimated outcome under control and treatment in the form
-        (control_outcome, treatment_outcome).
-        """
-        if adjustment_config is None:
-            adjustment_config = {}
-        model = self._run_linear_regression()
-
-        x = pd.DataFrame(columns=self.df.columns)
-        x[self.treatment] = [self.treatment_value, self.control_value]
-        x["Intercept"] = 1  # self.intercept
-
-        print(x[self.treatment])
-        for k, v in adjustment_config.items():
-            x[k] = v
-        for k, v in self.effect_modifiers.items():
-            x[k] = v
-        x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
-        for col in x:
-            if str(x.dtypes[col]) == "object":
-                x = pd.get_dummies(x, columns=[col], drop_first=True)
-        x = x[model.params.index]
-
-        x[self.treatment] = [self.treatment_value, self.control_value]
-
-        y = model.get_prediction(x).summary_frame()
-
-        return y.iloc[1], y.iloc[0]
-
     def estimate_risk_ratio(self, adjustment_config: dict = None) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
@@ -206,7 +166,8 @@ class LinearRegressionEstimator(Estimator):
         """
         if adjustment_config is None:
             adjustment_config = {}
-        control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
+        prediction = self._predict(adjustment_config=adjustment_config)
+        control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"])
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"])
         return pd.Series(treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
@@ -221,19 +182,11 @@ class LinearRegressionEstimator(Estimator):
         """
         if adjustment_config is None:
             adjustment_config = {}
-        control_outcome, treatment_outcome = self.estimate_control_treatment(adjustment_config=adjustment_config)
+        prediction = self._predict(adjustment_config=adjustment_config)
+        control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"])
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"])
         return pd.Series(treatment_outcome["mean"] - control_outcome["mean"]), [ci_low, ci_high]
-
-    def _run_linear_regression(self) -> RegressionResultsWrapper:
-        """Run linear regression of the treatment and adjustment set against the outcome and return the model.
-
-        :return: The model after fitting to data.
-        """
-        model = smf.ols(formula=self.formula, data=self.df).fit()
-        self.model = model
-        return model
 
     def _get_confidence_intervals(self, model, treatment):
         confidence_intervals = model.conf_int(alpha=self.alpha, cols=None)

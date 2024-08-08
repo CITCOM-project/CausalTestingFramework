@@ -46,7 +46,7 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
             self.formula = f"{outcome} ~ cr({'+'.join(terms)}, df={basis})"
 
     def estimate_ate_calculated(self, adjustment_config: dict = None) -> pd.Series:
-        model = self._run_linear_regression()
+        model = self._run_regression()
 
         x = {"Intercept": 1, self.treatment: self.treatment_value}
         if adjustment_config is not None:

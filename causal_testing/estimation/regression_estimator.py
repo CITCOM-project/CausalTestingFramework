@@ -2,16 +2,13 @@
 
 import logging
 from typing import Any
-from abc import abstractmethod, abstractmethod
+from abc import abstractmethod
 
 import pandas as pd
-import statsmodels.formula.api as smf
-from patsy import dmatrix  # pylint: disable = no-name-in-module
-from patsy import ModelDesc
 from statsmodels.regression.linear_model import RegressionResultsWrapper
+from patsy import dmatrix  # pylint: disable = no-name-in-module
 
 from causal_testing.specification.variable import Variable
-from causal_testing.estimation.gp import GP
 from causal_testing.estimation.estimator import Estimator
 
 logger = logging.getLogger(__name__)
@@ -50,17 +47,23 @@ class RegressionEstimator(Estimator):
         self.model = None
         if effect_modifiers is None:
             effect_modifiers = []
+        if adjustment_set is None:
+            adjustment_set = []
         if formula is not None:
             self.formula = formula
         else:
             terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             self.formula = f"{outcome} ~ {'+'.join(terms)}"
-        for term in self.effect_modifiers:
-            self.adjustment_set.add(term)
 
     @property
     @abstractmethod
-    def regression(self):
+    def regressor(self):
+        """
+        The regressor to use, e.g. ols or logit.
+        This should be a property accessible with self.regressor.
+        Define as `regressor = ...`` outside of __init__, not as `self.regressor = ...`, otherwise
+        you'll get an "cannot instantiate with abstract method" error.
+        """
         raise NotImplementedError("Subclasses must implement the 'model' property.")
 
     def add_modelling_assumptions(self):
@@ -81,6 +84,37 @@ class RegressionEstimator(Estimator):
         """
         if data is None:
             data = self.df
-        model = self.regression(formula=self.formula, data=data).fit(disp=0)
+        model = self.regressor(formula=self.formula, data=data).fit(disp=0)
         self.model = model
         return model
+
+    def _predict(self, data=None, adjustment_config: dict = None) -> tuple[pd.Series, pd.Series]:
+        """Estimate the outcomes under control and treatment.
+
+        :param data: The data to use, defaults to `self.df`. Controllable for boostrap sampling.
+        :param: adjustment_config: The values of the adjustment variables to use.
+
+        :return: The estimated outcome under control and treatment, with confidence intervals in the form of a
+                 dataframe with columns "predicted", "se", "ci_lower", and "ci_upper".
+        """
+        if adjustment_config is None:
+            adjustment_config = {}
+
+        model = self._run_regression(data)
+
+        x = pd.DataFrame(columns=self.df.columns)
+        x["Intercept"] = 1  # self.intercept
+        x[self.treatment] = [self.treatment_value, self.control_value]
+
+        for k, v in adjustment_config.items():
+            x[k] = v
+        for k, v in self.effect_modifiers.items():
+            x[k] = v
+        x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
+        for col in x:
+            if str(x.dtypes[col]) == "object":
+                x = pd.get_dummies(x, columns=[col], drop_first=True)
+
+        # This has to be here in case the treatment variable is in an I(...) block in the self.formula
+        x[self.treatment] = [self.treatment_value, self.control_value]
+        return model.get_prediction(x).summary_frame()

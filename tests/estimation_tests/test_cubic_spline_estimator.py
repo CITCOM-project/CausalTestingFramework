@@ -27,7 +27,7 @@ class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
 
         cublic_spline_estimator = CubicSplineRegressionEstimator("treatments", 1, 0, set(), "outcomes", 3, df)
 
-        model = cublic_spline_estimator._run_linear_regression()
+        ate_1 = cublic_spline_estimator.estimate_ate_calculated()
 
         self.assertEqual(
             round(
@@ -37,7 +37,6 @@ class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
             195.6,
         )
 
-        ate_1 = cublic_spline_estimator.estimate_ate_calculated()
         cublic_spline_estimator.treatment_value = 2
         ate_2 = cublic_spline_estimator.estimate_ate_calculated()
 

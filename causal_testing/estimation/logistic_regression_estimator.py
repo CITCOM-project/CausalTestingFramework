@@ -1,59 +1,25 @@
 """This module contains the LogisticRegressionEstimator class for estimating categorical outcomes."""
 
 import logging
-from typing import Any
 from math import ceil
 
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
-from patsy import dmatrix  # pylint: disable = no-name-in-module
-from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
-from causal_testing.estimation.estimator import Estimator
+from causal_testing.estimation.regression_estimator import RegressionEstimator
 
 logger = logging.getLogger(__name__)
 
 
-class LogisticRegressionEstimator(Estimator):
+class LogisticRegressionEstimator(RegressionEstimator):
     """A Logistic Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear). It is designed
     for estimating categorical outcomes.
     """
 
-    def __init__(
-        # pylint: disable=too-many-arguments
-        self,
-        treatment: str,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
-        outcome: str,
-        df: pd.DataFrame = None,
-        effect_modifiers: dict[str:Any] = None,
-        formula: str = None,
-        query: str = "",
-    ):
-        super().__init__(
-            treatment=treatment,
-            treatment_value=treatment_value,
-            control_value=control_value,
-            adjustment_set=adjustment_set,
-            outcome=outcome,
-            df=df,
-            effect_modifiers=effect_modifiers,
-            query=query,
-        )
-
-        self.model = None
-        if effect_modifiers is None:
-            effect_modifiers = []
-        if formula is not None:
-            self.formula = formula
-        else:
-            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(self.effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(((terms)))}"
+    regressor = smf.logit
 
     def add_modelling_assumptions(self):
         """
@@ -68,43 +34,6 @@ class LogisticRegressionEstimator(Estimator):
         self.modelling_assumptions.append("The outcome must be binary.")
         self.modelling_assumptions.append("Independently and identically distributed errors.")
 
-    def _run_logistic_regression(self, data) -> RegressionResultsWrapper:
-        """Run logistic regression of the treatment and adjustment set against the outcome and return the model.
-
-        :return: The model after fitting to data.
-        """
-        model = smf.logit(formula=self.formula, data=data).fit(disp=0)
-        self.model = model
-        return model
-
-    def estimate(self, data: pd.DataFrame, adjustment_config: dict = None) -> RegressionResultsWrapper:
-        """add terms to the dataframe and estimate the outcome from the data
-        :param data: A pandas dataframe containing execution data from the system-under-test.
-        :param adjustment_config: Dictionary containing the adjustment configuration of the adjustment set
-        """
-        if adjustment_config is None:
-            adjustment_config = {}
-        if set(self.adjustment_set) != set(adjustment_config):
-            raise ValueError(
-                f"Invalid adjustment configuration {adjustment_config}. Must specify values for {self.adjustment_set}"
-            )
-
-        model = self._run_logistic_regression(data)
-
-        x = pd.DataFrame(columns=self.df.columns)
-        x["Intercept"] = 1  # self.intercept
-        x[self.treatment] = [self.treatment_value, self.control_value]
-        for k, v in adjustment_config.items():
-            x[k] = v
-        for k, v in self.effect_modifiers.items():
-            x[k] = v
-        x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
-        for col in x:
-            if str(x.dtypes[col]) == "object":
-                x = pd.get_dummies(x, columns=[col], drop_first=True)
-        # x = x[model.params.index]
-        return model.predict(x)
-
     def estimate_control_treatment(
         self, adjustment_config: dict = None, bootstrap_size: int = 100
     ) -> tuple[pd.Series, pd.Series]:
@@ -115,11 +44,13 @@ class LogisticRegressionEstimator(Estimator):
         """
         if adjustment_config is None:
             adjustment_config = {}
-        y = self.estimate(self.df, adjustment_config=adjustment_config)
+        y = self._predict(self.df, adjustment_config=adjustment_config)["predicted"]
 
         try:
             bootstrap_samples = [
-                self.estimate(self.df.sample(len(self.df), replace=True), adjustment_config=adjustment_config)
+                self._predict(self.df.sample(len(self.df), replace=True), adjustment_config=adjustment_config)[
+                    "predicted"
+                ]
                 for _ in range(bootstrap_size)
             ]
             control, treatment = zip(*[(x.iloc[1], x.iloc[0]) for x in bootstrap_samples])
@@ -214,5 +145,5 @@ class LogisticRegressionEstimator(Estimator):
 
         :return: The odds ratio. Confidence intervals are not yet supported.
         """
-        model = self._run_logistic_regression(self.df)
+        model = self._run_regression(self.df)
         return np.exp(model.params[self.treatment])
