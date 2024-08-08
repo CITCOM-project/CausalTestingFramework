@@ -64,7 +64,6 @@ class RegressionEstimator(Estimator):
         Define as `regressor = ...`` outside of __init__, not as `self.regressor = ...`, otherwise
         you'll get an "cannot instantiate with abstract method" error.
         """
-        raise NotImplementedError("Subclasses must implement the 'model' property.")
 
     def add_modelling_assumptions(self):
         """
