@@ -277,8 +277,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         df["Y"] = 1 / (df["X"] + 1)
         linear_regression_estimator = LinearRegressionEstimator("X", 0, 1, set(), "Y", df.astype(float))
         linear_regression_estimator.gp_formula(seeds=["reciprocal(add(X, 1))"])
-        print("MAPPING")
-        print(linear_regression_estimator.gp.pset.mapping)
         self.assertEqual(linear_regression_estimator.formula, "Y ~ I(1/(X + 1)) - 1")
         ate, (ci_low, ci_high) = linear_regression_estimator.estimate_ate_calculated()
         self.assertEqual(round(ate[0], 2), 0.50)

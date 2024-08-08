@@ -65,9 +65,9 @@ class LinearRegressionEstimator(Estimator):
         ngen: int = 100,
         pop_size: int = 20,
         num_offspring: int = 10,
+        max_order: int = 0,
         extra_operators: list = None,
         sympy_conversions: dict = None,
-        max_order: int = 0,
         seeds: list = None,
         seed: int = 0,
     ):
@@ -76,9 +76,10 @@ class LinearRegressionEstimator(Estimator):
         Use Genetic Programming (GP) to infer the regression equation from the data.
 
         :param ngen: The maximum number of GP generations to run for.
-        :param mu: The GP population size.
+        :param pop_size: The GP population size.
         :param num_offspring: The number of offspring per generation.
-        :param extra_operators: Additional operators for the GP (defaults are +, *, and 1/x). Operations should be of
+        :param max_order: The maximum polynomial order to use, e.g. `max_order=2` will give polynomials of the form `ax^2 + bx + c`.
+        :param extra_operators: Additional operators for the GP (defaults are +, *, log(x), and 1/x). Operations should be of
                                 the form (fun, numArgs), e.g. (add, 2).
         :param sympy_conversions: Dictionary of conversions of extra_operators for sympy,
                                   e.g. `"mul": lambda *args_: "Mul({},{})".format(*args_)`.
@@ -86,7 +87,7 @@ class LinearRegressionEstimator(Estimator):
                       probably logarithmic, you can put that in).
         :param seed: Random seed for the GP.
         """
-        self.gp = GP(
+        gp = GP(
             df=self.df,
             features=sorted(list(self.adjustment_set.union([self.treatment]))),
             outcome=self.outcome,
@@ -95,8 +96,8 @@ class LinearRegressionEstimator(Estimator):
             seed=seed,
             max_order=max_order,
         )
-        formula = self.gp.run_gp(ngen=ngen, pop_size=num_offspring, num_offspring=num_offspring, seeds=seeds)
-        formula = self.gp.simplify(formula)
+        formula = gp.run_gp(ngen=ngen, pop_size=pop_size, num_offspring=num_offspring, seeds=seeds)
+        formula = gp.simplify(formula)
         self.formula = f"{self.outcome} ~ I({formula}) - 1"
 
     def add_modelling_assumptions(self):

@@ -75,6 +75,16 @@ def mut_insert(expression: gp.PrimitiveTree, pset: gp.PrimitiveSet):
     return (expression,)
 
 
+def create_power_function(power):
+    def power_func(x):
+        return power(x, power)
+
+    def sympy_conversion(x1):
+        return f"Pow({x1},{i})"
+
+    return power_func, sympy_conversion
+
+
 class GP:
     """
     Object to perform genetic programming.
@@ -90,7 +100,7 @@ class GP:
         sympy_conversions: dict = None,
         seed=0,
     ):
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments,too-many-instance-attributes
         random.seed(seed)
         self.df = df
         self.features = features
@@ -115,15 +125,15 @@ class GP:
         } | sympy_conversions
 
         for i in range(self.max_order):
-            print("Adding in order", i)
             name = f"power_{i}"
-            self.pset.addPrimitive(lambda x: power(x, i), 1, name=name)
+            func, conversion = create_power_function(i)
+            self.pset.addPrimitive(func, 1, name=name)
             if name in self.sympy_conversions:
                 raise ValueError(
                     f"You have provided a function called {name}, which is reserved for raising to power"
                     f"{i}. Please choose a different name for your function."
                 )
-            self.sympy_conversions[name] = lambda x1: f"Pow({x1},{i})"
+            self.sympy_conversions[name] = conversion
 
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
