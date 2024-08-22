@@ -823,7 +823,7 @@ class IPCWEstimator(Estimator):
 
         #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
         # Estimate the KM graph and IPCW hazard ratio using Cox regression.
-        cox_ph = CoxPHFitter()
+        cox_ph = CoxPHFitter(alpha=self.alpha)
         cox_ph.fit(
             df=preprocessed_data,
             duration_col="tout",
