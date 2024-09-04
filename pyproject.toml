@@ -30,6 +30,7 @@ dependencies = [
     "pygad~=3.3",
     "deap~=1.4.1",
     "sympy~=1.13.1",
+    "deap"~=1.4.1"
 ]
 dynamic = ["version"]
 
