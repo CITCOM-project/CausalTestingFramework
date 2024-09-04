@@ -46,6 +46,17 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
             self.formula = f"{outcome} ~ cr({'+'.join(terms)}, df={basis})"
 
     def estimate_ate_calculated(self, adjustment_config: dict = None) -> pd.Series:
+        """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
+        by changing the treatment variable from the control value to the treatment value. Here, we actually
+        calculate the expected outcomes under control and treatment and divide one by the other. This
+        allows for custom terms to be put in such as squares, inverses, products, etc.
+
+        :param: adjustment_config: The configuration of the adjustment set as a dict mapping variable names to
+                                   their values. N.B. Every variable in the adjustment set MUST have a value in
+                                   order to estimate the outcome under control and treatment.
+
+        :return: The average treatment effect.
+        """
         model = self._run_regression()
 
         x = {"Intercept": 1, self.treatment: self.treatment_value}

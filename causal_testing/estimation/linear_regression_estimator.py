@@ -178,6 +178,10 @@ class LinearRegressionEstimator(RegressionEstimator):
         calculate the expected outcomes under control and treatment and divide one by the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
+        :param: adjustment_config: The configuration of the adjustment set as a dict mapping variable names to
+                                   their values. N.B. Every variable in the adjustment set MUST have a value in
+                                   order to estimate the outcome under control and treatment.
+
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
         if adjustment_config is None:
