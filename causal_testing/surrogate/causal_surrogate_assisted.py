@@ -10,7 +10,6 @@ from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
 
 
-
 @dataclass
 class SimulationResult:
     """Data class holding the data and result metadata of a simulation"""
