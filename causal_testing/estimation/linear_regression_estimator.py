@@ -164,8 +164,6 @@ class LinearRegressionEstimator(RegressionEstimator):
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
-        if adjustment_config is None:
-            adjustment_config = {}
         prediction = self._predict(adjustment_config=adjustment_config)
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"])
@@ -184,8 +182,6 @@ class LinearRegressionEstimator(RegressionEstimator):
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
-        if adjustment_config is None:
-            adjustment_config = {}
         prediction = self._predict(adjustment_config=adjustment_config)
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"])

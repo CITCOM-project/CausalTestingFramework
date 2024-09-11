@@ -31,8 +31,12 @@ def reciprocal(x: float) -> float:
 
 def mut_insert(expression: gp.PrimitiveTree, pset: gp.PrimitiveSet):
     """
-    Copied from gp.mutInsert, except that we import isclass from inspect, so we
-    won't have the "isclass not defined" bug.
+    NOTE: This is a temporary workaround. This method is copied verbatim from
+    gp.mutInsert. It seems they forgot to import isclass from inspect, so their
+    method throws an error, saying that "isclass is not defined". A couple of
+    lines are not covered by tests, but since this is 1. a temporary workaround
+    until they release a new version of DEAP, and 2. not our code, I don't think
+    that matters.
 
     Inserts a new branch at a random position in *expression*. The subtree
     at the chosen position is used as child node of the created subtree, in
@@ -374,6 +378,4 @@ class GP:
             mutated = mut_insert(self.toolbox.clone(expression), self.pset)
         elif choice == 3:
             mutated = gp.mutShrink(self.toolbox.clone(expression))
-        else:
-            raise ValueError("Invalid mutation choice")
         return mutated
