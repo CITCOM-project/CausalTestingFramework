@@ -92,16 +92,6 @@ class LinearRegressionEstimator(RegressionEstimator):
         formula = gp.simplify(formula)
         self.formula = f"{self.outcome} ~ I({formula}) - 1"
 
-    def add_modelling_assumptions(self):
-        """
-        Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
-        must hold if the resulting causal inference is to be considered valid.
-        """
-        self.modelling_assumptions.append(
-            "The variables in the data must fit a shape which can be expressed as a linear"
-            "combination of parameters and functions of variables. Note that these functions"
-            "do not need to be linear."
-        )
 
     def estimate_coefficient(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
