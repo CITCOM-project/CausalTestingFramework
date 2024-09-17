@@ -6,7 +6,7 @@ from math import ceil
 import pandas as pd
 import statsmodels.api as sm
 
-from causal_testing.estimation.estimator import Estimator
+from causal_testing.estimation.abstract_estimator import Estimator
 
 logger = logging.getLogger(__name__)
 

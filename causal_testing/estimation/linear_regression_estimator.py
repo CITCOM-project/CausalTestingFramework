@@ -8,8 +8,8 @@ import statsmodels.formula.api as smf
 from patsy import dmatrix, ModelDesc  # pylint: disable = no-name-in-module
 
 from causal_testing.specification.variable import Variable
-from causal_testing.estimation.gp import GP
-from causal_testing.estimation.regression_estimator import RegressionEstimator
+from causal_testing.estimation.genetic_programming_regression_fitter import GP
+from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,6 @@ class LinearRegressionEstimator(RegressionEstimator):
         formula = gp.run_gp(ngen=ngen, pop_size=pop_size, num_offspring=num_offspring, seeds=seeds)
         formula = gp.simplify(formula)
         self.formula = f"{self.outcome} ~ I({formula}) - 1"
-
 
     def estimate_coefficient(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome

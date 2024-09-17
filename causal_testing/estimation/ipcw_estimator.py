@@ -9,7 +9,7 @@ import statsmodels.formula.api as smf
 from lifelines import CoxPHFitter
 
 from causal_testing.specification.capabilities import TreatmentSequence, Capability
-from causal_testing.estimation.estimator import Estimator
+from causal_testing.estimation.abstract_estimator import Estimator
 
 logger = logging.getLogger(__name__)
 

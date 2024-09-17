@@ -9,7 +9,7 @@ from statsmodels.regression.linear_model import RegressionResultsWrapper
 from patsy import dmatrix  # pylint: disable = no-name-in-module
 
 from causal_testing.specification.variable import Variable
-from causal_testing.estimation.estimator import Estimator
+from causal_testing.estimation.abstract_estimator import Estimator
 
 logger = logging.getLogger(__name__)
 

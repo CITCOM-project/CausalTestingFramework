@@ -7,7 +7,7 @@ from collections import UserDict
 from typing import Type, Iterable
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.estimation.estimator import Estimator
+from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.data_collection.data_collector import DataCollector
 from causal_testing.specification.causal_specification import CausalSpecification

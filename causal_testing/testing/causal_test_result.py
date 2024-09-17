@@ -6,7 +6,7 @@ from typing import Any
 from dataclasses import dataclass
 import pandas as pd
 
-from causal_testing.estimation.estimator import Estimator
+from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.specification.variable import Variable
 
 

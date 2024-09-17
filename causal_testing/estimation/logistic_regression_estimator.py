@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import statsmodels.formula.api as smf
 
-from causal_testing.estimation.regression_estimator import RegressionEstimator
+from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
 
 logger = logging.getLogger(__name__)
 
