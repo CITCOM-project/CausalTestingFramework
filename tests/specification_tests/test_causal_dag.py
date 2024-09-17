@@ -8,8 +8,6 @@ from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
-
-
 class TestCausalDAGIssue90(unittest.TestCase):
     """
     Test the CausalDAG class for the resolution of Issue 90.
@@ -63,9 +61,10 @@ class TestIVAssumptions(unittest.TestCase):
         causal_dag.graph.add_edge("U", "I")
         with self.assertRaises(ValueError):
             causal_dag.check_iv_assumptions("X", "Y", "I")
-    
+
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
+
 
 class TestCausalDAG(unittest.TestCase):
     """
@@ -154,9 +153,10 @@ class TestDAGDirectEffectIdentification(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X2"], ["D1"])
         self.assertEqual(list(adjustment_sets), [set()])
-    
+
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
+
 
 class TestDAGIdentification(unittest.TestCase):
     """
@@ -344,6 +344,7 @@ class TestDAGIdentification(unittest.TestCase):
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
+
 
 class TestDependsOnOutputs(unittest.TestCase):
     """

@@ -9,7 +9,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
-from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from matplotlib.pyplot import rcParams
 
@@ -61,7 +61,7 @@ def doubling_beta_CATE_on_csv(
         {"avg_age", "contacts"},  # We use custom adjustment set
         "cum_infections",
         df=past_execution_df,
-        formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts",
+        formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
     )
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
@@ -77,7 +77,7 @@ def doubling_beta_CATE_on_csv(
         set(),
         "cum_infections",
         df=past_execution_df,
-        formula="cum_infections ~ beta + np.power(beta, 2)",
+        formula="cum_infections ~ beta + I(beta ** 2)",
     )
     association_test_result = causal_test_case.execute_test(
         estimator=no_adjustment_linear_regression_estimator, data_collector=data_collector
@@ -109,7 +109,7 @@ def doubling_beta_CATE_on_csv(
             {"avg_age", "contacts"},
             "cum_infections",
             df=counterfactual_past_execution_df,
-            formula="cum_infections ~ beta + np.power(beta, 2) + avg_age + contacts",
+            formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
         )
         counterfactual_causal_test_result = causal_test_case.execute_test(
             estimator=linear_regression_estimator, data_collector=data_collector

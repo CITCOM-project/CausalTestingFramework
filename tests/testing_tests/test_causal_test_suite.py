@@ -9,7 +9,8 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.causal_test_outcome import ExactValue
-from causal_testing.testing.estimators import LinearRegressionEstimator, LogisticRegressionEstimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 from causal_testing.specification.causal_specification import CausalSpecification, Scenario
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_dag import CausalDAG
@@ -102,7 +103,9 @@ class TestCausalTestSuite(unittest.TestCase):
 
         causal_test_results = self.test_suite.execute_test_suite(self.data_collector, self.causal_specification)
         causal_test_case_result = causal_test_results[self.base_test_case]
-        self.assertAlmostEqual(causal_test_case_result["LinearRegressionEstimator"][0].test_value.value[0], 4, delta=1e-10)
+        self.assertAlmostEqual(
+            causal_test_case_result["LinearRegressionEstimator"][0].test_value.value[0], 4, delta=1e-10
+        )
 
     # Without CausalForestEstimator we now only have 2 estimators. Unfortunately LogicisticRegressionEstimator does not
     # currently work with TestSuite. So for now removed test

@@ -4,7 +4,8 @@ from statistics import StatisticsError
 import scipy
 import os
 
-from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.causal_test_outcome import NoEffect, Positive
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
@@ -313,7 +314,7 @@ class TestJsonClass(unittest.TestCase):
         effects = {"Positive": Positive()}
         mutates = {
             "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-                                  > self.json_class.scenario.variables[x].z3
+            > self.json_class.scenario.variables[x].z3
         }
         estimators = {"ExampleEstimator": ExampleEstimator}
         with self.assertRaises(TypeError):

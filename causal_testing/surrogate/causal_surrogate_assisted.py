@@ -7,7 +7,7 @@ import pandas as pd
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.estimators import CubicSplineRegressionEstimator
+from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
 
 
 @dataclass

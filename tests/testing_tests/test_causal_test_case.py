@@ -11,7 +11,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue
-from causal_testing.testing.estimators import LinearRegressionEstimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
@@ -107,7 +107,6 @@ class TestCausalTestExecution(unittest.TestCase):
         minimal_adjustment_set = self.causal_dag.identification(self.base_test_case)
         self.assertEqual(minimal_adjustment_set, {"D"})
 
-
     def test_invalid_causal_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
@@ -170,7 +169,7 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         self.causal_test_case.estimate_type = "coefficient"
         causal_test_result = self.causal_test_case.execute_test(estimation_model, self.data_collector)
-        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series({'D': 0.0}), atol=1e-1)
+        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series({"D": 0.0}), atol=1e-1)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear

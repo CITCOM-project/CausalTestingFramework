@@ -7,7 +7,6 @@ from causal_testing.specification.variable import z3_types, Variable, Input
 
 
 class TestVariable(unittest.TestCase):
-
     """
     Test the Variable class for basic methods.
     """
@@ -143,7 +142,6 @@ class TestVariable(unittest.TestCase):
 
 
 class TestZ3Methods(unittest.TestCase):
-
     """
     Test the Variable class for Z3 methods.
 

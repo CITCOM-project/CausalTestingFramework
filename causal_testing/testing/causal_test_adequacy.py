@@ -11,7 +11,7 @@ from lifelines.exceptions import ConvergenceError
 
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.testing.estimators import Estimator
+from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.causal_test_case import CausalTestCase
 
 logger = logging.getLogger(__name__)

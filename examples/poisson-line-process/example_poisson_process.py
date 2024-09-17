@@ -2,10 +2,10 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import ExactValue, Positive
-from causal_testing.testing.estimators import LinearRegressionEstimator, Estimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
 import pandas as pd
@@ -81,14 +81,11 @@ def causal_test_intensity_num_shapes(
     inverse_terms=[],
     empirical=False,
 ):
-    # 6. Create a data collector
-    data_collector = ObservationalDataCollector(scenario, pd.read_csv(observational_data_path))
-
     # 7. Obtain the minimal adjustment set for the causal test case from the causal DAG
     minimal_adjustment_set = causal_dag.identification(causal_test_case.base_test_case)
 
     # 8. Set up an estimator
-    data = pd.read_csv(observational_data_path)
+    data = pd.read_csv(observational_data_path, index_col=0).astype(float)
 
     treatment = causal_test_case.treatment_variable.name
     outcome = causal_test_case.outcome_variable.name
@@ -105,8 +102,8 @@ def causal_test_intensity_num_shapes(
             effect_modifiers=causal_test_case.effect_modifier_configuration,
         )
     else:
-        square_terms = [f"np.power({t}, 2)" for t in square_terms]
-        inverse_terms = [f"np.float_power({t}, -1)" for t in inverse_terms]
+        square_terms = [f"I({t} ** 2)" for t in square_terms]
+        inverse_terms = [f"I({t} ** -1)" for t in inverse_terms]
         estimator = LinearRegressionEstimator(
             treatment=treatment,
             control_value=causal_test_case.control_value,
@@ -119,7 +116,7 @@ def causal_test_intensity_num_shapes(
         )
 
     # 9. Execute the test
-    causal_test_result = causal_test_case.execute_test(estimator, data_collector)
+    causal_test_result = causal_test_case.execute_test(estimator, None)
 
     return causal_test_result
 
@@ -175,8 +172,8 @@ def test_poisson_width_num_shapes(save=False):
             logger.info("%s CAUSAL TEST %s", "=" * 33, "=" * 33)
             logger.info("Identifying")
             # 5. Create a causal test case
-            control_value = w
-            treatment_value = w + 1
+            control_value = float(w)
+            treatment_value = w + 1.0
             base_test_case = BaseTestCase(treatment_variable=width, outcome_variable=num_shapes_unit)
             causal_test_case = CausalTestCase(
                 base_test_case=base_test_case,

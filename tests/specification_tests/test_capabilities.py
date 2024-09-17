@@ -3,7 +3,6 @@ from causal_testing.specification.capabilities import Capability, TreatmentSeque
 
 
 class TestCapability(unittest.TestCase):
-
     """
     Test the Capability class for basic methods.
     """
@@ -17,7 +16,6 @@ class TestCapability(unittest.TestCase):
 
 
 class TestTreatmentSequence(unittest.TestCase):
-
     """
     Test the TreatmentSequence class for basic methods.
     """
