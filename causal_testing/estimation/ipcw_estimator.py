@@ -172,7 +172,7 @@ class IPCWEstimator(Estimator):
             )
 
             strategy_followed = [
-                (t, var, individual.loc[individual["time"] == t, var].values[0])
+                [t, var, individual.loc[individual["time"] == t, var].values[0]]
                 for t, var, val in self.treatment_strategy
             ]
 
