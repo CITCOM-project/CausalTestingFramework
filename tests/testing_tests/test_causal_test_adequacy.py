@@ -16,7 +16,6 @@ from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.specification.capabilities import TreatmentSequence
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
 
@@ -112,8 +111,8 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
     def test_data_adequacy_group_by(self):
         timesteps_per_intervention = 1
-        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
-        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        control_strategy = [(t, "t", 0) for t in range(1, 4, timesteps_per_intervention)]
+        treatment_strategy = [(t, "t", 1) for t in range(1, 4, timesteps_per_intervention)]
         outcome = "outcome"
         fit_bl_switch_formula = "xo_t_do ~ time"
         df = pd.read_csv("tests/resources/data/temporal_data.csv")
