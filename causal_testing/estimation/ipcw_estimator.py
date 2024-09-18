@@ -44,7 +44,8 @@ class IPCWEstimator(Estimator):
         :param: control_strategy: The control strategy, with entries of the form (timestep, variable, value).
         :param: treatment_strategy: The treatment strategy, with entries of the form (timestep, variable, value).
         :param: outcome: Name of the outcome column in the DataFrame.
-        :param: status_column: Name of the status column in the DataFrame, which should be True for operating normally, False for a fault.
+        :param: status_column: Name of the status column in the DataFrame, which should be True for operating normally,
+                               False for a fault.
         :param: fit_bl_switch_formula: Formula for fitting the baseline switch model.
         :param: fit_bltd_switch_formula: Formula for fitting the baseline time-dependent switch model.
         :param: eligibility: Function to determine eligibility for treatment. Defaults to None for "always eligible".
