@@ -111,8 +111,8 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
     def test_data_adequacy_group_by(self):
         timesteps_per_intervention = 1
-        control_strategy = [(t, "t", 0) for t in range(1, 4, timesteps_per_intervention)]
-        treatment_strategy = [(t, "t", 1) for t in range(1, 4, timesteps_per_intervention)]
+        control_strategy = [[t, "t", 0] for t in range(1, 4, timesteps_per_intervention)]
+        treatment_strategy = [[t, "t", 1] for t in range(1, 4, timesteps_per_intervention)]
         outcome = "outcome"
         fit_bl_switch_formula = "xo_t_do ~ time"
         df = pd.read_csv("tests/resources/data/temporal_data.csv")
