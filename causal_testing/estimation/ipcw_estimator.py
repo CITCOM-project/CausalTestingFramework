@@ -13,6 +13,8 @@ from causal_testing.estimation.abstract_estimator import Estimator
 
 logger = logging.getLogger(__name__)
 
+debug_id = "data-50/batch_run_16/00221634_10.csv"
+
 
 class IPCWEstimator(Estimator):
     """
@@ -73,10 +75,12 @@ class IPCWEstimator(Estimator):
         self.fit_bltd_switch_formula = fit_bltd_switch_formula
         self.eligibility = eligibility
         self.df = df
+
         if total_time is None:
-            self.total_time = (
+            total_time = (
                 max(len(self.control_strategy), len(self.treatment_strategy)) + 1
             ) * self.timesteps_per_observation
+        self.total_time = total_time
         self.preprocess_data()
 
     def add_modelling_assumptions(self):
@@ -92,8 +96,23 @@ class IPCWEstimator(Estimator):
         :param strategy_followed - the strategy followed by the individual
         :param eligible - binary sequence represnting the eligibility of the individual at each time step
         """
-        strategy_assigned = [1] + strategy_assigned + [1]
-        strategy_followed = [1] + strategy_followed + [1]
+
+        strategy_assigned = {t: (var, val) for t, var, val in strategy_assigned}
+        strategy_followed = {t: (var, val) for t, var, val in strategy_followed}
+
+        # fill in the gaps
+        for time in eligible.index:
+            if time not in strategy_assigned:
+                strategy_assigned[time] = (-1, -1)
+            if time not in strategy_followed:
+                strategy_followed[time] = (-1, -1)
+
+        strategy_assigned = sorted(
+            [(t, var, val) for t, (var, val) in strategy_assigned.items() if t in eligible.index]
+        )
+        strategy_followed = sorted(
+            [(t, var, val) for t, (var, val) in strategy_followed.items() if t in eligible.index]
+        )
 
         mask = (
             pd.Series(strategy_assigned, index=eligible.index) != pd.Series(strategy_followed, index=eligible.index)
@@ -110,25 +129,25 @@ class IPCWEstimator(Estimator):
     def setup_fault_t_do(self, individual: pd.DataFrame):
         """
         Return a binary sequence with each bit representing whether the current
-        index is the time point at which the event of interest (i.e. a fault)
-        occurred.
+        index is the time point at which the event of interest (i.e. a fault) occurred.
+
+        N.B. This is rounded _up_ to the nearest multiple of `self.timesteps_per_observation`.
+        That is, if the fault occurs at time 22, and `self.timesteps_per_observation == 5`, then
+        `fault_t_do` will be 25.
         """
+
         fault = individual[~individual[self.status_column]]
-        fault_t_do = pd.Series(np.zeros(len(individual)), index=individual.index)
+        individual["fault_t_do"] = 0
 
         if not fault.empty:
-            fault_time = individual["time"].loc[fault.index[0]]
-            # Ceiling to nearest observation point
-            fault_time = ceil(fault_time / self.timesteps_per_observation) * self.timesteps_per_observation
-            # Set the correct observation point to be the fault time of doing (fault_t_do)
-            observations = individual.loc[
-                (individual["time"] % self.timesteps_per_observation == 0) & (individual["time"] < fault_time)
-            ]
-            if not observations.empty:
-                fault_t_do.loc[observations.index[0]] = 1
-        assert sum(fault_t_do) <= 1, f"Multiple fault times for\n{individual}"
+            time_fault_observed = (
+                max(0, ceil(fault["time"].min() / self.timesteps_per_observation) - 1)
+            ) * self.timesteps_per_observation
+            individual.loc[individual["time"] == time_fault_observed, "fault_t_do"] = 1
 
-        return pd.DataFrame({"fault_t_do": fault_t_do})
+        assert sum(individual["fault_t_do"]) <= 1, f"Multiple fault times for\n{individual}"
+
+        return pd.DataFrame({"fault_t_do": individual["fault_t_do"]})
 
     def setup_fault_time(self, individual: pd.DataFrame, perturbation: float = -0.001):
         """
@@ -138,24 +157,40 @@ class IPCWEstimator(Estimator):
         fault_time = (
             individual["time"].loc[fault.index[0]]
             if not fault.empty
-            else (individual["time"].max() + self.timesteps_per_observation)
+            else (self.total_time + self.timesteps_per_observation)
         )
-        return pd.DataFrame({"fault_time": np.repeat(fault_time + perturbation, len(individual))})
+        return pd.DataFrame(
+            {
+                "fault_time": np.repeat(fault_time + perturbation, len(individual)),
+            }
+        )
 
     def preprocess_data(self):
         """
         Set up the treatment-specific columns in the data that are needed to estimate the hazard ratio.
         """
+
         self.df["trtrand"] = None  # treatment/control arm
         self.df["xo_t_do"] = None  # did the individual deviate from the treatment of interest here?
         self.df["eligible"] = self.df.eval(self.eligibility) if self.eligibility is not None else True
 
         # when did a fault occur?
-        self.df["fault_time"] = self.df.groupby("id")[[self.status_column, "time"]].apply(self.setup_fault_time).values
-        self.df["fault_t_do"] = (
-            self.df.groupby("id")[["id", "time", self.status_column]].apply(self.setup_fault_t_do).values
+        fault_time_df = self.df.groupby("id", sort=False)[[self.status_column, "time", "id"]].apply(
+            self.setup_fault_time
         )
-        assert not pd.isnull(self.df["fault_time"]).any()
+
+        assert len(fault_time_df) == len(self.df), "Fault times error"
+        self.df["fault_time"] = fault_time_df["fault_time"].values
+
+        assert (
+            self.df.groupby("id", sort=False).apply(lambda x: len(set(x["fault_time"])) == 1).all()
+        ), f"Each individual must have a unique fault time."
+
+        fault_t_do_df = self.df.groupby("id", sort=False)[["id", "time", self.status_column]].apply(
+            self.setup_fault_t_do
+        )
+        assert len(fault_t_do_df) == len(self.df), "Fault t_do error"
+        self.df["fault_t_do"] = fault_t_do_df["fault_t_do"].values
 
         living_runs = self.df.query("fault_time > 0").loc[
             (self.df["time"] % self.timesteps_per_observation == 0) & (self.df["time"] <= self.total_time)
@@ -164,34 +199,74 @@ class IPCWEstimator(Estimator):
         individuals = []
         new_id = 0
         logging.debug("  Preprocessing groups")
-        for _, individual in living_runs.groupby("id"):
+
+        for id, individual in living_runs.groupby("id", sort=False):
             assert sum(individual["fault_t_do"]) <= 1, (
                 f"Error initialising fault_t_do for individual\n"
-                f"{individual[['id', 'time', 'fault_time', 'fault_t_do']]}\n"
-                "with fault at {individual.fault_time.iloc[0]}"
+                f"{individual[['id', 'time', self.status_column, 'fault_time', 'fault_t_do']]}\n"
+                f"with fault at {individual.fault_time.iloc[0]}"
             )
 
             strategy_followed = [
                 [t, var, individual.loc[individual["time"] == t, var].values[0]]
                 for t, var, val in self.treatment_strategy
+                if t in individual["time"].values
             ]
+
+            # print("CONTROL STRATEGY")
+            # print(self.control_strategy)
+            #
+            # print("TREATMENT STRATEGY")
+            # print(self.treatment_strategy)
+            #
+            # print()
 
             # Control flow:
             # Individuals that start off in both arms, need cloning (hence incrementing the ID within the if statement)
             # Individuals that don't start off in either arm are left out
             for inx, strategy_assigned in [(0, self.control_strategy), (1, self.treatment_strategy)]:
-                if strategy_assigned[0] == strategy_followed[0] and individual.eligible.iloc[0]:
+                # print("STRATEGY", inx)
+                # print("strategy_assigned")
+                # print(strategy_assigned)
+                # print("strategy_followed")
+                # print(strategy_followed)
+                # print(
+                #     "OK?",
+                #     (
+                #         len(strategy_followed) > 0,
+                #         strategy_assigned[0] == strategy_followed[0],
+                #         individual.eligible.iloc[0],
+                #     ),
+                # )
+                if (
+                    len(strategy_followed) > 0
+                    and strategy_assigned[0] == strategy_followed[0]
+                    and individual.eligible.iloc[0]
+                ):
+                    individual["old_id"] = individual["id"]
                     individual["id"] = new_id
                     new_id += 1
                     individual["trtrand"] = inx
                     individual["xo_t_do"] = self.setup_xo_t_do(
                         strategy_assigned, strategy_followed, individual["eligible"]
                     )
-                    individuals.append(individual.loc[individual["time"] <= individual["fault_time"]].copy())
+                    # individuals.append(individual.loc[individual["time"] <= individual["fault_time"]].copy())
+                    individuals.append(
+                        individual.loc[
+                            individual["time"]
+                            < ceil(individual["fault_time"].iloc[0] / self.timesteps_per_observation)
+                            * self.timesteps_per_observation
+                        ].copy()
+                    )
         if len(individuals) == 0:
             raise ValueError("No individuals followed either strategy.")
-
         self.df = pd.concat(individuals)
+        self.df.to_csv("/tmp/test.csv")
+
+        if len(self.df.loc[self.df["trtrand"] == 0]) == 0:
+            raise ValueError(f"No individuals followed the control strategy {self.control_strategy}")
+        if len(self.df.loc[self.df["trtrand"] == 1]) == 0:
+            raise ValueError(f"No individuals followed the treatment strategy {self.treatment_strategy}")
 
     def estimate_hazard_ratio(self):
         """
@@ -201,7 +276,7 @@ class IPCWEstimator(Estimator):
         if self.df["fault_t_do"].sum() == 0:
             raise ValueError("No recorded faults")
 
-        preprocessed_data = self.df.loc[self.df["xo_t_do"] == 0].copy()
+        preprocessed_data = self.df.copy()
 
         # Use logistic regression to predict switching given baseline covariates
         fit_bl_switch = smf.logit(self.fit_bl_switch_formula, data=self.df).fit()
@@ -242,7 +317,8 @@ class IPCWEstimator(Estimator):
         ).min(axis=1)
 
         assert (preprocessed_data["tin"] <= preprocessed_data["tout"]).all(), (
-            f"Left before joining\n" f"{preprocessed_data.loc[preprocessed_data['tin'] >= preprocessed_data['tout']]}"
+            f"Left before joining\n"
+            f"{preprocessed_data.loc[preprocessed_data['tin'] >= preprocessed_data['tout'], ['id', 'time', 'fault_time', 'tin', 'tout']]}"
         )
 
         #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
