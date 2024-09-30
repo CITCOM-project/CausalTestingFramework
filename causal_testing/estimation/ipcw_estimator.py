@@ -3,6 +3,7 @@
 import logging
 from math import ceil
 from typing import Any
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -74,14 +75,16 @@ class IPCWEstimator(Estimator):
         self.fit_bl_switch_formula = fit_bl_switch_formula
         self.fit_bltd_switch_formula = fit_bltd_switch_formula
         self.eligibility = eligibility
-        self.df = df
+        self.df = df.sort_values(["id", "time"])
 
         if total_time is None:
             total_time = (
                 max(len(self.control_strategy), len(self.treatment_strategy)) + 1
             ) * self.timesteps_per_observation
         self.total_time = total_time
+        print("PREPROCESSING")
         self.preprocess_data()
+        print("PREPROCESSED")
 
     def add_modelling_assumptions(self):
         self.modelling_assumptions.append("The variables in the data vary over time.")
@@ -200,7 +203,7 @@ class IPCWEstimator(Estimator):
         new_id = 0
         logging.debug("  Preprocessing groups")
 
-        for id, individual in living_runs.groupby("id", sort=False):
+        for id, individual in tqdm(living_runs.groupby("id", sort=False)):
             assert sum(individual["fault_t_do"]) <= 1, (
                 f"Error initialising fault_t_do for individual\n"
                 f"{individual[['id', 'time', self.status_column, 'fault_time', 'fault_t_do']]}\n"
@@ -213,31 +216,10 @@ class IPCWEstimator(Estimator):
                 if t in individual["time"].values
             ]
 
-            # print("CONTROL STRATEGY")
-            # print(self.control_strategy)
-            #
-            # print("TREATMENT STRATEGY")
-            # print(self.treatment_strategy)
-            #
-            # print()
-
             # Control flow:
             # Individuals that start off in both arms, need cloning (hence incrementing the ID within the if statement)
             # Individuals that don't start off in either arm are left out
             for inx, strategy_assigned in [(0, self.control_strategy), (1, self.treatment_strategy)]:
-                # print("STRATEGY", inx)
-                # print("strategy_assigned")
-                # print(strategy_assigned)
-                # print("strategy_followed")
-                # print(strategy_followed)
-                # print(
-                #     "OK?",
-                #     (
-                #         len(strategy_followed) > 0,
-                #         strategy_assigned[0] == strategy_followed[0],
-                #         individual.eligible.iloc[0],
-                #     ),
-                # )
                 if (
                     len(strategy_followed) > 0
                     and strategy_assigned[0] == strategy_followed[0]
@@ -250,7 +232,6 @@ class IPCWEstimator(Estimator):
                     individual["xo_t_do"] = self.setup_xo_t_do(
                         strategy_assigned, strategy_followed, individual["eligible"]
                     )
-                    # individuals.append(individual.loc[individual["time"] <= individual["fault_time"]].copy())
                     individuals.append(
                         individual.loc[
                             individual["time"]
@@ -261,12 +242,12 @@ class IPCWEstimator(Estimator):
         if len(individuals) == 0:
             raise ValueError("No individuals followed either strategy.")
         self.df = pd.concat(individuals)
-        self.df.to_csv("/tmp/test.csv")
+        print(len(individuals), "individuals")
 
         if len(self.df.loc[self.df["trtrand"] == 0]) == 0:
-            raise ValueError(f"No individuals followed the control strategy {self.control_strategy}")
+            raise ValueError(f"No individuals began the control strategy {self.control_strategy}")
         if len(self.df.loc[self.df["trtrand"] == 1]) == 0:
-            raise ValueError(f"No individuals followed the treatment strategy {self.treatment_strategy}")
+            raise ValueError(f"No individuals began the treatment strategy {self.treatment_strategy}")
 
     def estimate_hazard_ratio(self):
         """
@@ -279,20 +260,27 @@ class IPCWEstimator(Estimator):
         preprocessed_data = self.df.copy()
 
         # Use logistic regression to predict switching given baseline covariates
+        print("Use logistic regression to predict switching given baseline covariates")
         fit_bl_switch = smf.logit(self.fit_bl_switch_formula, data=self.df).fit()
 
         preprocessed_data["pxo1"] = fit_bl_switch.predict(preprocessed_data)
 
         # Use logistic regression to predict switching given baseline and time-updated covariates (model S12)
+        print("Use logistic regression to predict switching given baseline and time-updated covariates (model S12)")
         fit_bltd_switch = smf.logit(
             self.fit_bltd_switch_formula,
             data=self.df,
         ).fit()
 
         preprocessed_data["pxo2"] = fit_bltd_switch.predict(preprocessed_data)
+        if (preprocessed_data["pxo2"] == 1).any():
+            raise ValueError(
+                "Probability of switching given baseline and time-varying confounders (pxo2) cannot be one."
+            )
 
         # IPCW step 3: For each individual at each time, compute the inverse probability of remaining uncensored
         # Estimate the probabilities of remaining ‘un-switched’ and hence the weights
+        print("Estimate the probabilities of remaining ‘un-switched’ and hence the weights")
 
         preprocessed_data["num"] = 1 - preprocessed_data["pxo1"]
         preprocessed_data["denom"] = 1 - preprocessed_data["pxo2"]
@@ -321,8 +309,16 @@ class IPCWEstimator(Estimator):
             f"{preprocessed_data.loc[preprocessed_data['tin'] >= preprocessed_data['tout'], ['id', 'time', 'fault_time', 'tin', 'tout']]}"
         )
 
+        preprocessed_data.pop("old_id")
+        assert (
+            not np.isinf(preprocessed_data[[col for col in preprocessed_data if preprocessed_data.dtypes[col] != bool]])
+            .any()
+            .any()
+        ), "Infinity not allowed."
+
         #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
         # Estimate the KM graph and IPCW hazard ratio using Cox regression.
+        print("Estimate the KM graph and IPCW hazard ratio using Cox regression.")
         cox_ph = CoxPHFitter()
         cox_ph.fit(
             df=preprocessed_data,
