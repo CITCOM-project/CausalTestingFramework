@@ -22,7 +22,7 @@ class IPCWEstimator(Estimator):
     """
 
     # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-local-variables
+    # pylint: disable=too-many-locals
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
