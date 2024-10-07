@@ -22,6 +22,7 @@ class IPCWEstimator(Estimator):
     """
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-local-variables
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
@@ -339,7 +340,7 @@ class IPCWEstimator(Estimator):
             axis=1,
         ).min(axis=1)
 
-        assert (preprocessed_data["tin"] <= preprocessed_data["tout"]).all(), f"Individuals left before joining."
+        assert (preprocessed_data["tin"] <= preprocessed_data["tout"]).all(), "Individuals left before joining."
 
         preprocessed_data.to_csv("/home/michael/tmp/preprocessed_data.csv")
 
