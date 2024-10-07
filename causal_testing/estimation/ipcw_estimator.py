@@ -83,45 +83,12 @@ class IPCWEstimator(Estimator):
                 max(len(self.control_strategy), len(self.treatment_strategy)) + 1
             ) * self.timesteps_per_observation
         self.total_time = total_time
-        print("PREPROCESSING")
         self.preprocess_data()
-        print("PREPROCESSED")
 
     def add_modelling_assumptions(self):
         self.modelling_assumptions.append("The variables in the data vary over time.")
 
-    def setup_xo_t_do(self, strategy_assigned: list, strategy_followed: list, eligible: pd.Series, time: pd.Series):
-        """
-        Return a binary sequence with each bit representing whether the current
-        index is the time point at which the individual diverted from the
-        assigned treatment strategy (and thus should be censored).
-
-        :param strategy_assigned - the assigned treatment strategy
-        :param strategy_followed - the strategy followed by the individual
-        :param eligible - binary sequence represnting the eligibility of the individual at each time step
-        :param time - The sequence of time steps
-        """
-
-        default = {t: (-1, -1) for t in time.values}
-        strategy_assigned = default | {t: (var, val) for t, var, val in strategy_assigned}
-        strategy_followed = default | {t: (var, val) for t, var, val in strategy_followed}
-
-        strategy_assigned = sorted([(t, var, val) for t, (var, val) in strategy_assigned.items() if t in time.values])
-        strategy_followed = sorted([(t, var, val) for t, (var, val) in strategy_followed.items() if t in time.values])
-
-        mask = (
-            pd.Series(strategy_assigned, index=eligible.index) != pd.Series(strategy_followed, index=eligible.index)
-        ).astype("boolean")
-        mask = mask | ~eligible
-        mask.reset_index(inplace=True, drop=True)
-        false = mask.loc[mask]
-        if false.empty:
-            return np.zeros(len(mask))
-        mask = (mask * 1).tolist()
-        cutoff = false.index[0] + 1
-        return mask[:cutoff] + ([None] * (len(mask) - cutoff))
-
-    def setup_xo_t_do_2(self, individual: pd.DataFrame, strategy_assigned: list):
+    def setup_xo_t_do(self, individual: pd.DataFrame, strategy_assigned: list):
         """
         Return a binary sequence with each bit representing whether the current
         index is the time point at which the individual diverted from the
@@ -242,16 +209,20 @@ class IPCWEstimator(Estimator):
 
         logging.debug("  Preprocessing groups")
 
-        # new
-        ctrl_time, ctrl_var, ctrl_val = self.control_strategy[0]
+        ctrl_time_0, ctrl_var_0, ctrl_val_0 = self.control_strategy[0]
+        ctrl_time, ctrl_var, ctrl_val = min(
+            set(map(tuple, self.control_strategy)).difference(map(tuple, self.treatment_strategy))
+        )
         control_group = (
             living_runs.groupby("id", sort=False)
             .filter(lambda gp: len(gp.loc[(gp["time"] == ctrl_time) & (gp[ctrl_var] == ctrl_val)]) > 0)
+            .groupby("id", sort=False)
+            .filter(lambda gp: len(gp.loc[(gp["time"] == ctrl_time_0) & (gp[ctrl_var_0] == ctrl_val_0)]) > 0)
             .copy()
         )
         control_group["trtrand"] = 0
         ctrl_xo_t_do_df = control_group.groupby("id", sort=False).apply(
-            self.setup_xo_t_do_2, strategy_assigned=self.control_strategy
+            self.setup_xo_t_do, strategy_assigned=self.control_strategy
         )
         control_group["xo_t_do"] = ctrl_xo_t_do_df["xo_t_do"].values
         control_group["old_id"] = control_group["id"]
@@ -259,78 +230,54 @@ class IPCWEstimator(Estimator):
         control_group["id"] = [f"c-{id}" for id in control_group["id"]]
         assert not control_group["id"].isnull().any(), "Null control IDs"
 
-        trt_time, trt_var, trt_val = self.treatment_strategy[0]
+        trt_time_0, trt_var_0, trt_val_0 = self.treatment_strategy[0]
+        trt_time, trt_var, trt_val = min(
+            set(map(tuple, self.treatment_strategy)).difference(map(tuple, self.control_strategy))
+        )
         treatment_group = (
             living_runs.groupby("id", sort=False)
             .filter(lambda gp: len(gp.loc[(gp["time"] == trt_time) & (gp[trt_var] == trt_val)]) > 0)
+            .groupby("id", sort=False)
+            .filter(lambda gp: len(gp.loc[(gp["time"] == trt_time_0) & (gp[trt_var_0] == trt_val_0)]) > 0)
             .copy()
         )
         treatment_group["trtrand"] = 1
         trt_xo_t_do_df = treatment_group.groupby("id", sort=False).apply(
-            self.setup_xo_t_do_2, strategy_assigned=self.treatment_strategy
+            self.setup_xo_t_do, strategy_assigned=self.treatment_strategy
         )
         treatment_group["xo_t_do"] = trt_xo_t_do_df["xo_t_do"].values
         treatment_group["old_id"] = treatment_group["id"]
         # treatment_group["id"] = trt_xo_t_do_df["id"].values
-        treatment_group["id"] = [f"c-{id}" for id in treatment_group["id"]]
+        treatment_group["id"] = [f"t-{id}" for id in treatment_group["id"]]
         assert not treatment_group["id"].isnull().any(), "Null treatment IDs"
+
+        logger.debug(
+            len(control_group.groupby("id")),
+            "control individuals",
+            len(treatment_group.groupby("id")),
+            "treatment individuals",
+        )
 
         individuals = pd.concat([control_group, treatment_group])
         individuals = individuals.loc[
-            individuals["time"]
-            < ceil(individuals["fault_time"].iloc[0] / self.timesteps_per_observation) * self.timesteps_per_observation
-        ].copy()
+            (
+                (
+                    individuals["time"]
+                    < ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
+                )
+                & (~individuals["xo_t_do"].isnull())
+            )
+        ]
 
-        individuals.sort_values(by=["old_id", "time"]).to_csv("/home/michael/tmp/vectorised_individuals.csv")
-        # end new
+        individuals.sort_values(by=["id", "time"]).to_csv("/home/michael/tmp/vectorised_individuals.csv")
 
-        # individuals = []
-        #
-        # for id, individual in tqdm(living_runs.groupby("id", sort=False)):
-        #     assert sum(individual["fault_t_do"]) <= 1, (
-        #         f"Error initialising fault_t_do for individual\n"
-        #         f"{individual[['id', 'time', self.status_column, 'fault_time', 'fault_t_do']]}\n"
-        #         f"with fault at {individual.fault_time.iloc[0]}"
-        #     )
-        #
-        #     strategy_followed = [
-        #         [t, var, individual.loc[individual["time"] == t, var].values[0]]
-        #         for t, var, val in self.treatment_strategy
-        #         if t in individual["time"].values
-        #     ]
-        #
-        #     # Control flow:
-        #     # Individuals that start off in both arms, need cloning (hence incrementing the ID within the if statement)
-        #     # Individuals that don't start off in either arm are left out
-        #     for inx, strategy_assigned in [(0, self.control_strategy), (1, self.treatment_strategy)]:
-        #         if (
-        #             len(strategy_followed) > 0
-        #             and strategy_assigned[0] == strategy_followed[0]
-        #             and individual.eligible.iloc[0]
-        #         ):
-        #             individual["old_id"] = individual["id"]
-        #             individual["id"] = new_id
-        #             new_id += 1
-        #             individual["trtrand"] = inx
-        #             individual["xo_t_do"] = self.setup_xo_t_do(
-        #                 strategy_assigned, strategy_followed, individual["eligible"], individual["time"]
-        #             )
-        #             individuals.append(
-        #                 individual.loc[
-        #                     individual["time"]
-        #                     < ceil(individual["fault_time"].iloc[0] / self.timesteps_per_observation)
-        #                     * self.timesteps_per_observation
-        #                 ].copy()
-        #             )
-        # self.df = pd.concat(individuals)
-        # self.df.sort_values(by=["id", "time"]).to_csv("/home/michael/tmp/iterated_individuals.csv")
         if len(individuals) == 0:
             raise ValueError("No individuals followed either strategy.")
         self.df = individuals.loc[
             individuals["time"]
             < ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
         ].reset_index()
-        print(len(individuals), "individuals")
+        logger.debug(len(individuals.groupby("id")), "individuals")
 
         if len(self.df.loc[self.df["trtrand"] == 0]) == 0:
             raise ValueError(f"No individuals began the control strategy {self.control_strategy}")
@@ -348,13 +295,15 @@ class IPCWEstimator(Estimator):
         preprocessed_data = self.df.copy()
 
         # Use logistic regression to predict switching given baseline covariates
-        print("Use logistic regression to predict switching given baseline covariates")
+        logger.debug("Use logistic regression to predict switching given baseline covariates")
         fit_bl_switch = smf.logit(self.fit_bl_switch_formula, data=self.df).fit()
 
         preprocessed_data["pxo1"] = fit_bl_switch.predict(preprocessed_data)
 
         # Use logistic regression to predict switching given baseline and time-updated covariates (model S12)
-        print("Use logistic regression to predict switching given baseline and time-updated covariates (model S12)")
+        logger.debug(
+            "Use logistic regression to predict switching given baseline and time-updated covariates (model S12)"
+        )
         fit_bltd_switch = smf.logit(
             self.fit_bltd_switch_formula,
             data=self.df,
@@ -368,7 +317,7 @@ class IPCWEstimator(Estimator):
 
         # IPCW step 3: For each individual at each time, compute the inverse probability of remaining uncensored
         # Estimate the probabilities of remaining 'un-switched' and hence the weights
-        print("Estimate the probabilities of remaining 'un-switched' and hence the weights")
+        logger.debug("Estimate the probabilities of remaining 'un-switched' and hence the weights")
 
         preprocessed_data["num"] = 1 - preprocessed_data["pxo1"]
         preprocessed_data["denom"] = 1 - preprocessed_data["pxo2"]
@@ -397,10 +346,12 @@ class IPCWEstimator(Estimator):
             f"{preprocessed_data.loc[preprocessed_data['tin'] >= preprocessed_data['tout'], ['id', 'time', 'fault_time', 'tin', 'tout']]}"
         )
 
+        preprocessed_data.to_csv("/home/michael/tmp/preprocessed_data.csv")
+
         #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
         # Estimate the KM graph and IPCW hazard ratio using Cox regression.
-        print("Estimate the KM graph and IPCW hazard ratio using Cox regression.")
-        cox_ph = CoxPHFitter()
+        logger.debug("Estimate the KM graph and IPCW hazard ratio using Cox regression.")
+        cox_ph = CoxPHFitter(penalizer=0.2, alpha=self.alpha)
         cox_ph.fit(
             df=preprocessed_data,
             duration_col="tout",
@@ -411,7 +362,6 @@ class IPCWEstimator(Estimator):
             formula="trtrand",
             entry_col="tin",
         )
-        print("Estimated")
 
         ci_low, ci_high = [np.exp(cox_ph.confidence_intervals_)[col] for col in cox_ph.confidence_intervals_.columns]
 
