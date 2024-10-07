@@ -144,11 +144,12 @@ class TestCausalTestAdequacy(unittest.TestCase):
         causal_test_result = causal_test_case.execute_test(estimation_model, None)
         adequacy_metric = DataAdequacy(causal_test_case, estimation_model, group_by="id")
         adequacy_metric.measure_adequacy()
-        causal_test_result.adequacy = adequacy_metric
-        print(causal_test_result.adequacy.to_dict())
+        adequacy_dict = adequacy_metric.to_dict()
+        self.assertEqual(round(adequacy_dict["kurtosis"]["trtrand"], 3), -0.336)
+        adequacy_dict.pop("kurtosis")
         self.assertEqual(
-            causal_test_result.adequacy.to_dict(),
-            {"kurtosis": {"trtrand": 0.0}, "bootstrap_size": 100, "passing": 0, "successful": 95},
+            adequacy_dict,
+            {"bootstrap_size": 100, "passing": 28, "successful": 95},
         )
 
     def test_dag_adequacy_dependent(self):

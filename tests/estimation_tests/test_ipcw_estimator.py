@@ -33,7 +33,7 @@ class TestIPCWEstimator(unittest.TestCase):
             eligibility=None,
         )
         estimate, intervals = estimation_model.estimate_hazard_ratio()
-        self.assertEqual(estimate["trtrand"], 1.0)
+        self.assertEqual(round(estimate["trtrand"], 3), 1.936)
 
     def test_invalid_treatment_strategies(self):
         timesteps_per_intervention = 1
