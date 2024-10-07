@@ -268,8 +268,6 @@ class IPCWEstimator(Estimator):
             )
         ]
 
-        individuals.sort_values(by=["id", "time"]).to_csv("/home/michael/tmp/vectorised_individuals.csv")
-
         if len(individuals) == 0:
             raise ValueError("No individuals followed either strategy.")
         self.df = individuals.loc[
