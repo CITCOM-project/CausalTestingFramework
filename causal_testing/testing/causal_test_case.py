@@ -2,7 +2,6 @@
 
 import logging
 from typing import Any
-import numpy as np
 
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome
@@ -81,21 +80,13 @@ class CausalTestCase:
         if not hasattr(estimator, f"estimate_{self.estimate_type}"):
             raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
         estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
-        try:
-            effect, confidence_intervals = estimate_effect(**self.estimate_params)
-            return CausalTestResult(
-                estimator=estimator,
-                test_value=TestValue(self.estimate_type, effect),
-                effect_modifier_configuration=self.effect_modifier_configuration,
-                confidence_intervals=confidence_intervals,
-            )
-        except np.linalg.LinAlgError:
-            return CausalTestResult(
-                estimator=estimator,
-                test_value=TestValue(self.estimate_type, None),
-                effect_modifier_configuration=self.effect_modifier_configuration,
-                confidence_intervals=None,
-            )
+        effect, confidence_intervals = estimate_effect(**self.estimate_params)
+        return CausalTestResult(
+            estimator=estimator,
+            test_value=TestValue(self.estimate_type, effect),
+            effect_modifier_configuration=self.effect_modifier_configuration,
+            confidence_intervals=confidence_intervals,
+        )
 
     def __str__(self):
         treatment_config = {self.treatment_variable.name: self.treatment_value}

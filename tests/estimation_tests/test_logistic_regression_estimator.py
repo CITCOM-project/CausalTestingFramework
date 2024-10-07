@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
-from causal_testing.specification.capabilities import TreatmentSequence
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 
 
