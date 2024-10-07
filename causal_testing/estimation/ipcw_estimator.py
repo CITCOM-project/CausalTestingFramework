@@ -1,10 +1,9 @@
 """This module contains the IPCWEstimator class, for estimating the time to a particular event"""
 
 import logging
-from numpy import ceil
 from typing import Any
-from tqdm import tqdm
 from uuid import uuid4
+
 
 import numpy as np
 import pandas as pd
@@ -14,8 +13,6 @@ from lifelines import CoxPHFitter
 from causal_testing.estimation.abstract_estimator import Estimator
 
 logger = logging.getLogger(__name__)
-
-debug_id = "data-50/batch_run_16/00221634_10.csv"
 
 
 class IPCWEstimator(Estimator):
@@ -152,7 +149,7 @@ class IPCWEstimator(Estimator):
 
         if not fault.empty:
             time_fault_observed = (
-                max(0, ceil(fault["time"].min() / self.timesteps_per_observation) - 1)
+                max(0, np.ceil(fault["time"].min() / self.timesteps_per_observation) - 1)
             ) * self.timesteps_per_observation
             individual.loc[individual["time"] == time_fault_observed, "fault_t_do"] = 1
 
@@ -195,7 +192,7 @@ class IPCWEstimator(Estimator):
 
         assert (
             self.df.groupby("id", sort=False).apply(lambda x: len(set(x["fault_time"])) == 1).all()
-        ), f"Each individual must have a unique fault time."
+        ), "Each individual must have a unique fault time."
 
         fault_t_do_df = self.df.groupby("id", sort=False)[["id", "time", self.status_column]].apply(
             self.setup_fault_t_do
@@ -263,7 +260,8 @@ class IPCWEstimator(Estimator):
             (
                 (
                     individuals["time"]
-                    < ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
+                    < np.ceil(individuals["fault_time"] / self.timesteps_per_observation)
+                    * self.timesteps_per_observation
                 )
                 & (~individuals["xo_t_do"].isnull())
             )
@@ -275,7 +273,7 @@ class IPCWEstimator(Estimator):
             raise ValueError("No individuals followed either strategy.")
         self.df = individuals.loc[
             individuals["time"]
-            < ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
+            < np.ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
         ].reset_index()
         logger.debug(len(individuals.groupby("id")), "individuals")
 
@@ -341,10 +339,7 @@ class IPCWEstimator(Estimator):
             axis=1,
         ).min(axis=1)
 
-        assert (preprocessed_data["tin"] <= preprocessed_data["tout"]).all(), (
-            f"Left before joining\n"
-            f"{preprocessed_data.loc[preprocessed_data['tin'] >= preprocessed_data['tout'], ['id', 'time', 'fault_time', 'tin', 'tout']]}"
-        )
+        assert (preprocessed_data["tin"] <= preprocessed_data["tout"]).all(), f"Individuals left before joining."
 
         preprocessed_data.to_csv("/home/michael/tmp/preprocessed_data.csv")
 
