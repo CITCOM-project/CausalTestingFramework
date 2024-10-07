@@ -340,8 +340,6 @@ class IPCWEstimator(Estimator):
 
         assert (preprocessed_data["tin"] <= preprocessed_data["tout"]).all(), "Individuals left before joining."
 
-        preprocessed_data.to_csv("/home/michael/tmp/preprocessed_data.csv")
-
         #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
         # Estimate the KM graph and IPCW hazard ratio using Cox regression.
         logger.debug("Estimate the KM graph and IPCW hazard ratio using Cox regression.")
