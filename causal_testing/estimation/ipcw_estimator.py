@@ -75,6 +75,8 @@ class IPCWEstimator(Estimator):
         self.fit_bltd_switch_formula = fit_bltd_switch_formula
         self.eligibility = eligibility
         self.df = df.sort_values(["id", "time"])
+        self.len_control_group = None
+        self.len_treatment_group = None
 
         if total_time is None:
             total_time = (
@@ -249,13 +251,15 @@ class IPCWEstimator(Estimator):
         treatment_group["id"] = [f"t-{id}" for id in treatment_group["id"]]
         assert not treatment_group["id"].isnull().any(), "Null treatment IDs"
 
+        premature_failures = living_runs.groupby("id", sort=False).filter(lambda gp: gp["time"].max() < trt_time)
         logger.debug(
-            len(control_group.groupby("id")),
-            "control individuals",
-            len(treatment_group.groupby("id")),
-            "treatment individuals",
+            f"{len(control_group.groupby('id'))} control individuals "
+            f"{len(treatment_group.groupby('id'))} treatment individuals "
+            f"{len(premature_failures.groupby('id'))} premature failures"
         )
 
+        self.len_control_group = len(control_group.groupby("id"))
+        self.len_treatment_group = len(treatment_group.groupby("id"))
         individuals = pd.concat([control_group, treatment_group])
         individuals = individuals.loc[
             (
@@ -274,7 +278,7 @@ class IPCWEstimator(Estimator):
             individuals["time"]
             < np.ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
         ].reset_index()
-        logger.debug(len(individuals.groupby("id")), "individuals")
+        logger.debug(f"{len(individuals.groupby('id'))} individuals")
 
         if len(self.df.loc[self.df["trtrand"] == 0]) == 0:
             raise ValueError(f"No individuals began the control strategy {self.control_strategy}")
@@ -293,20 +297,39 @@ class IPCWEstimator(Estimator):
 
         # Use logistic regression to predict switching given baseline covariates
         logger.debug("Use logistic regression to predict switching given baseline covariates")
-        fit_bl_switch = smf.logit(self.fit_bl_switch_formula, data=self.df).fit()
+        fit_bl_switch_c = smf.logit(self.fit_bl_switch_formula, data=self.df.loc[self.df.trtrand == 0]).fit(
+            method="bfgs"
+        )
+        fit_bl_switch_t = smf.logit(self.fit_bl_switch_formula, data=self.df.loc[self.df.trtrand == 1]).fit(
+            method="bfgs"
+        )
 
-        preprocessed_data["pxo1"] = fit_bl_switch.predict(preprocessed_data)
+        preprocessed_data.loc[preprocessed_data["trtrand"] == 0, "pxo1"] = fit_bl_switch_c.predict(
+            self.df.loc[self.df.trtrand == 0]
+        )
+        preprocessed_data.loc[preprocessed_data["trtrand"] == 1, "pxo1"] = fit_bl_switch_t.predict(
+            self.df.loc[self.df.trtrand == 1]
+        )
 
         # Use logistic regression to predict switching given baseline and time-updated covariates (model S12)
         logger.debug(
             "Use logistic regression to predict switching given baseline and time-updated covariates (model S12)"
         )
-        fit_bltd_switch = smf.logit(
+        fit_bltd_switch_c = smf.logit(
             self.fit_bltd_switch_formula,
-            data=self.df,
-        ).fit()
+            data=self.df.loc[self.df.trtrand == 0],
+        ).fit(method="bfgs")
+        fit_bltd_switch_t = smf.logit(
+            self.fit_bltd_switch_formula,
+            data=self.df.loc[self.df.trtrand == 1],
+        ).fit(method="bfgs")
 
-        preprocessed_data["pxo2"] = fit_bltd_switch.predict(preprocessed_data)
+        preprocessed_data.loc[preprocessed_data["trtrand"] == 0, "pxo2"] = fit_bltd_switch_c.predict(
+            self.df.loc[self.df.trtrand == 0]
+        )
+        preprocessed_data.loc[preprocessed_data["trtrand"] == 1, "pxo2"] = fit_bltd_switch_t.predict(
+            self.df.loc[self.df.trtrand == 1]
+        )
         if (preprocessed_data["pxo2"] == 1).any():
             raise ValueError(
                 "Probability of switching given baseline and time-varying confounders (pxo2) cannot be one."

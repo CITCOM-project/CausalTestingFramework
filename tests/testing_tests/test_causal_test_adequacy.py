@@ -1,8 +1,7 @@
+import os
 import unittest
 from pathlib import Path
-from statistics import StatisticsError
 import scipy
-import os
 import pandas as pd
 
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
@@ -11,11 +10,9 @@ from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.testing.causal_test_adequacy import DAGAdequacy
-from causal_testing.testing.causal_test_outcome import NoEffect, Positive, SomeEffect
+from causal_testing.testing.causal_test_outcome import NoEffect, SomeEffect
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
-from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
 
@@ -145,11 +142,11 @@ class TestCausalTestAdequacy(unittest.TestCase):
         adequacy_metric = DataAdequacy(causal_test_case, estimation_model, group_by="id")
         adequacy_metric.measure_adequacy()
         adequacy_dict = adequacy_metric.to_dict()
-        self.assertEqual(round(adequacy_dict["kurtosis"]["trtrand"], 3), -0.336)
+        self.assertEqual(round(adequacy_dict["kurtosis"]["trtrand"], 3), -0.857)
         adequacy_dict.pop("kurtosis")
         self.assertEqual(
             adequacy_dict,
-            {"bootstrap_size": 100, "passing": 28, "successful": 95},
+            {"bootstrap_size": 100, "passing": 32, "successful": 100},
         )
 
     def test_dag_adequacy_dependent(self):
