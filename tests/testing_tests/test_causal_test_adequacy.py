@@ -1,8 +1,7 @@
+import os
 import unittest
 from pathlib import Path
-from statistics import StatisticsError
 import scipy
-import os
 import pandas as pd
 
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
@@ -11,12 +10,9 @@ from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.testing.causal_test_adequacy import DAGAdequacy
-from causal_testing.testing.causal_test_outcome import NoEffect, Positive, SomeEffect
+from causal_testing.testing.causal_test_outcome import NoEffect, SomeEffect
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
-from causal_testing.specification.variable import Input, Output, Meta
 from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.specification.capabilities import TreatmentSequence
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
 
@@ -112,8 +108,8 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
     def test_data_adequacy_group_by(self):
         timesteps_per_intervention = 1
-        control_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 0), ("t", 0), ("t", 0)])
-        treatment_strategy = TreatmentSequence(timesteps_per_intervention, [("t", 1), ("t", 1), ("t", 1)])
+        control_strategy = [[t, "t", 0] for t in range(1, 4, timesteps_per_intervention)]
+        treatment_strategy = [[t, "t", 1] for t in range(1, 4, timesteps_per_intervention)]
         outcome = "outcome"
         fit_bl_switch_formula = "xo_t_do ~ time"
         df = pd.read_csv("tests/resources/data/temporal_data.csv")
@@ -145,11 +141,12 @@ class TestCausalTestAdequacy(unittest.TestCase):
         causal_test_result = causal_test_case.execute_test(estimation_model, None)
         adequacy_metric = DataAdequacy(causal_test_case, estimation_model, group_by="id")
         adequacy_metric.measure_adequacy()
-        causal_test_result.adequacy = adequacy_metric
-        print(causal_test_result.adequacy.to_dict())
+        adequacy_dict = adequacy_metric.to_dict()
+        self.assertEqual(round(adequacy_dict["kurtosis"]["trtrand"], 3), -0.857)
+        adequacy_dict.pop("kurtosis")
         self.assertEqual(
-            causal_test_result.adequacy.to_dict(),
-            {"kurtosis": {"trtrand": 0.0}, "bootstrap_size": 100, "passing": 0, "successful": 95},
+            adequacy_dict,
+            {"bootstrap_size": 100, "passing": 32, "successful": 100},
         )
 
     def test_dag_adequacy_dependent(self):
