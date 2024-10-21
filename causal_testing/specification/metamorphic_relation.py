@@ -214,44 +214,63 @@ class MetamorphicTest:
         )
 
 
-def generate_metamorphic_relations(dag: CausalDAG) -> list[MetamorphicRelation]:
-    """Construct a list of metamorphic relations implied by the Causal DAG.
+def generate_metamorphic_relations(dag: CausalDAG, skip_ancestors: bool) -> list[MetamorphicRelation]:
+    """Construct a list of metamorphic relations based on the DAG or cyclic graph.
 
-    This list of metamorphic relations contains a ShouldCause relation for every edge, and a ShouldNotCause
+    If is_causal_dag is True, this list contains a ShouldCause relation for every edge, and a ShouldNotCause
     relation for every (minimal) conditional independence relation implied by the structure of the DAG.
+    If is_causal_dag is False, it skips checks assuming the graph is acyclic and works on general graphs with loops/cycles.
 
-    :param CausalDAG dag: Causal DAG from which the metamorphic relations will be generated.
+    :param CausalDAG dag: Graph from which the metamorphic relations will be generated.
+    :param bool is_causal_dag: Specifies whether the input graph is a causal DAG or a cyclic graph.
     :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
     """
     metamorphic_relations = []
+
     for node_pair in combinations(dag.graph.nodes, 2):
         (u, v) = node_pair
 
-        # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
-        if ((u, v) not in dag.graph.edges) and ((v, u) not in dag.graph.edges):
-            # Case 1: U --> ... --> V
-            if u in nx.ancestors(dag.graph, v):
+        # If the graph is a causal DAG, perform the ancestor checks
+        if not skip_ancestors:
+            # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
+            if ((u, v) not in dag.graph.edges) and ((v, u) not in dag.graph.edges):
+                # Case 1: U --> ... --> V
+                if u in nx.ancestors(dag.graph, v):
+                    adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
+                    metamorphic_relations.append(ShouldNotCause(u, v, adj_set, dag))
+
+                # Case 2: V --> ... --> U
+                elif v in nx.ancestors(dag.graph, u):
+                    adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
+                    metamorphic_relations.append(ShouldNotCause(v, u, adj_set, dag))
+
+                # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
+                else:
+                    adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
+                    metamorphic_relations.append(ShouldNotCause(u, v, adj_set, dag))
+
+            # Create a ShouldCause relation for each edge (u, v) or (v, u)
+            elif (u, v) in dag.graph.edges:
                 adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
-                metamorphic_relations.append(ShouldNotCause(u, v, adj_set, dag))
-
-            # Case 2: V --> ... --> U
-            elif v in nx.ancestors(dag.graph, u):
-                adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
-                metamorphic_relations.append(ShouldNotCause(v, u, adj_set, dag))
-
-            # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
-            # Only make one MR since V _||_ U == U _||_ V
+                metamorphic_relations.append(ShouldCause(u, v, adj_set, dag))
             else:
-                adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
+                adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
+                metamorphic_relations.append(ShouldCause(v, u, adj_set, dag))
+
+        # If the graph may contain loops/cycles, skip the ancestor checks
+        else:
+            # Create a ShouldNotCause relation for nodes that are not directly connected
+            if ((u, v) not in dag.graph.edges) and ((v, u) not in dag.graph.edges):
+                adj_set = []  # No adjustment sets needed for cyclic graphs
                 metamorphic_relations.append(ShouldNotCause(u, v, adj_set, dag))
 
-        # Create a ShouldCause relation for each edge (u, v) or (v, u)
-        elif (u, v) in dag.graph.edges:
-            adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
-            metamorphic_relations.append(ShouldCause(u, v, adj_set, dag))
-        else:
-            adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
-            metamorphic_relations.append(ShouldCause(v, u, adj_set, dag))
+            # Create a ShouldCause relation for each edge (u, v) or (v, u)
+            elif (u, v) in dag.graph.edges:
+                adj_set = []  # No adjustment sets needed for cyclic graphs
+                metamorphic_relations.append(ShouldCause(u, v, adj_set, dag))
+            else:
+                adj_set = []  # No adjustment sets needed for cyclic graphs
+                metamorphic_relations.append(ShouldCause(v, u, adj_set, dag))
 
     return metamorphic_relations
 
@@ -273,10 +292,24 @@ if __name__ == "__main__":  # pragma: no cover
         help="Specify path where tests should be saved, normally a .json file.",
         required=True,
     )
+
+    parser.add_argument(
+        "--skip_ancestors",
+        "-c",
+        action="store_true",
+        default=False,
+        help="Boolean flag to indicate if ancestors should be skipped. Default is False",
+        required=False,
+    )
+
     args = parser.parse_args()
 
     causal_dag = CausalDAG(args.dag_path)
-    relations = generate_metamorphic_relations(causal_dag)
+    relations = generate_metamorphic_relations(causal_dag, skip_ancestors=args.skip_ancestors)
+
+    if args.skip_ancestors:
+        logger.warning("The 'skip_ancestors' variable is set to True, proceed with caution.")
+
     tests = [
         relation.to_json_stub(skip=False)
         for relation in relations
