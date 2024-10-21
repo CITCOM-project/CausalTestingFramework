@@ -214,15 +214,17 @@ class MetamorphicTest:
         )
 
 
-def generate_metamorphic_relations(dag: CausalDAG, skip_ancestors: bool) -> list[MetamorphicRelation]:
+def generate_metamorphic_relations(dag: CausalDAG, skip_ancestors: bool = False) -> list[MetamorphicRelation]:
     """Construct a list of metamorphic relations based on the DAG or cyclic graph.
 
-    If is_causal_dag is True, this list contains a ShouldCause relation for every edge, and a ShouldNotCause
-    relation for every (minimal) conditional independence relation implied by the structure of the DAG.
-    If is_causal_dag is False, it skips checks assuming the graph is acyclic and works on general graphs with loops/cycles.
+    If skip_ancestors is False, this list contains a ShouldCause relation for every edge, and a 
+    ShouldNotCause relation for every (minimal) conditional independence relation implied by 
+    the structure of the DAG. If skip_ancestors is True, it skips checks assuming the graph 
+    is acyclic and works on general graphs with loops/cycles.
 
     :param CausalDAG dag: Graph from which the metamorphic relations will be generated.
-    :param bool is_causal_dag: Specifies whether the input graph is a causal DAG or a cyclic graph.
+    :param bool skip_ancestors: Boolean parameter to determine if the ancestor checks 
+     should be skipped. Default is False.
     :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
     """
     metamorphic_relations = []
