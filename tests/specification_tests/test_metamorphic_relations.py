@@ -205,7 +205,7 @@ class TestMetamorphicRelation(unittest.TestCase):
     def test_all_metamorphic_relations_implied_by_dag(self):
         dag = CausalDAG(self.dag_dot_path)
         dag.add_edge("Z", "Y")  # Add a direct path from Z to Y so M becomes a mediator
-        metamorphic_relations = generate_metamorphic_relations(dag)
+        metamorphic_relations = generate_metamorphic_relations(dag, skip_ancestors=False)
         should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
         should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
 
