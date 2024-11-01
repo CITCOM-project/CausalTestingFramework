@@ -13,6 +13,7 @@ import json
 import networkx as nx
 import pandas as pd
 import numpy as np
+from multiprocessing import Pool
 
 from causal_testing.specification.causal_specification import CausalDAG, Node
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
@@ -214,46 +215,89 @@ class MetamorphicTest:
         )
 
 
-def generate_metamorphic_relations(dag: CausalDAG) -> list[MetamorphicRelation]:
+def generate_metamorphic_relation(
+    node_pair: tuple[str, str], dag: CausalDAG, nodes_to_ignore: set = None
+) -> MetamorphicRelation:
+    """Construct a metamorphic relation for a given node pair implied by the Causal DAG, or None if no such relation can
+    be constructed (e.g. because every valid adjustment set contains a node to ignore).
+
+    :param node_pair: The pair of nodes to consider.
+    :param dag: Causal DAG from which the metamorphic relations will be generated.
+    :param nodes_to_ignore: Set of nodes which will be excluded from causal tests.
+
+    :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
+    """
+
+    if nodes_to_ignore is None:
+        nodes_to_ignore = set()
+
+    (u, v) = node_pair
+    metamorphic_relations = []
+
+    # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
+    if ((u, v) not in dag.graph.edges) and ((v, u) not in dag.graph.edges):
+        # Case 1: U --> ... --> V
+        if u in nx.ancestors(dag.graph, v):
+            adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
+            if adj_sets:
+                metamorphic_relations.append(ShouldNotCause(u, v, list(adj_sets[0]), dag))
+
+        # Case 2: V --> ... --> U
+        elif v in nx.ancestors(dag.graph, u):
+            adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
+            if adj_sets:
+                metamorphic_relations.append(ShouldNotCause(v, u, list(adj_sets[0]), dag))
+
+        # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
+        # Only make one MR since V _||_ U == U _||_ V
+        else:
+            adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
+            if adj_sets:
+                metamorphic_relations.append(ShouldNotCause(u, v, list(adj_sets[0]), dag))
+
+    # Create a ShouldCause relation for each edge (u, v) or (v, u)
+    elif (u, v) in dag.graph.edges:
+        adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
+        if adj_sets:
+            metamorphic_relations.append(ShouldCause(u, v, list(adj_sets[0]), dag))
+    else:
+        adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
+        if adj_sets:
+            metamorphic_relations.append(ShouldCause(v, u, list(adj_sets[0]), dag))
+    return metamorphic_relations
+
+
+def generate_metamorphic_relations(
+    dag: CausalDAG, nodes_to_ignore: set = {}, threads: int = 0
+) -> list[MetamorphicRelation]:
     """Construct a list of metamorphic relations implied by the Causal DAG.
 
     This list of metamorphic relations contains a ShouldCause relation for every edge, and a ShouldNotCause
     relation for every (minimal) conditional independence relation implied by the structure of the DAG.
 
-    :param CausalDAG dag: Causal DAG from which the metamorphic relations will be generated.
+    :param dag: Causal DAG from which the metamorphic relations will be generated.
+    :param nodes_to_ignore: Set of nodes which will be excluded from causal tests.
+    :param threads: Number of threads to use (if generating in parallel).
+
     :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
     """
-    metamorphic_relations = []
-    for node_pair in combinations(dag.graph.nodes, 2):
-        (u, v) = node_pair
 
-        # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
-        if ((u, v) not in dag.graph.edges) and ((v, u) not in dag.graph.edges):
-            # Case 1: U --> ... --> V
-            if u in nx.ancestors(dag.graph, v):
-                adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
-                metamorphic_relations.append(ShouldNotCause(u, v, adj_set, dag))
+    if not threads:
+        metamorphic_relations = [
+            generate_metamorphic_relation(node_pair, dag, nodes_to_ignore)
+            for node_pair in combinations(filter(lambda node: node not in nodes_to_ignore, dag.graph.nodes), 2)
+        ]
+    else:
+        with Pool(threads) as pool:
+            pool.starmap(
+                generate_metamorphic_relation,
+                map(
+                    lambda node_pair: (node_pair, dag, nodes_to_ignore),
+                    combinations(filter(lambda node: node not in nodes_to_ignore, dag.graph.nodes), 2),
+                ),
+            )
 
-            # Case 2: V --> ... --> U
-            elif v in nx.ancestors(dag.graph, u):
-                adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
-                metamorphic_relations.append(ShouldNotCause(v, u, adj_set, dag))
-
-            # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
-            # Only make one MR since V _||_ U == U _||_ V
-            else:
-                adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
-                metamorphic_relations.append(ShouldNotCause(u, v, adj_set, dag))
-
-        # Create a ShouldCause relation for each edge (u, v) or (v, u)
-        elif (u, v) in dag.graph.edges:
-            adj_set = list(dag.direct_effect_adjustment_sets([u], [v])[0])
-            metamorphic_relations.append(ShouldCause(u, v, adj_set, dag))
-        else:
-            adj_set = list(dag.direct_effect_adjustment_sets([v], [u])[0])
-            metamorphic_relations.append(ShouldCause(v, u, adj_set, dag))
-
-    return metamorphic_relations
+    return [item for items in metamorphic_relations for item in items]
 
 
 if __name__ == "__main__":  # pragma: no cover
@@ -273,10 +317,18 @@ if __name__ == "__main__":  # pragma: no cover
         help="Specify path where tests should be saved, normally a .json file.",
         required=True,
     )
+    parser.add_argument("-i", "--ignore-cycles", action="store_true")
     args = parser.parse_args()
 
-    causal_dag = CausalDAG(args.dag_path)
-    relations = generate_metamorphic_relations(causal_dag)
+    causal_dag = CausalDAG(args.dag_path, ignore_cycles=args.ignore_cycles)
+
+    if not causal_dag.is_acyclic() and args.ignore_cycles:
+        logger.warning(
+            "Ignoring cycles by removing causal tests that reference any node within a cycle. "
+            "Your causal test suite WILL NOT BE COMPLETE!"
+        )
+    relations = generate_metamorphic_relations(causal_dag, nodes_to_ignore=set(causal_dag.cycle_nodes()), threads=20)
+
     tests = [
         relation.to_json_stub(skip=False)
         for relation in relations

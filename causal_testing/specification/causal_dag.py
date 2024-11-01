@@ -130,7 +130,7 @@ class CausalDAG(nx.DiGraph):
     ensures it is acyclic. A CausalDAG must be specified as a dot file.
     """
 
-    def __init__(self, dot_path: str = None, **attr):
+    def __init__(self, dot_path: str = None, ignore_cycles: bool = False, **attr):
         super().__init__(**attr)
         if dot_path:
             with open(dot_path, "r", encoding="utf-8") as file:
@@ -144,7 +144,12 @@ class CausalDAG(nx.DiGraph):
             self.graph = nx.DiGraph()
 
         if not self.is_acyclic():
-            raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
+            if ignore_cycles:
+                logger.warning(
+                    "Cycles found. Ignoring them can invalidate causal estimates. Proceed with extreme caution."
+                )
+            else:
+                raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
     def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
         """
@@ -188,12 +193,18 @@ class CausalDAG(nx.DiGraph):
         if not self.is_acyclic():
             raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
+    def cycle_nodes(self) -> list:
+        """Get the nodes involved in any cycles.
+        :return: A list containing all nodes involved in a cycle.
+        """
+        return [node for cycle in nx.simple_cycles(self.graph) for node in cycle]
+
     def is_acyclic(self) -> bool:
         """Checks if the graph is acyclic.
 
         :return: True if acyclic, False otherwise.
         """
-        return not list(nx.simple_cycles(self.graph))
+        return not self.cycle_nodes()
 
     def get_proper_backdoor_graph(self, treatments: list[str], outcomes: list[str]) -> CausalDAG:
         """Convert the causal DAG to a proper back-door graph.
@@ -267,7 +278,9 @@ class CausalDAG(nx.DiGraph):
             gback.graph.remove_edge(v1, v2)
         return gback
 
-    def direct_effect_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
+    def direct_effect_adjustment_sets(
+        self, treatments: list[str], outcomes: list[str], nodes_to_ignore: list[str] = None
+    ) -> list[set[str]]:
         """
         Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes for DIRECT causal effect.
@@ -284,6 +297,9 @@ class CausalDAG(nx.DiGraph):
         :rtype: list[set[str]]
         """
 
+        if nodes_to_ignore is None:
+            nodes_to_ignore = []
+
         indirect_graph = self.get_indirect_graph(treatments, outcomes)
         ancestor_graph = indirect_graph.get_ancestor_graph(treatments, outcomes)
         gam = nx.moral_graph(ancestor_graph.graph)
@@ -295,7 +311,7 @@ class CausalDAG(nx.DiGraph):
         min_seps = list(list_all_min_sep(gam, "TREATMENT", "OUTCOME", set(treatments), set(outcomes)))
         if set(outcomes) in min_seps:
             min_seps.remove(set(outcomes))
-        return min_seps
+        return sorted(list(filter(lambda sep: not sep.intersection(nodes_to_ignore), min_seps)))
 
     def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
         """Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
