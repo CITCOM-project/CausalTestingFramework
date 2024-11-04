@@ -10,10 +10,11 @@ from itertools import combinations
 import argparse
 import logging
 import json
+from multiprocessing import Pool
+
 import networkx as nx
 import pandas as pd
 import numpy as np
-from multiprocessing import Pool
 
 from causal_testing.specification.causal_specification import CausalDAG, Node
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
@@ -268,7 +269,7 @@ def generate_metamorphic_relation(
 
 
 def generate_metamorphic_relations(
-    dag: CausalDAG, nodes_to_ignore: set = {}, threads: int = 0
+    dag: CausalDAG, nodes_to_ignore: set = {}, threads: int = 0, nodes_to_test: set = None
 ) -> list[MetamorphicRelation]:
     """Construct a list of metamorphic relations implied by the Causal DAG.
 
@@ -282,18 +283,21 @@ def generate_metamorphic_relations(
     :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
     """
 
+    if nodes_to_test is None:
+        nodes_to_test = dag.graph.nodes
+
     if not threads:
         metamorphic_relations = [
             generate_metamorphic_relation(node_pair, dag, nodes_to_ignore)
-            for node_pair in combinations(filter(lambda node: node not in nodes_to_ignore, dag.graph.nodes), 2)
+            for node_pair in combinations(filter(lambda node: node not in nodes_to_ignore, nodes_to_test), 2)
         ]
     else:
         with Pool(threads) as pool:
-            pool.starmap(
+            metamorphic_relations = pool.starmap(
                 generate_metamorphic_relation,
                 map(
                     lambda node_pair: (node_pair, dag, nodes_to_ignore),
-                    combinations(filter(lambda node: node not in nodes_to_ignore, dag.graph.nodes), 2),
+                    combinations(filter(lambda node: node not in nodes_to_ignore, nodes_to_test), 2),
                 ),
             )
 
@@ -317,17 +321,28 @@ if __name__ == "__main__":  # pragma: no cover
         help="Specify path where tests should be saved, normally a .json file.",
         required=True,
     )
+    parser.add_argument(
+        "--threads", "-t", type=int, help="The number of parallel threads to use.", required=False, default=0
+    )
     parser.add_argument("-i", "--ignore-cycles", action="store_true")
     args = parser.parse_args()
 
     causal_dag = CausalDAG(args.dag_path, ignore_cycles=args.ignore_cycles)
+
+    nodes_to_test = set(
+        k for k, v in nx.get_node_attributes(causal_dag.graph, "test", default=True).items() if v == "True"
+    )
 
     if not causal_dag.is_acyclic() and args.ignore_cycles:
         logger.warning(
             "Ignoring cycles by removing causal tests that reference any node within a cycle. "
             "Your causal test suite WILL NOT BE COMPLETE!"
         )
-    relations = generate_metamorphic_relations(causal_dag, nodes_to_ignore=set(causal_dag.cycle_nodes()), threads=20)
+        relations = generate_metamorphic_relations(
+            causal_dag, nodes_to_test=nodes_to_test, nodes_to_ignore=set(causal_dag.cycle_nodes()), threads=args.threads
+        )
+    else:
+        relations = generate_metamorphic_relations(causal_dag, nodes_to_test=nodes_to_test, threads=args.threads)
 
     tests = [
         relation.to_json_stub(skip=False)
