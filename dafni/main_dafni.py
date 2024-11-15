@@ -37,6 +37,10 @@ def get_args(test_args=None) -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "-i", "--ignore_cycles", action="store_true", help="Whether to ignore cycles in the DAG.", default=False
+    )
+
+    parser.add_argument(
         "--variables_path",
         required=True,
         help="Input configuration file path " "containing the predefined variables (.json)",
@@ -72,17 +76,14 @@ def get_args(test_args=None) -> argparse.Namespace:
     args.tests_path = Path(args.tests_path)
 
     if args.dag_path is not None:
-
         args.dag_path = Path(args.dag_path)
 
     if args.output_path is None:
-
         args.output_path = "./data/outputs/causal_tests_results.json"
 
         Path(args.output_path).parent.mkdir(exist_ok=True)
 
     else:
-
         args.output_path = Path(args.output_path)
 
         args.output_path.parent.mkdir(exist_ok=True)
@@ -98,13 +99,11 @@ def read_variables(variables_path: Path) -> FileNotFoundError | dict:
             - dict - A valid dictionary consisting of the causal tests
     """
     if not variables_path.exists() or variables_path.is_dir():
-
         print(f"JSON file not found at the specified location: {variables_path}")
 
         raise FileNotFoundError
 
     with variables_path.open("r") as file:
-
         inputs = json.load(file)
 
     return inputs
@@ -118,7 +117,6 @@ def validate_variables(data_dict: dict) -> tuple:
     - Tuple containing the inputs, outputs and constraints to pass into the modelling scenario
     """
     if data_dict["variables"]:
-
         variables = data_dict["variables"]
 
         inputs = [
@@ -136,12 +134,9 @@ def validate_variables(data_dict: dict) -> tuple:
         constraints = set()
 
         for variable, input_var in zip(variables, inputs):
-
             if "constraint" in variable:
-
                 constraints.add(input_var.z3 == variable["constraint"])
     else:
-
         raise ValidationError("Cannot find the variables defined by the causal tests.")
 
     return inputs, outputs, constraints
@@ -154,7 +149,6 @@ def main():
     args = get_args()
 
     try:
-
         # Step 0: Read in the runtime dataset(s)
 
         data_frame = pd.concat([pd.read_csv(d) for d in args.data_path])
@@ -190,7 +184,7 @@ def main():
         json_utility.set_paths(args.tests_path, args.dag_path, args.data_path)
 
         # Step 6: Sets up all the necessary parts of the json_class needed to execute tests
-        json_utility.setup(scenario=modelling_scenario, data=data_frame)
+        json_utility.setup(scenario=modelling_scenario, data=data_frame, ignore_cycles=args.ignore_cycles)
 
         # Step 7: Run the causal tests
         test_outcomes = json_utility.run_json_tests(
@@ -200,7 +194,6 @@ def main():
         # Step 8: Update, print and save the final outputs
 
         for test in test_outcomes:
-
             test.pop("estimator")
 
             test["result"] = test["result"].to_dict(json=True)
@@ -210,17 +203,14 @@ def main():
             test["result"].pop("control_value")
 
         with open(args.output_path, "w", encoding="utf-8") as f:
-
             print(json.dumps(test_outcomes, indent=2), file=f)
 
         print(json.dumps(test_outcomes, indent=2))
 
     except ValidationError as ve:
-
         print(f"Cannot validate the specified input configurations: {ve}")
 
     else:
-
         print(f"Execution successful. " f"Output file saved at {Path(args.output_path).parent.resolve()}")
 
 

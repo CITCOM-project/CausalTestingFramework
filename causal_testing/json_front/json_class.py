@@ -70,13 +70,13 @@ class JsonUtility:
             data_paths = []
         self.input_paths = JsonClassPaths(json_path=json_path, dag_path=dag_path, data_paths=data_paths)
 
-    def setup(self, scenario: Scenario, data=None):
+    def setup(self, scenario: Scenario, data=None, ignore_cycles=False):
         """Function to populate all the necessary parts of the json_class needed to execute tests"""
         self.scenario = scenario
         self._get_scenario_variables()
         self.scenario.setup_treatment_variables()
         self.causal_specification = CausalSpecification(
-            scenario=self.scenario, causal_dag=CausalDAG(self.input_paths.dag_path)
+            scenario=self.scenario, causal_dag=CausalDAG(self.input_paths.dag_path, ignore_cycles=ignore_cycles)
         )
         # Parse the JSON test plan
         with open(self.input_paths.json_path, encoding="utf-8") as f:
