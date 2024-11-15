@@ -279,7 +279,7 @@ def generate_metamorphic_relations(
     :param dag: Causal DAG from which the metamorphic relations will be generated.
     :param nodes_to_ignore: Set of nodes which will be excluded from causal tests.
     :param threads: Number of threads to use (if generating in parallel).
-    :param nodes_to_ignore: Set of nodes to test the relationships between (defaults to all nodes).
+    :param nodes_to_test: Set of nodes to test the relationships between (defaults to all nodes).
 
     :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
     """
