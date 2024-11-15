@@ -269,7 +269,7 @@ def generate_metamorphic_relation(
 
 
 def generate_metamorphic_relations(
-    dag: CausalDAG, nodes_to_ignore: set = {}, threads: int = 0, nodes_to_test: set = None
+    dag: CausalDAG, nodes_to_ignore: set = None, threads: int = 0, nodes_to_test: set = None
 ) -> list[MetamorphicRelation]:
     """Construct a list of metamorphic relations implied by the Causal DAG.
 
@@ -279,9 +279,13 @@ def generate_metamorphic_relations(
     :param dag: Causal DAG from which the metamorphic relations will be generated.
     :param nodes_to_ignore: Set of nodes which will be excluded from causal tests.
     :param threads: Number of threads to use (if generating in parallel).
+    :param nodes_to_ignore: Set of nodes to test the relationships between (defaults to all nodes).
 
     :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
     """
+
+    if nodes_to_ignore is None:
+        nodes_to_ignore = {}
 
     if nodes_to_test is None:
         nodes_to_test = dag.graph.nodes
@@ -329,7 +333,7 @@ if __name__ == "__main__":  # pragma: no cover
 
     causal_dag = CausalDAG(args.dag_path, ignore_cycles=args.ignore_cycles)
 
-    nodes_to_test = set(
+    dag_nodes_to_test = set(
         k for k, v in nx.get_node_attributes(causal_dag.graph, "test", default=True).items() if v == "True"
     )
 
@@ -339,10 +343,13 @@ if __name__ == "__main__":  # pragma: no cover
             "Your causal test suite WILL NOT BE COMPLETE!"
         )
         relations = generate_metamorphic_relations(
-            causal_dag, nodes_to_test=nodes_to_test, nodes_to_ignore=set(causal_dag.cycle_nodes()), threads=args.threads
+            causal_dag,
+            nodes_to_test=dag_nodes_to_test,
+            nodes_to_ignore=set(causal_dag.cycle_nodes()),
+            threads=args.threads,
         )
     else:
-        relations = generate_metamorphic_relations(causal_dag, nodes_to_test=nodes_to_test, threads=args.threads)
+        relations = generate_metamorphic_relations(causal_dag, nodes_to_test=dag_nodes_to_test, threads=args.threads)
 
     tests = [
         relation.to_json_stub(skip=False)

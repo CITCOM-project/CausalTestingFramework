@@ -291,8 +291,10 @@ class CausalDAG(nx.DiGraph):
         2019. These works use the algorithm presented by Takata et al. in their work entitled: Space-optimal,
         backtracking algorithms to list the minimal vertex separators of a graph, 2013.
 
-        :param list[str] treatments: List of treatment names.
-        :param list[str] outcomes: List of outcome names.
+        :param treatments: List of treatment names.
+        :param outcomes: List of outcome names.
+        :param nodes_to_ignore: List of nodes to exclude from tests if they appear as treatments, outcomes, or in the
+        adjustment set.
         :return: A list of possible adjustment sets.
         :rtype: list[set[str]]
         """
