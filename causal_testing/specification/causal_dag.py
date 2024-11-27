@@ -173,8 +173,8 @@ class CausalDAG(nx.DiGraph):
             (
                 cause
                 for cause in self.graph.nodes
-                if list(nx.all_simple_paths(self.graph, source=cause, target=instrument))
-                and list(nx.all_simple_paths(self.graph, source=cause, target=outcome))
+                if len(list(nx.all_simple_paths(self.graph, source=cause, target=instrument))) > 0
+                and len(list(nx.all_simple_paths(self.graph, source=cause, target=outcome))) > 0
             )
         ):
             raise ValueError(f"Instrument {instrument} and outcome {outcome} share common causes")
