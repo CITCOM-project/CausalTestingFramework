@@ -10,6 +10,7 @@ from causal_testing.specification.metamorphic_relation import (
     ShouldCause,
     ShouldNotCause,
     generate_metamorphic_relations,
+    generate_metamorphic_relation,
 )
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
 from causal_testing.specification.variable import Input, Output
@@ -315,6 +316,14 @@ class TestMetamorphicRelation(unittest.TestCase):
         self.assertEqual(
             should_not_cause_relations,
             [],
+        )
+
+    def test_generate_metamorphic_relation_(self):
+        dag = CausalDAG(self.dag_dot_path)
+        [metamorphic_relation] = generate_metamorphic_relation(("X1", "Z"), dag)
+        self.assertEqual(
+            metamorphic_relation,
+            ShouldCause("X1", "Z", [], dag),
         )
 
     def test_equivalent_metamorphic_relations(self):
