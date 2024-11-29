@@ -177,24 +177,6 @@ class LinearRegressionEstimator(RegressionEstimator):
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"])
         return pd.Series(treatment_outcome["mean"] - control_outcome["mean"]), [ci_low, ci_high]
 
-    def estimate_prediction(self, adjustment_config: dict = None) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
-        """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
-        by changing the treatment variable from the control value to the treatment value. Here, we actually
-        calculate the expected outcomes under control and treatment and divide one by the other. This
-        allows for custom terms to be put in such as squares, inverses, products, etc.
-
-        :param: adjustment_config: The configuration of the adjustment set as a dict mapping variable names to
-                                   their values. N.B. Every variable in the adjustment set MUST have a value in
-                                   order to estimate the outcome under control and treatment.
-
-        :return: The average treatment effect and the 95% Wald confidence intervals.
-        """
-        prediction = self._predict(adjustment_config=adjustment_config)
-        outcome = prediction.iloc[1]
-        ci_low = pd.Series(outcome["mean_ci_upper"])
-        ci_high = pd.Series(outcome["mean_ci_lower"])
-        return pd.Series(outcome["mean"]), [ci_low, ci_high]
-
     def _get_confidence_intervals(self, model, treatment):
         confidence_intervals = model.conf_int(alpha=self.alpha, cols=None)
         ci_low, ci_high = (
