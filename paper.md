@@ -14,11 +14,14 @@ authors:
     corresponding: true
   - name: Andrew Clark
     orcid: 0000-0002-6830-0566
-    affiliation: 2
+    affiliation: 1
   - name: Christopher Wild
     orcid: 0009-0009-1195-1497
     affiliation: 1
   - name: Farhad Allian
+    orcid: 0000-0002-4569-0370
+    affiliation: 1
+  - name: Robert Turner
     affiliation: 1
   - name: Richard Somers
     orcid: 0009-0009-1195-1497
@@ -35,8 +38,6 @@ authors:
 affiliations:
  - name: University of Sheffield, UK
    index: 1
- - name: Wherever Andy works now, UK
-   index: 2
 date: 2 December 2024
 bibliography: paper.bib
 ---
