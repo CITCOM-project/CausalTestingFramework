@@ -50,9 +50,9 @@ Causal Inference works by using domain knowledge to identify and mitigate for bi
 The Causal Testing Framework is a software testing framework that uses Causal Inference techniques to establish causal effects between software variables from pre-existing runtime data rather than having to collect bespoke, highly curated datasets especially for testing.
 
 # Statement of need
-Metamorphic Testing @[chen1998metamorphic] is a popular technique for testing computational models (and other traditionally "hard to test" software).
+Metamorphic Testing [@chen1998metamorphic] is a popular technique for testing computational models (and other traditionally "hard to test" software).
 Test goals are expressed as _metamorphic relations_ that specify how changing an input in a particular way should affect the software output.
-Nondeterministic software can be tested using Statistical Metamorphic Testing @[guderlei2007smt], which uses statistical tests over multiple executions of the software to determine whether the specified metamorphic relations hold.
+Nondeterministic software can be tested using Statistical Metamorphic Testing [@guderlei2007smt], which uses statistical tests over multiple executions of the software to determine whether the specified metamorphic relations hold.
 However, this requires the software to be executed repeatedly for each set of parameters of interest, so is computationally expensive, and is constrained to testing properties over software inputs that can be directly and precisely controlled.
 Statistical Metamorphic Testing cannot be used to test properties that relate internal variables or outputs to each other, since these cannot be controlled a priori.
 
@@ -61,19 +61,19 @@ The Causal Testing Framework is written in python but is language agnostic in te
 All that is required is a set of properties to be validated, a causal model, and a set of software runtime data.
 
 # Causal Testing
-Causal Testing @[clark2023testing] has four main steps, outlined in \ref{fig:schematic}.
+Causal Testing [@clark2023testing] has four main steps, outlined in \ref{fig:schematic}.
 Firstly, the user supplies a causal model, which takes the form of a directed acyclic graph (DAG) in which an edge $X \to Y$ represents variable $X$ having a direct causal effect on variable $Y$.
 Secondly, the user supplies a set of causal properties to be tested.
-Such properties can be generated from the causal DAG @[clark2023metamorphic]: for each $X \to Y$ edge, a test to validate the presence of a causal effect is generated, and for each missing edge, a test to validate independence is generated.
+Such properties can be generated from the causal DAG [@clark2023metamorphic]: for each $X \to Y$ edge, a test to validate the presence of a causal effect is generated, and for each missing edge, a test to validate independence is generated.
 The user may also refine tests to validate the nature of a particular relationship.
 Next, the user supplies a set of runtime data in the form of a table with each column representing a variable and rows containing the value of each variable for a particular run of the software.
 Finally, the Causal Testing Framework automatically validates the supplied causal properties by using the supplied causal DAG and data to calculate a causal effect estimate, and validating this against the expected causal relationship.
 
-![Causal Testing workflow.\label{fig:schematic}](images/schematic.png)
+![Causal Testing workflow.\label{fig:schematic}](../images/schematic.png)
 
 ## Test Adequacy
 Because the properties being tested are completely separate from the data used to validate them, traditional coverage-based metrics are not appropriate here.
-The Causal Testing Framework instead evaluates the adequacy of a particular dataset by calculating a statistical metric @[foster2024adequacy] based on the stability of the causal effect estimate, with numbers closer to zero representing more adequate data.
+The Causal Testing Framework instead evaluates the adequacy of a particular dataset by calculating a statistical metric [@foster2024adequacy] based on the stability of the causal effect estimate, with numbers closer to zero representing more adequate data.
 
 ## Missing Variables
 Causal Testing works by using the supplied causal DAG to identify those variables which need to be statistically controlled for to remove their biassing effect on the causal estimate.
@@ -87,3 +87,5 @@ Traditional Causal Inference cannot handle this, however the Causal Testing Fram
 
 # Acknowledgements
 This work was supported by the EPSRC CITCoM grant EP/T030526/1.
+
+# References
