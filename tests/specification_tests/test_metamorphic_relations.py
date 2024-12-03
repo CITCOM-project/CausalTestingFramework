@@ -10,6 +10,7 @@ from causal_testing.specification.metamorphic_relation import (
     ShouldCause,
     ShouldNotCause,
     generate_metamorphic_relations,
+    generate_metamorphic_relation,
 )
 from causal_testing.data_collection.data_collector import ExperimentalDataCollector
 from causal_testing.specification.variable import Input, Output
@@ -73,6 +74,10 @@ class TestMetamorphicRelation(unittest.TestCase):
         dag_dot = """digraph DAG { rankdir=LR; X1 -> Z; Z -> M; M -> Y; X2 -> Z; X3 -> M;}"""
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
+        self.dcg_dot_path = os.path.join(self.temp_dir_path, "dcg.dot")
+        dcg_dot = """digraph dct { a -> b -> c -> d; d -> c; }"""
+        with open(self.dcg_dot_path, "w") as f:
+            f.write(dcg_dot)
 
         X1 = Input("X1", float)
         X2 = Input("X2", float)
@@ -247,6 +252,79 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         self.assertEqual(extra_snc_relations, [])
         self.assertEqual(missing_snc_relations, [])
+
+    def test_all_metamorphic_relations_implied_by_dag_parallel(self):
+        dag = CausalDAG(self.dag_dot_path)
+        dag.add_edge("Z", "Y")  # Add a direct path from Z to Y so M becomes a mediator
+        metamorphic_relations = generate_metamorphic_relations(dag, threads=2)
+        should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
+        should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
+
+        # Check all ShouldCause relations are present and no extra
+        expected_should_cause_relations = [
+            ShouldCause("X1", "Z", [], dag),
+            ShouldCause("Z", "M", [], dag),
+            ShouldCause("M", "Y", ["Z"], dag),
+            ShouldCause("Z", "Y", ["M"], dag),
+            ShouldCause("X2", "Z", [], dag),
+            ShouldCause("X3", "M", [], dag),
+        ]
+
+        extra_sc_relations = [scr for scr in should_cause_relations if scr not in expected_should_cause_relations]
+        missing_sc_relations = [escr for escr in expected_should_cause_relations if escr not in should_cause_relations]
+
+        self.assertEqual(extra_sc_relations, [])
+        self.assertEqual(missing_sc_relations, [])
+
+        # Check all ShouldNotCause relations are present and no extra
+        expected_should_not_cause_relations = [
+            ShouldNotCause("X1", "X2", [], dag),
+            ShouldNotCause("X1", "X3", [], dag),
+            ShouldNotCause("X1", "M", ["Z"], dag),
+            ShouldNotCause("X1", "Y", ["Z"], dag),
+            ShouldNotCause("X2", "X3", [], dag),
+            ShouldNotCause("X2", "M", ["Z"], dag),
+            ShouldNotCause("X2", "Y", ["Z"], dag),
+            ShouldNotCause("X3", "Y", ["M", "Z"], dag),
+            ShouldNotCause("Z", "X3", [], dag),
+        ]
+
+        extra_snc_relations = [
+            sncr for sncr in should_not_cause_relations if sncr not in expected_should_not_cause_relations
+        ]
+        missing_snc_relations = [
+            esncr for esncr in expected_should_not_cause_relations if esncr not in should_not_cause_relations
+        ]
+
+        self.assertEqual(extra_snc_relations, [])
+        self.assertEqual(missing_snc_relations, [])
+
+    def test_all_metamorphic_relations_implied_by_dag_ignore_cycles(self):
+        dag = CausalDAG(self.dcg_dot_path, ignore_cycles=True)
+        metamorphic_relations = generate_metamorphic_relations(dag, threads=2, nodes_to_ignore=set(dag.cycle_nodes()))
+        should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
+        should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
+
+        # Check all ShouldCause relations are present and no extra
+
+        self.assertEqual(
+            should_cause_relations,
+            [
+                ShouldCause("a", "b", [], dag),
+            ],
+        )
+        self.assertEqual(
+            should_not_cause_relations,
+            [],
+        )
+
+    def test_generate_metamorphic_relation_(self):
+        dag = CausalDAG(self.dag_dot_path)
+        [metamorphic_relation] = generate_metamorphic_relation(("X1", "Z"), dag)
+        self.assertEqual(
+            metamorphic_relation,
+            ShouldCause("X1", "Z", [], dag),
+        )
 
     def test_equivalent_metamorphic_relations(self):
         dag = CausalDAG(self.dag_dot_path)

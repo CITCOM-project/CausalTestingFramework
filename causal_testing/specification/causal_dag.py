@@ -130,7 +130,7 @@ class CausalDAG(nx.DiGraph):
     ensures it is acyclic. A CausalDAG must be specified as a dot file.
     """
 
-    def __init__(self, dot_path: str = None, **attr):
+    def __init__(self, dot_path: str = None, ignore_cycles: bool = False, **attr):
         super().__init__(**attr)
         if dot_path:
             with open(dot_path, "r", encoding="utf-8") as file:
@@ -144,7 +144,12 @@ class CausalDAG(nx.DiGraph):
             self.graph = nx.DiGraph()
 
         if not self.is_acyclic():
-            raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
+            if ignore_cycles:
+                logger.warning(
+                    "Cycles found. Ignoring them can invalidate causal estimates. Proceed with extreme caution."
+                )
+            else:
+                raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
     def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
         """
@@ -164,16 +169,17 @@ class CausalDAG(nx.DiGraph):
             )
 
         # (iii) Instrument and outcome do not share causes
-        if any(
-            (
-                cause
-                for cause in self.graph.nodes
-                if list(nx.all_simple_paths(self.graph, source=cause, target=instrument))
-                and list(nx.all_simple_paths(self.graph, source=cause, target=outcome))
-            )
-        ):
-            raise ValueError(f"Instrument {instrument} and outcome {outcome} share common causes")
 
+        for cause in self.graph.nodes:
+            # Exclude self-cycles due to breaking changes in NetworkX > 3.2
+            outcome_paths = (
+                list(nx.all_simple_paths(self.graph, source=cause, target=outcome)) if cause != outcome else []
+            )
+            instrument_paths = (
+                list(nx.all_simple_paths(self.graph, source=cause, target=instrument)) if cause != instrument else []
+            )
+            if len(instrument_paths) > 0 and len(outcome_paths) > 0:
+                raise ValueError(f"Instrument {instrument} and outcome {outcome} share common causes")
         return True
 
     def add_edge(self, u_of_edge: Node, v_of_edge: Node, **attr):
@@ -188,12 +194,18 @@ class CausalDAG(nx.DiGraph):
         if not self.is_acyclic():
             raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
+    def cycle_nodes(self) -> list:
+        """Get the nodes involved in any cycles.
+        :return: A list containing all nodes involved in a cycle.
+        """
+        return [node for cycle in nx.simple_cycles(self.graph) for node in cycle]
+
     def is_acyclic(self) -> bool:
         """Checks if the graph is acyclic.
 
         :return: True if acyclic, False otherwise.
         """
-        return not list(nx.simple_cycles(self.graph))
+        return not self.cycle_nodes()
 
     def get_proper_backdoor_graph(self, treatments: list[str], outcomes: list[str]) -> CausalDAG:
         """Convert the causal DAG to a proper back-door graph.
@@ -267,7 +279,9 @@ class CausalDAG(nx.DiGraph):
             gback.graph.remove_edge(v1, v2)
         return gback
 
-    def direct_effect_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
+    def direct_effect_adjustment_sets(
+        self, treatments: list[str], outcomes: list[str], nodes_to_ignore: list[str] = None
+    ) -> list[set[str]]:
         """
         Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
         and outcomes for DIRECT causal effect.
@@ -278,11 +292,16 @@ class CausalDAG(nx.DiGraph):
         2019. These works use the algorithm presented by Takata et al. in their work entitled: Space-optimal,
         backtracking algorithms to list the minimal vertex separators of a graph, 2013.
 
-        :param list[str] treatments: List of treatment names.
-        :param list[str] outcomes: List of outcome names.
+        :param treatments: List of treatment names.
+        :param outcomes: List of outcome names.
+        :param nodes_to_ignore: List of nodes to exclude from tests if they appear as treatments, outcomes, or in the
+        adjustment set.
         :return: A list of possible adjustment sets.
         :rtype: list[set[str]]
         """
+
+        if nodes_to_ignore is None:
+            nodes_to_ignore = []
 
         indirect_graph = self.get_indirect_graph(treatments, outcomes)
         ancestor_graph = indirect_graph.get_ancestor_graph(treatments, outcomes)
@@ -295,7 +314,7 @@ class CausalDAG(nx.DiGraph):
         min_seps = list(list_all_min_sep(gam, "TREATMENT", "OUTCOME", set(treatments), set(outcomes)))
         if set(outcomes) in min_seps:
             min_seps.remove(set(outcomes))
-        return min_seps
+        return sorted(list(filter(lambda sep: not sep.intersection(nodes_to_ignore), min_seps)))
 
     def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
         """Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
