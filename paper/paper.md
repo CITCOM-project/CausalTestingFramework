@@ -85,6 +85,18 @@ Many scientific models involve iterating several interacting processes over time
 These processes often feed into each other, and can create feedback cycles.
 Traditional Causal Inference cannot handle this, however the Causal Testing Framework uses another advanced Causal Inference technique, g-methods, to enable the estimation of causal effects even when there are feedback cycles between variables.
 
+# Related Work
+The Dagitty tool [@textor2017dagitty] is a browser-based environment for creating, editing, and analysing causal graphs.
+There is an R package for local use, but the tool does not aim to facilitate causal inference.
+For this, the doWhy [@sharma2020dowhy; @blobaum2024dowhy] is a python package which can be used to estimate causal effects from data.
+However, the package is intended for general causal inference.
+It does not explicitly support causal testing, nor does it support temporal feedback loops.
+
+# Ongoing and Future Research
+The Causal Testing Framework is the subject of several publications [@clark2023metamorphic; @clark2023testing; @foster2024adequacy; @somers2024configuration].
+We are also in the process of preparing scientific publications concerning how the Causal Testing Framework handles missing variables and feedback over time.
+Furthermore, we are working to develop a plug-in for the [DAFNI framework](https://www.dafni.ac.uk/) to enable national-scale infrastructure models to be easily tested.
+
 # Acknowledgements
 This work was supported by the EPSRC CITCoM grant EP/T030526/1.
 
