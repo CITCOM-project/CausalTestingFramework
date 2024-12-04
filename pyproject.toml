@@ -11,7 +11,7 @@ name = "causal_testing_framework"
 authors = [{ name = "The CITCOM team" }]
 description = "A framework for causal testing using causal directed acyclic graphs."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 keywords = ["causal inference", "verification"]
 dependencies = [
@@ -63,7 +63,7 @@ find = { }
 [tool.black]
 # https://github.com/psf/black
 line-length = 120
-target-version = ["py39"]
+target-version = ["py310"]
 
 [tool.autopep8]
 max_line_length = 120
