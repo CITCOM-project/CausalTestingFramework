@@ -10,8 +10,8 @@ to upload the framework onto [DAFNI](https://www.dafni.ac.uk).
 - `data` contains two sub-folders (the structure is important for DAFNI).
   - `inputs` is a folder that contains the input files that are (separately) uploaded to DAFNI.
     - `causal_tests.json` is a JSON file that contains the causal tests.
-    - `variables.json` is a JSON file that contains the variables and constraints to be used.
-    - `dag.dot` is a dot file that contains the directed acyclc graph (dag) file.
+    - `dag.dot` is a dot file that contains the directed acyclc graph (dag) file, 
+       including the variables (and constraints if necessary) as node attributes.
     - `runtime_data.csv` is a csv file that contains the runtime data.
 
   - `outputs` is a folder where the `causal_tests_results.json` output file is created.
