@@ -24,10 +24,9 @@ COPY --chown=nobody ./dafni/data/inputs ./data/inputs
 RUN pip install causal-testing-framework --no-cache-dir
 
 #For local testing purposes
-ENV VARIABLES_PATH=./data/inputs/variables.json \
-    CAUSAL_TESTS=./data/inputs/causal_tests.json \
+ENV CAUSAL_TESTS=./data/inputs/causal_tests.json \
     DATA_PATH=./data/inputs/runtime_data.csv \
     DAG_PATH=./data/inputs/dag.dot
 
 # Define the entrypoint/commands
-CMD python main_dafni.py --variables_path $VARIABLES_PATH --dag_path $DAG_PATH --data_path $DATA_PATH --tests_path $CAUSAL_TESTS
+CMD python main_dafni.py --dag_path $DAG_PATH --data_path $DATA_PATH --tests_path $CAUSAL_TESTS
