@@ -72,7 +72,7 @@ def get_args(test_args=None) -> argparse.Namespace:
         args.dag_path = Path(args.dag_path)
 
     if args.output_path is None:
-        args.output_path = "./data/outputs/causal_tests_results.json"
+        args.output_path = "data/outputs/causal_tests_results.json"
 
         Path(args.output_path).parent.mkdir(exist_ok=True)
 
@@ -86,7 +86,7 @@ def get_args(test_args=None) -> argparse.Namespace:
 
 def parse_variables(causal_dag: CausalDAG) -> tuple:
     """
-    Function to validate the variables defined in the causal tests
+    Function to parse and validate the variables defined in the causal dag.
     :param causal_dag: an instancce of the CausalDAG class containing the relationships and variables (as attribtutes)
     :returns:
     - Tuple containing the inputs, outputs and constraints to pass into the modelling scenario
