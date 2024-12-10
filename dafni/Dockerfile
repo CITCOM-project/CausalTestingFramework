@@ -15,7 +15,7 @@ LABEL maintainer="Dr. Farhad Allian - The University of Sheffield"
 RUN mkdir -p ./causal_testing
 RUN mkdir -p ./data/outputs
 
-# Copy the source code from local rootand test files from build into the container
+# Copy the source code from local root and test files from build into the container
 COPY --chown=nobody  ./causal_testing ./causal_testing
 COPY --chown=nobody ./dafni/src/ ./src
 COPY --chown=nobody ./dafni/data/inputs ./data/inputs
