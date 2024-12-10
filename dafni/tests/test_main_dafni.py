@@ -6,12 +6,11 @@ from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEff
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.variable import Input, Output
-from main_dafni import get_args, parse_variables
+from dafni.src.main_dafni import get_args, parse_variables
 
 # Base directory (relative to the current test file location)
 BASE_DIR = Path(__file__).resolve().parent.parent  # Points to ./dafni
 DATA_DIR = BASE_DIR / "data"  # Points to ./dafni/data
-
 
 class TestGetArgs(unittest.TestCase):
     """Test the argparse functionality of the DAFNI entrypoint."""
