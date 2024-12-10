@@ -23,7 +23,7 @@ class TestGetArgs(unittest.TestCase):
         mock_parse_args.return_value = argparse.Namespace(
             data_path=[str(DATA_DIR / "inputs/runtime_data.csv")],
             tests_path=str(DATA_DIR / "inputs/causal_tests.json"),
-            ignore_cycles=True,
+            ignore_cycles=False,
             dag_path=str(DATA_DIR / "inputs/dag.dot"),
             output_path=str(DATA_DIR / "outputs/causal_test_results.json"),
             f=False,
