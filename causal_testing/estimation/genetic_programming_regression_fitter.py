@@ -149,7 +149,6 @@ class GP:
                 )
             self.sympy_conversions[name] = conversion
 
-        print(self.pset.mapping)
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 
@@ -235,6 +234,8 @@ class GP:
 
         :return: The simplified expression as a sympy Expr object.
         """
+        if isinstance(expression, str):
+            expression = creator.Individual(gp.PrimitiveTree.from_string(expression, self.pset))
         return sympy.simplify(self._stringify_for_sympy(expression))
 
     def repair(self, expression: gp.PrimitiveTree) -> gp.PrimitiveTree:
@@ -248,7 +249,7 @@ class GP:
         """
         eq = f"{self.outcome} ~ {' + '.join(str(x) for x in self.split(expression))}"
         try:
-            # Create model, fit (run) it, give estimates from it]
+            # Create model, fit (run) it, give estimates from it
             model = smf.ols(eq, self.df)
             res = model.fit()
 
@@ -278,16 +279,25 @@ class GP:
         """
         old_settings = np.seterr(all="raise")
         try:
-            # Create model, fit (run) it, give estimates from it]
+            if isinstance(expression, str):
+                expression = creator.Individual(gp.PrimitiveTree.from_string(expression, self.pset))
+
+            # Create model, fit (run) it, give estimates from it
             func = gp.compile(expression, self.pset)
-            y_estimates = pd.Series([func(**x) for _, x in self.df[self.features].iterrows()])
+            y_estimates = pd.Series(
+                [func(**x) for _, x in self.df[self.features].iterrows()],
+                index=self.df.index,
+            )
 
-            # Calc errors using an improved normalised mean squared
+            # Calculate errors using the normalised root mean square error (nrmse),
+            # which is normalised with respect to the range
             sqerrors = (self.df[self.outcome] - y_estimates) ** 2
-            mean_squared = sqerrors.sum() / len(self.df)
-            nmse = mean_squared / (self.df[self.outcome].sum() / len(self.df))
+            nrmse = np.sqrt(sqerrors.sum() / len(self.df)) / (self.df[self.outcome].max() - self.df[self.outcome].min())
 
-            return (nmse,)
+            if pd.isnull(nrmse) or nrmse.real != nrmse:
+                return (float("inf"),)
+
+            return (nrmse,)
 
             # Fitness value of infinite if error - not return 1
         except (
@@ -321,7 +331,15 @@ class GP:
             offspring.append(child)
         return offspring
 
-    def run_gp(self, ngen: int, pop_size: int = 20, num_offspring: int = 10, seeds: list = None) -> gp.PrimitiveTree:
+    # pylint: disable=too-many-arguments
+    def run_gp(
+        self,
+        ngen: int,
+        pop_size: int = 20,
+        num_offspring: int = 10,
+        seeds: list = None,
+        repair: bool = True,
+    ) -> gp.PrimitiveTree:
         """
         Execute Genetic Programming to find the best expression using a mu+lambda algorithm.
 
@@ -329,10 +347,13 @@ class GP:
         :param pop_size: The population size.
         :param num_offspring: The number of new individuals per generation.
         :param seeds: Seed individuals for the initial population.
+        :param repair: Whether to run the linear regression repair operator (defaults to True).
 
         :return: The best candididate expression.
         """
-        population = [self.toolbox.repair(ind) for ind in self.toolbox.population(n=pop_size)]
+        population = self.toolbox.population(n=pop_size)
+        if repair:
+            population = [self.toolbox.repair(ind) for ind in population]
         if seeds is not None:
             for seed in seeds:
                 ind = creator.Individual(gp.PrimitiveTree.from_string(seed, self.pset))
@@ -348,7 +369,8 @@ class GP:
         for _ in range(1, ngen + 1):
             # Vary the population
             offspring = self.make_offspring(population, num_offspring)
-            offspring = [self.toolbox.repair(ind) for ind in offspring]
+            if repair:
+                offspring = [self.toolbox.repair(ind) for ind in offspring]
 
             # Evaluate the individuals with an invalid fitness
             for ind in offspring:
