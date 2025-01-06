@@ -17,7 +17,7 @@ class TestGP(unittest.TestCase):
             outcome=None,
             max_order=1,
         )
-        self.assertEquals(str(gp.simplify("power_1(x1)")), "x1")
+        self.assertEqual(str(gp.simplify("power_1(x1)")), "x1")
 
     def test_fitness_string(self):
         gp = GP(
@@ -26,13 +26,13 @@ class TestGP(unittest.TestCase):
             outcome="outcome",
             max_order=0,
         )
-        self.assertEquals(gp.fitness("add(x1, 1)"), (0,))
+        self.assertEqual(gp.fitness("add(x1, 1)"), (0,))
 
-    def test_fitness_inf(self):
+    def test_fitness_invalid(self):
         gp = GP(
             df=pd.DataFrame({"x1": [1, None], "outcome": [2, None]}),
             features=["x1"],
             outcome="outcome",
             max_order=0,
         )
-        self.assertEquals(gp.fitness("add(x1, x1)"), (float("inf"),))
+        self.assertEqual(gp.fitness("add(x1, x1)"), (float("inf"),))
