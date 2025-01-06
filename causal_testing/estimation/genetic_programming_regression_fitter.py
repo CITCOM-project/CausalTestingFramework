@@ -331,13 +331,14 @@ class GP:
             offspring.append(child)
         return offspring
 
+    # pylint: disable=too-many-arguments
     def run_gp(
         self,
         ngen: int,
         pop_size: int = 20,
         num_offspring: int = 10,
         seeds: list = None,
-        repair=True,
+        repair: bool = True,
     ) -> gp.PrimitiveTree:
         """
         Execute Genetic Programming to find the best expression using a mu+lambda algorithm.
@@ -346,6 +347,7 @@ class GP:
         :param pop_size: The population size.
         :param num_offspring: The number of new individuals per generation.
         :param seeds: Seed individuals for the initial population.
+        :param repair: Whether to run the linear regression repair operator (defaults to True).
 
         :return: The best candididate expression.
         """
