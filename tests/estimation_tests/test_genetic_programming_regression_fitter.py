@@ -21,7 +21,7 @@ class TestGP(unittest.TestCase):
             outcome=None,
             max_order=1,
         )
-        self.assertEquals(str(gp.simplify("power_1(x1)")), "x1")
+        self.assertEqual(str(gp.simplify("power_1(x1)")), "x1")
 
     def test_fitness_string(self):
         gp = GP(
@@ -30,7 +30,7 @@ class TestGP(unittest.TestCase):
             outcome="outcome",
             max_order=0,
         )
-        self.assertEquals(gp.fitness("add(x1, 1)"), (0,))
+        self.assertEqual(gp.fitness("add(x1, 1)"), (0,))
 
     def test_fitness_inf(self):
         gp = GP(
@@ -40,4 +40,4 @@ class TestGP(unittest.TestCase):
             max_order=0,
             extra_operators=[(root, 1)],
         )
-        self.assertEquals(gp.fitness("root(-1)"), (float("inf"),))
+        self.assertEqual(gp.fitness("root(-1)"), (float("inf"),))
