@@ -284,12 +284,14 @@ class GP:
 
             # Create model, fit (run) it, give estimates from it]
             func = gp.compile(expression, self.pset)
-            y_estimates = pd.Series([func(**x) for _, x in self.df[self.features].iterrows()], index=self.df.index)
+            y_estimates = pd.Series(
+                [func(**x) for _, x in self.df[self.features].iterrows()],
+                index=self.df.index,
+            )
 
             # Calculate errors using root mean square error
             sqerrors = (self.df[self.outcome] - y_estimates) ** 2
-            nrmse = np.sqrt(sqerrors.sum()/len(self.df))/(self.df[self.outcome].max() - self.df[self.outcome].min())
-
+            nrmse = np.sqrt(sqerrors.sum() / len(self.df)) / (self.df[self.outcome].max() - self.df[self.outcome].min())
 
             if pd.isnull(nrmse) or nrmse.real != nrmse:
                 return (float("inf"),)
@@ -329,7 +331,14 @@ class GP:
             offspring.append(child)
         return offspring
 
-    def run_gp(self, ngen: int, pop_size: int = 20, num_offspring: int = 10, seeds: list = None, repair=True) -> gp.PrimitiveTree:
+    def run_gp(
+        self,
+        ngen: int,
+        pop_size: int = 20,
+        num_offspring: int = 10,
+        seeds: list = None,
+        repair=True,
+    ) -> gp.PrimitiveTree:
         """
         Execute Genetic Programming to find the best expression using a mu+lambda algorithm.
 
