@@ -282,14 +282,15 @@ class GP:
             if isinstance(expression, str):
                 expression = creator.Individual(gp.PrimitiveTree.from_string(expression, self.pset))
 
-            # Create model, fit (run) it, give estimates from it]
+            # Create model, fit (run) it, give estimates from it
             func = gp.compile(expression, self.pset)
             y_estimates = pd.Series(
                 [func(**x) for _, x in self.df[self.features].iterrows()],
                 index=self.df.index,
             )
 
-            # Calculate errors using root mean square error
+            # Calculate errors using the normalised root mean square error (nrmse),
+            # which is normalised with respect to the range
             sqerrors = (self.df[self.outcome] - y_estimates) ** 2
             nrmse = np.sqrt(sqerrors.sum() / len(self.df)) / (self.df[self.outcome].max() - self.df[self.outcome].min())
 
