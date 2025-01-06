@@ -295,7 +295,6 @@ class GP:
 
             if pd.isnull(nrmse) or nrmse.real != nrmse:
                 return (float("inf"),)
-            assert nrmse > 0, f"NRMSE {nrmse} should be greater than zero"
 
             return (nrmse,)
 
