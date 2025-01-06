@@ -249,7 +249,7 @@ class GP:
         """
         eq = f"{self.outcome} ~ {' + '.join(str(x) for x in self.split(expression))}"
         try:
-            # Create model, fit (run) it, give estimates from it]
+            # Create model, fit (run) it, give estimates from it
             model = smf.ols(eq, self.df)
             res = model.fit()
 
