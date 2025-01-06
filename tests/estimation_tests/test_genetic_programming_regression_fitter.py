@@ -5,10 +5,6 @@ from operator import sub
 from causal_testing.estimation.genetic_programming_regression_fitter import GP
 
 
-def root(x):
-    return x**0.5
-
-
 class TestGP(unittest.TestCase):
     def test_init_invalid_fun_name(self):
         with self.assertRaises(ValueError):
@@ -34,10 +30,9 @@ class TestGP(unittest.TestCase):
 
     def test_fitness_inf(self):
         gp = GP(
-            df=pd.DataFrame({"x1": [-1], "outcome": [0]}),
+            df=pd.DataFrame({"x1": [1, None], "outcome": [2, None]}),
             features=["x1"],
             outcome="outcome",
             max_order=0,
-            extra_operators=[(root, 1)],
         )
-        self.assertEquals(gp.fitness("root(x1)"), (float("inf"),))
+        self.assertEquals(gp.fitness("add(x1, x1)"), (float("inf"),))
