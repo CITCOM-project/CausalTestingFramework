@@ -23,7 +23,7 @@ class TestGP(unittest.TestCase):
         )
         self.assertEqual(str(gp.simplify("power_1(x1)")), "x1")
 
-    def test_fitness_string(self):
+    def test_fitness(self):
         gp = GP(
             df=pd.DataFrame({"x1": [1, 2, 3], "outcome": [2, 3, 4]}),
             features=["x1"],
