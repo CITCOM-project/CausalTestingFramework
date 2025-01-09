@@ -294,7 +294,7 @@ class GP:
             sqerrors = (self.df[self.outcome] - y_estimates) ** 2
             nrmse = np.sqrt(sqerrors.sum() / len(self.df)) / (self.df[self.outcome].max() - self.df[self.outcome].min())
 
-            if pd.isnull(nrmse) or nrmse.real != nrmse:
+            if pd.isnull(nrmse) or nrmse.real != nrmse or y_estimates.dtype != self.df.dtypes[self.outcome]:
                 return (float("inf"),)
 
             return (nrmse,)
