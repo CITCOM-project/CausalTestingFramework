@@ -27,7 +27,7 @@ authors:
   - name: Richard Somers
     orcid: 0009-0009-1195-1497
     affiliation: 1
-  - name: Nicholas Lattimer
+  - name: Nicholas Latimer
     orcid: 0000-0001-5304-5585
     affiliation: 1
   - name: Neil Walkinshaw
@@ -45,7 +45,7 @@ bibliography: paper.bib
 
 # Summary
 Scientific models possess several properties that make them notoriously difficult to test, including a complex input space, long execution times, and non-determinism, rendering existing testing techniques impractical.
-In fields such as epidemiology, where researchers seek answers to challenging causal questions, a statistical methodology known as Causal Inference (CI) has addressed similar problems, enabling the inference of causal conclusions from noisy, biased, and sparse observational data instead of costly randomised trials.
+In fields such as epidemiology, where researchers seek answers to challenging causal questions, a statistical methodology known as Causal Inference (CI) [@pearl2009causality,@hernan2020causal] has addressed similar problems, enabling the inference of causal conclusions from noisy, biased, and sparse observational data instead of costly randomised trials.
 CI works by using domain knowledge to identify and mitigate for biases in the data, enabling them to answer causal questions that concern the effect of changing some feature on the observed outcome.
 The Causal Testing Framework (CTF) is a software testing framework that uses CI techniques to establish causal effects between software variables from pre-existing runtime data rather than having to collect bespoke, highly curated datasets especially for testing.
 
@@ -56,18 +56,18 @@ Nondeterministic software can be tested using Statistical Metamorphic Testing [@
 However, this requires the software to be executed repeatedly for each set of parameters of interest, so is computationally expensive, and is constrained to testing properties over software inputs that can be directly and precisely controlled.
 Statistical Metamorphic Testing cannot be used to test properties that relate internal variables or outputs to each other, since these cannot be controlled a priori.
 
-By employing domain knowledge in the form of a causal graph --- a lightweight model specifying the expected relationships between key software variables --- the CTF circumvents both of these problems by enabling models to be tested using pre-existing runtime data.
+By employing domain knowledge in the form of a causal graph --- a lightweight model specifying the expected relationships between key software variables --- the CTF overcomes the limitations of Statistical Metamorphic Testing by enabling models to be tested using pre-existing runtime data.
 The CTF is written in Python but is language agnostic in terms of the system under test.
 All that is required is a set of properties to be validated, a causal model, and a set of software runtime data.
 
 # Causal Testing
-Causal Testing [@clark2023testing] has four main steps, outlined in \ref{fig:schematic}.
-Firstly, the user supplies a causal model, which takes the form of a directed acyclic graph (DAG) where an edge $X \to Y$ represents variable $X$ having a direct causal effect on variable $Y$.
+Causal Testing [@clark2023testing] has four main steps, outlined in Figure \ref{fig:schematic}.
+Firstly, the user supplies a causal model, which takes the form of a directed acyclic graph (DAG) [@pearl2009causality] where an edge $X \to Y$ represents variable $X$ having a direct causal effect on variable $Y$.
 Secondly, the user supplies a set of causal properties to be tested.
 Such properties can be generated from the causal DAG [@clark2023metamorphic]: for each $X \to Y$ edge, a test to validate the presence of a causal effect is generated, and for each missing edge, a test to validate independence is generated.
 The user may also refine tests to validate the nature of a particular relationship.
 Next, the user supplies a set of runtime data in the form of a table with each column representing a variable and rows containing the value of each variable for a particular run of the software.
-Finally, the CTF automatically validates the causal properties by using the causal DAG and data to calculate a causal effect estimate, and validating this against the expected causal relationship.
+Finally, the CTF automatically validates the causal properties by using the causal DAG to identify a statistical estimand [@pearl2009causality] (essentially a set of features in the data which must be controlled for), calculate a causal effect estimate from the supplied data, and validating this against the expected causal relationship.
 
 ![Causal Testing workflow.\label{fig:schematic}](../images/schematic.png)
 
@@ -78,12 +78,12 @@ The CTF instead evaluates the adequacy of a particular dataset by calculating a 
 ## Missing Variables
 Causal Testing works by using the causal DAG to identify the variables that need to be statistically controlled for to remove their biassing effect on the causal estimate.
 This typically means we need to know their values.
-However, where such biassing variables are not recorded in the data, the Causal Testing Framework can still sometimes estimate unbiased causal effects by using Instrumental Variables, an advanced Causal Inference technique.
+However, where such biassing variables are not recorded in the data, the Causal Testing Framework can still sometimes estimate unbiased causal effects by using Instrumental Variables [@hernan2020causal], an advanced Causal Inference technique.
 
 ## Feedback Over Time
 Many scientific models involve iterating several interacting processes over time.
 These processes often feed into each other, and can create feedback cycles.
-Traditional CI cannot handle this, however the CTF uses a family of advanced CI techniques, called g-methods, to enable the estimation of causal effects even when there are feedback cycles between variables.
+Traditional CI cannot handle this, however the CTF uses a family of advanced CI techniques, called g-methods [@hernan2020causal], to enable the estimation of causal effects even when there are feedback cycles between variables.
 
 # Related Work
 The Dagitty tool [@textor2017dagitty] is a browser-based environment for creating, editing, and analysing causal graphs.
