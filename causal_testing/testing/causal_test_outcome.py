@@ -29,7 +29,7 @@ class SomeEffect(CausalTestOutcome):
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_low() is None or res.ci_high() is None:
             return None
-        if res.test_value.type in ("risk_ratio", "hazard_ratio"):
+        if res.test_value.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio"):
             return any(
                 1 < ci_low < ci_high or ci_low < ci_high < 1 for ci_low, ci_high in zip(res.ci_low(), res.ci_high())
             )
@@ -54,7 +54,7 @@ class NoEffect(CausalTestOutcome):
         self.ctol = ctol
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.test_value.type in ("risk_ratio", "hazard_ratio"):
+        if res.test_value.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio"):
             return any(
                 ci_low < 1 < ci_high or np.isclose(value, 1.0, atol=self.atol)
                 for ci_low, ci_high, value in zip(res.ci_low(), res.ci_high(), res.test_value.value)

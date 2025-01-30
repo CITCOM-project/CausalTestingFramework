@@ -41,6 +41,7 @@ class RegressionEstimator(Estimator):
             outcome=outcome,
             df=df,
             effect_modifiers=effect_modifiers,
+            alpha=alpha,
             query=query,
         )
 
