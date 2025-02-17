@@ -19,7 +19,6 @@ class TestExperimentalEstimator(unittest.TestCase):
             control_value=1,
             adjustment_set={},
             outcome="Y",
-            effect_modifiers={},
             alpha=0.05,
             repeats=200,
         )
