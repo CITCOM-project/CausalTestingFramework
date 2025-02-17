@@ -23,7 +23,7 @@ class ConcreteExperimentalEstimator(ExperimentalEstimator):
         :returns: Dictionary with the output.
         """
         sut = SystemUnderTest()
-        return {"Y": sut.run(configuration["x"])}
+        return {"Y": sut.run(configuration["X"])}
 
 
 class TestExperimentalEstimator(unittest.TestCase):
