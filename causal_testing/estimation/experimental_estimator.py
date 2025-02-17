@@ -25,6 +25,7 @@ class ExperimentalEstimator(Estimator):
         alpha: float = 0.05,
         repeats: int = 200,
     ):
+        # pylint: disable=R0801
         super().__init__(
             treatment=treatment,
             treatment_value=treatment_value,
