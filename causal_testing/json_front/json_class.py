@@ -11,7 +11,6 @@ from pathlib import Path
 from statistics import StatisticsError
 
 import pandas as pd
-import numpy as np
 import scipy
 from fitter import Fitter, get_common_distributions
 
@@ -21,7 +20,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
+from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
