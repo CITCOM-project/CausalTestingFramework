@@ -65,9 +65,7 @@ def doubling_beta_CATE_on_csv(
     )
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    causal_test_result = causal_test_case.execute_test(
-        estimator=linear_regression_estimator, data_collector=data_collector
-    )
+    causal_test_result = causal_test_case.execute_test(estimator=linear_regression_estimator)
 
     # Repeat for association estimate (no adjustment)
     no_adjustment_linear_regression_estimator = LinearRegressionEstimator(
@@ -79,9 +77,7 @@ def doubling_beta_CATE_on_csv(
         df=past_execution_df,
         formula="cum_infections ~ beta + I(beta ** 2)",
     )
-    association_test_result = causal_test_case.execute_test(
-        estimator=no_adjustment_linear_regression_estimator, data_collector=data_collector
-    )
+    association_test_result = causal_test_case.execute_test(estimator=no_adjustment_linear_regression_estimator)
 
     # Store results for plotting
     results_dict["association"] = {
@@ -111,9 +107,7 @@ def doubling_beta_CATE_on_csv(
             df=counterfactual_past_execution_df,
             formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
         )
-        counterfactual_causal_test_result = causal_test_case.execute_test(
-            estimator=linear_regression_estimator, data_collector=data_collector
-        )
+        counterfactual_causal_test_result = causal_test_case.execute_test(estimator=linear_regression_estimator)
 
         results_dict["counterfactual"] = {
             "ate": counterfactual_causal_test_result.test_value.value,
