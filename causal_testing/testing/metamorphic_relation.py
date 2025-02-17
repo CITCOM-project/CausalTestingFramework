@@ -4,7 +4,6 @@ defined in our ICST paper [https://eprints.whiterose.ac.uk/195317/].
 """
 
 from dataclasses import dataclass
-from abc import abstractmethod
 from typing import Iterable
 from itertools import combinations
 import argparse
@@ -26,18 +25,6 @@ class MetamorphicRelation:
 
     base_test_case: BaseTestCase
     adjustment_vars: Iterable[Node]
-    dag: CausalDAG
-    tests: Iterable = None
-
-    @abstractmethod
-    def to_json_stub(self, skip=True) -> dict:
-        """Convert to a JSON frontend stub string for user customisation"""
-
-    @abstractmethod
-    def test_oracle(self, test_results):
-        """A test oracle that assert whether the MR holds or not based on ALL test results.
-
-        This method must raise an assertion, not return a bool."""
 
     def __eq__(self, other):
         same_type = self.__class__ == other.__class__
@@ -50,16 +37,6 @@ class MetamorphicRelation:
 
 class ShouldCause(MetamorphicRelation):
     """Class representing a should cause metamorphic relation."""
-
-    def assertion(self, source_output, follow_up_output):
-        """If there is a causal effect, the outputs should not be the same."""
-        return source_output != follow_up_output
-
-    def test_oracle(self, test_results):
-        """A single passing test is sufficient to show presence of a causal effect."""
-        assert len(test_results["fail"]) < len(
-            self.tests
-        ), f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
 
     def to_json_stub(self, skip=True) -> dict:
         """Convert to a JSON frontend stub string for user customisation"""
@@ -83,16 +60,6 @@ class ShouldCause(MetamorphicRelation):
 
 class ShouldNotCause(MetamorphicRelation):
     """Class representing a should cause metamorphic relation."""
-
-    def assertion(self, source_output, follow_up_output):
-        """If there is a causal effect, the outputs should not be the same."""
-        return source_output == follow_up_output
-
-    def test_oracle(self, test_results):
-        """A single passing test is sufficient to show presence of a causal effect."""
-        assert (
-            len(test_results["fail"]) == 0
-        ), f"{str(self)}: {len(test_results['fail'])}/{len(self.tests)} tests failed."
 
     def to_json_stub(self, skip=True) -> dict:
         """Convert to a JSON frontend stub string for user customisation"""
@@ -140,30 +107,30 @@ def generate_metamorphic_relation(
         if u in nx.ancestors(dag.graph, v):
             adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0]), dag))
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0])))
 
         # Case 2: V --> ... --> U
         elif v in nx.ancestors(dag.graph, u):
             adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), list(adj_sets[0]), dag))
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), list(adj_sets[0])))
 
         # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
         # Only make one MR since V _||_ U == U _||_ V
         else:
             adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0]), dag))
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0])))
 
     # Create a ShouldCause relation for each edge (u, v) or (v, u)
     elif (u, v) in dag.graph.edges:
         adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
         if adj_sets:
-            metamorphic_relations.append(ShouldCause(BaseTestCase(u, v), list(adj_sets[0]), dag))
+            metamorphic_relations.append(ShouldCause(BaseTestCase(u, v), list(adj_sets[0])))
     else:
         adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
         if adj_sets:
-            metamorphic_relations.append(ShouldCause(BaseTestCase(v, u), list(adj_sets[0]), dag))
+            metamorphic_relations.append(ShouldCause(BaseTestCase(v, u), list(adj_sets[0])))
     return metamorphic_relations
 
 

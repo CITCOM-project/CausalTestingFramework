@@ -47,7 +47,7 @@ class TestMetamorphicRelation(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         causal_dag.graph.remove_nodes_from(["X2", "X3"])
         adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_not_cause_MR = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set, causal_dag)
+        should_not_cause_MR = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
         self.assertEqual(
             should_not_cause_MR.to_json_stub(),
             {
@@ -70,7 +70,7 @@ class TestMetamorphicRelation(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         causal_dag.graph.remove_nodes_from(["X2", "X3"])
         adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_cause_MR = ShouldCause(BaseTestCase("X1", "Z"), adj_set, causal_dag)
+        should_cause_MR = ShouldCause(BaseTestCase("X1", "Z"), adj_set)
         self.assertEqual(
             should_cause_MR.to_json_stub(),
             {
@@ -94,12 +94,12 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         # Check all ShouldCause relations are present and no extra
         expected_should_cause_relations = [
-            ShouldCause(BaseTestCase("X1", "Z"), [], dag),
-            ShouldCause(BaseTestCase("Z", "M"), [], dag),
-            ShouldCause(BaseTestCase("M", "Y"), ["Z"], dag),
-            ShouldCause(BaseTestCase("Z", "Y"), ["M"], dag),
-            ShouldCause(BaseTestCase("X2", "Z"), [], dag),
-            ShouldCause(BaseTestCase("X3", "M"), [], dag),
+            ShouldCause(BaseTestCase("X1", "Z"), []),
+            ShouldCause(BaseTestCase("Z", "M"), []),
+            ShouldCause(BaseTestCase("M", "Y"), ["Z"]),
+            ShouldCause(BaseTestCase("Z", "Y"), ["M"]),
+            ShouldCause(BaseTestCase("X2", "Z"), []),
+            ShouldCause(BaseTestCase("X3", "M"), []),
         ]
 
         extra_sc_relations = [scr for scr in should_cause_relations if scr not in expected_should_cause_relations]
@@ -110,15 +110,15 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         # Check all ShouldNotCause relations are present and no extra
         expected_should_not_cause_relations = [
-            ShouldNotCause(BaseTestCase("X1", "X2"), [], dag),
-            ShouldNotCause(BaseTestCase("X1", "X3"), [], dag),
-            ShouldNotCause(BaseTestCase("X1", "M"), ["Z"], dag),
-            ShouldNotCause(BaseTestCase("X1", "Y"), ["Z"], dag),
-            ShouldNotCause(BaseTestCase("X2", "X3"), [], dag),
-            ShouldNotCause(BaseTestCase("X2", "M"), ["Z"], dag),
-            ShouldNotCause(BaseTestCase("X2", "Y"), ["Z"], dag),
-            ShouldNotCause(BaseTestCase("X3", "Y"), ["M", "Z"], dag),
-            ShouldNotCause(BaseTestCase("Z", "X3"), [], dag),
+            ShouldNotCause(BaseTestCase("X1", "X2"), []),
+            ShouldNotCause(BaseTestCase("X1", "X3"), []),
+            ShouldNotCause(BaseTestCase("X1", "M"), ["Z"]),
+            ShouldNotCause(BaseTestCase("X1", "Y"), ["Z"]),
+            ShouldNotCause(BaseTestCase("X2", "X3"), []),
+            ShouldNotCause(BaseTestCase("X2", "M"), ["Z"]),
+            ShouldNotCause(BaseTestCase("X2", "Y"), ["Z"]),
+            ShouldNotCause(BaseTestCase("X3", "Y"), ["M", "Z"]),
+            ShouldNotCause(BaseTestCase("Z", "X3"), []),
         ]
 
         extra_snc_relations = [
@@ -140,12 +140,12 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         # Check all ShouldCause relations are present and no extra
         expected_should_cause_relations = [
-            ShouldCause(BaseTestCase("X1", "Z"), [], dag),
-            ShouldCause(BaseTestCase("Z", "M"), [], dag),
-            ShouldCause(BaseTestCase("M", "Y"), ["Z"], dag),
-            ShouldCause(BaseTestCase("Z", "Y"), ["M"], dag),
-            ShouldCause(BaseTestCase("X2", "Z"), [], dag),
-            ShouldCause(BaseTestCase("X3", "M"), [], dag),
+            ShouldCause(BaseTestCase("X1", "Z"), []),
+            ShouldCause(BaseTestCase("Z", "M"), []),
+            ShouldCause(BaseTestCase("M", "Y"), ["Z"]),
+            ShouldCause(BaseTestCase("Z", "Y"), ["M"]),
+            ShouldCause(BaseTestCase("X2", "Z"), []),
+            ShouldCause(BaseTestCase("X3", "M"), []),
         ]
 
         extra_sc_relations = [scr for scr in should_cause_relations if scr not in expected_should_cause_relations]
@@ -156,15 +156,15 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         # Check all ShouldNotCause relations are present and no extra
         expected_should_not_cause_relations = [
-            ShouldNotCause(BaseTestCase("X1", "X2"), [], dag),
-            ShouldNotCause(BaseTestCase("X1", "X3"), [], dag),
-            ShouldNotCause(BaseTestCase("X1", "M"), ["Z"], dag),
-            ShouldNotCause(BaseTestCase("X1", "Y"), ["Z"], dag),
-            ShouldNotCause(BaseTestCase("X2", "X3"), [], dag),
-            ShouldNotCause(BaseTestCase("X2", "M"), ["Z"], dag),
-            ShouldNotCause(BaseTestCase("X2", "Y"), ["Z"], dag),
-            ShouldNotCause(BaseTestCase("X3", "Y"), ["M", "Z"], dag),
-            ShouldNotCause(BaseTestCase("Z", "X3"), [], dag),
+            ShouldNotCause(BaseTestCase("X1", "X2"), []),
+            ShouldNotCause(BaseTestCase("X1", "X3"), []),
+            ShouldNotCause(BaseTestCase("X1", "M"), ["Z"]),
+            ShouldNotCause(BaseTestCase("X1", "Y"), ["Z"]),
+            ShouldNotCause(BaseTestCase("X2", "X3"), []),
+            ShouldNotCause(BaseTestCase("X2", "M"), ["Z"]),
+            ShouldNotCause(BaseTestCase("X2", "Y"), ["Z"]),
+            ShouldNotCause(BaseTestCase("X3", "Y"), ["M", "Z"]),
+            ShouldNotCause(BaseTestCase("Z", "X3"), []),
         ]
 
         extra_snc_relations = [
@@ -188,7 +188,7 @@ class TestMetamorphicRelation(unittest.TestCase):
         self.assertEqual(
             should_cause_relations,
             [
-                ShouldCause(BaseTestCase("a", "b"), [], dag),
+                ShouldCause(BaseTestCase("a", "b"), []),
             ],
         )
         self.assertEqual(
@@ -201,47 +201,47 @@ class TestMetamorphicRelation(unittest.TestCase):
         [metamorphic_relation] = generate_metamorphic_relation(("X1", "Z"), dag)
         self.assertEqual(
             metamorphic_relation,
-            ShouldCause(BaseTestCase("X1", "Z"), [], dag),
+            ShouldCause(BaseTestCase("X1", "Z"), []),
         )
 
     def test_equivalent_metamorphic_relations(self):
         dag = CausalDAG(self.dag_dot_path)
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"], dag)
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"], dag)
+        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
+        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
         self.assertEqual(sc_mr_a == sc_mr_b, True)
 
     def test_equivalent_metamorphic_relations_empty_adjustment_set(self):
         dag = CausalDAG(self.dag_dot_path)
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [], dag)
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [], dag)
+        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
+        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, True)
 
     def test_equivalent_metamorphic_relations_different_order_adjustment_set(self):
         dag = CausalDAG(self.dag_dot_path)
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"], dag)
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), ["C", "A", "B"], dag)
+        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
+        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), ["C", "A", "B"])
         self.assertEqual(sc_mr_a == sc_mr_b, True)
 
     def test_different_metamorphic_relations_empty_adjustment_set_different_outcome(self):
         dag = CausalDAG(self.dag_dot_path)
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Z"), [], dag)
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [], dag)
+        sc_mr_a = ShouldCause(BaseTestCase("X", "Z"), [])
+        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, False)
 
     def test_different_metamorphic_relations_empty_adjustment_set_different_treatment(self):
         dag = CausalDAG(self.dag_dot_path)
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [], dag)
-        sc_mr_b = ShouldCause(BaseTestCase("Z", "Y"), [], dag)
+        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
+        sc_mr_b = ShouldCause(BaseTestCase("Z", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, False)
 
     def test_different_metamorphic_relations_empty_adjustment_set_adjustment_set(self):
         dag = CausalDAG(self.dag_dot_path)
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A"], dag)
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [], dag)
+        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A"])
+        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, False)
 
     def test_different_metamorphic_relations_different_type(self):
         dag = CausalDAG(self.dag_dot_path)
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [], dag)
-        sc_mr_b = ShouldNotCause(BaseTestCase("X", "Y"), [], dag)
+        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
+        sc_mr_b = ShouldNotCause(BaseTestCase("X", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, False)
