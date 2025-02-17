@@ -2,9 +2,28 @@ import unittest
 from causal_testing.estimation.experimental_estimator import ExperimentalEstimator
 
 
+class SystemUnderTest:
+    """
+    Basic example of a system under test.
+    """
+
+    def run(self, x):
+        return x * 2
+
+
 class ConcreteExperimentalEstimator(ExperimentalEstimator):
-    def run_system(self, configuration):
-        return {"Y": 2 * configuration["X"]}
+    """
+    Concrete experimental estimator class which integrates with the system under test.
+    """
+
+    def run_system(self, configuration: dict):
+        """
+        Sets up the system under test, runs with the given configuration, and returns the result in the correct format.
+        :param configuration: The configuration.
+        :returns: Dictionary with the output.
+        """
+        sut = SystemUnderTest()
+        return {"Y": sut.run(configuration["x"])}
 
 
 class TestExperimentalEstimator(unittest.TestCase):
