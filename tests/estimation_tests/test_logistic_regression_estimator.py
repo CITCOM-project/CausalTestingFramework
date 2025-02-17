@@ -19,5 +19,5 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
     def test_odds_ratio(self):
         df = self.scarf_df.copy()
         logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
-        odds = logistic_regression_estimator.estimate_unit_odds_ratio()
-        self.assertEqual(round(odds, 4), 0.8948)
+        odds, _ = logistic_regression_estimator.estimate_unit_odds_ratio()
+        self.assertEqual(round(odds[0], 4), 0.8948)

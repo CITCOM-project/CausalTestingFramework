@@ -11,6 +11,7 @@ from pathlib import Path
 from statistics import StatisticsError
 
 import pandas as pd
+import numpy as np
 import scipy
 from fitter import Fitter, get_common_distributions
 
@@ -21,7 +22,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Meta, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
@@ -136,8 +137,10 @@ class JsonUtility:
                 failed, msg = self._run_concrete_metamorphic_test(test, f_flag, effects)
             # If we have a variable to mutate
             else:
-                if test["estimate_type"] == "coefficient":
-                    failed, msg = self._run_coefficient_test(test=test, f_flag=f_flag, effects=effects)
+                if test["estimate_type"] in ["coefficient", "unit_odds_ratio"]:
+                    failed, msg = self._run_coefficient_test(
+                        test=test, f_flag=f_flag, effects=effects, estimate_type=test["estimate_type"]
+                    )
                 else:
                     failed, msg = self._run_metamorphic_tests(
                         test=test, f_flag=f_flag, effects=effects, mutates=mutates
@@ -146,7 +149,7 @@ class JsonUtility:
             test["result"] = msg
         return self.test_plan["tests"]
 
-    def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict):
+    def _run_coefficient_test(self, test: dict, f_flag: bool, effects: dict, estimate_type: str = "coefficient"):
         """Builds structures and runs test case for tests with an estimate_type of 'coefficient'.
 
         :param test: Single JSON test definition stored in a mapping (dict)
@@ -163,10 +166,11 @@ class JsonUtility:
         causal_test_case = CausalTestCase(
             base_test_case=base_test_case,
             expected_causal_effect=next(effects[effect] for variable, effect in test["expected_effect"].items()),
-            estimate_type="coefficient",
+            estimate_type=estimate_type,
             effect_modifier_configuration={self.scenario.variables[v] for v in test.get("effect_modifiers", [])},
         )
         failed, result = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
+
         msg = (
             f"Executing test: {test['name']} \n"
             + f"  {causal_test_case} \n"
@@ -273,10 +277,17 @@ class JsonUtility:
         failed = False
 
         estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test)
-        causal_test_result = causal_test_case.execute_test(
-            estimator=estimation_model, data_collector=self.data_collector
-        )
-        test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
+        try:
+            causal_test_result = causal_test_case.execute_test(
+                estimator=estimation_model, data_collector=self.data_collector
+            )
+            test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
+        except np.linalg.LinAlgError as e:
+            result = CausalTestResult(
+                estimator=estimation_model,
+                test_value=TestValue("Error", str(e)),
+            )
+            return None, result
 
         if "coverage" in test and test["coverage"]:
             adequacy_metric = DataAdequacy(causal_test_case, estimation_model)
