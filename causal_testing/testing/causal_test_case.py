@@ -2,7 +2,6 @@
 
 import logging
 from typing import Any
-import pandas as pd
 
 from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_test_outcome import CausalTestOutcome

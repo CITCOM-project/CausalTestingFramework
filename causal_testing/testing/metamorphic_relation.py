@@ -47,7 +47,10 @@ class ShouldCause(MetamorphicRelation):
             "effect": "direct",
             "mutations": [self.base_test_case.treatment_variable],
             "expected_effect": {self.base_test_case.outcome_variable: "SomeEffect"},
-            "formula": f"{self.base_test_case.outcome_variable} ~ {' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}",
+            "formula": (
+                f"{self.base_test_case.outcome_variable} ~ "
+                f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
+            ),
             "skip": skip,
         }
 
@@ -70,7 +73,10 @@ class ShouldNotCause(MetamorphicRelation):
             "effect": "direct",
             "mutations": [self.base_test_case.treatment_variable],
             "expected_effect": {self.base_test_case.outcome_variable: "NoEffect"},
-            "formula": f"{self.base_test_case.outcome_variable} ~ {' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}",
+            "formula": (
+                f"{self.base_test_case.outcome_variable} ~ "
+                f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
+            ),
             "alpha": 0.05,
             "skip": skip,
         }
