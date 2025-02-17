@@ -60,7 +60,7 @@ The second method of specifying a test is to specify the test in a concrete form
 
 Alternatively, a ``causal_tests.json`` file can be created from a ``dag.dot`` file using the ``causal_testing/specification/metamorphic_relation.py`` script as follows::
 
-  python causal_testing/specification/metamorphic_relation.py --dag_path dag.dot --output_path causal_tests.json
+  python causal_testing/testing/metamorphic_relation.py --dag_path dag.dot --output_path causal_tests.json
 
 Run Commands
 ************
@@ -88,4 +88,4 @@ Runtime Data
 There are currently 2 methods to inputting your runtime data into the JSON frontend:
 
 #. Providing one or more file paths to `.csv` files containing your data
-#. Setting a dataframe to the .data attribute of the JSONUtility instance, this must be done before the setup method is called.
+#. Setting a dataframe to the `.data` attribute of the JSONUtility instance, this must be done before the setup method is called.
