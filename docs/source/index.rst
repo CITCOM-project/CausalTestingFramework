@@ -33,6 +33,7 @@ system-under-test that is expected to cause a change to some output(s).
    .zoom-container {
        cursor: zoom-in;
        transition: transform 1s ease-in-out;
+       background-color: white;
    }
 
    .zoom-container.zoomed {
@@ -44,6 +45,7 @@ system-under-test that is expected to cause a change to some output(s).
        max-width: 100%;
        max-height: 100%;
        margin: auto;
+       background-color: white;
    }
 
    .zoom-container:hover {
@@ -83,9 +85,9 @@ system-under-test that is expected to cause a change to some output(s).
 
 .. container:: zoom-container
 
-   .. image:: /images/schematic.png
+   .. image:: ../../images/schematic.png
       :class: zoomable-image
-      :alt: Zoomable Image
+      :alt: Schematic diagram of the Causal Testing Framework
 
 
 .. toctree::
