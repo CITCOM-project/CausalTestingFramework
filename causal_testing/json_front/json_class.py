@@ -11,10 +11,7 @@ from pathlib import Path
 from statistics import StatisticsError
 
 import pandas as pd
-import scipy
-from fitter import Fitter, get_common_distributions
 
-from causal_testing.generation.abstract_causal_test_case import AbstractCausalTestCase
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
@@ -90,33 +87,6 @@ class JsonUtility:
             )
         self._populate_metas()
 
-    def _create_abstract_test_case(self, test, mutates, effects):
-        assert len(test["mutations"]) == 1
-        treatment_var = next(self.scenario.variables[v] for v in test["mutations"])
-
-        if not treatment_var.distribution:
-            fitter = Fitter(self.df[treatment_var.name], distributions=get_common_distributions())
-            fitter.fit()
-            (dist, params) = list(fitter.get_best(method="sumsquare_error").items())[0]
-            treatment_var.distribution = getattr(scipy.stats, dist)(**params)
-            self._append_to_file(treatment_var.name + f" {dist}({params})", logging.INFO)
-
-        abstract_test = AbstractCausalTestCase(
-            scenario=self.scenario,
-            intervention_constraints=[mutates[v](k) for k, v in test["mutations"].items()],
-            treatment_variable=treatment_var,
-            expected_causal_effect={
-                self.scenario.variables[variable]: effects[effect]
-                for variable, effect in test["expected_effect"].items()
-            },
-            effect_modifiers=(
-                {self.scenario.variables[v] for v in test["effect_modifiers"]} if "effect_modifiers" in test else {}
-            ),
-            estimate_type=test["estimate_type"],
-            effect=test.get("effect", "total"),
-        )
-        return abstract_test
-
     def run_json_tests(self, effects: dict, estimators: dict, f_flag: bool = False, mutates: dict = None):
         """Runs and evaluates each test case specified in the JSON input
 
@@ -139,9 +109,7 @@ class JsonUtility:
                         test=test, f_flag=f_flag, effects=effects, estimate_type=test["estimate_type"]
                     )
                 else:
-                    failed, msg = self._run_metamorphic_tests(
-                        test=test, f_flag=f_flag, effects=effects, mutates=mutates
-                    )
+                    raise NotImplementedError("Tried to call deprecated method _run_metamorphic_tests")
             test["failed"] = failed
             test["result"] = msg
         return self.test_plan["tests"]
@@ -189,8 +157,6 @@ class JsonUtility:
         causal_test_case = CausalTestCase(
             base_test_case=base_test_case,
             expected_causal_effect=effects[test["expected_effect"][outcome_variable]],
-            control_value=test["control_value"],
-            treatment_value=test["treatment_value"],
             estimate_type=test["estimate_type"],
         )
         failed, msg = self._execute_test_case(causal_test_case=causal_test_case, test=test, f_flag=f_flag)
@@ -204,41 +170,6 @@ class JsonUtility:
         )
         self._append_to_file(msg, logging.INFO)
         return failed, msg
-
-    def _run_metamorphic_tests(self, test: dict, f_flag: bool, effects: dict, mutates: dict):
-        """Builds structures and runs test case for tests with an estimate_type of 'ate'.
-
-        :param test: Single JSON test definition stored in a mapping (dict)
-        :param f_flag: Failure flag that if True the script will stop executing when a test fails.
-        :param effects: Dictionary mapping effect class instances to string representations.
-        :param mutates: Dictionary mapping mutation functions to string representations.
-        :return: String containing the message to be outputted
-        """
-        if "sample_size" in test:
-            sample_size = test["sample_size"]
-        else:
-            sample_size = 5
-        if "target_ks_score" in test:
-            target_ks_score = test["target_ks_score"]
-        else:
-            target_ks_score = 0.05
-        abstract_test = self._create_abstract_test_case(test, mutates, effects)
-        concrete_tests, _ = abstract_test.generate_concrete_tests(
-            sample_size=sample_size, target_ks_score=target_ks_score
-        )
-        failures, _ = self._execute_tests(concrete_tests, test, f_flag)
-
-        msg = (
-            f"Executing test: {test['name']} \n"
-            + "  abstract_test \n"
-            + f"  {abstract_test} \n"
-            + f"  {abstract_test.treatment_variable.name},"
-            + f"  {abstract_test.treatment_variable.distribution} \n"
-            + f"  Number of concrete tests for test case: {str(len(concrete_tests))} \n"
-            + f"  {failures}/{len(concrete_tests)} failed for {test['name']}"
-        )
-        self._append_to_file(msg, logging.INFO)
-        return failures, msg
 
     def _execute_tests(self, concrete_tests, test, f_flag):
         failures = 0
@@ -274,7 +205,8 @@ class JsonUtility:
         failed = False
 
         estimation_model = self._setup_test(causal_test_case=causal_test_case, test=test)
-        causal_test_result = causal_test_case.execute_test(estimator=estimation_model)
+        causal_test_case.estimator = estimation_model
+        causal_test_result = causal_test_case.execute_test()
         test_passes = causal_test_case.expected_causal_effect.apply(causal_test_result)
 
         if "coverage" in test and test["coverage"]:
@@ -307,6 +239,7 @@ class JsonUtility:
                 - estimation_model - Estimator instance for the test being run
         """
         estimator_kwargs = {}
+        treatment_variable = next(self.scenario.variables[v] for v in test["mutations"])
         if "formula" in test:
             if test["estimator"] != (LinearRegressionEstimator or LogisticRegressionEstimator):
                 raise TypeError(
@@ -319,14 +252,14 @@ class JsonUtility:
             minimal_adjustment_set = self.causal_specification.causal_dag.identification(
                 causal_test_case.base_test_case
             )
-            minimal_adjustment_set = minimal_adjustment_set - {causal_test_case.treatment_variable}
+            minimal_adjustment_set = minimal_adjustment_set - {treatment_variable}
             estimator_kwargs["adjustment_set"] = minimal_adjustment_set
 
         estimator_kwargs["query"] = test["query"] if "query" in test else ""
-        estimator_kwargs["treatment"] = causal_test_case.treatment_variable.name
-        estimator_kwargs["treatment_value"] = causal_test_case.treatment_value
-        estimator_kwargs["control_value"] = causal_test_case.control_value
-        estimator_kwargs["outcome"] = causal_test_case.outcome_variable.name
+        estimator_kwargs["treatment"] = treatment_variable.name
+        estimator_kwargs["treatment_value"] = test.get("treatment_value")
+        estimator_kwargs["control_value"] = test.get("control_value")
+        estimator_kwargs["outcome"] = next(v for v in test["expected_effect"])
         estimator_kwargs["effect_modifiers"] = causal_test_case.effect_modifier_configuration
         estimator_kwargs["df"] = self.df
         estimator_kwargs["alpha"] = test["alpha"] if "alpha" in test else 0.05

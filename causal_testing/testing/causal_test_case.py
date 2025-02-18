@@ -27,8 +27,6 @@ class CausalTestCase:
         self,
         base_test_case: BaseTestCase,
         expected_causal_effect: CausalTestOutcome,
-        control_value: Any = None,
-        treatment_value: Any = None,
         estimate_type: str = "ate",
         estimate_params: dict = None,
         effect_modifier_configuration: dict[Variable:Any] = None,
@@ -37,18 +35,14 @@ class CausalTestCase:
         """
         :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
         :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
-        :param control_value: The control value for the treatment variable (before intervention).
-        :param treatment_value: The treatment value for the treatment variable (after intervention).
         :param estimate_type: A string which denotes the type of estimate to return.
         :param effect_modifier_configuration: The assignment of the effect modifiers to use for estimates.
         :param estimator: An Estimator class object
         """
         self.base_test_case = base_test_case
-        self.control_value = control_value
         self.expected_causal_effect = expected_causal_effect
         self.outcome_variable = base_test_case.outcome_variable
         self.treatment_variable = base_test_case.treatment_variable
-        self.treatment_value = treatment_value
         self.estimate_type = estimate_type
         self.estimator = estimator
         if estimate_params is None:
@@ -60,27 +54,34 @@ class CausalTestCase:
         else:
             self.effect_modifier_configuration = {}
 
-    def execute_test(self) -> CausalTestResult:
-        """Execute a causal test case and return the causal test result.
+    def execute_test(self, estimator: type(Estimator) = None) -> CausalTestResult:
+        """
+        Execute a causal test case and return the causal test result.
+        :param estimator: An alternative estimator. Defaults to `self.estimator`. This parameter is useful when you want
+        to execute a test with different data or a different equational form, but don't want to redefine the whole test
+        case.
 
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
 
-        if not hasattr(self.estimator, f"estimate_{self.estimate_type}"):
-            raise AttributeError(f"{self.estimator.__class__} has no {self.estimate_type} method.")
-        estimate_effect = getattr(self.estimator, f"estimate_{self.estimate_type}")
+        if estimator is None:
+            estimator = self.estimator
+
+        if not hasattr(estimator, f"estimate_{self.estimate_type}"):
+            raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
+        estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
         effect, confidence_intervals = estimate_effect(**self.estimate_params)
         return CausalTestResult(
-            estimator=self.estimator,
+            estimator=estimator,
             test_value=TestValue(self.estimate_type, effect),
             effect_modifier_configuration=self.effect_modifier_configuration,
             confidence_intervals=confidence_intervals,
         )
 
     def __str__(self):
-        treatment_config = {self.treatment_variable.name: self.treatment_value}
-        control_config = {self.treatment_variable.name: self.control_value}
-        outcome_variable = {self.outcome_variable}
+        treatment_config = {self.treatment_variable.name: self.estimator.treatment_value}
+        control_config = {self.treatment_variable.name: self.estimator.control_value}
+        outcome_variable = {self.outcome_variable.name}
         return (
             f"Running {treatment_config} instead of {control_config} should cause the following "
             f"changes to {outcome_variable}: {self.expected_causal_effect}."

@@ -128,11 +128,9 @@ class TestCausalTestAdequacy(unittest.TestCase):
         causal_test_case = CausalTestCase(
             base_test_case=base_test_case,
             expected_causal_effect=SomeEffect(),
-            control_value=control_strategy,
-            treatment_value=treatment_strategy,
             estimate_type="hazard_ratio",
+            estimator=estimation_model,
         )
-        causal_test_result = causal_test_case.execute_test(estimation_model)
         adequacy_metric = DataAdequacy(causal_test_case, estimation_model, group_by="id")
         adequacy_metric.measure_adequacy()
         adequacy_dict = adequacy_metric.to_dict()

@@ -85,8 +85,6 @@ def test_poisson_intensity_num_shapes(save=False):
             CausalTestCase(
                 base_test_case=base_test_case,
                 expected_causal_effect=ExactValue(4, atol=0.5),
-                treatment_value=treatment_value,
-                control_value=control_value,
                 estimate_type="risk_ratio",
                 estimator=EmpiricalMeanEstimator(
                     treatment=base_test_case.treatment_variable.name,
@@ -103,8 +101,6 @@ def test_poisson_intensity_num_shapes(save=False):
             CausalTestCase(
                 base_test_case=base_test_case,
                 expected_causal_effect=ExactValue(4, atol=0.5),
-                treatment_value=treatment_value,
-                control_value=control_value,
                 estimate_type="risk_ratio",
                 estimator=LinearRegressionEstimator(
                     treatment=base_test_case.treatment_variable.name,
@@ -150,8 +146,6 @@ def test_poisson_width_num_shapes(save=False):
         CausalTestCase(
             base_test_case=base_test_case,
             expected_causal_effect=Positive(),
-            control_value=float(w),
-            treatment_value=w + 1.0,
             estimate_type="ate_calculated",
             effect_modifier_configuration={"intensity": i},
             estimator=LinearRegressionEstimator(

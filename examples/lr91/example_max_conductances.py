@@ -129,23 +129,18 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     causal_test_case = CausalTestCase(
         base_test_case=base_test_case,
         expected_causal_effect=expected_causal_effect,
-        control_value=control_val,
-        treatment_value=treatment_val,
-    )
-
-    # 8. Obtain the minimal adjustment set from the causal DAG
-    minimal_adjustment_set = causal_dag.identification(base_test_case)
-    linear_regression_estimator = LinearRegressionEstimator(
-        treatment_var.name,
-        treatment_val,
-        control_val,
-        minimal_adjustment_set,
-        "APD90",
-        df=pd.read_csv(observational_data_path),
+        estimator=LinearRegressionEstimator(
+            treatment=treatment_var.name,
+            treatment_value=treatment_val,
+            control_value=control_val,
+            adjustment_set=causal_dag.identification(base_test_case),
+            outcome="APD90",
+            df=pd.read_csv(observational_data_path),
+        ),
     )
 
     # 9. Run the causal test and print results
-    causal_test_result = causal_test_case.execute_test(linear_regression_estimator)
+    causal_test_result = causal_test_case.execute_test()
     logger.info("%s", causal_test_result)
     return causal_test_result.test_value.value, causal_test_result.confidence_intervals
 

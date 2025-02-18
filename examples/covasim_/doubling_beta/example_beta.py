@@ -69,33 +69,37 @@ def doubling_beta_CATE_on_csv(
 
     # 6. Create a causal test case
     causal_test_case = CausalTestCase(
-        base_test_case=base_test_case, expected_causal_effect=Positive, control_value=0.016, treatment_value=0.032
-    )
-
-    linear_regression_estimator = LinearRegressionEstimator(
-        "beta",
-        0.032,
-        0.016,
-        {"avg_age", "contacts"},  # We use custom adjustment set
-        "cum_infections",
-        df=past_execution_df,
-        formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
+        base_test_case=base_test_case,
+        expected_causal_effect=Positive,
+        estimator=LinearRegressionEstimator(
+            "beta",
+            0.032,
+            0.016,
+            {"avg_age", "contacts"},  # We use custom adjustment set
+            "cum_infections",
+            df=past_execution_df,
+            formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
+        ),
     )
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    causal_test_result = causal_test_case.execute_test(estimator=linear_regression_estimator)
+    causal_test_result = causal_test_case.execute_test()
 
     # Repeat for association estimate (no adjustment)
-    no_adjustment_linear_regression_estimator = LinearRegressionEstimator(
-        "beta",
-        0.032,
-        0.016,
-        set(),
-        "cum_infections",
-        df=past_execution_df,
-        formula="cum_infections ~ beta + I(beta ** 2)",
+    causal_test_case = CausalTestCase(
+        base_test_case=base_test_case,
+        expected_causal_effect=Positive,
+        estimator=LinearRegressionEstimator(
+            "beta",
+            0.032,
+            0.016,
+            set(),
+            "cum_infections",
+            df=past_execution_df,
+            formula="cum_infections ~ beta + I(beta ** 2)",
+        ),
     )
-    association_test_result = causal_test_case.execute_test(estimator=no_adjustment_linear_regression_estimator)
+    association_test_result = causal_test_case.execute_test()
 
     # Store results for plotting
     results_dict["association"] = {
@@ -116,7 +120,7 @@ def doubling_beta_CATE_on_csv(
     # Repeat causal inference after deleting all rows with treatment value to obtain counterfactual inferences
     if simulate_counterfactuals:
         counterfactual_past_execution_df = past_execution_df[past_execution_df["beta"] != 0.032]
-        counterfactual_causal_test_result = causal_test_case.execute_test(estimator=linear_regression_estimator)
+        counterfactual_causal_test_result = causal_test_case.execute_test()
 
         results_dict["counterfactual"] = {
             "ate": counterfactual_causal_test_result.test_value.value,
