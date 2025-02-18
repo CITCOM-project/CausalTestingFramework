@@ -197,6 +197,12 @@ class TestDAGIdentification(unittest.TestCase):
         )
         self.assertTrue(set(proper_backdoor_graph.edges).issubset(edges))
 
+    def test_proper_backdoor_graph_invalid_tratment(self):
+        """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        with self.assertRaises(IndexError):
+            causal_dag.get_proper_backdoor_graph(["INVALID"], ["Y"])
+
     def test_constructive_backdoor_criterion_should_hold(self):
         """Test whether the constructive criterion holds when it should."""
         causal_dag = CausalDAG(self.dag_dot_path)
