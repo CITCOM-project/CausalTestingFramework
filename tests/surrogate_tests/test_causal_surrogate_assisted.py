@@ -84,7 +84,9 @@ class TestCausalSurrogate(unittest.TestCase):
         x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
-        scenario = Scenario(variables={z, x, m, y}, constraints={z <= 0, z >= 3, x <= 0, x >= 3, m <= 0, m >= 3})
+        scenario = Scenario(
+            variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
+        )
         specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
@@ -114,7 +116,9 @@ class TestCausalSurrogate(unittest.TestCase):
         x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
-        scenario = Scenario(variables={z, x, m, y}, constraints={z <= 0, z >= 3, x <= 0, x >= 3, m <= 0, m >= 3})
+        scenario = Scenario(
+            variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
+        )
         specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
@@ -144,7 +148,9 @@ class TestCausalSurrogate(unittest.TestCase):
         x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
-        scenario = Scenario(variables={z, x, m, y}, constraints={z <= 0, z >= 3, x <= 0, x >= 3, m <= 0, m >= 3})
+        scenario = Scenario(
+            variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
+        )
         specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
@@ -174,7 +180,9 @@ class TestCausalSurrogate(unittest.TestCase):
         x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
-        scenario = Scenario(variables={z, x, m, y}, constraints={z <= 0, z >= 3, x <= 0, x >= 3, m <= 0, m >= 3})
+        scenario = Scenario(
+            variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
+        )
         specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(

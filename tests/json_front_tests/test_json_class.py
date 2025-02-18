@@ -99,13 +99,9 @@ class TestJsonClass(unittest.TestCase):
         }
         self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
-        mutates = {
-            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
-        }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
         with self.assertRaises(StatisticsError):
-            self.json_class.run_json_tests(effects, estimators, True, mutates)
+            self.json_class.run_json_tests(effects, estimators, True)
 
     def test_generate_coefficient_tests_from_json(self):
         example_test = {
@@ -149,15 +145,9 @@ class TestJsonClass(unittest.TestCase):
         }
         self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
-        mutates = {
-            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
-        }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        test_results = self.json_class.run_json_tests(
-            effects=effects, estimators=estimators, f_flag=False, mutates=mutates
-        )
+        test_results = self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
         self.assertTrue(test_results[0]["failed"])
 
     def test_generate_tests_from_json_no_dist(self):
@@ -176,13 +166,9 @@ class TestJsonClass(unittest.TestCase):
         }
         self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
-        mutates = {
-            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
-        }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
+        self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
 
         # Test that the final log message prints that failed tests are printed, which is expected behaviour for this scenario
         with open("temp_out.txt", "r") as reader:
@@ -206,13 +192,9 @@ class TestJsonClass(unittest.TestCase):
         }
         self.json_class.test_plan = example_test
         effects = {"Positive": Positive()}
-        mutates = {
-            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
-        }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
+        self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
         with open("temp_out.txt", "r") as reader:
             temp_out = reader.readlines()
         self.assertIn("test_output ~ test_input", "".join(temp_out))
@@ -282,13 +264,9 @@ class TestJsonClass(unittest.TestCase):
         }
         self.json_class.test_plan = example_test
         effects = {"Positive": Positive()}
-        mutates = {
-            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
-        }
         estimators = {"ExampleEstimator": ExampleEstimator}
         with self.assertRaises(TypeError):
-            self.json_class.run_json_tests(effects=effects, mutates=mutates, estimators=estimators, f_flag=False)
+            self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
 
     def tearDown(self) -> None:
         if os.path.exists("temp_out.txt"):

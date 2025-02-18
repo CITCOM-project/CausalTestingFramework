@@ -98,6 +98,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             var_space[adj] = {}
 
         for relationship in list(specification.scenario.constraints):
+            print(relationship)
             rel_split = str(relationship).split(" ")
 
             if rel_split[0] in var_space:
@@ -109,7 +110,6 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                         var_space[rel_split[0]]["high"] = int(rel_split[2]) + 1
                     else:
                         var_space[rel_split[0]]["high"] = datatype(rel_split[2])
-
         gene_space = []
         gene_space.append(var_space[surrogate_model.treatment])
         for adj in surrogate_model.adjustment_set:

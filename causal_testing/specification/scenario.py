@@ -3,7 +3,6 @@
 from collections.abc import Iterable, Mapping
 
 from tabulate import tabulate
-from z3 import ExprRef, substitute
 
 from .variable import Input, Meta, Output, Variable
 
@@ -20,15 +19,15 @@ class Scenario:
     accordingly.
 
     :param {Variable} variables: The set of endogenous variables.
-    :param {ExprRef} constraints: The set of constraints relating the endogenous variables.
+    :param {str} constraints: The set of constraints relating the endogenous variables.
     :attr variables:
     :attr constraints:
     """
 
     variables: Mapping[str, Variable]
-    constraints: set[ExprRef]
+    constraints: set[str]
 
-    def __init__(self, variables: Iterable[Variable] = None, constraints: set[ExprRef] = None):
+    def __init__(self, variables: Iterable[Variable] = None, constraints: set[str] = None):
         if variables is not None:
             self.variables = {v.name: v for v in variables}
         else:
@@ -105,10 +104,6 @@ class Scenario:
             self.treatment_variables[k] = v_prime
             self.prime[k] = v_prime.name
             self.unprime[v_prime.name] = k
-
-        substitutions = {(self.variables[n].z3, self.treatment_variables[n].z3) for n in self.variables}
-        treatment_constraints = {substitute(c, *substitutions) for c in self.constraints}
-        self.constraints = self.constraints.union(treatment_constraints)
 
     def variables_of_type(self, t: type) -> set[Variable]:
         """Get the set of scenario variables of a particular type, e.g. Inputs.
