@@ -226,7 +226,7 @@ if __name__ == "__main__":  # pragma: no cover
     tests = [
         relation.to_json_stub(skip=False)
         for relation in relations
-        if len(list(causal_dag.graph.predecessors(relation.output_var))) > 0
+        if len(list(causal_dag.graph.predecessors(relation.base_test_case.outcome_variable))) > 0
     ]
 
     logger.info(f"Generated {len(tests)} tests. Saving to {args.output_path}.")
