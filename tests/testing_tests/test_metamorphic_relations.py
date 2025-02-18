@@ -55,7 +55,6 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "estimate_type": "coefficient",
                 "estimator": "LinearRegressionEstimator",
                 "expected_effect": {"Z": "NoEffect"},
-                "formula": "Z ~ X1",
                 "mutations": ["X1"],
                 "name": "X1 _||_ Z",
                 "formula": "Z ~ X1",
@@ -204,44 +203,45 @@ class TestMetamorphicRelation(unittest.TestCase):
             ShouldCause(BaseTestCase("X1", "Z"), []),
         )
 
+    def test_shoud_cause_string(self):
+        sc_mr = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
+        self.assertEqual(str(sc_mr), "X --> Y | ['A', 'B', 'C']")
+
+    def test_shoud_not_cause_string(self):
+        sc_mr = ShouldNotCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
+        self.assertEqual(str(sc_mr), "X _||_ Y | ['A', 'B', 'C']")
+
     def test_equivalent_metamorphic_relations(self):
-        dag = CausalDAG(self.dag_dot_path)
         sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
         sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
         self.assertEqual(sc_mr_a == sc_mr_b, True)
 
     def test_equivalent_metamorphic_relations_empty_adjustment_set(self):
-        dag = CausalDAG(self.dag_dot_path)
         sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
         sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, True)
 
     def test_equivalent_metamorphic_relations_different_order_adjustment_set(self):
-        dag = CausalDAG(self.dag_dot_path)
         sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
         sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), ["C", "A", "B"])
         self.assertEqual(sc_mr_a == sc_mr_b, True)
 
     def test_different_metamorphic_relations_empty_adjustment_set_different_outcome(self):
-        dag = CausalDAG(self.dag_dot_path)
         sc_mr_a = ShouldCause(BaseTestCase("X", "Z"), [])
         sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, False)
 
     def test_different_metamorphic_relations_empty_adjustment_set_different_treatment(self):
-        dag = CausalDAG(self.dag_dot_path)
         sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
         sc_mr_b = ShouldCause(BaseTestCase("Z", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, False)
 
     def test_different_metamorphic_relations_empty_adjustment_set_adjustment_set(self):
-        dag = CausalDAG(self.dag_dot_path)
         sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A"])
         sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, False)
 
     def test_different_metamorphic_relations_different_type(self):
-        dag = CausalDAG(self.dag_dot_path)
         sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
         sc_mr_b = ShouldNotCause(BaseTestCase("X", "Y"), [])
         self.assertEqual(sc_mr_a == sc_mr_b, False)
