@@ -83,15 +83,9 @@ class TestCausalTestAdequacy(unittest.TestCase):
         }
         self.json_class.test_plan = example_test
         effects = {"NoEffect": NoEffect()}
-        mutates = {
-            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
-        }
         estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
 
-        test_results = self.json_class.run_json_tests(
-            effects=effects, estimators=estimators, f_flag=False, mutates=mutates
-        )
+        test_results = self.json_class.run_json_tests(effects=effects, estimators=estimators, f_flag=False)
         self.assertEqual(
             test_results[0]["result"].adequacy.to_dict(),
             {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},

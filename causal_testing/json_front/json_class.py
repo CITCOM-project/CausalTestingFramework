@@ -87,11 +87,10 @@ class JsonUtility:
             )
         self._populate_metas()
 
-    def run_json_tests(self, effects: dict, estimators: dict, f_flag: bool = False, mutates: dict = None):
+    def run_json_tests(self, effects: dict, estimators: dict, f_flag: bool = False):
         """Runs and evaluates each test case specified in the JSON input
 
         :param effects: Dictionary mapping effect class instances to string representations.
-        :param mutates: Dictionary mapping mutation functions to string representations.
         :param estimators: Dictionary mapping estimator classes to string representations.
         :param f_flag: Failure flag that if True the script will stop executing when a test fails.
         """
