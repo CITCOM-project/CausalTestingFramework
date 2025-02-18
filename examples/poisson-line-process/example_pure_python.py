@@ -12,7 +12,6 @@ from causal_testing.testing.causal_test_outcome import ExactValue, Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.causal_test_suite import CausalTestSuite
 
 
 logger = logging.getLogger(__name__)
