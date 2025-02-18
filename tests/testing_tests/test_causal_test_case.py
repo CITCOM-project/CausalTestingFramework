@@ -46,10 +46,8 @@ class TestCausalTestCase(unittest.TestCase):
 
 
 class TestCausalTestExecution(unittest.TestCase):
-    """Test the causal test execution workflow using observational data.
-
-    The causal test engine (CTE) is the main workflow for the causal testing framework. The CTE takes a causal test case
-    and a causal specification and computes the causal effect of the intervention on the outcome of interest.
+    """
+    Test the causal test execution workflow using observational data.
     """
 
     def setUp(self) -> None:

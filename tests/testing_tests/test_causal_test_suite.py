@@ -16,7 +16,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 
 
 class TestCausalTestSuite(unittest.TestCase):
-    """Test the Test Suite object and it's implementation in the test engine using dummy data."""
+    """Test the Test Suite object using dummy data."""
 
     def setUp(self) -> None:
         # 1. Create dummy Scenario and BaseTestCase
