@@ -9,7 +9,6 @@ import pandas as pd
 from numpy.linalg import LinAlgError
 from lifelines.exceptions import ConvergenceError
 
-from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -25,7 +24,7 @@ class DAGAdequacy:
     def __init__(
         self,
         causal_dag: CausalDAG,
-        test_suite: CausalTestSuite,
+        test_suite: list[CausalTestCase],
     ):
         self.causal_dag = causal_dag
         self.test_suite = test_suite

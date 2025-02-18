@@ -8,7 +8,6 @@ from causal_testing.estimation.linear_regression_estimator import LinearRegressi
 from causal_testing.estimation.ipcw_estimator import IPCWEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.testing.causal_test_adequacy import DAGAdequacy
 from causal_testing.testing.causal_test_outcome import NoEffect, SomeEffect
 from causal_testing.json_front.json_class import JsonUtility, CausalVariables
@@ -93,8 +92,6 @@ class TestCausalTestAdequacy(unittest.TestCase):
         test_results = self.json_class.run_json_tests(
             effects=effects, estimators=estimators, f_flag=False, mutates=mutates
         )
-        print("RESULT")
-        print(test_results[0]["result"])
         self.assertEqual(
             test_results[0]["result"].adequacy.to_dict(),
             {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
@@ -152,11 +149,9 @@ class TestCausalTestAdequacy(unittest.TestCase):
             expected_causal_effect=None,
             estimate_type=None,
         )
-        test_suite = CausalTestSuite()
-        test_suite.add_test_object(base_test_case, causal_test_case, None, None)
+        test_suite = [causal_test_case]
         dag_adequacy = DAGAdequacy(self.json_class.causal_specification.causal_dag, test_suite)
         dag_adequacy.measure_adequacy()
-        print(dag_adequacy.to_dict())
         self.assertEqual(
             dag_adequacy.to_dict(),
             {
@@ -201,11 +196,9 @@ class TestCausalTestAdequacy(unittest.TestCase):
             expected_causal_effect=None,
             estimate_type=None,
         )
-        test_suite = CausalTestSuite()
-        test_suite.add_test_object(base_test_case, causal_test_case, None, None)
+        test_suite = [causal_test_case]
         dag_adequacy = DAGAdequacy(self.json_class.causal_specification.causal_dag, test_suite)
         dag_adequacy.measure_adequacy()
-        print(dag_adequacy.to_dict())
         self.assertEqual(
             dag_adequacy.to_dict(),
             {
@@ -250,11 +243,9 @@ class TestCausalTestAdequacy(unittest.TestCase):
             expected_causal_effect=None,
             estimate_type=None,
         )
-        test_suite = CausalTestSuite()
-        test_suite.add_test_object(base_test_case, causal_test_case, None, None)
+        test_suite = [causal_test_case]
         dag_adequacy = DAGAdequacy(self.json_class.causal_specification.causal_dag, test_suite)
         dag_adequacy.measure_adequacy()
-        print(dag_adequacy.to_dict())
         self.assertEqual(
             dag_adequacy.to_dict(),
             {
