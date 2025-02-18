@@ -3,7 +3,7 @@
 from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import lhsmdu
 from pandas import DataFrame
