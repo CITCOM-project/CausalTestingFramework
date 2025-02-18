@@ -152,11 +152,19 @@ class CausalDAG(nx.DiGraph):
                 raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
     @property
-    def nodes(self):
+    def nodes(self) -> list:
+        """
+        Get the nodes of the DAG.
+        :returns: The nodes of the DAG.
+        """
         return self.graph.nodes
 
     @property
-    def edges(self):
+    def edges(self) -> list:
+        """
+        Get the edges of the DAG.
+        :returns: The edges of the DAG.
+        """
         return self.graph.edges
 
     def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
