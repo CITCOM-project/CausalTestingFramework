@@ -3,7 +3,8 @@
     {
       "name": "width__num_lines_abs",
       "mutations": {"width": "Increase"},
-      "estimator": "WidthHeightEstimator",
+      "estimator": "LinearRegressionEstimator",
+      "formula": "num_lines_abs ~ I(intensity * (width + height))",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "height"],
       "expected_effect": {"num_lines_abs": "PoissonWidthHeight"},
@@ -138,7 +139,8 @@
     {
       "name": "height__num_lines_abs",
       "mutations": {"height": "Increase"},
-      "estimator": "WidthHeightEstimator",
+      "estimator": "LinearRegressionEstimator",
+      "formula": "num_lines_abs ~ I(intensity * (width + height))",
       "estimate_type": "ate",
       "effect_modifiers": ["intensity", "width"],
       "expected_effect": {"num_lines_abs": "PoissonWidthHeight"},
@@ -192,7 +194,8 @@
     {
       "name": "intensity__num_lines_abs",
       "mutations": {"intensity": "Increase"},
-      "estimator": "WidthHeightEstimator",
+      "estimator": "LinearRegressionEstimator",
+      "formula": "num_lines_abs ~ I(intensity * (width + height))",
       "effect_modifiers": ["height", "width"],
       "estimate_type": "ate",
       "expected_effect": {"num_lines_abs": "PoissonIntensity"},

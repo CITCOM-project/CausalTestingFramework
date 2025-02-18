@@ -31,7 +31,7 @@ class CausalTestSuite(UserDict):
         self,
         base_test_case: BaseTestCase,
         causal_test_case_list: Iterable[CausalTestCase],
-        estimators_classes: Iterable[Type[Estimator]],
+        estimators: Iterable[Type[Estimator]],
         estimate_type: str = "ate",
     ):
         """
@@ -39,10 +39,12 @@ class CausalTestSuite(UserDict):
 
         :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
         :param causal_test_case_list: A list of causal test cases to be executed
-        :param estimators_classes: A list of estimators, one for each causal test case
+        :param estimators: A list of estimator classes (NOT instances) to be used to execute each of the test cases.
+        Each estimator will be applied to each test case, so this will typically just be a single element list.
+        However, if you want to compare the outputs of different estimators, you may include more than one class here.
         :param estimate_type: A string which denotes the type of estimate to return
         """
-        test_object = {"tests": causal_test_case_list, "estimators": estimators_classes, "estimate_type": estimate_type}
+        test_object = {"tests": causal_test_case_list, "estimators": estimators, "estimate_type": estimate_type}
         self.data[base_test_case] = test_object
 
     def execute_test_suite(

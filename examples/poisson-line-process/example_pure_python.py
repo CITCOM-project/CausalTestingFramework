@@ -77,94 +77,67 @@ causal_specification = CausalSpecification(scenario, causal_dag)
 observational_data_path = f"{ROOT}/data/random/data_random_1000.csv"
 
 
-def causal_test_intensity_num_shapes(
-    observational_data_path,
-    causal_test_case,
-    square_terms=[],
-    inverse_terms=[],
-    empirical=False,
-):
-    # 8. Set up an estimator
-    data = pd.read_csv(observational_data_path, index_col=0).astype(float)
-
-    treatment = causal_test_case.treatment_variable.name
-    outcome = causal_test_case.outcome_variable.name
-
-    estimator = None
-    if empirical:
-        estimator = EmpiricalMeanEstimator(
-            treatment=[treatment],
-            control_value=causal_test_case.control_value,
-            treatment_value=causal_test_case.treatment_value,
-            adjustment_set=set(),
-            outcome=[outcome],
-            df=data,
-            effect_modifiers=causal_test_case.effect_modifier_configuration,
-        )
-    else:
-        square_terms = [f"I({t} ** 2)" for t in square_terms]
-        inverse_terms = [f"I({t} ** -1)" for t in inverse_terms]
-        estimator = LinearRegressionEstimator(
-            treatment=treatment,
-            control_value=causal_test_case.control_value,
-            treatment_value=causal_test_case.treatment_value,
-            adjustment_set=set(),
-            outcome=outcome,
-            df=data,
-            effect_modifiers=causal_test_case.effect_modifier_configuration,
-            formula=f"{outcome} ~ {treatment} + {'+'.join(square_terms + inverse_terms + list([e for e in causal_test_case.effect_modifier_configuration]))} -1",
-        )
-
-    # 9. Execute the test
-    causal_test_result = causal_test_case.execute_test(estimator)
-
-    return causal_test_result
-
-
 def test_poisson_intensity_num_shapes(save=False):
     intensity_num_shapes_results = []
     base_test_case = BaseTestCase(treatment_variable=intensity, outcome_variable=num_shapes_unit)
-    for wh in range(1, 11):
-        smt_data_path = f"{ROOT}/data/smt_100/data_smt_wh{wh}_100.csv"
-        causal_test_case_list = [
+    observational_df = pd.read_csv(observational_data_path, index_col=0).astype(float)
+    causal_test_cases = [
+        (
             CausalTestCase(
                 base_test_case=base_test_case,
                 expected_causal_effect=ExactValue(4, atol=0.5),
                 treatment_value=treatment_value,
                 control_value=control_value,
                 estimate_type="risk_ratio",
-            )
-            for control_value, treatment_value in [(1, 2), (2, 4), (4, 8), (8, 16)]
-        ]
-        test_suite = CausalTestSuite()
-        test_suite.add_test_object(
-            base_test_case,
-            causal_test_case_list=causal_test_case_list,
-            estimators=[LinearRegressionEstimator, EmpiricalMeanEstimator],
+                estimator=EmpiricalMeanEstimator(
+                    treatment=base_test_case.treatment_variable.name,
+                    treatment_value=treatment_value,
+                    control_value=control_value,
+                    adjustment_set=causal_specification.causal_dag.identification(base_test_case),
+                    outcome=base_test_case.outcome_variable.name,
+                    df=pd.read_csv(f"{ROOT}/data/smt_100/data_smt_wh{wh}_100.csv", index_col=0).astype(float),
+                    effect_modifiers=None,
+                    alpha=0.05,
+                    query="",
+                ),
+            ),
+            CausalTestCase(
+                base_test_case=base_test_case,
+                expected_causal_effect=ExactValue(4, atol=0.5),
+                treatment_value=treatment_value,
+                control_value=control_value,
+                estimate_type="risk_ratio",
+                estimator=LinearRegressionEstimator(
+                    treatment=base_test_case.treatment_variable.name,
+                    treatment_value=treatment_value,
+                    control_value=control_value,
+                    adjustment_set=causal_specification.causal_dag.identification(base_test_case),
+                    outcome=base_test_case.outcome_variable.name,
+                    df=observational_df,
+                    effect_modifiers=None,
+                    formula="num_shapes_unit ~ I(intensity ** 2) + intensity - 1",
+                    alpha=0.05,
+                    query="",
+                ),
+            ),
         )
-        test_suite_results = test_suite.execute_test_suite(
-            causal_specification, pd.read_csv(smt_data_path, index_col=0).astype(float)
-        )
+        for control_value, treatment_value in [(1, 2), (2, 4), (4, 8), (8, 16)]
+        for wh in range(1, 11)
+    ]
 
-        smt_risk_ratios = [
-            causal_test_result.test_value.value
-            for causal_test_result in test_suite_results[base_test_case]["EmpiricalMeanEstimator"]
-        ]
+    test_results = [(smt.execute_test(), observational.execute_test()) for smt, observational in causal_test_cases]
 
-        intensity_num_shapes_results += [
-            {
-                "width": wh,
-                "height": wh,
-                "control": obs_causal_test_result.estimator.control_value,
-                "treatment": obs_causal_test_result.estimator.treatment_value,
-                "smt_risk_ratio": smt_causal_test_result.test_value.value,
-                "obs_risk_ratio": obs_causal_test_result.test_value.value[0],
-            }
-            for obs_causal_test_result, smt_causal_test_result in zip(
-                test_suite_results[base_test_case]["LinearRegressionEstimator"],
-                test_suite_results[base_test_case]["EmpiricalMeanEstimator"],
-            )
-        ]
+    intensity_num_shapes_results += [
+        {
+            "width": obs_causal_test_result.estimator.control_value,
+            "height": obs_causal_test_result.estimator.treatment_value,
+            "control": obs_causal_test_result.estimator.control_value,
+            "treatment": obs_causal_test_result.estimator.treatment_value,
+            "smt_risk_ratio": smt_causal_test_result.test_value.value,
+            "obs_risk_ratio": obs_causal_test_result.test_value.value[0],
+        }
+        for smt_causal_test_result, obs_causal_test_result in test_results
+    ]
     intensity_num_shapes_results = pd.DataFrame(intensity_num_shapes_results)
     if save:
         intensity_num_shapes_results.to_csv("intensity_num_shapes_results_random_1000.csv")
@@ -173,7 +146,8 @@ def test_poisson_intensity_num_shapes(save=False):
 
 def test_poisson_width_num_shapes(save=False):
     base_test_case = BaseTestCase(treatment_variable=width, outcome_variable=num_shapes_unit)
-    causal_test_case_list = [
+    df = pd.read_csv(observational_data_path, index_col=0).astype(float)
+    causal_test_cases = [
         CausalTestCase(
             base_test_case=base_test_case,
             expected_causal_effect=Positive(),
@@ -181,19 +155,22 @@ def test_poisson_width_num_shapes(save=False):
             treatment_value=w + 1.0,
             estimate_type="ate_calculated",
             effect_modifier_configuration={"intensity": i},
+            estimator=LinearRegressionEstimator(
+                treatment=base_test_case.treatment_variable.name,
+                treatment_value=w + 1.0,
+                control_value=float(w),
+                adjustment_set=causal_specification.causal_dag.identification(base_test_case),
+                outcome=base_test_case.outcome_variable.name,
+                df=df,
+                effect_modifiers={"intensity": i},
+                formula="num_shapes_unit ~ width + I(intensity ** 2)+I(width ** -1)+intensity-1",
+                alpha=0.05,
+            ),
         )
-        for i in range(17)
+        for i in range(1, 17)
         for w in range(1, 10)
     ]
-    test_suite = CausalTestSuite()
-    test_suite.add_test_object(
-        base_test_case,
-        causal_test_case_list=causal_test_case_list,
-        estimators=[LinearRegressionEstimator],
-    )
-    test_suite_results = test_suite.execute_test_suite(
-        causal_specification, pd.read_csv(observational_data_path, index_col=0).astype(float)
-    )
+    test_results = [test.execute_test() for test in causal_test_cases]
     width_num_shapes_results = [
         {
             "control": causal_test_result.estimator.control_value,
@@ -203,7 +180,7 @@ def test_poisson_width_num_shapes(save=False):
             "ci_low": causal_test_result.confidence_intervals[0][0],
             "ci_high": causal_test_result.confidence_intervals[1][0],
         }
-        for causal_test_result in test_suite_results[base_test_case]["LinearRegressionEstimator"]
+        for causal_test_result in test_results
     ]
     width_num_shapes_results = pd.DataFrame(width_num_shapes_results)
     if save:
@@ -213,4 +190,4 @@ def test_poisson_width_num_shapes(save=False):
 
 if __name__ == "__main__":
     test_poisson_intensity_num_shapes(save=False)
-    # test_poisson_width_num_shapes(save=True)
+    test_poisson_width_num_shapes(save=True)

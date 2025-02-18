@@ -50,7 +50,6 @@ def setup_test_case(verbose: bool = False):
             cum_vaccinations,
             max_doses,
         },
-        constraints={pop_size.z3 == 50000, pop_infected.z3 == 1000, n_days.z3 == 50},
     )
 
     # 4. Construct a causal specification from the scenario and causal DAG

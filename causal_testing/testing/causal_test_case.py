@@ -39,9 +39,9 @@ class CausalTestCase:
         :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
         :param control_value: The control value for the treatment variable (before intervention).
         :param treatment_value: The treatment value for the treatment variable (after intervention).
-        :param estimate_type: A string which denotes the type of estimate to return
-        :param effect_modifier_configuration:
-        :param estimator: An Estimator class instance
+        :param estimate_type: A string which denotes the type of estimate to return.
+        :param effect_modifier_configuration: The assignment of the effect modifiers to use for estimates.
+        :param estimator: An Estimator class object
         """
         self.base_test_case = base_test_case
         self.control_value = control_value
