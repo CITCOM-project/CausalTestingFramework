@@ -38,26 +38,6 @@ class Variable(ABC):
     def __repr__(self):
         return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
 
-    def cast(self, val: Any) -> T:
-        """Cast the supplied value to the datatype T of the variable.
-
-        :param any val: The value to cast.
-        :return: The supplied value as an instance of T.
-        :rtype: T
-        """
-        assert val is not None, f"Invalid value None for variable {self}"
-        if isinstance(val, self.datatype):
-            return val
-        if isinstance(val, BoolRef) and self.datatype == bool:
-            return str(val) == "True"
-        if isinstance(val, RatNumRef) and self.datatype == float:
-            return float(val.numerator().as_long() / val.denominator().as_long())
-        if hasattr(val, "is_string_value") and val.is_string_value() and self.datatype == str:
-            return val.as_string()
-        if (isinstance(val, (float, int, bool))) and (self.datatype in (float, int, bool)):
-            return self.datatype(val)
-        return self.datatype(str(val))
-
     def sample(self, n_samples: int) -> [T]:
         """Generate a Latin Hypercube Sample of size n_samples according to the
         Variable's distribution.
