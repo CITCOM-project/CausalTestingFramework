@@ -121,7 +121,7 @@ class CausalSurrogateAssistedTestCase:
         """
         surrogate_models = []
 
-        for u, v in specification.causal_dag.graph.edges:
+        for u, v in specification.causal_dag.edges:
             edge_metadata = specification.causal_dag.graph.adj[u][v]
             if "included" in edge_metadata:
                 from_var = specification.scenario.variables.get(u)

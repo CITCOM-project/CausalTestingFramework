@@ -108,7 +108,7 @@ def generate_metamorphic_relation(
     metamorphic_relations = []
 
     # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
-    if ((u, v) not in dag.graph.edges) and ((v, u) not in dag.graph.edges):
+    if ((u, v) not in dag.edges) and ((v, u) not in dag.edges):
         # Case 1: U --> ... --> V
         if u in nx.ancestors(dag.graph, v):
             adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
@@ -129,7 +129,7 @@ def generate_metamorphic_relation(
                 metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0])))
 
     # Create a ShouldCause relation for each edge (u, v) or (v, u)
-    elif (u, v) in dag.graph.edges:
+    elif (u, v) in dag.edges:
         adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
         if adj_sets:
             metamorphic_relations.append(ShouldCause(BaseTestCase(u, v), list(adj_sets[0])))
@@ -160,7 +160,7 @@ def generate_metamorphic_relations(
         nodes_to_ignore = {}
 
     if nodes_to_test is None:
-        nodes_to_test = dag.graph.nodes
+        nodes_to_test = dag.nodes
 
     if not threads:
         metamorphic_relations = [
@@ -205,9 +205,9 @@ if __name__ == "__main__":  # pragma: no cover
 
     causal_dag = CausalDAG(args.dag_path, ignore_cycles=args.ignore_cycles)
 
-    dag_nodes_to_test = set(
-        k for k, v in nx.get_node_attributes(causal_dag.graph, "test", default=True).items() if v == "True"
-    )
+    dag_nodes_to_test = [
+        node for node in causal_dag.nodes if nx.get_node_attributes(causal_dag.graph, "test", default=True)[node]
+    ]
 
     if not causal_dag.is_acyclic() and args.ignore_cycles:
         logger.warning(

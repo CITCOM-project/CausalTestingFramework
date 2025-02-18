@@ -86,7 +86,7 @@ class TestCausalDAG(unittest.TestCase):
         """Test whether the Causal DAG is valid."""
         causal_dag = CausalDAG(self.dag_dot_path)
         print(causal_dag)
-        assert list(causal_dag.graph.nodes) == ["A", "B", "C", "D"] and list(causal_dag.graph.edges) == [
+        assert list(causal_dag.nodes) == ["A", "B", "C", "D"] and list(causal_dag.edges) == [
             ("A", "B"),
             ("B", "C"),
             ("D", "A"),
@@ -101,7 +101,7 @@ class TestCausalDAG(unittest.TestCase):
     def test_empty_casual_dag(self):
         """Test whether an empty dag can be created."""
         causal_dag = CausalDAG()
-        assert list(causal_dag.graph.nodes) == [] and list(causal_dag.graph.edges) == []
+        assert list(causal_dag.nodes) == [] and list(causal_dag.edges) == []
 
     def test_to_dot_string(self):
         causal_dag = CausalDAG(self.dag_dot_path)
@@ -174,10 +174,10 @@ class TestDAGIdentification(unittest.TestCase):
     def test_get_indirect_graph(self):
         causal_dag = CausalDAG(self.dag_dot_path)
         indirect_graph = causal_dag.get_indirect_graph(["D1"], ["Y"])
-        original_edges = list(causal_dag.graph.edges)
+        original_edges = list(causal_dag.edges)
         original_edges.remove(("D1", "Y"))
-        self.assertEqual(list(indirect_graph.graph.edges), original_edges)
-        self.assertEqual(indirect_graph.graph.nodes, causal_dag.graph.nodes)
+        self.assertEqual(list(indirect_graph.edges), original_edges)
+        self.assertEqual(indirect_graph.nodes, causal_dag.nodes)
 
     def test_proper_backdoor_graph(self):
         """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
@@ -195,7 +195,7 @@ class TestDAGIdentification(unittest.TestCase):
                 ("Z", "Y"),
             ]
         )
-        self.assertTrue(set(proper_backdoor_graph.graph.edges).issubset(edges))
+        self.assertTrue(set(proper_backdoor_graph.edges).issubset(edges))
 
     def test_constructive_backdoor_criterion_should_hold(self):
         """Test whether the constructive criterion holds when it should."""
@@ -246,9 +246,9 @@ class TestDAGIdentification(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ["X1", "X2"], ["Y"]
         ancestor_graph = causal_dag.get_ancestor_graph(xs, ys)
-        self.assertEqual(list(ancestor_graph.graph.nodes), ["X1", "X2", "D1", "Y", "Z"])
+        self.assertEqual(list(ancestor_graph.nodes), ["X1", "X2", "D1", "Y", "Z"])
         self.assertEqual(
-            list(ancestor_graph.graph.edges),
+            list(ancestor_graph.edges),
             [("X1", "X2"), ("X2", "D1"), ("D1", "Y"), ("Z", "X2"), ("Z", "Y")],
         )
 
@@ -258,9 +258,9 @@ class TestDAGIdentification(unittest.TestCase):
         xs, ys = ["X1", "X2"], ["Y"]
         proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
         ancestor_graph = proper_backdoor_graph.get_ancestor_graph(xs, ys)
-        self.assertEqual(list(ancestor_graph.graph.nodes), ["X1", "X2", "D1", "Y", "Z"])
+        self.assertEqual(list(ancestor_graph.nodes), ["X1", "X2", "D1", "Y", "Z"])
         self.assertEqual(
-            list(ancestor_graph.graph.edges),
+            list(ancestor_graph.edges),
             [("X1", "X2"), ("D1", "Y"), ("Z", "X2"), ("Z", "Y")],
         )
 

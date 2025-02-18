@@ -38,11 +38,11 @@ class DAGAdequacy:
         """
         Calculate the adequacy measurement, and populate the `dag_adequacy` field.
         """
-        self.pairs_to_test = set(combinations(self.causal_dag.graph.nodes(), 2))
+        self.pairs_to_test = set(combinations(self.causal_dag.nodes, 2))
         self.tested_pairs = set()
 
         for n1, n2 in self.pairs_to_test:
-            if (n1, n2) in self.causal_dag.graph.edges():
+            if (n1, n2) in self.causal_dag.edges():
                 if any((t.treatment_variable, t.outcome_variable) == (n1, n2) for t in self.test_suite):
                     self.tested_pairs.add((n1, n2))
             else:
