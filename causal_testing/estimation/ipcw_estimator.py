@@ -12,7 +12,7 @@ from lifelines import CoxPHFitter
 
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.specification.variable import Input, Output
+from causal_testing.specification.variable import Variable
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class IPCWEstimator(Estimator):
         timesteps_per_observation: int,
         control_strategy: list[tuple[int, str, Any]],
         treatment_strategy: list[tuple[int, str, Any]],
-        outcome: str,
+        outcome: Variable,
         status_column: str,
         fit_bl_switch_formula: str,
         fit_bltd_switch_formula: str,
@@ -58,7 +58,7 @@ class IPCWEstimator(Estimator):
                             treatment) with the most elements multiplied by `timesteps_per_observation`.
         """
         super().__init__(
-            base_test_case=BaseTestCase(Input("_", float), Output(outcome, float)),
+            base_test_case=BaseTestCase(None, outcome),
             treatment_value=[val for _, _, val in treatment_strategy],
             control_value=[val for _, _, val in control_strategy],
             adjustment_set=None,
@@ -70,7 +70,6 @@ class IPCWEstimator(Estimator):
         self.timesteps_per_observation = timesteps_per_observation
         self.control_strategy = control_strategy
         self.treatment_strategy = treatment_strategy
-        self.outcome = outcome
         self.status_column = status_column
         self.fit_bl_switch_formula = fit_bl_switch_formula
         self.fit_bltd_switch_formula = fit_bltd_switch_formula

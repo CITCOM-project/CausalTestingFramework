@@ -84,12 +84,12 @@ class CausalTestResult:
         """Return result contents as a dictionary
         :return: Dictionary containing contents of causal_test_result
         """
-        if isinstance(self.estimator.base_test_case.treatment_variable, list):
-            treatment = [x.name for x in self.estimator.base_test_case.treatment_variable]
-        else:
-            treatment = self.estimator.base_test_case.treatment_variable.name
         base_dict = {
-            "treatment": treatment,
+            "treatment": (
+                self.estimator.base_test_case.treatment_variable.name
+                if self.estimator.base_test_case.treatment_variable is not None
+                else None
+            ),
             "control_value": self.estimator.control_value,
             "treatment_value": self.estimator.treatment_value,
             "outcome": self.estimator.base_test_case.outcome_variable.name,

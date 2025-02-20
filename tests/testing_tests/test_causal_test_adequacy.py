@@ -92,7 +92,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
             fit_bltd_switch_formula=fit_bl_switch_formula,
             eligibility=None,
         )
-        base_test_case = estimation_model.base_test_case
+        base_test_case = BaseTestCase(Input("t", float), Output("outcome", float))
 
         causal_test_case = CausalTestCase(
             base_test_case=base_test_case,
