@@ -33,6 +33,7 @@ class RegressionEstimator(Estimator):
         alpha: float = 0.05,
         query: str = "",
     ):
+        # pylint: disable=R0801
         super().__init__(
             base_test_case=base_test_case,
             treatment_value=treatment_value,
