@@ -53,12 +53,16 @@ class CausalTestResult:
         result_str = str(self.test_value.value)
         if "\n" in result_str:
             result_str = "\n" + push(self.test_value.value)
+        if isinstance(self.estimator.base_test_case.treatment_variable, list):
+            treatment = [x.name for x in self.estimator.base_test_case.treatment_variable]
+        else:
+            treatment = self.estimator.base_test_case.treatment_variable.name
         base_str = (
             f"Causal Test Result\n==============\n"
-            f"Treatment: {self.estimator.treatment}\n"
+            f"Treatment: {treatment}\n"
             f"Control value: {self.estimator.control_value}\n"
             f"Treatment value: {self.estimator.treatment_value}\n"
-            f"Outcome: {self.estimator.outcome}\n"
+            f"Outcome: {self.estimator.base_test_case.outcome_variable.name}\n"
             f"Adjustment set: {self.adjustment_set}\n"
         )
         if hasattr(self.estimator, "formula"):
@@ -80,11 +84,15 @@ class CausalTestResult:
         """Return result contents as a dictionary
         :return: Dictionary containing contents of causal_test_result
         """
+        if isinstance(self.estimator.base_test_case.treatment_variable, list):
+            treatment = [x.name for x in self.estimator.base_test_case.treatment_variable]
+        else:
+            treatment = self.estimator.base_test_case.treatment_variable.name
         base_dict = {
-            "treatment": self.estimator.treatment,
+            "treatment": treatment,
             "control_value": self.estimator.control_value,
             "treatment_value": self.estimator.treatment_value,
-            "outcome": self.estimator.outcome,
+            "outcome": self.estimator.base_test_case.outcome_variable.name,
             "adjustment_set": list(self.adjustment_set) if json else self.adjustment_set,
             "effect_measure": self.test_value.type,
             "effect_estimate": (
@@ -122,7 +130,7 @@ class CausalTestResult:
     def summary(self):
         """Summarise the causal test result as an intuitive sentence."""
         print(
-            f"The causal effect of changing {self.estimator.treatment} = {self.estimator.control_value} to "
-            f"{self.estimator.treatment}' = {self.estimator.treatment_value} is {self.test_value.value}"
+            f"The causal effect of changing {self.estimator.base_test_case.treatment_variable.name} = {self.estimator.control_value} to "
+            f"{self.estimator.base_test_case.treatment_variable.name}' = {self.estimator.treatment_value} is {self.test_value.value}"
             f"(95% confidence intervals: {self.confidence_intervals})."
         )

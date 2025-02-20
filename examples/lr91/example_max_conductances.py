@@ -123,18 +123,16 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     )
 
     # 5. Create a causal specification from the scenario and causal DAG
-    causal_specification = CausalSpecification(scenario, causal_dag)
     base_test_case = BaseTestCase(treatment_var, apd90)
     # 6. Create a causal test case
     causal_test_case = CausalTestCase(
         base_test_case=base_test_case,
         expected_causal_effect=expected_causal_effect,
         estimator=LinearRegressionEstimator(
-            treatment=treatment_var.name,
+            base_test_case=base_test_case,
             treatment_value=treatment_val,
             control_value=control_val,
             adjustment_set=causal_dag.identification(base_test_case),
-            outcome="APD90",
             df=pd.read_csv(observational_data_path),
         ),
     )

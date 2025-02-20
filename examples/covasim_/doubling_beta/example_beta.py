@@ -1,34 +1,19 @@
+import os
+import logging
+
 from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
-from matplotlib.pyplot import rcParams
 
-import os
-import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
-
-# Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
-
-# plt.rcParams["figure.figsize"] = (8, 8)
-# rc_fonts = {
-#     "font.size": 8,
-#     "figure.figsize": (10, 6),
-#     "text.usetex": True,
-#     "font.family": "serif",
-#     "text.latex.preamble": r"\usepackage{libertine}",
-# }
-# rcParams.update(rc_fonts)
 
 ROOT = Path(os.path.realpath(os.path.dirname(__file__)))
 OBSERVATIONAL_DATA_PATH = ROOT / "data" / "10k_observational_data.csv"
@@ -53,16 +38,8 @@ def doubling_beta_CATE_on_csv(
     past_execution_df = pd.read_csv(observational_data_path)
 
     # 2. Create variables
-    pop_size = Input("pop_size", int)
-    pop_infected = Input("pop_infected", int)
-    n_days = Input("n_days", int)
     cum_infections = Output("cum_infections", int)
-    cum_deaths = Output("cum_deaths", int)
-    location = Input("location", str)
-    variants = Input("variants", str)
-    avg_age = Input("avg_age", float)
     beta = Input("beta", float)
-    contacts = Input("contacts", float)
 
     # 5. Create a base test case
     base_test_case = BaseTestCase(treatment_variable=beta, outcome_variable=cum_infections)
@@ -72,11 +49,10 @@ def doubling_beta_CATE_on_csv(
         base_test_case=base_test_case,
         expected_causal_effect=Positive,
         estimator=LinearRegressionEstimator(
-            "beta",
+            base_test_case,
             0.032,
             0.016,
             {"avg_age", "contacts"},  # We use custom adjustment set
-            "cum_infections",
             df=past_execution_df,
             formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
         ),
@@ -90,11 +66,10 @@ def doubling_beta_CATE_on_csv(
         base_test_case=base_test_case,
         expected_causal_effect=Positive,
         estimator=LinearRegressionEstimator(
-            "beta",
-            0.032,
-            0.016,
-            set(),
-            "cum_infections",
+            base_test_case=base_test_case,
+            treatment_value=0.032,
+            control_value=0.016,
+            adjustment_set=set(),
             df=past_execution_df,
             formula="cum_infections ~ beta + I(beta ** 2)",
         ),

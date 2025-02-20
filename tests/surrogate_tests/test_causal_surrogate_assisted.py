@@ -71,10 +71,10 @@ class TestCausalSurrogate(unittest.TestCase):
         surrogate_models = c_s_a_test_case.generate_surrogates(specification, df)
         self.assertEqual(len(surrogate_models), 2)
 
-        for surrogate in surrogate_models:
-            self.assertIsInstance(surrogate, CubicSplineRegressionEstimator)
-            self.assertNotEqual(surrogate.treatment, "Z")
-            self.assertNotEqual(surrogate.outcome, "Z")
+        for surrogate_model in surrogate_models:
+            self.assertIsInstance(surrogate_model, CubicSplineRegressionEstimator)
+            self.assertNotEqual(surrogate_model.base_test_case.treatment_variable.name, "Z")
+            self.assertNotEqual(surrogate_model.base_test_case.outcome_variable.name, "Z")
 
     def test_causal_surrogate_assisted_execution(self):
         df = self.class_df.copy()

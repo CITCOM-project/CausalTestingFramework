@@ -11,6 +11,8 @@ import statsmodels.formula.api as smf
 from lifelines import CoxPHFitter
 
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.specification.variable import Input, Output
 
 logger = logging.getLogger(__name__)
 
@@ -56,13 +58,12 @@ class IPCWEstimator(Estimator):
                             treatment) with the most elements multiplied by `timesteps_per_observation`.
         """
         super().__init__(
-            [var for _, var, _ in treatment_strategy],
-            [val for _, _, val in treatment_strategy],
-            [val for _, _, val in control_strategy],
-            None,
-            outcome,
-            df,
-            None,
+            base_test_case=BaseTestCase(Input("_", float), Output(outcome, float)),
+            treatment_value=[val for _, _, val in treatment_strategy],
+            control_value=[val for _, _, val in control_strategy],
+            adjustment_set=None,
+            df=df,
+            effect_modifiers=None,
             alpha=alpha,
             query="",
         )

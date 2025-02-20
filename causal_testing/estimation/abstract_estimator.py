@@ -6,6 +6,8 @@ from typing import Any
 
 import pandas as pd
 
+from causal_testing.testing.base_test_case import BaseTestCase
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,21 +32,19 @@ class Estimator(ABC):
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        treatment: str,
+        base_test_case: BaseTestCase,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
-        outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[str:Any] = None,
         alpha: float = 0.05,
         query: str = "",
     ):
-        self.treatment = treatment
+        self.base_test_case = base_test_case
         self.treatment_value = treatment_value
         self.control_value = control_value
         self.adjustment_set = adjustment_set
-        self.outcome = outcome
         self.alpha = alpha
         self.df = df.query(query) if query else df
 

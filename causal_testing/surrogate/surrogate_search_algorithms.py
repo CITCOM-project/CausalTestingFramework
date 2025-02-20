@@ -31,35 +31,35 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
     ) -> list:
         solutions = []
 
-        for surrogate in surrogate_models:
-            contradiction_function = self.contradiction_functions[surrogate.expected_relationship]
+        for surrogate_model in surrogate_models:
+            contradiction_function = self.contradiction_functions[surrogate_model.expected_relationship]
 
             # The GA fitness function after including required variables into the function's scope
             # Unused arguments are required for pygad's fitness function signature
             # pylint: disable=cell-var-from-loop
             def fitness_function(ga, solution, idx):  # pylint: disable=unused-argument
-                surrogate.control_value = solution[0] - self.delta
-                surrogate.treatment_value = solution[0] + self.delta
+                surrogate_model.control_value = solution[0] - self.delta
+                surrogate_model.base_test_case.treatment_variable.name_value = solution[0] + self.delta
 
                 adjustment_dict = {}
-                for i, adjustment in enumerate(surrogate.adjustment_set):
+                for i, adjustment in enumerate(surrogate_model.adjustment_set):
                     adjustment_dict[adjustment] = solution[i + 1]
 
-                ate = surrogate.estimate_ate_calculated(adjustment_dict)
+                ate = surrogate_model.estimate_ate_calculated(adjustment_dict)
                 if len(ate) > 1:
                     raise ValueError(
                         "Multiple ate values provided but currently only single values supported in this method"
                     )
                 return contradiction_function(ate[0])
 
-            gene_types, gene_space = self.create_gene_types(surrogate, specification)
+            gene_types, gene_space = self.create_gene_types(surrogate_model, specification)
 
             ga = GA(
                 num_generations=200,
                 num_parents_mating=4,
                 fitness_func=fitness_function,
                 sol_per_pop=10,
-                num_genes=1 + len(surrogate.adjustment_set),
+                num_genes=1 + len(surrogate_model.adjustment_set),
                 gene_space=gene_space,
                 gene_type=gene_types,
             )
@@ -77,10 +77,10 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             solution, fitness, _ = ga.best_solution()
 
             solution_dict = {}
-            solution_dict[surrogate.treatment] = solution[0]
-            for idx, adj in enumerate(surrogate.adjustment_set):
+            solution_dict[surrogate_model.base_test_case.treatment_variable.name] = solution[0]
+            for idx, adj in enumerate(surrogate_model.adjustment_set):
                 solution_dict[adj] = solution[idx + 1]
-            solutions.append((solution_dict, fitness, surrogate))
+            solutions.append((solution_dict, fitness, surrogate_model))
 
         return max(solutions, key=itemgetter(1))  # This can be done better with fitness normalisation between edges
 
@@ -93,7 +93,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         :param specification: The Causal Specification (combination of Scenario and Causal Dag)"""
 
         var_space = {}
-        var_space[surrogate_model.treatment] = {}
+        var_space[surrogate_model.base_test_case.treatment_variable.name] = {}
         for adj in surrogate_model.adjustment_set:
             var_space[adj] = {}
 
@@ -111,12 +111,14 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                     else:
                         var_space[rel_split[0]]["high"] = datatype(rel_split[2])
         gene_space = []
-        gene_space.append(var_space[surrogate_model.treatment])
+        gene_space.append(var_space[surrogate_model.base_test_case.treatment_variable.name])
         for adj in surrogate_model.adjustment_set:
             gene_space.append(var_space[adj])
 
         gene_types = []
-        gene_types.append(specification.scenario.variables.get(surrogate_model.treatment).datatype)
+        gene_types.append(
+            specification.scenario.variables.get(surrogate_model.base_test_case.treatment_variable.name).datatype
+        )
         for adj in surrogate_model.adjustment_set:
             gene_types.append(specification.scenario.variables.get(adj).datatype)
         return gene_types, gene_space

@@ -7,6 +7,7 @@ import pandas as pd
 import statsmodels.api as sm
 
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -21,22 +22,20 @@ class InstrumentalVariableEstimator(Estimator):
         # pylint: disable=too-many-arguments
         # pylint: disable=duplicate-code
         self,
-        treatment: str,
+        base_test_case: BaseTestCase,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
-        outcome: str,
         instrument: str,
         df: pd.DataFrame = None,
         alpha: float = 0.05,
         query: str = "",
     ):
         super().__init__(
-            treatment=treatment,
+            base_test_case=base_test_case,
             treatment_value=treatment_value,
             control_value=control_value,
             adjustment_set=adjustment_set,
-            outcome=outcome,
             df=df,
             effect_modifiers=None,
             alpha=alpha,
@@ -68,10 +67,10 @@ class InstrumentalVariableEstimator(Estimator):
         outcome.
         """
         # Estimate the total effect of instrument I on outcome Y = abI + c1
-        ab = sm.OLS(df[self.outcome], df[[self.instrument]]).fit().params[self.instrument]
+        ab = sm.OLS(df[self.base_test_case.outcome_variable.name], df[[self.instrument]]).fit().params[self.instrument]
 
         # Estimate the direct effect of instrument I on treatment X = aI + c1
-        a = sm.OLS(df[self.treatment], df[[self.instrument]]).fit().params[self.instrument]
+        a = sm.OLS(df[self.base_test_case.treatment_variable.name], df[[self.instrument]]).fit().params[self.instrument]
 
         # Estimate the coefficient of I on X by cancelling
         return ab / a

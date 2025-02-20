@@ -86,7 +86,7 @@ class CausalSurrogateAssistedTestCase:
 
         for i in range(max_executions):
             surrogate_models = self.generate_surrogates(self.specification, df)
-            candidate_test_case, _, surrogate = self.search_algorithm.search(surrogate_models, self.specification)
+            candidate_test_case, _, surrogate_model = self.search_algorithm.search(surrogate_models, self.specification)
 
             self.simulator.startup()
             test_result = self.simulator.run_with_config(candidate_test_case)
@@ -100,11 +100,13 @@ class CausalSurrogateAssistedTestCase:
                 df = pd.concat([df, test_result_df], ignore_index=True)
             if test_result.fault:
                 print(
-                    f"Fault found between {surrogate.treatment} causing {surrogate.outcome}. Contradiction with "
-                    f"expected {surrogate.expected_relationship}."
+                    f"Fault found between {surrogate_model.base_test_case.treatment_variable.name} causing "
+                    f"{surrogate_model.base_test_case.outcome_variable.name}. Contradiction with "
+                    f"expected {surrogate_model.expected_relationship}."
                 )
                 test_result.relationship = (
-                    f"{surrogate.treatment} -> {surrogate.outcome} expected {surrogate.expected_relationship}"
+                    f"{surrogate_model.base_test_case.treatment_variable.name} -> "
+                    f"{surrogate_model.base_test_case.outcome_variable.name} expected {surrogate_model.expected_relationship}"
                 )
                 return test_result, i + 1, df
 
@@ -131,11 +133,10 @@ class CausalSurrogateAssistedTestCase:
                 minimal_adjustment_set = specification.causal_dag.identification(base_test_case, specification.scenario)
 
                 surrogate = CubicSplineRegressionEstimator(
-                    u,
+                    base_test_case,
                     0,
                     0,
                     minimal_adjustment_set,
-                    v,
                     4,
                     df=df,
                     expected_relationship=edge_metadata["expected"],

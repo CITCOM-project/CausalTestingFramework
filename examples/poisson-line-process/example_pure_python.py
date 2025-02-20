@@ -30,16 +30,24 @@ class EmpiricalMeanEstimator(Estimator):
         """Estimate the outcomes under control and treatment.
         :return: The empirical average treatment effect.
         """
-        control_results = self.df.where(self.df[self.treatment] == self.control_value)[self.outcome].dropna()
-        treatment_results = self.df.where(self.df[self.treatment] == self.treatment_value)[self.outcome].dropna()
+        control_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.control_value)[
+            self.base_test_case.outcome_variable.name
+        ].dropna()
+        treatment_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.treatment_value)[
+            self.base_test_case.outcome_variable.name
+        ].dropna()
         return treatment_results.mean() - control_results.mean(), None
 
     def estimate_risk_ratio(self) -> float:
         """Estimate the outcomes under control and treatment.
         :return: The empirical average treatment effect.
         """
-        control_results = self.df.where(self.df[self.treatment] == self.control_value)[self.outcome].dropna()
-        treatment_results = self.df.where(self.df[self.treatment] == self.treatment_value)[self.outcome].dropna()
+        control_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.control_value)[
+            self.base_test_case.outcome_variable.name
+        ].dropna()
+        treatment_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.treatment_value)[
+            self.base_test_case.outcome_variable.name
+        ].dropna()
         return treatment_results.mean() / control_results.mean(), None
 
 
@@ -87,11 +95,10 @@ def test_poisson_intensity_num_shapes(save=False):
                 expected_causal_effect=ExactValue(4, atol=0.5),
                 estimate_type="risk_ratio",
                 estimator=EmpiricalMeanEstimator(
-                    treatment=base_test_case.treatment_variable.name,
+                    base_test_case=base_test_case,
                     treatment_value=treatment_value,
                     control_value=control_value,
                     adjustment_set=causal_specification.causal_dag.identification(base_test_case),
-                    outcome=base_test_case.outcome_variable.name,
                     df=pd.read_csv(f"{ROOT}/data/smt_100/data_smt_wh{wh}_100.csv", index_col=0).astype(float),
                     effect_modifiers=None,
                     alpha=0.05,
@@ -103,11 +110,10 @@ def test_poisson_intensity_num_shapes(save=False):
                 expected_causal_effect=ExactValue(4, atol=0.5),
                 estimate_type="risk_ratio",
                 estimator=LinearRegressionEstimator(
-                    treatment=base_test_case.treatment_variable.name,
+                    base_test_case=base_test_case,
                     treatment_value=treatment_value,
                     control_value=control_value,
                     adjustment_set=causal_specification.causal_dag.identification(base_test_case),
-                    outcome=base_test_case.outcome_variable.name,
                     df=observational_df,
                     effect_modifiers=None,
                     formula="num_shapes_unit ~ I(intensity ** 2) + intensity - 1",
@@ -149,11 +155,10 @@ def test_poisson_width_num_shapes(save=False):
             estimate_type="ate_calculated",
             effect_modifier_configuration={"intensity": i},
             estimator=LinearRegressionEstimator(
-                treatment=base_test_case.treatment_variable.name,
+                base_test_case=base_test_case,
                 treatment_value=w + 1.0,
                 control_value=float(w),
                 adjustment_set=causal_specification.causal_dag.identification(base_test_case),
-                outcome=base_test_case.outcome_variable.name,
                 df=df,
                 effect_modifiers={"intensity": i},
                 formula="num_shapes_unit ~ width + I(intensity ** 2)+I(width ** -1)+intensity-1",
