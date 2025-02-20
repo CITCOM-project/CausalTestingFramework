@@ -106,7 +106,8 @@ class CausalSurrogateAssistedTestCase:
                 )
                 test_result.relationship = (
                     f"{surrogate_model.base_test_case.treatment_variable.name} -> "
-                    f"{surrogate_model.base_test_case.outcome_variable.name} expected {surrogate_model.expected_relationship}"
+                    f"{surrogate_model.base_test_case.outcome_variable.name} expected "
+                    f"{surrogate_model.expected_relationship}"
                 )
                 return test_result, i + 1, df
 
