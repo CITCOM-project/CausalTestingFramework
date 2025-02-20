@@ -30,7 +30,7 @@ class Estimator(ABC):
     """
 
     def __init__(
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments,R0801
         self,
         base_test_case: BaseTestCase,
         treatment_value: float,
