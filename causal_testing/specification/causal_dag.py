@@ -132,6 +132,7 @@ class CausalDAG(nx.DiGraph):
 
     def __init__(self, dot_path: str = None, ignore_cycles: bool = False, **attr):
         super().__init__(**attr)
+        self.ignore_cycles = ignore_cycles
         if dot_path:
             with open(dot_path, "r", encoding="utf-8") as file:
                 dot_content = file.read().replace("\n", "")
@@ -556,6 +557,8 @@ class CausalDAG(nx.DiGraph):
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
+        if self.ignore_cycles:
+            return self.graph.predecessors(base_test_case.treatment_variable.name)
         minimal_adjustment_sets = []
         if base_test_case.effect == "total":
             minimal_adjustment_sets = self.enumerate_minimal_adjustment_sets(
