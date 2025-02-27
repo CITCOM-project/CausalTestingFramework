@@ -1,35 +1,19 @@
+import os
+import logging
+
 from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_outcome import Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
-from matplotlib.pyplot import rcParams
 
-import os
-import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
-
-# Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
-
-# plt.rcParams["figure.figsize"] = (8, 8)
-# rc_fonts = {
-#     "font.size": 8,
-#     "figure.figsize": (10, 6),
-#     "text.usetex": True,
-#     "font.family": "serif",
-#     "text.latex.preamble": r"\usepackage{libertine}",
-# }
-# rcParams.update(rc_fonts)
 
 ROOT = Path(os.path.realpath(os.path.dirname(__file__)))
 OBSERVATIONAL_DATA_PATH = ROOT / "data" / "10k_observational_data.csv"
@@ -52,36 +36,45 @@ def doubling_beta_CATE_on_csv(
 
     # Read in the observational data, perform identification
     past_execution_df = pd.read_csv(observational_data_path)
-    data_collector, _, causal_test_case, causal_specification = setup(past_execution_df)
 
-    linear_regression_estimator = LinearRegressionEstimator(
-        "beta",
-        0.032,
-        0.016,
-        {"avg_age", "contacts"},  # We use custom adjustment set
-        "cum_infections",
-        df=past_execution_df,
-        formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
+    # 2. Create variables
+    cum_infections = Output("cum_infections", int)
+    beta = Input("beta", float)
+
+    # 5. Create a base test case
+    base_test_case = BaseTestCase(treatment_variable=beta, outcome_variable=cum_infections)
+
+    # 6. Create a causal test case
+    causal_test_case = CausalTestCase(
+        base_test_case=base_test_case,
+        expected_causal_effect=Positive,
+        estimator=LinearRegressionEstimator(
+            base_test_case,
+            0.032,
+            0.016,
+            {"avg_age", "contacts"},  # We use custom adjustment set
+            df=past_execution_df,
+            formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
+        ),
     )
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    causal_test_result = causal_test_case.execute_test(
-        estimator=linear_regression_estimator, data_collector=data_collector
-    )
+    causal_test_result = causal_test_case.execute_test()
 
     # Repeat for association estimate (no adjustment)
-    no_adjustment_linear_regression_estimator = LinearRegressionEstimator(
-        "beta",
-        0.032,
-        0.016,
-        set(),
-        "cum_infections",
-        df=past_execution_df,
-        formula="cum_infections ~ beta + I(beta ** 2)",
+    causal_test_case = CausalTestCase(
+        base_test_case=base_test_case,
+        expected_causal_effect=Positive,
+        estimator=LinearRegressionEstimator(
+            base_test_case=base_test_case,
+            treatment_value=0.032,
+            control_value=0.016,
+            adjustment_set=set(),
+            df=past_execution_df,
+            formula="cum_infections ~ beta + I(beta ** 2)",
+        ),
     )
-    association_test_result = causal_test_case.execute_test(
-        estimator=no_adjustment_linear_regression_estimator, data_collector=data_collector
-    )
+    association_test_result = causal_test_case.execute_test()
 
     # Store results for plotting
     results_dict["association"] = {
@@ -102,18 +95,7 @@ def doubling_beta_CATE_on_csv(
     # Repeat causal inference after deleting all rows with treatment value to obtain counterfactual inferences
     if simulate_counterfactuals:
         counterfactual_past_execution_df = past_execution_df[past_execution_df["beta"] != 0.032]
-        counterfactual_linear_regression_estimator = LinearRegressionEstimator(
-            "beta",
-            0.032,
-            0.016,
-            {"avg_age", "contacts"},
-            "cum_infections",
-            df=counterfactual_past_execution_df,
-            formula="cum_infections ~ beta + I(beta ** 2) + avg_age + contacts",
-        )
-        counterfactual_causal_test_result = causal_test_case.execute_test(
-            estimator=linear_regression_estimator, data_collector=data_collector
-        )
+        counterfactual_causal_test_result = causal_test_case.execute_test()
 
         results_dict["counterfactual"] = {
             "ate": counterfactual_causal_test_result.test_value.value,
@@ -219,59 +201,6 @@ def doubling_beta_CATEs(observational_data_path: str, simulate_counterfactual: b
     all_fig.savefig(outpath_base_str + "all_executions.pdf", format="pdf")
     age_fig.savefig(outpath_base_str + "age_executions.pdf", format="pdf")
     age_contact_fig.savefig(outpath_base_str + "age_contact_executions.pdf", format="pdf")
-
-
-def setup(observational_data):
-    # 1. Read in the Causal DAG
-    causal_dag = CausalDAG(f"{ROOT}/dag.dot")
-
-    # 2. Create variables
-    pop_size = Input("pop_size", int)
-    pop_infected = Input("pop_infected", int)
-    n_days = Input("n_days", int)
-    cum_infections = Output("cum_infections", int)
-    cum_deaths = Output("cum_deaths", int)
-    location = Input("location", str)
-    variants = Input("variants", str)
-    avg_age = Input("avg_age", float)
-    beta = Input("beta", float)
-    contacts = Input("contacts", float)
-
-    # 3. Create scenario by applying constraints over a subset of the input variables
-    scenario = Scenario(
-        variables={
-            pop_size,
-            pop_infected,
-            n_days,
-            cum_infections,
-            cum_deaths,
-            location,
-            variants,
-            avg_age,
-            beta,
-            contacts,
-        },
-        constraints={pop_size.z3 == 51633, pop_infected.z3 == 1000, n_days.z3 == 216},
-    )
-
-    # 4. Construct a causal specification from the scenario and causal DAG
-    causal_specification = CausalSpecification(scenario, causal_dag)
-
-    # 5. Create a base test case
-    base_test_case = BaseTestCase(treatment_variable=beta, outcome_variable=cum_infections)
-
-    # 6. Create a causal test case
-    causal_test_case = CausalTestCase(
-        base_test_case=base_test_case, expected_causal_effect=Positive, control_value=0.016, treatment_value=0.032
-    )
-
-    # 7. Create a data collector
-    data_collector = ObservationalDataCollector(scenario, observational_data)
-
-    # 8. Obtain the minimal adjustment set for the base test case from the causal DAG
-    minimal_adjustment_set = causal_dag.identification(base_test_case)
-
-    return data_collector, minimal_adjustment_set, causal_test_case, causal_specification
 
 
 def plot_doubling_beta_CATEs(results_dict, title, figure=None, axes=None, row=None, col=None):

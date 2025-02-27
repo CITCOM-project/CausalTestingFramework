@@ -11,8 +11,8 @@ can be found in Section 5.2 of the paper.
 
 ## How to run
 There are two versions of this case study:
-1. `causal_test_max_conductances.py` which has a for loop to iteratively call the `causal_test_engine`
-2. `causal_test_max_conductances_test_suite.py`, which uses the `causal_test_suite` object to interact with the `causal_test_engine`
+1. `causal_test_max_conductances.py` which has a for loop to iteratively build and execute each test case one at a time.
+2. `causal_test_max_conductances_test_suite.py`, which uses the `causal_test_suite` object to execute all the tests at once.
 
 To run this case study:
 1. Ensure all project dependencies are installed by running `pip install .` in the top level directory

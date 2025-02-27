@@ -39,5 +39,8 @@ class LogisticRegressionEstimator(RegressionEstimator):
         :return: The odds ratio. Confidence intervals are not yet supported.
         """
         model = self._run_regression(self.df)
-        ci_low, ci_high = np.exp(model.conf_int(self.alpha).loc[self.treatment])
-        return pd.Series(np.exp(model.params[self.treatment])), [pd.Series(ci_low), pd.Series(ci_high)]
+        ci_low, ci_high = np.exp(model.conf_int(self.alpha).loc[self.base_test_case.treatment_variable.name])
+        return pd.Series(np.exp(model.params[self.base_test_case.treatment_variable.name])), [
+            pd.Series(ci_low),
+            pd.Series(ci_high),
+        ]

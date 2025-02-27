@@ -1,6 +1,6 @@
 # Covasim Case Study: Doubling Beta (Infectiousness)
-In this case study, we demonstrate how to use the causal testing framework with observational
-data collected Covasim to conduct Statistical Metamorphic Testing (SMT) a posteriori. Here, we focus on a set of simple
+In this case study, we demonstrate how to use the causal testing framework with observational data from
+Covasim to conduct Statistical Metamorphic Testing (SMT) a posteriori. Here, we focus on a set of simple
 modelling scenarios that investigate how the infectiousness of the virus (encoded as the parameter beta) affects the
 cumulative number of infections over a fixed duration. We also run several causal tests that focus on increasingly
 specific causal questions pertaining to more refined metamorphic properties and enabling us to learn more about the

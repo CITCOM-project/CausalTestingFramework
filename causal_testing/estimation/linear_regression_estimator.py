@@ -10,6 +10,7 @@ from patsy import dmatrix, ModelDesc  # pylint: disable = no-name-in-module
 from causal_testing.specification.variable import Variable
 from causal_testing.estimation.genetic_programming_regression_fitter import GP
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
+from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +25,10 @@ class LinearRegressionEstimator(RegressionEstimator):
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        treatment: str,
+        base_test_case: BaseTestCase,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
-        outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
         formula: str = None,
@@ -36,17 +36,17 @@ class LinearRegressionEstimator(RegressionEstimator):
         query: str = "",
     ):
         # pylint: disable=too-many-arguments
+        # pylint: disable=R0801
         super().__init__(
-            treatment,
-            treatment_value,
-            control_value,
-            adjustment_set,
-            outcome,
-            df,
-            effect_modifiers,
-            formula,
-            alpha,
-            query,
+            base_test_case=base_test_case,
+            treatment_value=treatment_value,
+            control_value=control_value,
+            adjustment_set=adjustment_set,
+            df=df,
+            effect_modifiers=effect_modifiers,
+            alpha=alpha,
+            query=query,
+            formula=formula,
         )
         for term in self.effect_modifiers:
             self.adjustment_set.add(term)
@@ -81,8 +81,8 @@ class LinearRegressionEstimator(RegressionEstimator):
         """
         gp = GP(
             df=self.df,
-            features=sorted(list(self.adjustment_set.union([self.treatment]))),
-            outcome=self.outcome,
+            features=sorted(list(self.adjustment_set.union([self.base_test_case.treatment_variable.name]))),
+            outcome=self.base_test_case.outcome_variable.name,
             extra_operators=extra_operators,
             sympy_conversions=sympy_conversions,
             seed=seed,
@@ -90,7 +90,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         )
         formula = gp.run_gp(ngen=ngen, pop_size=pop_size, num_offspring=num_offspring, seeds=seeds)
         formula = gp.simplify(formula)
-        self.formula = f"{self.outcome} ~ I({formula}) - 1"
+        self.formula = f"{self.base_test_case.outcome_variable.name} ~ I({formula}) - 1"
 
     def estimate_coefficient(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
@@ -100,7 +100,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         """
         model = self._run_regression()
         newline = "\n"
-        patsy_md = ModelDesc.from_formula(self.treatment)
+        patsy_md = ModelDesc.from_formula(self.base_test_case.treatment_variable.name)
 
         if any(
             (
@@ -111,9 +111,11 @@ class LinearRegressionEstimator(RegressionEstimator):
             )
         ):
             design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
-            treatment = design_info.column_names[design_info.term_name_slices[self.treatment]]
+            treatment = design_info.column_names[
+                design_info.term_name_slices[self.base_test_case.treatment_variable.name]
+            ]
         else:
-            treatment = [self.treatment]
+            treatment = [self.base_test_case.treatment_variable.name]
         assert set(treatment).issubset(
             model.params.index.tolist()
         ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
@@ -137,8 +139,8 @@ class LinearRegressionEstimator(RegressionEstimator):
 
         # It is ABSOLUTELY CRITICAL that these go last, otherwise we can't index
         # the effect with "ate = t_test_results.effect[0]"
-        individuals.loc["control", [self.treatment]] = self.control_value
-        individuals.loc["treated", [self.treatment]] = self.treatment_value
+        individuals.loc["control", [self.base_test_case.treatment_variable.name]] = self.control_value
+        individuals.loc["treated", [self.base_test_case.treatment_variable.name]] = self.treatment_value
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])

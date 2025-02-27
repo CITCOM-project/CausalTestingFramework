@@ -8,12 +8,12 @@ from causal_testing.estimation.linear_regression_estimator import LinearRegressi
 from causal_testing.estimation.ipcw_estimator import IPCWEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.testing.causal_test_adequacy import DAGAdequacy
 from causal_testing.testing.causal_test_outcome import NoEffect, SomeEffect
-from causal_testing.json_front.json_class import JsonUtility, CausalVariables
 from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
+from causal_testing.specification.variable import Input, Output
+from causal_testing.specification.causal_dag import CausalDAG
 
 
 class TestCausalTestAdequacy(unittest.TestCase):
@@ -23,86 +23,53 @@ class TestCausalTestAdequacy(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        json_file_name = "tests.json"
-        dag_file_name = "dag.dot"
-        data_file_name = "data_with_categorical.csv"
-        test_data_dir_path = Path("tests/resources/data")
-        self.json_path = str(test_data_dir_path / json_file_name)
-        self.dag_path = str(test_data_dir_path / dag_file_name)
-        self.data_path = [str(test_data_dir_path / data_file_name)]
-        self.json_class = JsonUtility("temp_out.txt", True)
+        self.df = pd.read_csv("tests/resources/data/data_with_categorical.csv")
+        self.dag = CausalDAG("tests/resources/data/dag.dot")
         self.example_distribution = scipy.stats.uniform(1, 10)
-        self.input_dict_list = [
-            {"name": "test_input", "datatype": float, "distribution": self.example_distribution},
-            {"name": "test_input_no_dist", "datatype": float},
+        inputs = [
+            Input("test_input", float, self.example_distribution),
+            Input("test_input_no_dist", float, self.example_distribution),
         ]
-        self.output_dict_list = [{"name": "test_output", "datatype": float}]
-        variables = CausalVariables(inputs=self.input_dict_list, outputs=self.output_dict_list, metas=[])
-        self.scenario = Scenario(variables=variables, constraints=None)
-        self.json_class.set_paths(self.json_path, self.dag_path, self.data_path)
-        self.json_class.setup(self.scenario)
+        outputs = [Output("test_output", float)]
+        self.scenario = Scenario(variables=inputs + outputs)
 
     def test_data_adequacy_numeric(self):
-        example_test = {
-            "tests": [
-                {
-                    "name": "test1",
-                    "mutations": {"test_input": "Increase"},
-                    "estimator": "LinearRegressionEstimator",
-                    "estimate_type": "coefficient",
-                    "effect_modifiers": [],
-                    "expected_effect": {"test_output": "NoEffect"},
-                    "coverage": True,
-                    "skip": False,
-                }
-            ]
-        }
-        self.json_class.test_plan = example_test
-        effects = {"NoEffect": NoEffect()}
-        mutates = {
-            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
-        }
-        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
-
-        test_results = self.json_class.run_json_tests(
-            effects=effects, estimators=estimators, f_flag=False, mutates=mutates
+        base_test_case = BaseTestCase(
+            Input("test_input", float, self.example_distribution), Output("test_output", float)
         )
+        estimator = LinearRegressionEstimator(
+            base_test_case=base_test_case, treatment_value=None, control_value=None, adjustment_set={}, df=self.df
+        )
+        causal_test_case = CausalTestCase(
+            base_test_case=base_test_case,
+            expected_causal_effect=NoEffect(),
+            estimate_type="coefficient",
+            estimator=estimator,
+        )
+        adequacy_metric = DataAdequacy(causal_test_case, estimator)
+        adequacy_metric.measure_adequacy()
         self.assertEqual(
-            test_results[0]["result"].adequacy.to_dict(),
+            adequacy_metric.to_dict(),
             {"kurtosis": {"test_input": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
         )
 
-    def test_data_adequacy_cateogorical(self):
-        example_test = {
-            "tests": [
-                {
-                    "name": "test1",
-                    "mutations": ["test_input_no_dist"],
-                    "estimator": "LinearRegressionEstimator",
-                    "estimate_type": "coefficient",
-                    "effect_modifiers": [],
-                    "expected_effect": {"test_output": "NoEffect"},
-                    "coverage": True,
-                    "skip": False,
-                }
-            ]
-        }
-        self.json_class.test_plan = example_test
-        effects = {"NoEffect": NoEffect()}
-        mutates = {
-            "Increase": lambda x: self.json_class.scenario.treatment_variables[x].z3
-            > self.json_class.scenario.variables[x].z3
-        }
-        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
-
-        test_results = self.json_class.run_json_tests(
-            effects=effects, estimators=estimators, f_flag=False, mutates=mutates
+    def test_data_adequacy_categorical(self):
+        base_test_case = BaseTestCase(
+            Input("test_input_no_dist", float, self.example_distribution), Output("test_output", float)
         )
-        print("RESULT")
-        print(test_results[0]["result"])
+        estimator = LinearRegressionEstimator(
+            base_test_case=base_test_case, treatment_value=None, control_value=None, adjustment_set={}, df=self.df
+        )
+        causal_test_case = CausalTestCase(
+            base_test_case=base_test_case,
+            expected_causal_effect=NoEffect(),
+            estimate_type="coefficient",
+            estimator=estimator,
+        )
+        adequacy_metric = DataAdequacy(causal_test_case, estimator)
+        adequacy_metric.measure_adequacy()
         self.assertEqual(
-            test_results[0]["result"].adequacy.to_dict(),
+            adequacy_metric.to_dict(),
             {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
         )
 
@@ -110,7 +77,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
         timesteps_per_intervention = 1
         control_strategy = [[t, "t", 0] for t in range(1, 4, timesteps_per_intervention)]
         treatment_strategy = [[t, "t", 1] for t in range(1, 4, timesteps_per_intervention)]
-        outcome = "outcome"
+        outcome = Output("outcome", float)
         fit_bl_switch_formula = "xo_t_do ~ time"
         df = pd.read_csv("tests/resources/data/temporal_data.csv")
         df["ok"] = df["outcome"] == 1
@@ -125,20 +92,14 @@ class TestCausalTestAdequacy(unittest.TestCase):
             fit_bltd_switch_formula=fit_bl_switch_formula,
             eligibility=None,
         )
-        base_test_case = BaseTestCase(
-            treatment_variable=control_strategy,
-            outcome_variable=outcome,
-            effect="temporal",
-        )
+        base_test_case = BaseTestCase(Input("t", float), Output("outcome", float))
 
         causal_test_case = CausalTestCase(
             base_test_case=base_test_case,
             expected_causal_effect=SomeEffect(),
-            control_value=control_strategy,
-            treatment_value=treatment_strategy,
             estimate_type="hazard_ratio",
+            estimator=estimation_model,
         )
-        causal_test_result = causal_test_case.execute_test(estimation_model, None)
         adequacy_metric = DataAdequacy(causal_test_case, estimation_model, group_by="id")
         adequacy_metric.measure_adequacy()
         adequacy_dict = adequacy_metric.to_dict()
@@ -160,15 +121,13 @@ class TestCausalTestAdequacy(unittest.TestCase):
             expected_causal_effect=None,
             estimate_type=None,
         )
-        test_suite = CausalTestSuite()
-        test_suite.add_test_object(base_test_case, causal_test_case, None, None)
-        dag_adequacy = DAGAdequacy(self.json_class.causal_specification.causal_dag, test_suite)
+        test_suite = [causal_test_case]
+        dag_adequacy = DAGAdequacy(self.dag, test_suite)
         dag_adequacy.measure_adequacy()
-        print(dag_adequacy.to_dict())
         self.assertEqual(
             dag_adequacy.to_dict(),
             {
-                "causal_dag": self.json_class.causal_specification.causal_dag,
+                "causal_dag": self.dag,
                 "test_suite": test_suite,
                 "tested_pairs": {("test_input", "B")},
                 "pairs_to_test": {
@@ -209,15 +168,13 @@ class TestCausalTestAdequacy(unittest.TestCase):
             expected_causal_effect=None,
             estimate_type=None,
         )
-        test_suite = CausalTestSuite()
-        test_suite.add_test_object(base_test_case, causal_test_case, None, None)
-        dag_adequacy = DAGAdequacy(self.json_class.causal_specification.causal_dag, test_suite)
+        test_suite = [causal_test_case]
+        dag_adequacy = DAGAdequacy(self.dag, test_suite)
         dag_adequacy.measure_adequacy()
-        print(dag_adequacy.to_dict())
         self.assertEqual(
             dag_adequacy.to_dict(),
             {
-                "causal_dag": self.json_class.causal_specification.causal_dag,
+                "causal_dag": self.dag,
                 "test_suite": test_suite,
                 "tested_pairs": {("test_input", "C")},
                 "pairs_to_test": {
@@ -258,15 +215,13 @@ class TestCausalTestAdequacy(unittest.TestCase):
             expected_causal_effect=None,
             estimate_type=None,
         )
-        test_suite = CausalTestSuite()
-        test_suite.add_test_object(base_test_case, causal_test_case, None, None)
-        dag_adequacy = DAGAdequacy(self.json_class.causal_specification.causal_dag, test_suite)
+        test_suite = [causal_test_case]
+        dag_adequacy = DAGAdequacy(self.dag, test_suite)
         dag_adequacy.measure_adequacy()
-        print(dag_adequacy.to_dict())
         self.assertEqual(
             dag_adequacy.to_dict(),
             {
-                "causal_dag": self.json_class.causal_specification.causal_dag,
+                "causal_dag": self.dag,
                 "test_suite": test_suite,
                 "tested_pairs": {("test_input", "C")},
                 "pairs_to_test": {

@@ -8,7 +8,6 @@ from causal_testing.testing.causal_test_outcome import CausalTestOutcome
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
-from causal_testing.data_collection.data_collector import DataCollector
 
 
 logger = logging.getLogger(__name__)
@@ -28,27 +27,24 @@ class CausalTestCase:
         self,
         base_test_case: BaseTestCase,
         expected_causal_effect: CausalTestOutcome,
-        control_value: Any = None,
-        treatment_value: Any = None,
         estimate_type: str = "ate",
         estimate_params: dict = None,
         effect_modifier_configuration: dict[Variable:Any] = None,
+        estimator: type(Estimator) = None,
     ):
         """
         :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
         :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
-        :param control_value: The control value for the treatment variable (before intervention).
-        :param treatment_value: The treatment value for the treatment variable (after intervention).
-        :param estimate_type: A string which denotes the type of estimate to return
-        :param effect_modifier_configuration:
+        :param estimate_type: A string which denotes the type of estimate to return.
+        :param effect_modifier_configuration: The assignment of the effect modifiers to use for estimates.
+        :param estimator: An Estimator class object
         """
         self.base_test_case = base_test_case
-        self.control_value = control_value
         self.expected_causal_effect = expected_causal_effect
         self.outcome_variable = base_test_case.outcome_variable
         self.treatment_variable = base_test_case.treatment_variable
-        self.treatment_value = treatment_value
         self.estimate_type = estimate_type
+        self.estimator = estimator
         if estimate_params is None:
             self.estimate_params = {}
         self.effect = base_test_case.effect
@@ -58,25 +54,19 @@ class CausalTestCase:
         else:
             self.effect_modifier_configuration = {}
 
-    def execute_test(self, estimator: type(Estimator), data_collector: DataCollector) -> CausalTestResult:
-        """Execute a causal test case and return the causal test result.
+    def execute_test(self, estimator: type(Estimator) = None) -> CausalTestResult:
+        """
+        Execute a causal test case and return the causal test result.
+        :param estimator: An alternative estimator. Defaults to `self.estimator`. This parameter is useful when you want
+        to execute a test with different data or a different equational form, but don't want to redefine the whole test
+        case.
 
-        :param estimator: A reference to an Estimator class.
-        :param data_collector: The data collector to be used which provides a dataframe for the Estimator
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
-        if estimator.df is None:
-            estimator.df = data_collector.collect_data()
 
-        causal_test_result = self._return_causal_test_results(estimator)
-        return causal_test_result
+        if estimator is None:
+            estimator = self.estimator
 
-    def _return_causal_test_results(self, estimator) -> CausalTestResult:
-        """Depending on the estimator used, calculate the 95% confidence intervals and return in a causal_test_result
-
-        :param estimator: An Estimator class object
-        :return: a CausalTestResult object containing the confidence intervals
-        """
         if not hasattr(estimator, f"estimate_{self.estimate_type}"):
             raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
         estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
@@ -89,9 +79,9 @@ class CausalTestCase:
         )
 
     def __str__(self):
-        treatment_config = {self.treatment_variable.name: self.treatment_value}
-        control_config = {self.treatment_variable.name: self.control_value}
-        outcome_variable = {self.outcome_variable}
+        treatment_config = {self.treatment_variable.name: self.estimator.treatment_value}
+        control_config = {self.treatment_variable.name: self.estimator.control_value}
+        outcome_variable = {self.outcome_variable.name}
         return (
             f"Running {treatment_config} instead of {control_config} should cause the following "
             f"changes to {outcome_variable}: {self.expected_causal_effect}."

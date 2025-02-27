@@ -151,6 +151,22 @@ class CausalDAG(nx.DiGraph):
             else:
                 raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
+    @property
+    def nodes(self) -> list:
+        """
+        Get the nodes of the DAG.
+        :returns: The nodes of the DAG.
+        """
+        return self.graph.nodes
+
+    @property
+    def edges(self) -> list:
+        """
+        Get the edges of the DAG.
+        :returns: The edges of the DAG.
+        """
+        return self.graph.edges
+
     def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
         """
         Checks the three instrumental variable assumptions, raising a
@@ -170,7 +186,7 @@ class CausalDAG(nx.DiGraph):
 
         # (iii) Instrument and outcome do not share causes
 
-        for cause in self.graph.nodes:
+        for cause in self.nodes:
             # Exclude self-cycles due to breaking changes in NetworkX > 3.2
             outcome_paths = (
                 list(nx.all_simple_paths(self.graph, source=cause, target=outcome)) if cause != outcome else []
@@ -222,8 +238,8 @@ class CausalDAG(nx.DiGraph):
         :return: A CausalDAG corresponding to the proper back-door graph.
         """
         for var in treatments + outcomes:
-            if var not in self.graph.nodes:
-                raise IndexError(f"{var} not a node in Causal DAG.\nValid nodes are{self.graph.nodes}.")
+            if var not in self.nodes:
+                raise IndexError(f"{var} not a node in Causal DAG.\nValid nodes are{self.nodes}.")
 
         proper_backdoor_graph = self.copy()
         nodes_on_proper_causal_path = proper_backdoor_graph.proper_causal_pathway(treatments, outcomes)
@@ -255,7 +271,7 @@ class CausalDAG(nx.DiGraph):
             *[nx.ancestors(ancestor_graph.graph, outcome).union({outcome}) for outcome in outcomes]
         )
         variables_to_keep = treatment_ancestors.union(outcome_ancestors)
-        variables_to_remove = set(self.graph.nodes).difference(variables_to_keep)
+        variables_to_remove = set(self.nodes).difference(variables_to_keep)
         ancestor_graph.graph.remove_nodes_from(variables_to_remove)
         return ancestor_graph
 
@@ -273,7 +289,7 @@ class CausalDAG(nx.DiGraph):
         ee = []
         for s in treatments:
             for t in outcomes:
-                if (s, t) in gback.graph.edges:
+                if (s, t) in gback.edges:
                     ee.append((s, t))
         for v1, v2 in ee:
             gback.graph.remove_edge(v1, v2)
@@ -451,7 +467,7 @@ class CausalDAG(nx.DiGraph):
                 ]
             )
 
-            if not set(covariates).issubset(set(self.graph.nodes).difference(descendents_of_proper_casual_paths)):
+            if not set(covariates).issubset(set(self.nodes).difference(descendents_of_proper_casual_paths)):
                 logger.info(
                     "Failed Condition 1: Z=%s **is** a descendent of some variable on a proper causal "
                     "path between X=%s and Y=%s.",
@@ -566,9 +582,9 @@ class CausalDAG(nx.DiGraph):
         :return DOT string of the DAG.
         """
         dotstring = "digraph G {\n"
-        dotstring += "".join([f"{a} -> {b};\n" for a, b in self.graph.edges])
+        dotstring += "".join([f"{a} -> {b};\n" for a, b in self.edges])
         dotstring += "}"
         return dotstring
 
     def __str__(self):
-        return f"Nodes: {self.graph.nodes}\nEdges: {self.graph.edges}"
+        return f"Nodes: {self.nodes}\nEdges: {self.edges}"

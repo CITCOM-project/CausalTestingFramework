@@ -1,5 +1,4 @@
 digraph poisson_line_process {
-  rankdir=LR;
   width -> num_lines_abs;
   width -> num_shapes_abs;
   width -> num_lines_unit;

@@ -126,9 +126,6 @@ def validate_variables(data_dict: dict) -> tuple:
 
         constraints = set()
 
-        for variable, input_var in zip(variables, inputs):
-            if "constraint" in variable:
-                constraints.add(input_var.z3 == variable["constraint"])
     else:
         raise ValidationError("Cannot find the variables defined by the causal tests.")
 
