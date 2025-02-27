@@ -338,6 +338,8 @@ class CausalTestingFramework:
         if estimator_class is None:
             raise ValueError(f"Unknown estimator: {test['estimator']}")
 
+        print(test)
+
         # Create the estimator with correct parameters
         estimator = estimator_class(
             base_test_case=base_test,
