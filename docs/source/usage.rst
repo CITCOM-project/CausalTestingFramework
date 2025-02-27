@@ -2,11 +2,7 @@
 Usage
 -----
 
-There are currently 3 methods of using the Causal Testing Framework; 1) :doc:`JSON Front End </frontends/json_front_end>`\, 2)
-:doc:`Test Suites </frontends/test_suite>`\, or 3) directly as
-described below.
-
-The causal testing framework is made up of 3 main components: Specification, Testing, and Data Collection. The first
+The causal testing framework is made up of 2 main components: Specification and Testing. The first
 step is to specify the (part of the) system under test as a modelling ``Scenario``. Modelling scenarios specify the
 observable variables and any constraints which exist between them. We currently support 3 types of variable:
 

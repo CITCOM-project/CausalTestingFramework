@@ -78,11 +78,11 @@ class CausalSurrogateAssistedTestCase:
     ):
         """For this specific test case, a search algorithm is used to find the most contradictory point in the input
         space which is, therefore, most likely to indicate incorrect behaviour. This cadidate test case is run against
-        the simulator, checked for faults and the result returned with collected data
+        the simulator, checked for faults and the result returned.
         :param df: An dataframe which contains data relevant to the specified scenario
         :param max_executions: Maximum number of simulator executions before exiting the search
         :param custom_data_aggregator:
-        :return: tuple containing SimulationResult or str, execution number and collected data"""
+        :return: tuple containing SimulationResult or str, execution number and dataframe"""
 
         for i in range(max_executions):
             surrogate_models = self.generate_surrogates(self.specification, df)
