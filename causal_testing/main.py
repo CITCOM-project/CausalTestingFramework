@@ -138,6 +138,13 @@ class CausalTestingFramework:
             logger.error(f"Failed to load DAG: {str(e)}")
             raise
 
+    def _read_dataframe(self, data_path):
+        if str(data_path).endswith(".csv"):
+            return pd.read_csv(data_path)
+        if str(data_path).endswith(".pqt"):
+            return pd.read_parquet(data_path)
+        raise ValueError(f"Invalid file type {data_path}. Can only read CSV (.csv) or parquet (.pqt) files.")
+
     def load_data(self, query: Optional[str] = None) -> pd.DataFrame:
         """Load and combine all data sources with optional filtering.
 
@@ -148,7 +155,7 @@ class CausalTestingFramework:
         logger.info(f"Loading data from {len(self.paths.data_paths)} source(s)")
 
         try:
-            dfs = [pd.read_csv(data_path) for data_path in self.paths.data_paths]
+            dfs = [self._read_dataframe(data_path) for data_path in self.paths.data_paths]
             data = pd.concat(dfs, axis=0, ignore_index=True)
             logger.info(f"Initial data shape: {data.shape}")
 
@@ -171,20 +178,19 @@ class CausalTestingFramework:
 
 
         """
-        for node in self.dag.graph.nodes():
-            dtype = self.data[node].dtype.type if node in self.data.columns else str
+        for node_name, node_data in self.dag.graph.nodes(data=True):
+            if node_name not in self.data.columns and not node_data.get("hidden", False):
+                raise ValueError(f"Node {node_name} missing from data. Should it be marked as hidden?")
+
+            dtype = self.data.dtypes.get(node_name)
 
             # If node has no incoming edges, it's an input
-            if self.dag.graph.in_degree(node) == 0:
-                self.variables["inputs"][node] = Input(name=node, datatype=dtype)
+            if self.dag.graph.in_degree(node_name) == 0:
+                self.variables["inputs"][node_name] = Input(name=node_name, datatype=dtype)
 
-            # If node has outgoing edges, it can be an input
-            if self.dag.graph.out_degree(node) > 0:
-                self.variables["inputs"][node] = Input(name=node, datatype=dtype)
-
-            # If node has incoming edges, it can be an output
-            if self.dag.graph.in_degree(node) > 0:
-                self.variables["outputs"][node] = Output(name=node, datatype=dtype)
+            # Otherwise it's an output
+            if self.dag.graph.in_degree(node_name) > 0:
+                self.variables["outputs"][node_name] = Output(name=node_name, datatype=dtype)
 
     def create_scenario_and_specification(self) -> None:
         """Create scenario and causal specification objects from loaded data.
@@ -259,7 +265,7 @@ class CausalTestingFramework:
         :return: BaseTestCase object
         :raises: KeyError if required variables are not found in inputs or outputs
         """
-        treatment_name = test["mutations"][0]
+        treatment_name = test["treatment_variable"]
         outcome_name = next(iter(test["expected_effect"].keys()))
 
         # Look for treatment variable in both inputs and outputs
@@ -333,12 +339,11 @@ class CausalTestingFramework:
             raise ValueError(f"Unknown estimator: {test['estimator']}")
 
         # Create the estimator with correct parameters
-        adjustment_set = self.causal_specification.causal_dag.identification(base_test)
         estimator = estimator_class(
             base_test_case=base_test,
-            treatment_value=1.0,  # hardcode these for now
-            control_value=0.0,
-            adjustment_set=adjustment_set,
+            treatment_value=test.get("treatment_value"),
+            control_value=test.get("control_value"),
+            adjustment_set=test.get("adjustment_set", self.causal_specification.causal_dag.identification(base_test)),
             df=self.data,
             effect_modifiers=None,
             formula=test.get("formula"),
@@ -416,7 +421,7 @@ class CausalTestingFramework:
                     "name": test_config["name"],
                     "estimate_type": test_config["estimate_type"],
                     "effect": test_config.get("effect", "direct"),
-                    "mutations": test_config["mutations"],
+                    "treatment_variable": test_config["treatment_variable"],
                     "expected_effect": test_config["expected_effect"],
                     "formula": test_config.get("formula"),
                     "alpha": test_config.get("alpha", 0.05),
