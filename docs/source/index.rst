@@ -122,14 +122,6 @@ system-under-test that is expected to cause a change to some output(s).
 .. toctree::
    :hidden:
    :maxdepth: 1
-   :caption: Front Ends
-
-   frontends/json_front_end
-   frontends/test_suite
-
-.. toctree::
-   :hidden:
-   :maxdepth: 1
    :caption: Glossary
 
    glossary

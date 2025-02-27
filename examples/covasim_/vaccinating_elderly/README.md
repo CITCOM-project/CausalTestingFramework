@@ -15,8 +15,7 @@ Further details are provided in Section 5.3 (Prioritising the elderly for vaccin
 
 >[!NOTE]
 >This version of the CTF uses observational data to separate the software execution and testing.
-Older versions of this framework simulate the data using a custom experimental data collector and the `covasim`
-package (version 3.0.7) as outlined below.
+Older versions of this framework directly run the `covasim` package (version 3.0.7) as outlined below.
 
 ## How to run
 To run this case study:
