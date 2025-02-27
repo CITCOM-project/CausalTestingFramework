@@ -386,7 +386,7 @@ class CausalTestingFramework:
                 results.append(result)
                 logger.info(f"Test completed: {test_case}")
             except Exception as e:
-                if silent:
+                if not silent:
                     logger.error(f"Error running test {test_case}: {str(e)}")
                     raise
                 result = CausalTestResult(
@@ -424,7 +424,9 @@ class CausalTestingFramework:
                     ci_high = ci_high.tolist()
 
                 # Determine if test failed based on expected vs actual effect
-                test_failed = not test_case.expected_causal_effect.apply(result)
+                test_passed = (
+                    test_case.expected_causal_effect.apply(result) if result.test_value.type != "Error" else False
+                )
 
                 output = {
                     "name": test_config["name"],
@@ -435,7 +437,7 @@ class CausalTestingFramework:
                     "formula": test_config.get("formula"),
                     "alpha": test_config.get("alpha", 0.05),
                     "skip": test_config.get("skip", False),
-                    "failed": test_failed,
+                    "passed": test_passed,
                     "result": {
                         "treatment": result.estimator.base_test_case.treatment_variable.name,
                         "outcome": result.estimator.base_test_case.outcome_variable.name,
