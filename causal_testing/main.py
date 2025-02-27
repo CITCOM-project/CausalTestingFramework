@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union, Sequence
+from tqdm import tqdm
 
 import pandas as pd
 
@@ -16,11 +17,12 @@ from .specification.causal_specification import CausalSpecification
 from .testing.causal_test_case import CausalTestCase
 from .testing.base_test_case import BaseTestCase
 from .testing.causal_test_outcome import NoEffect, SomeEffect, Positive, Negative
-from .testing.causal_test_result import CausalTestResult
+from .testing.causal_test_result import CausalTestResult, TestValue
 from .estimation.linear_regression_estimator import LinearRegressionEstimator
 from .estimation.logistic_regression_estimator import LogisticRegressionEstimator
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)
 
 
 @dataclass
@@ -338,8 +340,6 @@ class CausalTestingFramework:
         if estimator_class is None:
             raise ValueError(f"Unknown estimator: {test['estimator']}")
 
-        print(test)
-
         # Create the estimator with correct parameters
         estimator = estimator_class(
             base_test_case=base_test,
@@ -366,7 +366,7 @@ class CausalTestingFramework:
             estimator=estimator,
         )
 
-    def run_tests(self) -> List[CausalTestResult]:
+    def run_tests(self, silent=False) -> List[CausalTestResult]:
         """
         Run all test cases and return their results.
 
@@ -380,14 +380,21 @@ class CausalTestingFramework:
             raise ValueError("No tests loaded. Call load_tests() first.")
 
         results = []
-        for test_case in self.test_cases:
+        for test_case in tqdm(self.test_cases):
             try:
                 result = test_case.execute_test()
                 results.append(result)
                 logger.info(f"Test completed: {test_case}")
             except Exception as e:
-                logger.error(f"Error running test {test_case}: {str(e)}")
-                raise
+                if silent:
+                    logger.error(f"Error running test {test_case}: {str(e)}")
+                    raise
+                result = CausalTestResult(
+                    estimator=test_case.estimator,
+                    test_value=TestValue("Error", str(e)),
+                )
+                results.append(result)
+                logger.info(f"Test errored: {test_case}")
 
         return results
 
@@ -463,12 +470,19 @@ def setup_logging(verbose: bool = False) -> None:
 def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Causal Testing Framework")
-    parser.add_argument("--dag_path", help="Path to the DAG file (.dot)", required=True)
-    parser.add_argument("--data_paths", help="Paths to data files (.csv)", nargs="+", required=True)
-    parser.add_argument("--test_config", help="Path to test configuration file (.json)", required=True)
-    parser.add_argument("--output", help="Path for output file (.json)", required=True)
-    parser.add_argument("--verbose", help="Enable verbose logging", action="store_true")
-    parser.add_argument("--ignore-cycles", help="Ignore cycles in DAG", action="store_true")
-    parser.add_argument("--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
+    parser.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
+    parser.add_argument("-d", "--data_paths", help="Paths to data files (.csv)", nargs="+", required=True)
+    parser.add_argument("-t", "--test_config", help="Path to test configuration file (.json)", required=True)
+    parser.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
+    parser.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
+    parser.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
+    parser.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
+    parser.add_argument(
+        "-s",
+        "--silent",
+        action="store_true",
+        help="Do not crash on error. If set to true, errors are recorded as test results.",
+        default=False,
+    )
 
     return parser.parse_args(args)

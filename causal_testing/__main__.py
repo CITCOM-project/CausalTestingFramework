@@ -32,7 +32,7 @@ def main() -> None:
 
         # Load and run tests
         framework.load_tests()
-        results = framework.run_tests()
+        results = framework.run_tests(silent=args.silent)
 
         # Save results
         framework.save_results(results)
