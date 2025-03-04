@@ -11,16 +11,16 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 
-from .specification.causal_dag import CausalDAG
-from .specification.scenario import Scenario
-from .specification.variable import Input, Output
-from .specification.causal_specification import CausalSpecification
-from .testing.causal_test_case import CausalTestCase
-from .testing.base_test_case import BaseTestCase
-from .testing.causal_test_outcome import NoEffect, SomeEffect, Positive, Negative
-from .testing.causal_test_result import CausalTestResult, TestValue
-from .estimation.linear_regression_estimator import LinearRegressionEstimator
-from .estimation.logistic_regression_estimator import LogisticRegressionEstimator
+from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.specification.scenario import Scenario
+from causal_testing.specification.variable import Input, Output
+from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.causal_test_outcome import NoEffect, SomeEffect, Positive, Negative
+from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 
 logger = logging.getLogger(__name__)
 
