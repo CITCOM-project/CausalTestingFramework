@@ -17,31 +17,26 @@ def main() -> None:
     # Setup logging
     setup_logging(args.verbose)
 
-    try:
-        # Create paths object
-        paths = CausalTestingPaths(
-            dag_path=args.dag_path,
-            data_paths=args.data_paths,
-            test_config_path=args.test_config,
-            output_path=args.output,
-        )
+    # Create paths object
+    paths = CausalTestingPaths(
+        dag_path=args.dag_path,
+        data_paths=args.data_paths,
+        test_config_path=args.test_config,
+        output_path=args.output,
+    )
 
-        # Create and setup framework
-        framework = CausalTestingFramework(paths, ignore_cycles=args.ignore_cycles, query=args.query)
-        framework.setup()
+    # Create and setup framework
+    framework = CausalTestingFramework(paths, ignore_cycles=args.ignore_cycles, query=args.query)
+    framework.setup()
 
-        # Load and run tests
-        framework.load_tests()
-        results = framework.run_tests(silent=args.silent)
+    # Load and run tests
+    framework.load_tests()
+    results = framework.run_tests(silent=args.silent)
 
-        # Save results
-        framework.save_results(results)
+    # Save results
+    framework.save_results(results)
 
-        logging.info("Causal testing completed successfully.")
-
-    except Exception as e:
-        logging.error("Error during causal testing: %s", str(e))
-        raise
+    logging.info("Causal testing completed successfully.")
 
 
 if __name__ == "__main__":

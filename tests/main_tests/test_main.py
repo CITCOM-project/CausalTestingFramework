@@ -4,6 +4,8 @@ import json
 import pandas as pd
 from pathlib import Path
 from causal_testing.main import CausalTestingPaths, CausalTestingFramework, parse_args
+from causal_testing.__main__ import main
+from unittest.mock import patch
 
 
 class TestCausalTestingPaths(unittest.TestCase):
@@ -127,6 +129,24 @@ class TestCausalTestingFramework(unittest.TestCase):
         ]
 
         self.assertEqual(tests_passed, [True])
+
+    def test_parse_args(self):
+        with unittest.mock.patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "--dag_path",
+                str(self.dag_path),
+                "--data_paths",
+                str(self.data_paths[0]),
+                "--test_config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+            ],
+        ):
+            main()
+            self.assertTrue((self.output_path.parent / "main.json").exists())
 
     def tearDown(self):
         if self.output_path.parent.exists():
