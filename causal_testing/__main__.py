@@ -31,7 +31,13 @@ def main() -> None:
 
     # Load and run tests
     framework.load_tests()
-    results = framework.run_tests(silent=args.silent)
+
+    if args.batch_size > 0:
+        logging.info(f"Running tests in batches of size {args.batch_size}")
+        results = framework.run_tests_in_batches(batch_size=args.batch_size, silent=args.silent)
+    else:
+        logging.info("Running tests in regular mode")
+        results = framework.run_tests(silent=args.silent)
 
     # Save results
     framework.save_results(results)
