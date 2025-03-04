@@ -1,8 +1,9 @@
 import unittest
 import shutil
 import json
+import pandas as pd
 from pathlib import Path
-from causal_testing.main import CausalTestingPaths, CausalTestingFramework
+from causal_testing.main import CausalTestingPaths, CausalTestingFramework, parse_args
 
 
 class TestCausalTestingPaths(unittest.TestCase):
@@ -44,18 +45,70 @@ class TestCausalTestingFramework(unittest.TestCase):
         self.data_paths = ["tests/resources/data/data.csv"]
         self.test_config_path = "tests/resources/data/tests.json"
         self.output_path = Path("results/results.json")
-
-    def test_ctf(self):
-        # Create paths object
-        paths = CausalTestingPaths(
+        self.paths = CausalTestingPaths(
             dag_path=self.dag_path,
             data_paths=self.data_paths,
             test_config_path=self.test_config_path,
             output_path=self.output_path,
         )
 
-        # Create and setup framework
-        framework = CausalTestingFramework(paths)
+    def test_load_data(self):
+        csv_framework = CausalTestingFramework(self.paths)
+        csv_df = csv_framework.load_data()
+
+        pqt_framework = CausalTestingFramework(
+            CausalTestingPaths(
+                dag_path=self.dag_path,
+                data_paths=["tests/resources/data/data.pqt"],
+                test_config_path=self.test_config_path,
+                output_path=self.output_path,
+            )
+        )
+        pqt_df = pqt_framework.load_data()
+        pd.testing.assert_frame_equal(csv_df, pqt_df)
+
+    def test_load_data_invalid(self):
+        framework = CausalTestingFramework(
+            CausalTestingPaths(
+                dag_path=self.dag_path,
+                data_paths=[self.dag_path],
+                test_config_path=self.test_config_path,
+                output_path=self.output_path,
+            )
+        )
+        with self.assertRaises(ValueError):
+            framework.load_data()
+
+    def test_load_data_query(self):
+        framework = CausalTestingFramework(self.paths)
+        self.assertFalse((framework.load_data()["test_input"] > 4).all())
+        self.assertTrue((framework.load_data("test_input > 4")["test_input"] > 4).all())
+
+    def test_load_dag_missing_node(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        framework.dag.graph.add_node("missing")
+        with self.assertRaises(ValueError):
+            framework.create_variables()
+
+    def test_create_base_test_case_missing_treatment(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        with self.assertRaises(KeyError) as e:
+            framework.create_base_test(
+                {"treatment_variable": "missing", "expected_effect": {"test_outcome": "NoEffect"}}
+            )
+        self.assertEqual("\"Treatment variable 'missing' not found in inputs or outputs\"", str(e.exception))
+
+    def test_create_base_test_case_missing_outcome(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        with self.assertRaises(KeyError) as e:
+            framework.create_base_test({"treatment_variable": "test_input", "expected_effect": {"missing": "NoEffect"}})
+        self.assertEqual("\"Outcome variable 'missing' not found in inputs or outputs\"", str(e.exception))
+
+    def test_ctf(self):
+        framework = CausalTestingFramework(self.paths)
         framework.setup()
 
         # Load and run tests

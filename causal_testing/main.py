@@ -103,7 +103,6 @@ class CausalTestingFramework:
         Set up the framework by loading DAG, runtime csv data, creating the scenario and causal specification.
 
         :raises: FileNotFoundError if required files are missing
-        :raises: Exception if setup process fails
         """
 
         logger.info("Setting up Causal Testing Framework...")
@@ -128,17 +127,11 @@ class CausalTestingFramework:
     def load_dag(self) -> CausalDAG:
         """
         Load the causal DAG from the specified file path.
-
-         :raises: Exception if DAG loading fails
         """
         logger.info(f"Loading DAG from {self.paths.dag_path}")
-        try:
-            dag = CausalDAG(str(self.paths.dag_path), ignore_cycles=self.ignore_cycles)
-            logger.info(f"DAG loaded with {len(dag.graph.nodes)} nodes and {len(dag.graph.edges)} edges")
-            return dag
-        except Exception as e:
-            logger.error(f"Failed to load DAG: {str(e)}")
-            raise
+        dag = CausalDAG(str(self.paths.dag_path), ignore_cycles=self.ignore_cycles)
+        logger.info(f"DAG loaded with {len(dag.graph.nodes)} nodes and {len(dag.graph.edges)} edges")
+        return dag
 
     def _read_dataframe(self, data_path):
         if str(data_path).endswith(".csv"):
@@ -152,33 +145,22 @@ class CausalTestingFramework:
 
         :param query: Optional pandas query string to filter the loaded data
         :return: Combined pandas DataFrame containing all loaded and filtered data
-        :raises: Exception if data loading or query application fails
         """
         logger.info(f"Loading data from {len(self.paths.data_paths)} source(s)")
 
-        try:
-            dfs = [self._read_dataframe(data_path) for data_path in self.paths.data_paths]
-            data = pd.concat(dfs, axis=0, ignore_index=True)
-            logger.info(f"Initial data shape: {data.shape}")
+        dfs = [self._read_dataframe(data_path) for data_path in self.paths.data_paths]
+        data = pd.concat(dfs, axis=0, ignore_index=True)
+        logger.info(f"Initial data shape: {data.shape}")
 
-            if query:
-                try:
-                    logger.info(f"Attempting to apply query: '{query}'")
-                    data = data.query(query)
-                except Exception as e:
-                    logger.error(f"Failed to apply query '{query}': {str(e)}")
-                    raise
+        if query:
+            logger.info(f"Attempting to apply query: '{query}'")
+            data = data.query(query)
 
-            return data
-        except Exception as e:
-            logger.error(f"Failed to load data: {str(e)}")
-            raise
+        return data
 
     def create_variables(self) -> None:
         """
         Create variable objects from DAG nodes based on their connectivity.
-
-
         """
         for node_name, node_data in self.dag.graph.nodes(data=True):
             if node_name not in self.data.columns and not node_data.get("hidden", False):
@@ -195,11 +177,7 @@ class CausalTestingFramework:
                 self.variables["outputs"][node_name] = Output(name=node_name, datatype=dtype)
 
     def create_scenario_and_specification(self) -> None:
-        """Create scenario and causal specification objects from loaded data.
-
-
-        :raises: ValueError if scenario constraints filter out all data points
-        """
+        """Create scenario and causal specification objects from loaded data."""
         # Create scenario
         all_variables = list(self.variables["inputs"].values()) + list(self.variables["outputs"].values())
         self.scenario = Scenario(variables=all_variables)
@@ -207,51 +185,17 @@ class CausalTestingFramework:
         # Set up treatment variables
         self.scenario.setup_treatment_variables()
 
-        # Apply scenario constraints to data
-        self.apply_scenario_constraints()
-
         # Create causal specification
         self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.dag)
-
-    def apply_scenario_constraints(self) -> None:
-        """
-        Apply scenario constraints to the loaded data.
-
-        :raises: ValueError if all data points are filtered out by constraints
-        """
-        if not self.scenario.constraints:
-            logger.info("No scenario constraints to apply")
-            return
-
-        original_rows = len(self.data)
-
-        # Apply each constraint directly as a query string
-        for constraint in self.scenario.constraints:
-            self.data = self.data.query(str(constraint))
-            logger.debug(f"Applied constraint: {constraint}")
-
-        filtered_rows = len(self.data)
-        if filtered_rows < original_rows:
-            logger.info(f"Scenario constraints filtered data from {original_rows} to {filtered_rows} rows")
-
-        if filtered_rows == 0:
-            raise ValueError("Scenario constraints filtered out all data points. Check your constraints and data.")
 
     def load_tests(self) -> None:
         """
         Load and prepare test configurations from file.
-
-
-        :raises: Exception if test configuration loading fails
         """
         logger.info(f"Loading test configurations from {self.paths.test_config_path}")
 
-        try:
-            with open(self.paths.test_config_path, "r", encoding="utf-8") as f:
-                test_configs = json.load(f)
-        except Exception as e:
-            logger.error(f"Failed to load test configurations: {str(e)}")
-            raise
+        with open(self.paths.test_config_path, "r", encoding="utf-8") as f:
+            test_configs = json.load(f)
 
         self.test_cases = self.create_test_cases(test_configs)
 
@@ -400,63 +344,53 @@ class CausalTestingFramework:
         """Save test results to JSON file in the expected format."""
         logger.info(f"Saving results to {self.paths.output_path}")
 
-        try:
-            # Load original test configs to preserve test metadata
-            with open(self.paths.test_config_path, "r", encoding="utf-8") as f:
-                test_configs = json.load(f)
+        # Load original test configs to preserve test metadata
+        with open(self.paths.test_config_path, "r", encoding="utf-8") as f:
+            test_configs = json.load(f)
 
-            # Combine test configs with their results
-            json_results = []
-            for test_config, test_case, result in zip(test_configs["tests"], self.test_cases, results):
-                # Handle effect estimate - could be a Series or other format
-                effect_estimate = result.test_value.value
-                if isinstance(effect_estimate, pd.Series):
-                    effect_estimate = effect_estimate.to_dict()
+        # Combine test configs with their results
+        json_results = []
+        for test_config, test_case, result in zip(test_configs["tests"], self.test_cases, results):
+            # Handle effect estimate - could be a Series or other format
+            effect_estimate = result.test_value.value
+            if isinstance(effect_estimate, pd.Series):
+                effect_estimate = effect_estimate.to_dict()
 
-                # Handle confidence intervals - convert to list if needed
-                ci_low = result.ci_low()
-                ci_high = result.ci_high()
-                if isinstance(ci_low, pd.Series):
-                    ci_low = ci_low.tolist()
-                if isinstance(ci_high, pd.Series):
-                    ci_high = ci_high.tolist()
+            # Handle confidence intervals - convert to list if needed
+            ci_low = result.ci_low()
+            ci_high = result.ci_high()
 
-                # Determine if test failed based on expected vs actual effect
-                test_passed = (
-                    test_case.expected_causal_effect.apply(result) if result.test_value.type != "Error" else False
-                )
+            # Determine if test failed based on expected vs actual effect
+            test_passed = test_case.expected_causal_effect.apply(result) if result.test_value.type != "Error" else False
 
-                output = {
-                    "name": test_config["name"],
-                    "estimate_type": test_config["estimate_type"],
-                    "effect": test_config.get("effect", "direct"),
-                    "treatment_variable": test_config["treatment_variable"],
-                    "expected_effect": test_config["expected_effect"],
-                    "formula": test_config.get("formula"),
-                    "alpha": test_config.get("alpha", 0.05),
-                    "skip": test_config.get("skip", False),
-                    "passed": test_passed,
-                    "result": {
-                        "treatment": result.estimator.base_test_case.treatment_variable.name,
-                        "outcome": result.estimator.base_test_case.outcome_variable.name,
-                        "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
-                        "effect_measure": result.test_value.type,
-                        "effect_estimate": effect_estimate,
-                        "ci_low": ci_low,
-                        "ci_high": ci_high,
-                    },
-                }
-                json_results.append(output)
+            output = {
+                "name": test_config["name"],
+                "estimate_type": test_config["estimate_type"],
+                "effect": test_config.get("effect", "direct"),
+                "treatment_variable": test_config["treatment_variable"],
+                "expected_effect": test_config["expected_effect"],
+                "formula": test_config.get("formula"),
+                "alpha": test_config.get("alpha", 0.05),
+                "skip": test_config.get("skip", False),
+                "passed": test_passed,
+                "result": {
+                    "treatment": result.estimator.base_test_case.treatment_variable.name,
+                    "outcome": result.estimator.base_test_case.outcome_variable.name,
+                    "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
+                    "effect_measure": result.test_value.type,
+                    "effect_estimate": effect_estimate,
+                    "ci_low": ci_low,
+                    "ci_high": ci_high,
+                },
+            }
+            json_results.append(output)
 
-            # Save to file
-            with open(self.paths.output_path, "w", encoding="utf-8") as f:
-                json.dump(json_results, f, indent=2)
+        # Save to file
+        with open(self.paths.output_path, "w", encoding="utf-8") as f:
+            json.dump(json_results, f, indent=2)
 
-            logger.info("Results saved successfully")
-
-        except Exception as e:
-            logger.error(f"Failed to save results: {str(e)}")
-            raise
+        logger.info("Results saved successfully")
+        return json_results
 
 
 def setup_logging(verbose: bool = False) -> None:

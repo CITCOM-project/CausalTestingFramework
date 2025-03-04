@@ -7,5 +7,14 @@
     "effect_modifiers": [],
     "expected_effect": {"test_output": "NoEffect"},
     "skip": false
+  },
+  {
+    "name": "test2",
+    "treatment_variable": "test_input",
+    "estimator": "LinearRegressionEstimator",
+    "estimate_type": "coefficient",
+    "effect_modifiers": [],
+    "expected_effect": {"test_output": "NoEffect"},
+    "skip": true
   }]
 }
