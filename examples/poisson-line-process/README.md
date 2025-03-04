@@ -9,3 +9,10 @@ To run this case study:
 3. Run the command `python example_pure_python.py` to demonstrate causal testing using pure python.
 
 This should print a series of causal test results and produce two CSV files. `intensity_num_shapes_results_random_1000.csv` corresponds to table 1, and `width_num_shapes_results_random_1000.csv` relates to our findings regarding the relationship of width and `P_u`.
+
+## Running using the main entrypoint
+You should be able to run the main entrypoint by simply running the following command from within this directory:
+
+```
+python -m causal_testing --dag_path dag.dot --data_paths data/random/data_random_1000.csv --test_config causal_tests.json --output results/test_results.json
+```
