@@ -102,6 +102,20 @@ class TestCausalTestingFramework(unittest.TestCase):
             )
         self.assertEqual("\"Treatment variable 'missing' not found in inputs or outputs\"", str(e.exception))
 
+    def test_create_base_test_case_missing_estimator(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        with self.assertRaises(ValueError) as e:
+            framework.create_causal_test({}, None)
+        self.assertEqual("Test configuration must specify an estimator", str(e.exception))
+
+    def test_create_base_test_case_invalid_estimator(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        with self.assertRaises(ValueError) as e:
+            framework.create_causal_test({"estimator": "InvalidEstimator"}, None)
+        self.assertEqual("Unknown estimator: InvalidEstimator", str(e.exception))
+
     def test_create_base_test_case_missing_outcome(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
