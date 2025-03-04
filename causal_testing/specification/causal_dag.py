@@ -558,7 +558,7 @@ class CausalDAG(nx.DiGraph):
         estimate as opposed to a purely associational estimate.
         """
         if self.ignore_cycles:
-            return self.graph.predecessors(base_test_case.treatment_variable.name)
+            return set(self.graph.predecessors(base_test_case.treatment_variable.name))
         minimal_adjustment_sets = []
         if base_test_case.effect == "total":
             minimal_adjustment_sets = self.enumerate_minimal_adjustment_sets(
@@ -578,7 +578,7 @@ class CausalDAG(nx.DiGraph):
             return set()
 
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
-        return minimal_adjustment_set
+        return set(minimal_adjustment_set)
 
     def to_dot_string(self) -> str:
         """Return a string of the DOT representation of the causal DAG.

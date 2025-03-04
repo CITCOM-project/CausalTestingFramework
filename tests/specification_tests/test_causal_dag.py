@@ -85,7 +85,6 @@ class TestCausalDAG(unittest.TestCase):
     def test_valid_causal_dag(self):
         """Test whether the Causal DAG is valid."""
         causal_dag = CausalDAG(self.dag_dot_path)
-        print(causal_dag)
         assert list(causal_dag.nodes) == ["A", "B", "C", "D"] and list(causal_dag.edges) == [
             ("A", "B"),
             ("B", "C"),
@@ -126,6 +125,11 @@ class TestCyclicCausalDAG(unittest.TestCase):
 
     def test_invalid_causal_dag(self):
         self.assertRaises(nx.HasACycle, CausalDAG, self.dag_dot_path)
+
+    def test_ignore_cycles(self):
+        dag = CausalDAG(self.dag_dot_path, ignore_cycles=True)
+        base_test_case = BaseTestCase(Output("B", float), Output("C", float))
+        self.assertEqual(dag.identification(base_test_case), {"A"})
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
