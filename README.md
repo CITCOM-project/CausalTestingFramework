@@ -56,23 +56,42 @@ For more information on how to use the Causal Testing Framework, please refer to
 >[!NOTE]
 >We recommend you use a 64 bit OS (standard in most modern machines) as we have had reports of the installation crashing on some 32 bit Debian installations.
 
+## Usage
+>[!NOTE]
+> Example usage can be found in the `examples` directory.
+
+1. To run the causal testing framework, you need some runtime data from your system, some causal test cases, and a causal DAG that specifies the expected causal relationships between the variables in your runtime data (and any other relevant variables that are _not_ recorded in the data but are known to be relevant).
+
+2. If you do not already have causal test cases, you can convert your causal DAG to causal tests by running the following command.
+
+```
+python causal_testing/testing/metamorphic_relation.py --dag_path $PATH_TO_DAG --output_path $PATH_TO_TESTS
+```
+
+3. You can now execute your tests by running the following command.
+```
+python -m causal_testing --dag_path $PATH_TO_DAG --data_paths $PATH_TO_DATA --test_config $PATH_TO_TESTS --output $OUTPUT
+```
+The results will be saved for inspection in a JSON file located at `$OUTPUT`.
+In the future, we hope to add a visualisation tool to assist with this.
+
 ## How to Cite
 If you use our framework in your work, please cite the following:
 
-``This research has used version X.Y.Z (software citation) of the 
+``This research has used version X.Y.Z (software citation) of the
 Causal Testing Framework (paper citation).``
 
-The paper citation should be the Causal Testing Framework [paper](https://dl.acm.org/doi/10.1145/3607184), 
+The paper citation should be the Causal Testing Framework [paper](https://dl.acm.org/doi/10.1145/3607184),
 and the software citation should contain the specific Figshare [DOI](https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516) of the version used in your work.
 
 
 
 <details>
   <summary><b>BibTeX Citations</b></summary>
-  
+
   <details>
     <summary>Paper</summary>
-    
+
     ```
     @ARTICLE{Clark_etal_2023,
     author = {Clark, Andrew G. and Foster, Michael and Prifling, Benedikt and Walkinshaw, Neil and Hierons, Robert M.
@@ -89,10 +108,10 @@ and the software citation should contain the specific Figshare [DOI](https://ord
     ```
 
   </details>
-  
+
   <details>
     <summary>Software (example)</summary>
-    
+
     ```
     @ARTICLE{Wild2023,
     author = {Foster, Michael and Clark, Andrew G. and Somers, Richard and Wild, Christopher and Allian, Farhad and Hierons, Robert M. and Wagg, David and Walkinshaw, Neil},
@@ -114,15 +133,15 @@ To contribute to our work, please ensure the following:
 1. [Fork the repository](https://help.github.com/articles/fork-a-repo/) into your own GitHub account, and [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) it to your local machine.
 2. [Create a new branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository) in your forked repository. Give this branch an appropriate name, and create commits that describe the changes.
 3. [Push your changes](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository) to your new branch in your remote fork, compare with `CausalTestingFramework/main`, and ensure any conflicts are resolved.
-4. Create a draft [pull request](https://docs.github.com/en/get-started/quickstart/hello-world#opening-a-pull-request) from your branch, and ensure you have [linked](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls) it to any relevant issues in your description. 
+4. Create a draft [pull request](https://docs.github.com/en/get-started/quickstart/hello-world#opening-a-pull-request) from your branch, and ensure you have [linked](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls) it to any relevant issues in your description.
 
 We use the [unittest]() module to develop our tests and the [pytest](https://pytest.org/en/latest/) framework as our test discovery, [pylint](https://pypi.org/project/pylint/) for our code analyser, and [black](https://pypi.org/project/black/) for our code formatting.
 To find the other (optional) developer dependencies, please check `pyproject.toml`.
 
 
 
-## Acknowledgements 
+## Acknowledgements
 
 The Causal Testing Framework is supported by the UK's Engineering and Physical Sciences Research Council (EPSRC),
-with the project name [CITCOM](https://gow.epsrc.ukri.org/NGBOViewGrant.aspx?GrantRef=EP/T030526/1) - "_Causal Inference for Testing of Computational Models_" 
+with the project name [CITCOM](https://gow.epsrc.ukri.org/NGBOViewGrant.aspx?GrantRef=EP/T030526/1) - "_Causal Inference for Testing of Computational Models_"
 under the grant EP/T030526/1.

@@ -1,2 +1,6 @@
-index,test_input,test_input_no_dist,test_output
-0,1.0,1.0,2.0
+test_input,test_input_no_dist,test_output,B,C
+1.0,1.1,2.2,0,0
+2.0,1.1,2.8,0,0
+3.0,1.0,1.0,0,0
+4.0,1.2,6.0,0,0
+5.0,0.9,2.5,0,0

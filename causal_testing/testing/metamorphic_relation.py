@@ -45,7 +45,7 @@ class ShouldCause(MetamorphicRelation):
             "estimator": "LinearRegressionEstimator",
             "estimate_type": "coefficient",
             "effect": "direct",
-            "mutations": [self.base_test_case.treatment_variable],
+            "treatment_variable": self.base_test_case.treatment_variable,
             "expected_effect": {self.base_test_case.outcome_variable: "SomeEffect"},
             "formula": (
                 f"{self.base_test_case.outcome_variable} ~ "
@@ -71,7 +71,7 @@ class ShouldNotCause(MetamorphicRelation):
             "estimator": "LinearRegressionEstimator",
             "estimate_type": "coefficient",
             "effect": "direct",
-            "mutations": [self.base_test_case.treatment_variable],
+            "treatment_variable": self.base_test_case.treatment_variable,
             "expected_effect": {self.base_test_case.outcome_variable: "NoEffect"},
             "formula": (
                 f"{self.base_test_case.outcome_variable} ~ "
