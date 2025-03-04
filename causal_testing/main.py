@@ -307,7 +307,7 @@ class CausalTestingFramework:
             estimator=estimator,
         )
 
-    def run_tests_in_batches(self, batch_size=100, silent=False) -> List[CausalTestResult]:
+    def run_tests_in_batches(self, batch_size: int = 100, silent: bool = False) -> List[CausalTestResult]:
         """
         Run tests in batches to reduce memory usage.
 
@@ -326,12 +326,11 @@ class CausalTestingFramework:
 
         logger.info(f"Processing {num_tests} tests in {num_batches} batches of up to {batch_size} tests each")
         all_results = []
-        with tqdm(total=num_tests, desc="Overall progress", mininterval=0.1) as overall_pbar:
+        with tqdm(total=num_tests, desc="Overall progress", mininterval=0.1) as progress:
             # Process each batch
             for batch_idx in range(num_batches):
                 start_idx = batch_idx * batch_size
                 end_idx = min(start_idx + batch_size, num_tests)
-                current_batch_size = end_idx - start_idx
 
                 logger.info(f"Processing batch {batch_idx + 1} of {num_batches} (tests {start_idx} to {end_idx - 1})")
 
@@ -344,9 +343,9 @@ class CausalTestingFramework:
                     try:
                         result = test_case.execute_test()
                         batch_results.append(result)
-                    except Exception as e:
+                    except (TypeError, AttributeError) as e:
                         if not silent:
-                            logger.error(f"Error running test: {str(e)}")
+                            logger.error(f"Type or attribute error in test: {str(e)}")
                             raise
                         result = CausalTestResult(
                             estimator=test_case.estimator,
@@ -354,11 +353,11 @@ class CausalTestingFramework:
                         )
                         batch_results.append(result)
 
-                    overall_pbar.update(1)
+                    progress.update(1)
 
                 all_results.extend(batch_results)
 
-                logger.info(f"Completed batch {batch_idx + 1} of {num_batches} ({current_batch_size} tests)")
+                logger.info(f"Completed batch {batch_idx + 1} of {num_batches}")
 
         logger.info(f"Completed processing all {len(all_results)} tests in {num_batches} batches")
         return all_results
