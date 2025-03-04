@@ -227,11 +227,8 @@ class CausalTestingFramework:
 
         # Apply each constraint directly as a query string
         for constraint in self.scenario.constraints:
-            try:
-                self.data = self.data.query(str(constraint))
-                logger.debug(f"Applied constraint: {constraint}")
-            except Exception as e:
-                logger.warning(f"Failed to apply constraint '{constraint}': {str(e)}")
+            self.data = self.data.query(str(constraint))
+            logger.debug(f"Applied constraint: {constraint}")
 
         filtered_rows = len(self.data)
         if filtered_rows < original_rows:
@@ -385,6 +382,7 @@ class CausalTestingFramework:
                 result = test_case.execute_test()
                 results.append(result)
                 logger.info(f"Test completed: {test_case}")
+            # pylint: disable=broad-exception-caught
             except Exception as e:
                 if not silent:
                     logger.error(f"Error running test {test_case}: {str(e)}")
