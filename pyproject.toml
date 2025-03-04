@@ -30,6 +30,8 @@ dependencies = [
     "deap~=1.4.1",
     "sympy~=1.13.1",
     "deap~=1.4.1",
+    "pyarrow~=19.0.1",
+    "fastparquet~=2024.11.0",
 ]
 dynamic = ["version"]
 
