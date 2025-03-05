@@ -33,7 +33,7 @@ authors:
   - name: Neil Walkinshaw
     orcid: 0000-0003-2134-6548
     affiliation: 1
-  - name: Rob Hierons
+  - name: Robert M. Hierons
     orcid: 0000-0003-2134-6548
     affiliation: 1
 affiliations:
