@@ -44,6 +44,7 @@ Note though that the `num_lines_abs` does not have a direct causal effect on `nu
    :caption: Example Causal DAG for the Poisson line process example.
 
 Unfortunately, there is no universally applicable guidance or an algorithm that can be followed to create a causal DAG, there are three general requirements that should be satisfied.
+
 #. The DAG must contain all inputs and outputs involved in the scenario-under-test.
 #. If there are any other variables which are not directly involved but are expected to have a causal relationship with the variables in the scenario-under-test, these should also be added to the graph. For example, the size of the room might be partially caused by the simulated location (house styles, average wealth etc.), in which case location should be added to the DAG with an edge to room size and any other variables it is deemed to influence.
 #. If in doubt, add an edge. It is a stronger assumption to exclude an edge (X and Y are independent) than to include one (X has some potentially negligiable causal effect on Y).
