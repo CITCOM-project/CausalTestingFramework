@@ -6,7 +6,8 @@ from causal_testing.specification.variable import Input
 from causal_testing.utils.validation import CausalValidator
 
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.estimation.genetic_programming_regression_fitter import reciprocal
+from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.specification.variable import Input, Output
 
 
 def load_nhefs_df():
@@ -62,24 +63,27 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         cls.nhefs_df = load_nhefs_df()
         cls.chapter_11_df = load_chapter_11_df()
         cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
+        cls.base_test_case = BaseTestCase(Input("treatments", float), Output("outcomes", float))
+        cls.program_15_base_test_case = BaseTestCase(Input("qsmk", float), Output("wt82_71", float))
 
     def test_query(self):
         df = self.nhefs_df
         linear_regression_estimator = LinearRegressionEstimator(
-            "treatments", None, None, set(), "outcomes", df, query="sex==1"
+            self.base_test_case, None, None, set(), df, query="sex==1"
         )
         self.assertTrue(linear_regression_estimator.df.sex.all())
 
     def test_linear_regression_categorical_ate(self):
         df = self.scarf_df.copy()
-        logistic_regression_estimator = LinearRegressionEstimator("color", None, None, set(), "completed", df)
+        base_test_case = BaseTestCase(Input("color", float), Output("completed", float))
+        logistic_regression_estimator = LinearRegressionEstimator(base_test_case, None, None, set(), df)
         ate, confidence = logistic_regression_estimator.estimate_coefficient()
         self.assertTrue(all([ci_low < 0 < ci_high for ci_low, ci_high in zip(confidence[0], confidence[1])]))
 
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator("treatments", None, None, set(), "outcomes", df)
+        linear_regression_estimator = LinearRegressionEstimator(self.base_test_case, None, None, set(), df)
         ate, _ = linear_regression_estimator.estimate_coefficient()
 
         self.assertEqual(
@@ -103,9 +107,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator(
-            "treatments", None, None, set(), "outcomes", df, formula="outcomes ~ treatments + I(treatments ** 2)"
+            self.base_test_case, None, None, set(), df, formula="outcomes ~ treatments + I(treatments ** 2)"
         )
         ate, _ = linear_regression_estimator.estimate_coefficient()
+        print(linear_regression_estimator.model.summary())
         self.assertEqual(
             round(
                 linear_regression_estimator.model.params["Intercept"]
@@ -143,11 +148,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            "qsmk",
+            self.program_15_base_test_case,
             1,
             0,
             covariates,
-            "wt82_71",
             df,
             formula=f"""wt82_71 ~ qsmk +
                              {'+'.join(sorted(list(covariates)))} +
@@ -188,11 +192,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            "qsmk",
+            self.program_15_base_test_case,
             1,
             0,
             covariates,
-            "wt82_71",
             df,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
         )
@@ -224,11 +227,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            "qsmk",
+            self.program_15_base_test_case,
             1,
             0,
             covariates,
-            "wt82_71",
             df,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
         )
@@ -259,11 +261,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            "qsmk",
+            self.program_15_base_test_case,
             1,
             0,
             covariates,
-            "wt82_71",
             df,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
         )
@@ -279,7 +280,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_2_with_robustness_validation(self):
         """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
         df = self.chapter_11_df.copy()
-        linear_regression_estimator = LinearRegressionEstimator("treatments", 100, 90, set(), "outcomes", df)
+        linear_regression_estimator = LinearRegressionEstimator(self.base_test_case, 100, 90, set(), df)
         linear_regression_estimator.estimate_coefficient()
 
         cv = CausalValidator()
@@ -289,7 +290,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         df = pd.DataFrame()
         df["X"] = np.arange(10)
         df["Y"] = 1 / (df["X"] + 1)
-        linear_regression_estimator = LinearRegressionEstimator("X", 0, 1, set(), "Y", df.astype(float))
+        base_test_case = BaseTestCase(Input("X", float), Output("Y", float))
+        linear_regression_estimator = LinearRegressionEstimator(base_test_case, 0, 1, set(), df.astype(float))
         linear_regression_estimator.gp_formula(seeds=["reciprocal(add(X, 1))"])
         self.assertEqual(linear_regression_estimator.formula, "Y ~ I(1/(X + 1)) - 1")
         ate, (ci_low, ci_high) = linear_regression_estimator.estimate_ate_calculated()
@@ -299,9 +301,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 
     def test_gp_power(self):
         df = pd.DataFrame()
+        base_test_case = BaseTestCase(Input("X", float), Output("Y", float))
         df["X"] = np.arange(10)
         df["Y"] = 2 * (df["X"] ** 2)
-        linear_regression_estimator = LinearRegressionEstimator("X", 0, 1, set(), "Y", df.astype(float))
+        linear_regression_estimator = LinearRegressionEstimator(base_test_case, 0, 1, set(), df.astype(float))
         linear_regression_estimator.gp_formula(seed=1, max_order=2, seeds=["mul(2, power_2(X))"])
         self.assertEqual(
             linear_regression_estimator.formula,
@@ -326,20 +329,21 @@ class TestLinearRegressionInteraction(unittest.TestCase):
 
     def test_X1_effect(self):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
+        base_test_case = BaseTestCase(Input("X1", float), Output("Y", float))
         lr_model = LinearRegressionEstimator(
-            "X1", 1, 0, {"X2"}, "Y", effect_modifiers={"x2": 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
+            base_test_case, 1, 0, {"X2"}, effect_modifiers={"x2": 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
         )
         test_results = lr_model.estimate_ate()
         ate = test_results[0][0]
         self.assertAlmostEqual(ate, 2.0)
 
     def test_categorical_confidence_intervals(self):
+        base_test_case = BaseTestCase(Input("color", float), Output("length_in", float))
         lr_model = LinearRegressionEstimator(
-            treatment="color",
+            base_test_case=base_test_case,
             control_value=None,
             treatment_value=None,
             adjustment_set={},
-            outcome="length_in",
             df=self.scarf_df,
         )
         coefficients, [ci_low, ci_high] = lr_model.estimate_coefficient()

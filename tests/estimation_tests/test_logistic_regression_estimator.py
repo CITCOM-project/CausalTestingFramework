@@ -1,10 +1,8 @@
 import unittest
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from causal_testing.specification.variable import Input
-from causal_testing.utils.validation import CausalValidator
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
+from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.specification.variable import Input, Output
 
 
 class TestLogisticRegressionEstimator(unittest.TestCase):
@@ -18,6 +16,8 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
 
     def test_odds_ratio(self):
         df = self.scarf_df.copy()
-        logistic_regression_estimator = LogisticRegressionEstimator("length_in", 65, 55, set(), "completed", df)
-        odds = logistic_regression_estimator.estimate_unit_odds_ratio()
-        self.assertEqual(round(odds, 4), 0.8948)
+        logistic_regression_estimator = LogisticRegressionEstimator(
+            BaseTestCase(Input("length_in", float), Output("completed", bool)), 65, 55, set(), df
+        )
+        odds, _ = logistic_regression_estimator.estimate_unit_odds_ratio()
+        self.assertEqual(round(odds[0], 4), 0.8948)

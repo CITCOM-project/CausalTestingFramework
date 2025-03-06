@@ -13,6 +13,9 @@ The Causal Testing Framework can be installed through either the `Python Package
 
 .. _Python Package Index (PyPI): https://dl.acm.org/doi/10.1145/3607184
 
+.. note::
+   We recommend you use a 64 bit OS (standard in most modern machines) as we have had reports of the installation crashing on some 32 bit Debian installations.
+
 Method 1: Installing via pip
 ..............................
 

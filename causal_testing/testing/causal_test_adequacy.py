@@ -9,7 +9,6 @@ import pandas as pd
 from numpy.linalg import LinAlgError
 from lifelines.exceptions import ConvergenceError
 
-from causal_testing.testing.causal_test_suite import CausalTestSuite
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -25,7 +24,7 @@ class DAGAdequacy:
     def __init__(
         self,
         causal_dag: CausalDAG,
-        test_suite: CausalTestSuite,
+        test_suite: list[CausalTestCase],
     ):
         self.causal_dag = causal_dag
         self.test_suite = test_suite
@@ -38,11 +37,11 @@ class DAGAdequacy:
         """
         Calculate the adequacy measurement, and populate the `dag_adequacy` field.
         """
-        self.pairs_to_test = set(combinations(self.causal_dag.graph.nodes(), 2))
+        self.pairs_to_test = set(combinations(self.causal_dag.nodes, 2))
         self.tested_pairs = set()
 
         for n1, n2 in self.pairs_to_test:
-            if (n1, n2) in self.causal_dag.graph.edges():
+            if (n1, n2) in self.causal_dag.edges():
                 if any((t.treatment_variable, t.outcome_variable) == (n1, n2) for t in self.test_suite):
                     self.tested_pairs.add((n1, n2))
             else:
@@ -105,7 +104,7 @@ class DataAdequacy:
             else:
                 estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
             try:
-                results.append(self.test_case.execute_test(estimator, None))
+                results.append(self.test_case.execute_test(estimator))
             except LinAlgError:
                 logger.warning("Adequacy LinAlgError")
                 continue

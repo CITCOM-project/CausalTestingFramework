@@ -1,5 +1,4 @@
 import unittest
-from causal_testing.data_collection.data_collector import ObservationalDataCollector
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
@@ -69,13 +68,13 @@ class TestCausalSurrogate(unittest.TestCase):
         scenario = Scenario(variables={z, x, m, y})
         specification = CausalSpecification(scenario, causal_dag)
 
-        surrogate_models = c_s_a_test_case.generate_surrogates(specification, ObservationalDataCollector(scenario, df))
+        surrogate_models = c_s_a_test_case.generate_surrogates(specification, df)
         self.assertEqual(len(surrogate_models), 2)
 
-        for surrogate in surrogate_models:
-            self.assertIsInstance(surrogate, CubicSplineRegressionEstimator)
-            self.assertNotEqual(surrogate.treatment, "Z")
-            self.assertNotEqual(surrogate.outcome, "Z")
+        for surrogate_model in surrogate_models:
+            self.assertIsInstance(surrogate_model, CubicSplineRegressionEstimator)
+            self.assertNotEqual(surrogate_model.base_test_case.treatment_variable.name, "Z")
+            self.assertNotEqual(surrogate_model.base_test_case.outcome_variable.name, "Z")
 
     def test_causal_surrogate_assisted_execution(self):
         df = self.class_df.copy()
@@ -85,7 +84,9 @@ class TestCausalSurrogate(unittest.TestCase):
         x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
-        scenario = Scenario(variables={z, x, m, y}, constraints={z <= 0, z >= 3, x <= 0, x >= 3, m <= 0, m >= 3})
+        scenario = Scenario(
+            variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
+        )
         specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
@@ -101,7 +102,7 @@ class TestCausalSurrogate(unittest.TestCase):
 
         c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
 
-        result, iterations, result_data = c_s_a_test_case.execute(ObservationalDataCollector(scenario, df))
+        result, iterations, result_data = c_s_a_test_case.execute(df)
 
         self.assertIsInstance(result, SimulationResult)
         self.assertEqual(iterations, 1)
@@ -115,7 +116,9 @@ class TestCausalSurrogate(unittest.TestCase):
         x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
-        scenario = Scenario(variables={z, x, m, y}, constraints={z <= 0, z >= 3, x <= 0, x >= 3, m <= 0, m >= 3})
+        scenario = Scenario(
+            variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
+        )
         specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
@@ -131,7 +134,7 @@ class TestCausalSurrogate(unittest.TestCase):
 
         c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
 
-        result, iterations, result_data = c_s_a_test_case.execute(ObservationalDataCollector(scenario, df), 1)
+        result, iterations, result_data = c_s_a_test_case.execute(df, 1)
 
         self.assertIsInstance(result, str)
         self.assertEqual(iterations, 1)
@@ -145,7 +148,9 @@ class TestCausalSurrogate(unittest.TestCase):
         x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
-        scenario = Scenario(variables={z, x, m, y}, constraints={z <= 0, z >= 3, x <= 0, x >= 3, m <= 0, m >= 3})
+        scenario = Scenario(
+            variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
+        )
         specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
@@ -161,9 +166,7 @@ class TestCausalSurrogate(unittest.TestCase):
 
         c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
 
-        result, iterations, result_data = c_s_a_test_case.execute(
-            ObservationalDataCollector(scenario, df), custom_data_aggregator=data_double_aggregator
-        )
+        result, iterations, result_data = c_s_a_test_case.execute(df, custom_data_aggregator=data_double_aggregator)
 
         self.assertIsInstance(result, SimulationResult)
         self.assertEqual(iterations, 1)
@@ -177,7 +180,9 @@ class TestCausalSurrogate(unittest.TestCase):
         x = Input("X", float)
         m = Input("M", int)
         y = Output("Y", float)
-        scenario = Scenario(variables={z, x, m, y}, constraints={z <= 0, z >= 3, x <= 0, x >= 3, m <= 0, m >= 3})
+        scenario = Scenario(
+            variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
+        )
         specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
@@ -197,7 +202,7 @@ class TestCausalSurrogate(unittest.TestCase):
         self.assertRaises(
             ValueError,
             c_s_a_test_case.execute,
-            data_collector=ObservationalDataCollector(scenario, df),
+            df=df,
             custom_data_aggregator=data_double_aggregator,
         )
 

@@ -4,15 +4,17 @@ from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect, P
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.utils.validation import CausalValidator
+from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.specification.variable import Input, Output
 
 
 class TestCausalTestOutcome(unittest.TestCase):
     """Test the TestCausalTestOutcome basic methods."""
 
     def setUp(self) -> None:
+        base_test_case = BaseTestCase(Input("A", float), Output("A", float))
         self.estimator = LinearRegressionEstimator(
-            treatment="A",
-            outcome="A",
+            base_test_case=base_test_case,
             treatment_value=1,
             control_value=0,
             adjustment_set={},

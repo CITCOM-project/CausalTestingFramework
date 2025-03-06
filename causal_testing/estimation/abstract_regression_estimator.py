@@ -10,6 +10,7 @@ from patsy import dmatrix  # pylint: disable = no-name-in-module
 
 from causal_testing.specification.variable import Variable
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -22,25 +23,25 @@ class RegressionEstimator(Estimator):
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        treatment: str,
+        base_test_case: BaseTestCase,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
-        outcome: str,
         df: pd.DataFrame = None,
         effect_modifiers: dict[Variable:Any] = None,
         formula: str = None,
         alpha: float = 0.05,
         query: str = "",
     ):
+        # pylint: disable=R0801
         super().__init__(
-            treatment=treatment,
+            base_test_case=base_test_case,
             treatment_value=treatment_value,
             control_value=control_value,
             adjustment_set=adjustment_set,
-            outcome=outcome,
             df=df,
             effect_modifiers=effect_modifiers,
+            alpha=alpha,
             query=query,
         )
 
@@ -52,8 +53,10 @@ class RegressionEstimator(Estimator):
         if formula is not None:
             self.formula = formula
         else:
-            terms = [treatment] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            self.formula = f"{outcome} ~ {'+'.join(terms)}"
+            terms = (
+                [base_test_case.treatment_variable.name] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
+            )
+            self.formula = f"{base_test_case.outcome_variable.name} ~ {'+'.join(terms)}"
 
     @property
     @abstractmethod
@@ -103,7 +106,7 @@ class RegressionEstimator(Estimator):
 
         x = pd.DataFrame(columns=self.df.columns)
         x["Intercept"] = 1  # self.intercept
-        x[self.treatment] = [self.treatment_value, self.control_value]
+        x[self.base_test_case.treatment_variable.name] = [self.treatment_value, self.control_value]
 
         for k, v in adjustment_config.items():
             x[k] = v
@@ -115,5 +118,5 @@ class RegressionEstimator(Estimator):
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
 
         # This has to be here in case the treatment variable is in an I(...) block in the self.formula
-        x[self.treatment] = [self.treatment_value, self.control_value]
+        x[self.base_test_case.treatment_variable.name] = [self.treatment_value, self.control_value]
         return model.get_prediction(x).summary_frame()

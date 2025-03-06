@@ -3,6 +3,7 @@
 import logging
 
 import numpy as np
+import pandas as pd
 import statsmodels.formula.api as smf
 
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
@@ -31,11 +32,15 @@ class LogisticRegressionEstimator(RegressionEstimator):
         self.modelling_assumptions.append("The outcome must be binary.")
         self.modelling_assumptions.append("Independently and identically distributed errors.")
 
-    def estimate_unit_odds_ratio(self) -> float:
+    def estimate_unit_odds_ratio(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
         coefficient of the treatment of interest.
 
         :return: The odds ratio. Confidence intervals are not yet supported.
         """
         model = self._run_regression(self.df)
-        return np.exp(model.params[self.treatment])
+        ci_low, ci_high = np.exp(model.conf_int(self.alpha).loc[self.base_test_case.treatment_variable.name])
+        return pd.Series(np.exp(model.params[self.base_test_case.treatment_variable.name])), [
+            pd.Series(ci_low),
+            pd.Series(ci_high),
+        ]

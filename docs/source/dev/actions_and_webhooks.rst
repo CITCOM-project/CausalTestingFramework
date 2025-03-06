@@ -4,7 +4,7 @@ Github Actions and Webhooks
 Actions
 --------------
 
-Currently, this project makes use of 4 `Github Actions <https://github.com/features/actions>`_,
+Currently, this project makes use of 5 `Github Actions <https://github.com/features/actions>`_,
 which can be found in the
 `.github/workflows <https://github.com/CITCOM-project/CausalTestingFramework/tree/main/.github/workflows>`_ directory.
 

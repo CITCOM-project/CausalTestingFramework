@@ -12,6 +12,7 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect, SomeEffect
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 from causal_testing.json_front.json_class import JsonUtility
 from causal_testing.specification.causal_dag import CausalDAG
 
@@ -30,38 +31,36 @@ def get_args(test_args=None) -> argparse.Namespace:
             - argparse.Namespace - A Namsespace consisting of the arguments to this script
     """
     parser = argparse.ArgumentParser(description="A script for running the CTF on DAFNI.")
-
-    parser.add_argument("--data_path", required=True, help="Path to the input runtime data (.csv)", nargs="+")
-
+    parser.add_argument("-d", "--data_path", required=True, help="Path to the input runtime data (.csv)", nargs="+")
     parser.add_argument(
-        "--tests_path", required=True, help="Input configuration file path " "containing the causal tests (.json)"
+        "-t", "--tests_path", required=True, help="Input configuration file path " "containing the causal tests (.json)"
     )
-
     parser.add_argument(
-        "-i", "--ignore_cycles", action="store_true", help="Whether to ignore cycles in the DAG.", default=False
+        "-v",
+        "--variables_path",
+        required=True,
+        help="Input configuration file path " "containing the predefined variables (.json)",
     )
-
     parser.add_argument(
+        "-D",
         "--dag_path",
         required=True,
         help="Input configuration file path containing a valid DAG (.dot). "
         "Note: this must be supplied if the --tests argument isn't provided.",
     )
-
-    parser.add_argument("--output_path", required=False, help="Path to the output directory.")
-
+    parser.add_argument(
+        "-i", "--ignore_cycles", action="store_true", help="Whether to ignore cycles in the DAG.", default=False
+    )
     parser.add_argument(
         "-f", default=False, help="(Optional) Failure flag to step the framework from running if a test has failed."
     )
-
+    parser.add_argument("-o", "--output_path", required=False, help="Path to the output directory.")
     parser.add_argument(
         "-w",
         default=False,
         help="(Optional) Specify to overwrite any existing output files. "
-        "This can lead to the loss of existing outputs if not "
-        "careful",
+        "This can lead to the loss of existing outputs if not careful",
     )
-
     args = parser.parse_args(test_args)
 
     # Convert these to Path objects for main()
@@ -138,7 +137,10 @@ def main():
 
         modelling_scenario.setup_treatment_variables()
 
-        estimators = {"LinearRegressionEstimator": LinearRegressionEstimator}
+        estimators = {
+            "LinearRegressionEstimator": LinearRegressionEstimator,
+            "LogisticRegressionEstimator": LogisticRegressionEstimator,
+        }
 
         # Step 3: Define the expected variables
 

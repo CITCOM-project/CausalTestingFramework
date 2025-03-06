@@ -1,11 +1,11 @@
 """
 This is the CausalTestingFramework Module
 It contains 5 subpackages:
-data_collection
-generation
-json_front
+estimation
 specification
+surrogate
 testing
+utils
 """
 
 import logging
