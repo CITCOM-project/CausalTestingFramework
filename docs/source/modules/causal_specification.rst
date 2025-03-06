@@ -14,6 +14,9 @@ Causal Specification
 - A causal specification is simply the combination of these components: a series of requirements for the scenario-under-test and a causal DAG representing causality
   amongst the inputs and outputs. We will discuss these in more detail below.
 
+- Collectively, the components of the causal specification provide both contextual information in the form of constraints and requirements, as well as causal information in the form of a causal DAG.
+  Later on, these components will be used to design statistical experiments that can answer causal questions about the scenario-under-test, such as `Does opening a window impair the viruses ability to spread?`
+
 Scenario Requirements
 ---------------------
 
@@ -30,14 +33,16 @@ Causal DAG
 ----------
 
 In order to apply CI techniques, we need to capture causality amongst the inputs and outputs in the scenario-under-test.
-Therefore, for each scenario, the user must define a causal DAG. While there is generally no guidance/algorithm that can be followed to create a causal DAG,
-there are a couple of requirements that should be satisfied.
+Therefore, for each scenario, the user must define a causal DAG.
+As an example, consider the DAG shown below for the Poisson line process, which can be found in our `examples` directory.
+Here, the model has three inputs: `width`, `height`, and `intensity`.
+These inputs control the number of lines (`num_lines_abs`) and polygons (`num_shapes_abs`) that are drawn, which then feed into the numbers of lines (`num_lines_unit`) and polygons (`num_shapes_unit`) per unit area.
 
+.. literalinclude:: ../../../examples/poisson-line-process/dag.dot
+   :language: graphviz
+   :caption: Example Causal DAG for the Poisson line process example.
 
+Unfortunately, there is no universally applicable guidance or an algorithm that can be followed to create a causal DAG, there are three general requirements that should be satisfied.
 #. The DAG must contain all inputs and outputs involved in the scenario-under-test.
 #. If there are any other variables which are not directly involved but are expected to have a causal relationship with the variables in the scenario-under-test, these should also be added to the graph. For example, the size of the room might be partially caused by the simulated location (house styles, average wealth etc.), in which case location should be added to the DAG with an edge to room size and any other variables it is deemed to influence.
 #. If in doubt, add an edge. It is a stronger assumption to exclude an edge (X and Y are independent) than to include one (X has some potentially negligiable causal effect on Y).
-
--  Collectively, the components of the causal specification provide both contextual information in the form of constraints and requirements,
-   as well as causal information in the form of a causal DAG. Later on, these components will be used to design statistical experiments that
-   can answer causal questions about the scenario-under-test, such as `Does opening a window impair the viruses ability to spread?`
