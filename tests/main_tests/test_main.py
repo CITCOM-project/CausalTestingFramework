@@ -154,6 +154,18 @@ class TestCausalTestingFramework(unittest.TestCase):
         self.assertTrue(len(query_framework.data) > 0)
         self.assertTrue((query_framework.data["test_input"] > 0).all())
 
+        with open(self.test_config_path, "r", encoding="utf-8") as f:
+            test_configs = json.load(f)
+
+        test_config = test_configs["tests"][0].copy()
+        if "query" in test_config:
+            del test_config["query"]
+
+        base_test = query_framework.create_base_test(test_config)
+        causal_test = query_framework.create_causal_test(test_config, base_test)
+
+        self.assertTrue((causal_test.estimator.df["test_input"] > 0).all())
+
         query_framework.create_variables()
         query_framework.create_scenario_and_specification()
 
