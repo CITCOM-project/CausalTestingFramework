@@ -281,17 +281,26 @@ class CausalTestingFramework:
         if estimator_class is None:
             raise ValueError(f"Unknown estimator: {test['estimator']}")
 
+        # Filter the data if a test-specific query exists, otherwise use the original data
+        test_query = test.get("query", self.query)
+
+        if test_query:
+            logger.info(f"Applying test-specific query for '{test['name']}': {test_query}")
+            filtered_df = self.data.query(test_query)
+        else:
+            filtered_df = self.data
+
         # Create the estimator with correct parameters
         estimator = estimator_class(
             base_test_case=base_test,
             treatment_value=test.get("treatment_value"),
             control_value=test.get("control_value"),
             adjustment_set=test.get("adjustment_set", self.causal_specification.causal_dag.identification(base_test)),
-            df=self.data,
+            df=filtered_df,
             effect_modifiers=None,
             formula=test.get("formula"),
             alpha=test.get("alpha", 0.05),
-            query="",
+            query=test_query,
         )
 
         # Get effect type and create expected effect
