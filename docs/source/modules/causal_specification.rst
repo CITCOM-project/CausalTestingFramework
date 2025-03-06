@@ -37,6 +37,7 @@ Therefore, for each scenario, the user must define a causal DAG.
 As an example, consider the DAG shown below for the Poisson line process, which can be found in our `examples` directory.
 Here, the model has three inputs: `width`, `height`, and `intensity`.
 These inputs control the number of lines (`num_lines_abs`) and polygons (`num_shapes_abs`) that are drawn, which then feed into the numbers of lines (`num_lines_unit`) and polygons (`num_shapes_unit`) per unit area.
+Note though that the `num_lines_abs` does not have a direct causal effect on `num_shapes_unit`, since the number of polygons per unit area is defined entirely by the total number of polygons and the area of the sampling window.
 
 .. literalinclude:: ../../../examples/poisson-line-process/dag.dot
    :language: graphviz
