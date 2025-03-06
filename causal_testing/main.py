@@ -281,14 +281,24 @@ class CausalTestingFramework:
         if estimator_class is None:
             raise ValueError(f"Unknown estimator: {test['estimator']}")
 
-        # Filter the data if a test-specific query exists, otherwise use the original data
-        test_query = test.get("query", self.query)
+        # Handle combined queries (global and test-specific)
+        test_query = test.get("query")
+        combined_query = None
 
-        if test_query:
-            logger.info(f"Applying test-specific query for '{test['name']}': {test_query}")
-            filtered_df = self.data.query(test_query)
-        else:
-            filtered_df = self.data
+        if self.query and test_query:
+            combined_query = f"({self.query}) and ({test_query})"
+            logger.info(
+                f"Combining global query '{self.query}' with test-specific query "
+                f"'{test_query}' for test '{test['name']}'"
+            )
+        elif test_query:
+            combined_query = test_query
+            logger.info(f"Using test-specific query for '{test['name']}': {test_query}")
+        elif self.query:
+            combined_query = self.query
+            logger.info(f"Using global query for '{test['name']}': {self.query}")
+
+        filtered_df = self.data.query(combined_query) if combined_query else self.data
 
         # Create the estimator with correct parameters
         estimator = estimator_class(
@@ -300,7 +310,7 @@ class CausalTestingFramework:
             effect_modifiers=None,
             formula=test.get("formula"),
             alpha=test.get("alpha", 0.05),
-            query=test_query,
+            query=combined_query,
         )
 
         # Get effect type and create expected effect
