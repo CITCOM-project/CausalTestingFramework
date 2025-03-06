@@ -33,8 +33,8 @@ authors:
   - name: Neil Walkinshaw
     orcid: 0000-0003-2134-6548
     affiliation: 1
-  - name: Rob Hierons
-    orcid: 0000-0003-2134-6548
+  - name: Robert M. Hierons
+    orcid: 0000-0002-4771-1446
     affiliation: 1
 affiliations:
  - name: University of Sheffield, UK
