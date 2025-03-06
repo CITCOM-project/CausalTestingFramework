@@ -9,20 +9,20 @@ from typing import Dict, Any, Optional, List, Union, Sequence
 from tqdm import tqdm
 
 import pandas as pd
+import numpy as np
 
-from .specification.causal_dag import CausalDAG
-from .specification.scenario import Scenario
-from .specification.variable import Input, Output
-from .specification.causal_specification import CausalSpecification
-from .testing.causal_test_case import CausalTestCase
-from .testing.base_test_case import BaseTestCase
-from .testing.causal_test_outcome import NoEffect, SomeEffect, Positive, Negative
-from .testing.causal_test_result import CausalTestResult, TestValue
-from .estimation.linear_regression_estimator import LinearRegressionEstimator
-from .estimation.logistic_regression_estimator import LogisticRegressionEstimator
+from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.specification.scenario import Scenario
+from causal_testing.specification.variable import Input, Output
+from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.causal_test_outcome import NoEffect, SomeEffect, Positive, Negative
+from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
 
 
 @dataclass
@@ -307,6 +307,61 @@ class CausalTestingFramework:
             estimator=estimator,
         )
 
+    def run_tests_in_batches(self, batch_size: int = 100, silent: bool = False) -> List[CausalTestResult]:
+        """
+        Run tests in batches to reduce memory usage.
+
+        :param batch_size: Number of tests to run in each batch
+        :param silent: Whether to suppress errors
+        :return: List of all test results
+        :raises: ValueError if no tests are loaded
+        """
+        logger.info("Running causal tests in batches...")
+
+        if not self.test_cases:
+            raise ValueError("No tests loaded. Call load_tests() first.")
+
+        num_tests = len(self.test_cases)
+        num_batches = int(np.ceil(num_tests / batch_size))
+
+        logger.info(f"Processing {num_tests} tests in {num_batches} batches of up to {batch_size} tests each")
+        all_results = []
+        with tqdm(total=num_tests, desc="Overall progress", mininterval=0.1) as progress:
+            # Process each batch
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * batch_size
+                end_idx = min(start_idx + batch_size, num_tests)
+
+                logger.info(f"Processing batch {batch_idx + 1} of {num_batches} (tests {start_idx} to {end_idx - 1})")
+
+                # Get current batch of tests
+                current_batch = self.test_cases[start_idx:end_idx]
+
+                # Process the current batch
+                batch_results = []
+                for test_case in current_batch:
+                    try:
+                        result = test_case.execute_test()
+                        batch_results.append(result)
+                    except (TypeError, AttributeError) as e:
+                        if not silent:
+                            logger.error(f"Type or attribute error in test: {str(e)}")
+                            raise
+                        result = CausalTestResult(
+                            estimator=test_case.estimator,
+                            test_value=TestValue("Error", str(e)),
+                        )
+                        batch_results.append(result)
+
+                    progress.update(1)
+
+                all_results.extend(batch_results)
+
+                logger.info(f"Completed batch {batch_idx + 1} of {num_batches}")
+
+        logger.info(f"Completed processing all {len(all_results)} tests in {num_batches} batches")
+        return all_results
+
     def run_tests(self, silent=False) -> List[CausalTestResult]:
         """
         Run all test cases and return their results.
@@ -417,6 +472,12 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="Do not crash on error. If set to true, errors are recorded as test results.",
         default=False,
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=0,
+        help="Run tests in batches of the specified size (default: 0, which means no batching)",
     )
 
     return parser.parse_args(args)
