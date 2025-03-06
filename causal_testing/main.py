@@ -369,7 +369,7 @@ class CausalTestingFramework:
                 "effect": test_config.get("effect", "direct"),
                 "treatment_variable": test_config["treatment_variable"],
                 "expected_effect": test_config["expected_effect"],
-                "formula": test_config.get("formula"),
+                "formula": result.estimator.formula if hasattr(result.estimator, "formula") else None,
                 "alpha": test_config.get("alpha", 0.05),
                 "skip": test_config.get("skip", False),
                 "passed": test_passed,
