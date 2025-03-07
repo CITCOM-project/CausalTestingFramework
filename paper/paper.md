@@ -25,7 +25,7 @@ authors:
     orcid: 0000-0002-1353-1404
     affiliation: 1
   - name: Richard Somers
-    orcid: 0009-0009-1195-1497
+    orcid: 0000-0002-1101-9722
     affiliation: 1
   - name: Nicholas Latimer
     orcid: 0000-0001-5304-5585
