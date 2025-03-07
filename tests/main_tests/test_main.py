@@ -144,6 +144,67 @@ class TestCausalTestingFramework(unittest.TestCase):
 
         self.assertEqual(tests_passed, [True])
 
+    def test_global_query(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+
+        query_framework = CausalTestingFramework(self.paths, query="test_input > 0")
+        query_framework.setup()
+
+        self.assertTrue(len(query_framework.data) > 0)
+        self.assertTrue((query_framework.data["test_input"] > 0).all())
+
+        with open(self.test_config_path, "r", encoding="utf-8") as f:
+            test_configs = json.load(f)
+
+        test_config = test_configs["tests"][0].copy()
+        if "query" in test_config:
+            del test_config["query"]
+
+        base_test = query_framework.create_base_test(test_config)
+        causal_test = query_framework.create_causal_test(test_config, base_test)
+
+        self.assertTrue((causal_test.estimator.df["test_input"] > 0).all())
+
+        query_framework.create_variables()
+        query_framework.create_scenario_and_specification()
+
+        self.assertIsNotNone(query_framework.scenario)
+        self.assertIsNotNone(query_framework.causal_specification)
+
+    def test_test_specific_query(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+
+        with open(self.test_config_path, "r", encoding="utf-8") as f:
+            test_configs = json.load(f)
+
+        test_config = test_configs["tests"][0].copy()
+        test_config["query"] = "test_input > 0"
+
+        base_test = framework.create_base_test(test_config)
+        causal_test = framework.create_causal_test(test_config, base_test)
+
+        self.assertTrue(len(causal_test.estimator.df) > 0)
+        self.assertTrue((causal_test.estimator.df["test_input"] > 0).all())
+
+    def test_combined_queries(self):
+        global_framework = CausalTestingFramework(self.paths, query="test_input > 0")
+        global_framework.setup()
+
+        with open(self.test_config_path, "r", encoding="utf-8") as f:
+            test_configs = json.load(f)
+
+        test_config = test_configs["tests"][0].copy()
+        test_config["query"] = "test_output > 0"
+
+        base_test = global_framework.create_base_test(test_config)
+        causal_test = global_framework.create_causal_test(test_config, base_test)
+
+        self.assertTrue(len(causal_test.estimator.df) > 0)
+        self.assertTrue((causal_test.estimator.df["test_input"] > 0).all())
+        self.assertTrue((causal_test.estimator.df["test_output"] > 0).all())
+
     def test_parse_args(self):
         with unittest.mock.patch(
             "sys.argv",
