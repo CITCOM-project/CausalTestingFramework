@@ -8,8 +8,9 @@
 [![Documentation Status](https://readthedocs.org/projects/causal-testing-framework/badge/?version=latest)](https://causal-testing-framework.readthedocs.io/en/latest/?badge=latest)
 ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCITCOM-project%2FCausalTestingFramework%2Fmain%2Fpyproject.toml&query=%24.project%5B'requires-python'%5D&label=python)
 ![PyPI - Version](https://img.shields.io/pypi/v/causal-testing-framework)
-[![DOI](https://t.ly/FCT1B)](https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516)
 ![GitHub Licens[schematic.tex](images%2Fschematic.tex)e](https://img.shields.io/github/license/CITCOM-project/CausalTestingFramework)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.07739/status.svg)](https://doi.org/10.21105/joss.07739)
+[![DOI](https://t.ly/FCT1B)](https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516)
 
 Causal testing is a causal inference-driven framework for functional black-box testing. This framework utilises
 graphical causal inference (CI) techniques for the specification and functional testing of software from a black-box
