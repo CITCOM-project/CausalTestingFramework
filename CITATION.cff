@@ -1,0 +1,78 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Foster
+  given-names: Michael
+  orcid: "https://orcid.org/0000-0001-8233-9873"
+- family-names: Clark
+  given-names: Andrew
+  orcid: "https://orcid.org/0000-0002-6830-0566"
+- family-names: Wild
+  given-names: Christopher
+  orcid: "https://orcid.org/0009-0009-1195-1497"
+- family-names: Allian
+  given-names: Farhad
+  orcid: "https://orcid.org/0000-0002-4569-0370"
+- family-names: Turner
+  given-names: Robert
+  orcid: "https://orcid.org/0000-0002-1353-1404"
+- family-names: Somers
+  given-names: Richard
+  orcid: "https://orcid.org/0009-0009-1195-1497"
+- family-names: Latimer
+  given-names: Nicholas
+  orcid: "https://orcid.org/0000-0001-5304-5585"
+- family-names: Walkinshaw
+  given-names: Neil
+  orcid: "https://orcid.org/0000-0003-2134-6548"
+- family-names: Hierons
+  given-names: Robert M.
+  orcid: "https://orcid.org/0000-0003-2134-6548"
+contact:
+- family-names: Foster
+  given-names: Michael
+  orcid: "https://orcid.org/0000-0001-8233-9873"
+doi: 10.15131/shef.data.28539398.v1
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Foster
+    given-names: Michael
+    orcid: "https://orcid.org/0000-0001-8233-9873"
+  - family-names: Clark
+    given-names: Andrew
+    orcid: "https://orcid.org/0000-0002-6830-0566"
+  - family-names: Wild
+    given-names: Christopher
+    orcid: "https://orcid.org/0009-0009-1195-1497"
+  - family-names: Allian
+    given-names: Farhad
+    orcid: "https://orcid.org/0000-0002-4569-0370"
+  - family-names: Turner
+    given-names: Robert
+    orcid: "https://orcid.org/0000-0002-1353-1404"
+  - family-names: Somers
+    given-names: Richard
+    orcid: "https://orcid.org/0009-0009-1195-1497"
+  - family-names: Latimer
+    given-names: Nicholas
+    orcid: "https://orcid.org/0000-0001-5304-5585"
+  - family-names: Walkinshaw
+    given-names: Neil
+    orcid: "https://orcid.org/0000-0003-2134-6548"
+  - family-names: Hierons
+    given-names: Robert M.
+    orcid: "https://orcid.org/0000-0003-2134-6548"
+  date-published: 2025-03-06
+  doi: 10.21105/joss.07739
+  issn: 2475-9066
+  issue: 107
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 7739
+  title: The Causal Testing Framework
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.07739"
+  volume: 10
+title: The Causal Testing Framework
