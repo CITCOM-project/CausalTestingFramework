@@ -5,6 +5,7 @@
     "estimator": "LinearRegressionEstimator",
     "estimate_type": "coefficient",
     "effect_modifiers": [],
+    "query": "test_input > 0",
     "expected_effect": {"test_output": "NoEffect"},
     "skip": false
   },
@@ -14,6 +15,7 @@
     "estimator": "LinearRegressionEstimator",
     "estimate_type": "coefficient",
     "effect_modifiers": [],
+    "query": "test_input <= 5",
     "expected_effect": {"test_output": "NoEffect"},
     "skip": true
   }]

@@ -281,17 +281,36 @@ class CausalTestingFramework:
         if estimator_class is None:
             raise ValueError(f"Unknown estimator: {test['estimator']}")
 
+        # Handle combined queries (global and test-specific)
+        test_query = test.get("query")
+        combined_query = None
+
+        if self.query and test_query:
+            combined_query = f"({self.query}) and ({test_query})"
+            logger.info(
+                f"Combining global query '{self.query}' with test-specific query "
+                f"'{test_query}' for test '{test['name']}'"
+            )
+        elif test_query:
+            combined_query = test_query
+            logger.info(f"Using test-specific query for '{test['name']}': {test_query}")
+        elif self.query:
+            combined_query = self.query
+            logger.info(f"Using global query for '{test['name']}': {self.query}")
+
+        filtered_df = self.data.query(combined_query) if combined_query else self.data
+
         # Create the estimator with correct parameters
         estimator = estimator_class(
             base_test_case=base_test,
             treatment_value=test.get("treatment_value"),
             control_value=test.get("control_value"),
             adjustment_set=test.get("adjustment_set", self.causal_specification.causal_dag.identification(base_test)),
-            df=self.data,
+            df=filtered_df,
             effect_modifiers=None,
             formula=test.get("formula"),
             alpha=test.get("alpha", 0.05),
-            query="",
+            query=combined_query,
         )
 
         # Get effect type and create expected effect
@@ -424,7 +443,7 @@ class CausalTestingFramework:
                 "effect": test_config.get("effect", "direct"),
                 "treatment_variable": test_config["treatment_variable"],
                 "expected_effect": test_config["expected_effect"],
-                "formula": test_config.get("formula"),
+                "formula": result.estimator.formula if hasattr(result.estimator, "formula") else None,
                 "alpha": test_config.get("alpha", 0.05),
                 "skip": test_config.get("skip", False),
                 "passed": test_passed,
