@@ -7,4 +7,4 @@ services:
     env_file:
       - .env
     volumes:
-      - ./dafni:/usr/src/
+      - .:/usr/src/
