@@ -1,5 +1,5 @@
 # Model definition file to run the causal testing framework on DAFNI
-# https://docs.secure.dafni.rl.ac.uk/docs/how-to/how-to-write-a-model-definition-file
+# https://docs.secure.dafni.rl.ac.uk/docs/How%20to/how-to-write-a-model-definition-file
 
 kind: M
 api_version: v1beta3
@@ -20,6 +20,10 @@ metadata:
   contact_point_email: farhad.allian@sheffield.ac.uk
   source_code: https://github.com/CITCOM-project/CausalTestingFramework
   licence: https://github.com/CITCOM-project/CausalTestingFramework?tab=MIT-1-ov-file#readme
+  rights: If you use our model, please use the following instructions to cite our work - The paper citation should be the Causal Testing Framework paper, and the software citation should contain the specific Figshare DOI of the version used in your work.
+  subject: [ 'Biota', 'Boundaries', 'Climatology / Meteorology / Atmosphere', 'Economy', 'Elevation', 'Environment', 'Farming', 'Geoscientific Information', 'Health', 'Imagery / Base Maps / Earth Cover', 'Inland Waters', 'Intelligence / Military', 'Location', 'Oceans', 'Planning / Cadastre', 'Society', 'Structure', 'Transportation', 'Utilities / Communication' ]
+  project_name: CITCOM
+  funding: The Causal Testing Framework is supported by the UK's Engineering and Physical Sciences Research Council (EPSRC), with the project name CITCOM - "Causal Inference for Testing of Computational Models" under the grant EP/T030526/1.
 
 
 spec:
@@ -50,8 +54,8 @@ spec:
         required: true
 
   outputs:
-      datasets:
-        - name: causal_test_results.json
-          type: json
-          description: >
-            A JSON file containing the output causal test results.
+    datasets:
+      - name: causal_test_results.json
+        type: json
+        description: >
+          A JSON file containing the output causal test results.
