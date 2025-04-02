@@ -55,6 +55,7 @@ coverage.xml
 
 # Sphinx documentation
 docs/build/
+docs/source/autoapi
 
 # v/docs/build/scode
 .vscode/
