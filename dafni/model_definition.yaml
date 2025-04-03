@@ -21,7 +21,6 @@ metadata:
   source_code: https://github.com/CITCOM-project/CausalTestingFramework
   licence: https://github.com/CITCOM-project/CausalTestingFramework?tab=MIT-1-ov-file#readme
   rights: If you use our model, please use the following instructions to cite our work - The paper citation should be the Causal Testing Framework paper, and the software citation should contain the specific Figshare DOI of the version used in your work.
-  subject: [ 'Biota', 'Boundaries', 'Climatology / Meteorology / Atmosphere', 'Economy', 'Elevation', 'Environment', 'Farming', 'Geoscientific Information', 'Health', 'Imagery / Base Maps / Earth Cover', 'Inland Waters', 'Intelligence / Military', 'Location', 'Oceans', 'Planning / Cadastre', 'Society', 'Structure', 'Transportation', 'Utilities / Communication' ]
   project_name: CITCOM
   funding: The Causal Testing Framework is supported by the UK's Engineering and Physical Sciences Research Council (EPSRC), with the project name CITCOM - "Causal Inference for Testing of Computational Models" under the grant EP/T030526/1.
 
