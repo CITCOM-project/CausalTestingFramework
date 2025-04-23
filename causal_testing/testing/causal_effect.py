@@ -90,16 +90,17 @@ class ExactValue(CausalEffect):
         if self.ci_low is not None and self.ci_high is not None:
             if not self.ci_low <= self.value <= self.ci_high:
                 raise ValueError("Specified value falls outside the specified confidence intervals.")
-                if self.value - self.atol < self.ci_low or self.value + self.atol > self.ci_high:
-                    raise ValueError(
-                        "Arithmetic tolerance falls outside the confidence intervals. Try specifyin a smaller value of atol."
-                    )
+            if self.value - self.atol < self.ci_low or self.value + self.atol > self.ci_high:
+                raise ValueError(
+                    "Arithmetic tolerance falls outside the confidence intervals."
+                    "Try specifying a smaller value of atol."
+                )
 
     def apply(self, res: CausalTestResult) -> bool:
         close = np.isclose(res.test_value.value, self.value, atol=self.atol)
         if res.ci_valid() and self.ci_low is not None and self.ci_high is not None:
             return all(
-                close and ci_low <= ci_low and ci_high >= ci_high
+                close and self.ci_low <= ci_low and self.ci_high >= ci_high
                 for ci_low, ci_high in zip(res.ci_low(), res.ci_high())
             )
         return close
