@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect, Positive, Negative, NoEffect
+from causal_testing.testing.causal_effect import ExactValue, SomeEffect, Positive, Negative, NoEffect
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.utils.validation import CausalValidator
@@ -8,8 +8,8 @@ from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.specification.variable import Input, Output
 
 
-class TestCausalTestOutcome(unittest.TestCase):
-    """Test the TestCausalTestOutcome basic methods."""
+class TestCausalEffect(unittest.TestCase):
+    """Test the TestCausalEffect basic methods."""
 
     def setUp(self) -> None:
         base_test_case = BaseTestCase(Input("A", float), Output("A", float))

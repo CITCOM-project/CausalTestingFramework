@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from causal_testing.specification.variable import Variable
-from causal_testing.testing.causal_test_outcome import CausalTestOutcome
+from causal_testing.testing.causal_effect import CausalEffect
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
@@ -26,7 +26,7 @@ class CausalTestCase:
         # pylint: disable=too-many-arguments
         self,
         base_test_case: BaseTestCase,
-        expected_causal_effect: CausalTestOutcome,
+        expected_causal_effect: CausalEffect,
         estimate_type: str = "ate",
         estimate_params: dict = None,
         effect_modifier_configuration: dict[Variable:Any] = None,

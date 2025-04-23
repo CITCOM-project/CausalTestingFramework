@@ -1,5 +1,5 @@
 # pylint: disable=too-few-public-methods
-"""This module contains the CausalTestOutcome abstract class, as well as the concrete extension classes:
+"""This module contains the CausalEffect abstract class, as well as the concrete extension classes:
 ExactValue, Positive, Negative, SomeEffect, NoEffect"""
 
 from abc import ABC, abstractmethod
@@ -9,7 +9,7 @@ import numpy as np
 from causal_testing.testing.causal_test_result import CausalTestResult
 
 
-class CausalTestOutcome(ABC):
+class CausalEffect(ABC):
     """An abstract class representing an expected causal effect."""
 
     @abstractmethod
@@ -23,7 +23,7 @@ class CausalTestOutcome(ABC):
         return type(self).__name__
 
 
-class SomeEffect(CausalTestOutcome):
+class SomeEffect(CausalEffect):
     """An extension of TestOutcome representing that the expected causal effect should not be zero."""
 
     def apply(self, res: CausalTestResult) -> bool:
@@ -41,7 +41,7 @@ class SomeEffect(CausalTestOutcome):
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
 
-class NoEffect(CausalTestOutcome):
+class NoEffect(CausalEffect):
     """An extension of TestOutcome representing that the expected causal effect should be zero."""
 
     def __init__(self, atol: float = 1e-10, ctol: float = 0.05):
@@ -73,7 +73,7 @@ class NoEffect(CausalTestOutcome):
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
 
-class ExactValue(CausalTestOutcome):
+class ExactValue(CausalEffect):
     """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
 
     def __init__(self, value: float, atol: float = None, ci_low: float = None, ci_high: float = None):

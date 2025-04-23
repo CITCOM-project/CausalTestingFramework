@@ -10,7 +10,7 @@ import json
 import pandas as pd
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.testing.causal_test_outcome import Positive, Negative, NoEffect, SomeEffect
+from causal_testing.testing.causal_effect import Positive, Negative, NoEffect, SomeEffect
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 from causal_testing.json_front.json_class import JsonUtility
