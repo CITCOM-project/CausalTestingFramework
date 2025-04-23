@@ -73,22 +73,24 @@ class NoEffect(CausalTestOutcome):
         raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
 
 
-class ExactValue(SomeEffect):
+class ExactValue(CausalTestOutcome):
     """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
 
-    def __init__(self, value: float, atol: float = None):
+    def __init__(self, value: float, atol: float = None, ci_low: float = None, ci_high: float = None):
+        if (ci_low is not None) ^ (ci_high is not None):
+            raise ValueError("If specifying confidence intervals, must specify `ci_low` and `ci_high` parameters.")
         self.value = value
-        if atol is None:
-            self.atol = abs(value * 0.05)
-        else:
-            self.atol = atol
+        self.ci_low = ci_low
+        self.ci_high = ci_high
+        self.atol = atol if atol is not None else abs(value * 0.05)
         if self.atol < 0:
-            raise ValueError("Tolerance must be an absolute value.")
+            raise ValueError("Tolerance must be an absolute (positive) value.")
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.ci_valid():
-            return super().apply(res) and np.isclose(res.test_value.value, self.value, atol=self.atol)
-        return np.isclose(res.test_value.value, self.value, atol=self.atol)
+        close = np.isclose(res.test_value.value, self.value, atol=self.atol)
+        if res.ci_valid() and self.ci_low is not None and self.ci_high is not None:
+            return close and self.ci_low <= res.ci_low() and self.ci_high >= res.ci_high()
+        return close
 
     def __str__(self):
         return f"ExactValue: {self.value}±{self.atol}"
