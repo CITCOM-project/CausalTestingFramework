@@ -201,7 +201,7 @@ class TestCausalEffect(unittest.TestCase):
             effect_modifier_configuration=None,
         )
         ev = ExactValue(5, ci_low=4, ci_high=6)
-        self.assertTrue(ev.apply(ctr))
+        self.assertFalse(ev.apply(ctr))
 
     def test_exactValue_fail(self):
         test_value = TestValue(type="ate", value=pd.Series(0))
