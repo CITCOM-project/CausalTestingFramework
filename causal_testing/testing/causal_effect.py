@@ -24,7 +24,7 @@ class CausalEffect(ABC):
 
 
 class SomeEffect(CausalEffect):
-    """An extension of TestOutcome representing that the expected causal effect should not be zero."""
+    """An extension of CausalEffect representing that the expected causal effect should not be zero."""
 
     def apply(self, res: CausalTestResult) -> bool:
         if res.ci_low() is None or res.ci_high() is None:
@@ -38,11 +38,11 @@ class SomeEffect(CausalEffect):
                 0 < ci_low < ci_high or ci_low < ci_high < 0 for ci_low, ci_high in zip(res.ci_low(), res.ci_high())
             )
 
-        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
+        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this CausalEffect")
 
 
 class NoEffect(CausalEffect):
-    """An extension of TestOutcome representing that the expected causal effect should be zero."""
+    """An extension of CausalEffect representing that the expected causal effect should be zero."""
 
     def __init__(self, atol: float = 1e-10, ctol: float = 0.05):
         """
@@ -70,11 +70,11 @@ class NoEffect(CausalEffect):
                 < self.ctol
             )
 
-        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
+        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this CausalEffect")
 
 
 class ExactValue(CausalEffect):
-    """An extension of TestOutcome representing that the expected causal effect should be a specific value."""
+    """An extension of CausalEffect representing that the expected causal effect should be a specific value."""
 
     def __init__(self, value: float, atol: float = None, ci_low: float = None, ci_high: float = None):
         if (ci_low is not None) ^ (ci_high is not None):
@@ -110,7 +110,7 @@ class ExactValue(CausalEffect):
 
 
 class Positive(SomeEffect):
-    """An extension of TestOutcome representing that the expected causal effect should be positive.
+    """An extension of CausalEffect representing that the expected causal effect should be positive.
     Currently only single values are supported for the test value"""
 
     def apply(self, res: CausalTestResult) -> bool:
@@ -122,11 +122,11 @@ class Positive(SomeEffect):
             return bool(res.test_value.value[0] > 0)
         if res.test_value.type == "risk_ratio":
             return bool(res.test_value.value[0] > 1)
-        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
+        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this CausalEffect")
 
 
 class Negative(SomeEffect):
-    """An extension of TestOutcome representing that the expected causal effect should be negative.
+    """An extension of CausalEffect representing that the expected causal effect should be negative.
     Currently only single values are supported for the test value"""
 
     def apply(self, res: CausalTestResult) -> bool:
@@ -139,4 +139,4 @@ class Negative(SomeEffect):
         if res.test_value.type == "risk_ratio":
             return bool(res.test_value.value[0] < 1)
         # Dead code but necessary for pylint
-        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this TestOutcome")
+        raise ValueError(f"Test Value type {res.test_value.type} is not valid for this CausalEffect")
