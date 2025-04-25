@@ -114,8 +114,6 @@ class Positive(SomeEffect):
     Currently only single values are supported for the test value"""
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.ci_valid() and not super().apply(res):
-            return False
         if len(res.test_value.value) > 1:
             raise ValueError("Positive Effects are currently only supported on single float datatypes")
         if res.test_value.type in {"ate", "coefficient"}:
@@ -130,8 +128,6 @@ class Negative(SomeEffect):
     Currently only single values are supported for the test value"""
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.ci_valid() and not super().apply(res):
-            return False
         if len(res.test_value.value) > 1:
             raise ValueError("Negative Effects are currently only supported on single float datatypes")
         if res.test_value.type in {"ate", "coefficient"}:

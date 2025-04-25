@@ -232,7 +232,7 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_invalid_ci_atol(self):
         with self.assertRaises(ValueError):
-            ExactValue(1000, ci_low=1001, ci_high=1002, atol=0.05)
+            ExactValue(1000, ci_low=999, ci_high=1001, atol=50)
 
     def test_invalid(self):
         test_value = TestValue(type="invalid", value=pd.Series(5.05))
@@ -294,6 +294,16 @@ class TestCausalEffect(unittest.TestCase):
         )
         self.assertFalse(SomeEffect().apply(ctr))
         self.assertTrue(NoEffect().apply(ctr))
+
+    def test_someEffect_None(self):
+        test_value = TestValue(type="ate", value=pd.Series(0))
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        self.assertEquals(SomeEffect().apply(ctr), None)
 
     def test_someEffect_str(self):
         test_value = TestValue(type="ate", value=0)
