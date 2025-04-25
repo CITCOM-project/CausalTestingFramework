@@ -303,7 +303,7 @@ class TestCausalEffect(unittest.TestCase):
             confidence_intervals=None,
             effect_modifier_configuration=None,
         )
-        self.assertEquals(SomeEffect().apply(ctr), None)
+        self.assertEqual(SomeEffect().apply(ctr), None)
 
     def test_someEffect_str(self):
         test_value = TestValue(type="ate", value=0)
