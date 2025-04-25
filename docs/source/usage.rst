@@ -44,7 +44,7 @@ the given output and input and the desired effect. This information is the minim
 
    from causal_testing.testing.base_test_case import BaseTestCase
    from causal_testing.testing.causal_test_case import CausalTestCase
-   from causal_testing.testing.causal_test_outcome import Positive
+   from causal_testing.testing.causal_effect import Positive
    from causal_testing.testing.effect import Effect
 
    base_test_case = BaseTestCase(

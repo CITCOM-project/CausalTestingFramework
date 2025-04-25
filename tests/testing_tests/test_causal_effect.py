@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from causal_testing.testing.causal_test_outcome import ExactValue, SomeEffect, Positive, Negative, NoEffect
+from causal_testing.testing.causal_effect import ExactValue, SomeEffect, Positive, Negative, NoEffect
 from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.utils.validation import CausalValidator
@@ -8,8 +8,8 @@ from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.specification.variable import Input, Output
 
 
-class TestCausalTestOutcome(unittest.TestCase):
-    """Test the TestCausalTestOutcome basic methods."""
+class TestCausalEffect(unittest.TestCase):
+    """Test the TestCausalEffect basic methods."""
 
     def setUp(self) -> None:
         base_test_case = BaseTestCase(Input("A", float), Output("A", float))
@@ -181,6 +181,28 @@ class TestCausalTestOutcome(unittest.TestCase):
         ev = ExactValue(5, 0.1)
         self.assertTrue(ev.apply(ctr))
 
+    def test_exactValue_ci_pass_ci(self):
+        test_value = TestValue(type="ate", value=pd.Series(5.05))
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=[pd.Series(4.1), pd.Series(5.9)],
+            effect_modifier_configuration=None,
+        )
+        ev = ExactValue(5, ci_low=4, ci_high=6)
+        self.assertTrue(ev.apply(ctr))
+
+    def test_exactValue_ci_fail_ci(self):
+        test_value = TestValue(type="ate", value=pd.Series(5.05))
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=[pd.Series(3.9), pd.Series(6.1)],
+            effect_modifier_configuration=None,
+        )
+        ev = ExactValue(5, ci_low=4, ci_high=6)
+        self.assertFalse(ev.apply(ctr))
+
     def test_exactValue_fail(self):
         test_value = TestValue(type="ate", value=pd.Series(0))
         ctr = CausalTestResult(
@@ -195,6 +217,22 @@ class TestCausalTestOutcome(unittest.TestCase):
     def test_invalid_atol(self):
         with self.assertRaises(ValueError):
             ExactValue(5, -0.1)
+
+    def test_unspecified_ci_high(self):
+        with self.assertRaises(ValueError):
+            ExactValue(5, ci_low=-0.1)
+
+    def test_unspecified_ci_low(self):
+        with self.assertRaises(ValueError):
+            ExactValue(5, ci_high=-0.1)
+
+    def test_invalid_ci_range(self):
+        with self.assertRaises(ValueError):
+            ExactValue(5, ci_low=6, ci_high=7, atol=0.05)
+
+    def test_invalid_ci_atol(self):
+        with self.assertRaises(ValueError):
+            ExactValue(1000, ci_low=999, ci_high=1001, atol=50)
 
     def test_invalid(self):
         test_value = TestValue(type="invalid", value=pd.Series(5.05))
@@ -256,6 +294,16 @@ class TestCausalTestOutcome(unittest.TestCase):
         )
         self.assertFalse(SomeEffect().apply(ctr))
         self.assertTrue(NoEffect().apply(ctr))
+
+    def test_someEffect_None(self):
+        test_value = TestValue(type="ate", value=pd.Series(0))
+        ctr = CausalTestResult(
+            estimator=self.estimator,
+            test_value=test_value,
+            confidence_intervals=None,
+            effect_modifier_configuration=None,
+        )
+        self.assertEqual(SomeEffect().apply(ctr), None)
 
     def test_someEffect_str(self):
         test_value = TestValue(type="ate", value=0)

@@ -9,7 +9,7 @@ from causal_testing.estimation.ipcw_estimator import IPCWEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_adequacy import DAGAdequacy
-from causal_testing.testing.causal_test_outcome import NoEffect, SomeEffect
+from causal_testing.testing.causal_effect import NoEffect, SomeEffect
 from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 from causal_testing.specification.variable import Input, Output

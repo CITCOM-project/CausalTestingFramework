@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_outcome import Positive
+from causal_testing.testing.causal_effect import Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
