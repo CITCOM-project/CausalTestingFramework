@@ -9,7 +9,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_outcome import ExactValue
+from causal_testing.testing.causal_effect import ExactValue
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
