@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import logging
 import pandas as pd
@@ -70,23 +69,22 @@ def setup_test_case(verbose: bool = False):
     for outcome_variable, expected_effect in expected_outcome_effects.items():
         base_test_case = BaseTestCase(treatment_variable=vaccine, outcome_variable=outcome_variable)
         causal_test_case = CausalTestCase(
-            base_test_case=base_test_case, expected_causal_effect=expected_effect, control_value=0, treatment_value=1
+            base_test_case=base_test_case, expected_causal_effect=expected_effect,
         )
         # 7. Obtain the minimal adjustment set for the causal test case from the causal DAG
         minimal_adjustment_set = causal_dag.identification(base_test_case)
 
         # 8. Build statistical model using the Linear Regression estimator
         linear_regression_estimator = LinearRegressionEstimator(
-            treatment=vaccine.name,
+            base_test_case=base_test_case,
             treatment_value=1,
             control_value=0,
             adjustment_set=minimal_adjustment_set,
-            outcome=outcome_variable.name,
             df=obs_df,
         )
 
         # 9. Execute test and save results in dict
-        causal_test_result = causal_test_case.execute_test(linear_regression_estimator, obs_df)
+        causal_test_result = causal_test_case.execute_test(linear_regression_estimator)
 
         if verbose:
             logging.info("Causation:\n%s", causal_test_result)
