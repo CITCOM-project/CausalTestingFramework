@@ -361,6 +361,9 @@ class CausalTestingFramework:
                 for test_case in current_batch:
                     try:
                         batch_results.append(test_case.execute_test())
+                        # Need to remove the model so we don't take up all the memory
+                        # Would be good to profile the execute_test() method a bit further so we don't need to do this
+                        test_case.estimator.model = None
                     # pylint: disable=broad-exception-caught
                     except Exception as e:
                         if not silent:
