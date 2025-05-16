@@ -49,11 +49,11 @@ def main() -> None:
             # Now stitch the results together from the temporary files
             all_results = []
             for file_path in output_files:
-                with open(file_path, "r") as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     all_results.extend(json.load(f))
 
             # Save the final stitched results to your desired location
-            with open(args.output, "w") as f:
+            with open(args.output, "w", encoding="utf-8") as f:
                 json.dump(all_results, f, indent=4)
     else:
         logging.info("Running tests in regular mode")
