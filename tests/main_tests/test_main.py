@@ -171,6 +171,15 @@ class TestCausalTestingFramework(unittest.TestCase):
 
         self.assertEqual([result["passed"] for result in all_results], [True])
 
+    def test_ctf_batches_exception(self):
+        framework = CausalTestingFramework(self.paths, query="test_input < 0")
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+        with self.assertRaises(ValueError):
+            list(framework.run_tests_in_batches())
+
     def test_ctf_batches_matches_run_tests(self):
         # Run the tests normally
         framework = CausalTestingFramework(self.paths)
