@@ -171,6 +171,30 @@ class TestCausalTestingFramework(unittest.TestCase):
 
         self.assertEqual([result["passed"] for result in all_results], [True])
 
+    def test_ctf_batches_exception_silent(self):
+        framework = CausalTestingFramework(self.paths, query="test_input < 0")
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+
+        output_files = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for i, results in enumerate(framework.run_tests_in_batches(silent=True)):
+                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
+                framework.save_results(results, temp_file_path)
+                output_files.append(temp_file_path)
+                del results
+
+            # Now stitch the results together from the temporary files
+            all_results = []
+            for file_path in output_files:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    all_results.extend(json.load(f))
+
+        self.assertEqual([result["passed"] for result in all_results], [False])
+        self.assertEqual([result["result"]["effect_measure"] for result in all_results], ["Error"])
+
     def test_ctf_batches_exception(self):
         framework = CausalTestingFramework(self.paths, query="test_input < 0")
         framework.setup()
