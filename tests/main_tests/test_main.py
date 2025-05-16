@@ -1,11 +1,15 @@
 import unittest
+from pathlib import Path
+import tempfile
+import os
+
 import shutil
 import json
 import pandas as pd
-from pathlib import Path
-from causal_testing.main import CausalTestingPaths, CausalTestingFramework, parse_args
-from causal_testing.__main__ import main
 from unittest.mock import patch
+
+from causal_testing.main import CausalTestingPaths, CausalTestingFramework
+from causal_testing.__main__ import main
 
 
 class TestCausalTestingPaths(unittest.TestCase):
@@ -143,6 +147,29 @@ class TestCausalTestingFramework(unittest.TestCase):
         ]
 
         self.assertEqual(tests_passed, [True])
+
+    def test_ctf_batches(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+
+        output_files = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for i, results in enumerate(framework.run_tests_in_batches()):
+                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
+                framework.save_results(results, temp_file_path)
+                output_files.append(temp_file_path)
+                del results
+
+            # Now stitch the results together from the temporary files
+            all_results = []
+            for file_path in output_files:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    all_results.extend(json.load(f))
+
+        self.assertEqual([result["passed"] for result in all_results], [True])
 
     def test_global_query(self):
         framework = CausalTestingFramework(self.paths)
