@@ -318,6 +318,26 @@ class TestCausalTestingFramework(unittest.TestCase):
             main()
             self.assertTrue((self.output_path.parent / "main.json").exists())
 
+    def test_parse_args_batches(self):
+        with unittest.mock.patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "--dag_path",
+                str(self.dag_path),
+                "--data_paths",
+                str(self.data_paths[0]),
+                "--test_config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "--batch-size",
+                "5",
+            ],
+        ):
+            main()
+            self.assertTrue((self.output_path.parent / "main.json").exists())
+
     def tearDown(self):
         if self.output_path.parent.exists():
             shutil.rmtree(self.output_path.parent)
