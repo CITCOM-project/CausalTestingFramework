@@ -171,6 +171,41 @@ class TestCausalTestingFramework(unittest.TestCase):
 
         self.assertEqual([result["passed"] for result in all_results], [True])
 
+    def test_ctf_batches_matches_run_tests(self):
+        # Run the tests normally
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        framework.load_tests()
+        normale_results = framework.run_tests()
+
+        # Run the tests in batches
+        output_files = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for i, results in enumerate(framework.run_tests_in_batches()):
+                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
+                framework.save_results(results, temp_file_path)
+                output_files.append(temp_file_path)
+                del results
+
+            # Now stitch the results together from the temporary files
+            all_results = []
+            for file_path in output_files:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    all_results.extend(json.load(f))
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            normal_output = os.path.join(tmpdir, f"normal.json")
+            framework.save_results(normale_results, normal_output)
+            with open(normal_output) as f:
+                normal_results = json.load(f)
+
+            batch_output = os.path.join(tmpdir, f"batch.json")
+            with open(batch_output, "w") as f:
+                json.dump(all_results, f)
+            with open(batch_output) as f:
+                batch_results = json.load(f)
+            self.assertEqual(normal_results, batch_results)
+
     def test_global_query(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
