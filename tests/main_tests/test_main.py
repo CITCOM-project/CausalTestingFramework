@@ -330,13 +330,13 @@ class TestCausalTestingFramework(unittest.TestCase):
                 "--test_config",
                 str(self.test_config_path),
                 "--output",
-                str(self.output_path.parent / "main.json"),
+                str(self.output_path.parent / "main_batch.json"),
                 "--batch-size",
                 "5",
             ],
         ):
             main()
-            self.assertTrue((self.output_path.parent / "main.json").exists())
+            self.assertTrue((self.output_path.parent / "main_batch.json").exists())
 
     def tearDown(self):
         if self.output_path.parent.exists():
