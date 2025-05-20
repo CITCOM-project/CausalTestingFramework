@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Union, Sequence
 from tqdm import tqdm
 
+
 import pandas as pd
 import numpy as np
 
@@ -344,7 +345,6 @@ class CausalTestingFramework:
         num_batches = int(np.ceil(num_tests / batch_size))
 
         logger.info(f"Processing {num_tests} tests in {num_batches} batches of up to {batch_size} tests each")
-        all_results = []
         with tqdm(total=num_tests, desc="Overall progress", mininterval=0.1) as progress:
             # Process each batch
             for batch_idx in range(num_batches):
@@ -360,26 +360,23 @@ class CausalTestingFramework:
                 batch_results = []
                 for test_case in current_batch:
                     try:
-                        result = test_case.execute_test()
-                        batch_results.append(result)
-                    except (TypeError, AttributeError) as e:
+                        batch_results.append(test_case.execute_test())
+                    # pylint: disable=broad-exception-caught
+                    except Exception as e:
                         if not silent:
                             logger.error(f"Type or attribute error in test: {str(e)}")
                             raise
-                        result = CausalTestResult(
-                            estimator=test_case.estimator,
-                            test_value=TestValue("Error", str(e)),
+                        batch_results.append(
+                            CausalTestResult(
+                                estimator=test_case.estimator,
+                                test_value=TestValue("Error", str(e)),
+                            )
                         )
-                        batch_results.append(result)
 
                     progress.update(1)
 
-                all_results.extend(batch_results)
-
-                logger.info(f"Completed batch {batch_idx + 1} of {num_batches}")
-
-        logger.info(f"Completed processing all {len(all_results)} tests in {num_batches} batches")
-        return all_results
+                yield batch_results
+        logger.info(f"Completed processing in {num_batches} batches")
 
     def run_tests(self, silent=False) -> List[CausalTestResult]:
         """
@@ -399,7 +396,6 @@ class CausalTestingFramework:
             try:
                 result = test_case.execute_test()
                 results.append(result)
-                logger.info(f"Test completed: {test_case}")
             # pylint: disable=broad-exception-caught
             except Exception as e:
                 if not silent:
@@ -414,9 +410,11 @@ class CausalTestingFramework:
 
         return results
 
-    def save_results(self, results: List[CausalTestResult]) -> None:
+    def save_results(self, results: List[CausalTestResult], output_path: str = None) -> None:
         """Save test results to JSON file in the expected format."""
-        logger.info(f"Saving results to {self.paths.output_path}")
+        if output_path is None:
+            output_path = self.paths.output_path
+        logger.info(f"Saving results to {output_path}")
 
         # Load original test configs to preserve test metadata
         with open(self.paths.test_config_path, "r", encoding="utf-8") as f:
@@ -460,7 +458,7 @@ class CausalTestingFramework:
             json_results.append(output)
 
         # Save to file
-        with open(self.paths.output_path, "w", encoding="utf-8") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(json_results, f, indent=2)
 
         logger.info("Results saved successfully")

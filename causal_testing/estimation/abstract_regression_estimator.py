@@ -45,7 +45,6 @@ class RegressionEstimator(Estimator):
             query=query,
         )
 
-        self.model = None
         if effect_modifiers is None:
             effect_modifiers = []
         if adjustment_set is None:
@@ -79,7 +78,7 @@ class RegressionEstimator(Estimator):
             "do not need to be linear."
         )
 
-    def _run_regression(self, data=None) -> RegressionResultsWrapper:
+    def fit_model(self, data=None) -> RegressionResultsWrapper:
         """Run logistic regression of the treatment and adjustment set against the outcome and return the model.
 
         :return: The model after fitting to data.
@@ -87,7 +86,6 @@ class RegressionEstimator(Estimator):
         if data is None:
             data = self.df
         model = self.regressor(formula=self.formula, data=data).fit(disp=0)
-        self.model = model
         return model
 
     def _predict(self, data=None, adjustment_config: dict = None) -> pd.DataFrame:
@@ -102,7 +100,7 @@ class RegressionEstimator(Estimator):
         if adjustment_config is None:
             adjustment_config = {}
 
-        model = self._run_regression(data)
+        model = self.fit_model(data)
 
         x = pd.DataFrame(columns=self.df.columns)
         x["Intercept"] = 1  # self.intercept

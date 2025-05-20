@@ -59,7 +59,7 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
 
         :return: The average treatment effect.
         """
-        model = self._run_regression()
+        model = self.fit_model()
 
         x = {"Intercept": 1, self.base_test_case.treatment_variable.name: self.treatment_value}
         if adjustment_config is not None:
