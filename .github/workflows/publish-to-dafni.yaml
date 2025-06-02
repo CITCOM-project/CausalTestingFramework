@@ -18,8 +18,9 @@ jobs:
       - name: Get release version
         id: get_release
         run: |
-          export VERSION=$(curl -sSL https://api.github.com/repos/CITCOM-project/CausalTestingFramework/releases/latest | jq -r '.tag_name' | head -c 2)
-          echo "::set-output name=version::$VERSION"
+          # Extract the version without the 'v' prefix using regex
+          export VERSION=$(curl -sSL https://api.github.com/repos/CITCOM-project/CausalTestingFramework/releases/latest | jq -r '.tag_name' | sed -E 's/^v?([0-9]+(\.[0-9]+)?).*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   build_and_upload:
     name: Docker Build
@@ -38,17 +39,28 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install causal-testing-framework -e .[dev]
+          python -m pip install dafni-cli
+
+      - name: Check if unit tests are passing first
+        id: tests
+        uses: ./.github/workflows/ci-tests.yml
+
       - name: Build the container
+        if: success() && steps.tests.outcome == 'success'
         run: |
           docker build -t ctf:${{ env.VERSION }} -f ./dafni/Dockerfile .
           docker save ctf:${{ env.VERSION }} | gzip > ctf-dafni-${{ env.VERSION }}.tar.gz
 
-      - name: Install DAFNI-CLI and log in
+
+      - name: Log into DAFNI
         run: |
-          python -m pip install dafni-cli
           dafni login
 
       - name: Upload to DAFNI
         run: |
-          dafni upload model ./dafni/model_definition.yaml ctf-dafni-${{ env.VERSION }}.tar.gz --version-message "Causal Testing Framework ${{ env.VERSION }}. Uploaded via Github Actions." --parent-id ${{ env.DAFNI_PARENT_ID }} -y
+          dafni upload model ./dafni/model_definition.yaml ctf-dafni-${{ env.VERSION }}.tar.gz --version-message "Causal Testing Framework v${{ env.VERSION }}. Uploaded via Github Actions." --parent-id ${{ env.DAFNI_PARENT_ID }} -y
           dafni logout
