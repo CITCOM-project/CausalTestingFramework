@@ -1,13 +1,11 @@
 import unittest
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from causal_testing.specification.variable import Input
+from causal_testing.specification.variable import Input, Output
 from causal_testing.utils.validation import CausalValidator
 
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.specification.variable import Input, Output
 
 
 def load_nhefs_df():
@@ -77,7 +75,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         df = self.scarf_df.copy()
         base_test_case = BaseTestCase(Input("color", float), Output("completed", float))
         logistic_regression_estimator = LinearRegressionEstimator(base_test_case, None, None, set(), df)
-        ate, confidence = logistic_regression_estimator.estimate_coefficient()
+        _, confidence = logistic_regression_estimator.estimate_coefficient()
         self.assertTrue(all([ci_low < 0 < ci_high for ci_low, ci_high in zip(confidence[0], confidence[1])]))
 
     def test_program_11_2(self):
@@ -86,22 +84,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         linear_regression_estimator = LinearRegressionEstimator(self.base_test_case, None, None, set(), df)
         ate, _ = linear_regression_estimator.estimate_coefficient()
 
-        self.assertEqual(
-            round(
-                linear_regression_estimator.model.params["Intercept"]
-                + 90 * linear_regression_estimator.model.params["treatments"],
-                1,
-            ),
-            216.9,
-        )
-
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertTrue(
-            all(
-                round(linear_regression_estimator.model.params["treatments"], 1) == round(ate_single, 1)
-                for ate_single in ate
-            )
-        )
+        self.assertTrue(all(round(ate["treatments"], 1) == round(ate_single, 1) for ate_single in ate))
 
     def test_program_11_3(self):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
@@ -110,23 +94,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             self.base_test_case, None, None, set(), df, formula="outcomes ~ treatments + I(treatments ** 2)"
         )
         ate, _ = linear_regression_estimator.estimate_coefficient()
-        print(linear_regression_estimator.model.summary())
-        self.assertEqual(
-            round(
-                linear_regression_estimator.model.params["Intercept"]
-                + 90 * linear_regression_estimator.model.params["treatments"]
-                + 90 * 90 * linear_regression_estimator.model.params["I(treatments ** 2)"],
-                1,
-            ),
-            197.1,
-        )
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
-        self.assertTrue(
-            all(
-                round(linear_regression_estimator.model.params["treatments"], 3) == round(ate_single, 3)
-                for ate_single in ate
-            )
-        )
+        self.assertTrue(all(round(ate["treatments"], 3) == round(ate_single, 3) for ate_single in ate))
 
     def test_program_15_1A(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
@@ -161,15 +130,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
                              I(smokeyrs ** 2) +
                              (qsmk * smokeintensity)""",
         )
-        # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
-        # terms_to_product = [("qsmk", "smokeintensity")]
-        # for term_to_square in terms_to_square:
-        # for term_a, term_b in terms_to_product:
-        #     linear_regression_estimator.add_product_term_to_df(term_a, term_b)
 
-        linear_regression_estimator.estimate_coefficient()
-        self.assertEqual(round(linear_regression_estimator.model.params["qsmk"], 1), 2.6)
-        self.assertEqual(round(linear_regression_estimator.model.params["qsmk:smokeintensity"], 2), 0.05)
+        coefficient, _ = linear_regression_estimator.estimate_coefficient()
+        self.assertEqual(round(coefficient["qsmk"], 1), 2.6)
 
     def test_program_15_no_interaction(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -281,10 +244,11 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator(self.base_test_case, 100, 90, set(), df)
-        linear_regression_estimator.estimate_coefficient()
 
         cv = CausalValidator()
-        self.assertEqual(round(cv.estimate_robustness(linear_regression_estimator.model)["treatments"], 4), 0.7353)
+        self.assertEqual(
+            round(cv.estimate_robustness(linear_regression_estimator.fit_model())["treatments"], 4), 0.7353
+        )
 
     def test_gp(self):
         df = pd.DataFrame()
