@@ -203,3 +203,34 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         causal_test_result = self.causal_test_case.execute_test(estimation_model)
         pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1)
+
+    def test_estimate_params_none(self):
+        """Check that estimate_params defaults to empty dict when None is passed into the estimator object"""
+        causal_test_case = CausalTestCase(
+            base_test_case=self.base_test_case_A_C,
+            expected_causal_effect=self.expected_causal_effect,
+            estimate_params=None,
+            estimator=LinearRegressionEstimator(
+                base_test_case=self.base_test_case_A_C,
+                adjustment_set=set(),
+                control_value=0,
+                treatment_value=1,
+            ),
+        )
+        self.assertEqual(causal_test_case.estimate_params, {})
+
+    def test_estimate_params_with_formula(self):
+        """Ensure estimate params is handled correctly when a formula is passed into the estimator object"""
+        estimate_params = {"formula": "C ~ A + D"}
+        causal_test_case = CausalTestCase(
+            base_test_case=self.base_test_case_A_C,
+            expected_causal_effect=self.expected_causal_effect,
+            estimate_params=estimate_params,
+            estimator=LinearRegressionEstimator(
+                base_test_case=self.base_test_case_A_C,
+                adjustment_set=set(),
+                control_value=0,
+                treatment_value=1,
+            ),
+        )
+        self.assertEqual(causal_test_case.estimate_params, estimate_params)
