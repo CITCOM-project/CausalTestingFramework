@@ -206,31 +206,42 @@ class TestCausalTestExecution(unittest.TestCase):
 
     def test_estimate_params_none(self):
         """Check that estimate_params defaults to empty dict when None is passed into the estimator object"""
+        estimator = LinearRegressionEstimator(
+            base_test_case=self.base_test_case_A_C,
+            adjustment_set=set(),
+            control_value=0,
+            treatment_value=1,
+            formula="C ~ A + D",
+            df=self.df,
+        )
         causal_test_case = CausalTestCase(
             base_test_case=self.base_test_case_A_C,
             expected_causal_effect=self.expected_causal_effect,
             estimate_params=None,
-            estimator=LinearRegressionEstimator(
-                base_test_case=self.base_test_case_A_C,
-                adjustment_set=set(),
-                control_value=0,
-                treatment_value=1,
-            ),
+            estimator=estimator,
+            estimate_type="risk_ratio",
         )
         self.assertEqual(causal_test_case.estimate_params, {})
+        with self.assertRaises(ValueError):
+            causal_test_case.execute_test()
 
     def test_estimate_params_with_formula(self):
         """Ensure estimate params is handled correctly when a formula is passed into the estimator object"""
-        estimate_params = {"formula": "C ~ A + D"}
+        estimate_params = {"adjustment_config": {"D": 1}}
+        estimator = LinearRegressionEstimator(
+            base_test_case=self.base_test_case_A_C,
+            adjustment_set=set(),
+            control_value=0,
+            treatment_value=1,
+            formula="C ~ A + D",
+            df=self.df,
+        )
         causal_test_case = CausalTestCase(
             base_test_case=self.base_test_case_A_C,
             expected_causal_effect=self.expected_causal_effect,
             estimate_params=estimate_params,
-            estimator=LinearRegressionEstimator(
-                base_test_case=self.base_test_case_A_C,
-                adjustment_set=set(),
-                control_value=0,
-                treatment_value=1,
-            ),
+            estimate_type="risk_ratio",
+            estimator=estimator,
         )
         self.assertEqual(causal_test_case.estimate_params, estimate_params)
+        self.assertEqual(round(causal_test_case.execute_test().test_value.value[0], 3), 1.444)
