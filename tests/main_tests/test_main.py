@@ -1,11 +1,15 @@
 import unittest
+from pathlib import Path
+import tempfile
+import os
+
 import shutil
 import json
 import pandas as pd
-from pathlib import Path
-from causal_testing.main import CausalTestingPaths, CausalTestingFramework, parse_args
-from causal_testing.__main__ import main
 from unittest.mock import patch
+
+from causal_testing.main import CausalTestingPaths, CausalTestingFramework
+from causal_testing.__main__ import main
 
 
 class TestCausalTestingPaths(unittest.TestCase):
@@ -144,6 +148,97 @@ class TestCausalTestingFramework(unittest.TestCase):
 
         self.assertEqual(tests_passed, [True])
 
+    def test_ctf_batches(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+
+        output_files = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for i, results in enumerate(framework.run_tests_in_batches()):
+                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
+                framework.save_results(results, temp_file_path)
+                output_files.append(temp_file_path)
+                del results
+
+            # Now stitch the results together from the temporary files
+            all_results = []
+            for file_path in output_files:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    all_results.extend(json.load(f))
+
+        self.assertEqual([result["passed"] for result in all_results], [True])
+
+    def test_ctf_batches_exception_silent(self):
+        framework = CausalTestingFramework(self.paths, query="test_input < 0")
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+
+        output_files = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for i, results in enumerate(framework.run_tests_in_batches(silent=True)):
+                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
+                framework.save_results(results, temp_file_path)
+                output_files.append(temp_file_path)
+                del results
+
+            # Now stitch the results together from the temporary files
+            all_results = []
+            for file_path in output_files:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    all_results.extend(json.load(f))
+
+        self.assertEqual([result["passed"] for result in all_results], [False])
+        self.assertEqual([result["result"]["effect_measure"] for result in all_results], ["Error"])
+
+    def test_ctf_batches_exception(self):
+        framework = CausalTestingFramework(self.paths, query="test_input < 0")
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+        with self.assertRaises(ValueError):
+            list(framework.run_tests_in_batches())
+
+    def test_ctf_batches_matches_run_tests(self):
+        # Run the tests normally
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        framework.load_tests()
+        normale_results = framework.run_tests()
+
+        # Run the tests in batches
+        output_files = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for i, results in enumerate(framework.run_tests_in_batches()):
+                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
+                framework.save_results(results, temp_file_path)
+                output_files.append(temp_file_path)
+                del results
+
+            # Now stitch the results together from the temporary files
+            all_results = []
+            for file_path in output_files:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    all_results.extend(json.load(f))
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            normal_output = os.path.join(tmpdir, f"normal.json")
+            framework.save_results(normale_results, normal_output)
+            with open(normal_output) as f:
+                normal_results = json.load(f)
+
+            batch_output = os.path.join(tmpdir, f"batch.json")
+            with open(batch_output, "w") as f:
+                json.dump(all_results, f)
+            with open(batch_output) as f:
+                batch_results = json.load(f)
+            self.assertEqual(normal_results, batch_results)
+
     def test_global_query(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
@@ -222,6 +317,26 @@ class TestCausalTestingFramework(unittest.TestCase):
         ):
             main()
             self.assertTrue((self.output_path.parent / "main.json").exists())
+
+    def test_parse_args_batches(self):
+        with unittest.mock.patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "--dag_path",
+                str(self.dag_path),
+                "--data_paths",
+                str(self.data_paths[0]),
+                "--test_config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main_batch.json"),
+                "--batch-size",
+                "5",
+            ],
+        ):
+            main()
+            self.assertTrue((self.output_path.parent / "main_batch.json").exists())
 
     def tearDown(self):
         if self.output_path.parent.exists():

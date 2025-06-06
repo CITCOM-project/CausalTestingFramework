@@ -98,7 +98,7 @@ class LinearRegressionEstimator(RegressionEstimator):
 
         :return: The unit average treatment effect and the 95% Wald confidence intervals.
         """
-        model = self._run_regression()
+        model = self.fit_model()
         newline = "\n"
         patsy_md = ModelDesc.from_formula(self.base_test_case.treatment_variable.name)
 
@@ -129,7 +129,7 @@ class LinearRegressionEstimator(RegressionEstimator):
 
         :return: The average treatment effect and the 95% Wald confidence intervals.
         """
-        model = self._run_regression()
+        model = self.fit_model()
 
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)

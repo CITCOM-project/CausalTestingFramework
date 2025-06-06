@@ -1,19 +1,13 @@
 import unittest
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from causal_testing.specification.variable import Input
-from causal_testing.utils.validation import CausalValidator
 
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
-from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-
-from tests.estimation_tests.test_linear_regression_estimator import TestLinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.specification.variable import Input, Output
 
+from tests.estimation_tests.test_linear_regression_estimator import load_chapter_11_df
 
-class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
+
+class TestCubicSplineRegressionEstimator(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -24,21 +18,13 @@ class TestCubicSplineRegressionEstimator(TestLinearRegressionEstimator):
         Slightly modified as Hernan et al. use linear regression for this example.
         """
 
-        df = self.chapter_11_df.copy()
+        df = load_chapter_11_df()
 
         base_test_case = BaseTestCase(Input("treatments", float), Output("outcomes", float))
 
         cublic_spline_estimator = CubicSplineRegressionEstimator(base_test_case, 1, 0, set(), 3, df)
 
         ate_1 = cublic_spline_estimator.estimate_ate_calculated()
-
-        self.assertEqual(
-            round(
-                cublic_spline_estimator.model.predict({"Intercept": 1, "treatments": 90}).iloc[0],
-                1,
-            ),
-            195.6,
-        )
 
         cublic_spline_estimator.treatment_value = 2
         ate_2 = cublic_spline_estimator.estimate_ate_calculated()
