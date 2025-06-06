@@ -47,6 +47,10 @@ class CausalTestCase:
         self.estimator = estimator
         if estimate_params is None:
             self.estimate_params = {}
+
+        else:
+            self.estimate_params = estimate_params
+
         self.effect = base_test_case.effect
 
         if effect_modifier_configuration:
