@@ -3,6 +3,8 @@ import os
 import shutil, tempfile
 import pandas as pd
 from itertools import combinations
+import tempfile
+import json
 
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import Scenario
@@ -11,6 +13,7 @@ from causal_testing.testing.metamorphic_relation import (
     ShouldNotCause,
     generate_metamorphic_relations,
     generate_metamorphic_relation,
+    generate_causal_tests,
 )
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
@@ -177,8 +180,8 @@ class TestMetamorphicRelation(unittest.TestCase):
         self.assertEqual(missing_snc_relations, [])
 
     def test_all_metamorphic_relations_implied_by_dag_ignore_cycles(self):
-        dag = CausalDAG(self.dcg_dot_path, ignore_cycles=True)
-        metamorphic_relations = generate_metamorphic_relations(dag, threads=2, nodes_to_ignore=set(dag.cycle_nodes()))
+        dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True)
+        metamorphic_relations = generate_metamorphic_relations(dcg, threads=2, nodes_to_ignore=set(dcg.cycle_nodes()))
         should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
         should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
 
@@ -202,6 +205,46 @@ class TestMetamorphicRelation(unittest.TestCase):
             metamorphic_relation,
             ShouldCause(BaseTestCase("X1", "Z"), []),
         )
+
+    def test_generate_causal_tests_ignore_cycles(self):
+        dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True)
+        relations = generate_metamorphic_relations(dcg, nodes_to_ignore=set(dcg.cycle_nodes()))
+        with tempfile.TemporaryDirectory() as tmp:
+            tests_file = os.path.join(tmp, "causal_tests.json")
+            generate_causal_tests(self.dcg_dot_path, tests_file, ignore_cycles=True)
+            with open(tests_file, encoding="utf8") as f:
+                tests = json.load(f)
+            expected = list(
+                map(
+                    lambda x: x.to_json_stub(skip=False),
+                    filter(
+                        lambda relation: len(list(dcg.graph.predecessors(relation.base_test_case.outcome_variable)))
+                        > 0,
+                        relations,
+                    ),
+                )
+            )
+            self.assertEqual(tests["tests"], expected)
+
+    def test_generate_causal_tests(self):
+        dag = CausalDAG(self.dag_dot_path)
+        relations = generate_metamorphic_relations(dag)
+        with tempfile.TemporaryDirectory() as tmp:
+            tests_file = os.path.join(tmp, "causal_tests.json")
+            generate_causal_tests(self.dag_dot_path, tests_file)
+            with open(tests_file, encoding="utf8") as f:
+                tests = json.load(f)
+            expected = list(
+                map(
+                    lambda x: x.to_json_stub(skip=False),
+                    filter(
+                        lambda relation: len(list(dag.graph.predecessors(relation.base_test_case.outcome_variable)))
+                        > 0,
+                        relations,
+                    ),
+                )
+            )
+            self.assertEqual(tests["tests"], expected)
 
     def test_shoud_cause_string(self):
         sc_mr = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])

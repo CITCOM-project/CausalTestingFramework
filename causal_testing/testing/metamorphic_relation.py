@@ -6,7 +6,6 @@ defined in our ICST paper [https://eprints.whiterose.ac.uk/195317/].
 from dataclasses import dataclass
 from typing import Iterable
 from itertools import combinations
-import argparse
 import logging
 import json
 from multiprocessing import Pool
@@ -162,7 +161,7 @@ def generate_metamorphic_relations(
     if nodes_to_test is None:
         nodes_to_test = dag.nodes
 
-    if not threads:
+    if threads < 2:
         metamorphic_relations = [
             generate_metamorphic_relation(node_pair, dag, nodes_to_ignore)
             for node_pair in combinations(filter(lambda node: node not in nodes_to_ignore, nodes_to_test), 2)
@@ -180,36 +179,25 @@ def generate_metamorphic_relations(
     return [item for items in metamorphic_relations for item in items]
 
 
-if __name__ == "__main__":  # pragma: no cover
-    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
-    parser = argparse.ArgumentParser(
-        description="A script for generating metamorphic relations to test the causal relationships in a given DAG."
-    )
-    parser.add_argument(
-        "--dag_path",
-        "-d",
-        help="Specify path to file containing the DAG, normally a .dot file.",
-        required=True,
-    )
-    parser.add_argument(
-        "--output_path",
-        "-o",
-        help="Specify path where tests should be saved, normally a .json file.",
-        required=True,
-    )
-    parser.add_argument(
-        "--threads", "-t", type=int, help="The number of parallel threads to use.", required=False, default=0
-    )
-    parser.add_argument("-i", "--ignore-cycles", action="store_true")
-    args = parser.parse_args()
+def generate_causal_tests(dag_path: str, output_path: str, ignore_cycles: bool = False, threads: int = 0):
+    """
+    Generate and output causal tests for a given DAG.
 
-    causal_dag = CausalDAG(args.dag_path, ignore_cycles=args.ignore_cycles)
+    :param dag_path: Path to the DOT file that specifies the causal DAG.
+    :param output_path: Path to save the JSON output.
+    :param ignore_cycles: Whether to bypass the check that the DAG is actually acyclic. If set to true, tests that
+                          include variables that are part of a cycle as either treatment, outcome, or adjustment will
+                          be omitted from the test set.
+    :param threads: The number of threads to use to generate tests in parallel. If unspecified, tests are generated in
+                    serial. This is tylically fine unless the number of tests to be generated is >10000.
+    """
+    causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)
 
     dag_nodes_to_test = [
         node for node in causal_dag.nodes if nx.get_node_attributes(causal_dag.graph, "test", default=True)[node]
     ]
 
-    if not causal_dag.is_acyclic() and args.ignore_cycles:
+    if not causal_dag.is_acyclic() and ignore_cycles:
         logger.warning(
             "Ignoring cycles by removing causal tests that reference any node within a cycle. "
             "Your causal test suite WILL NOT BE COMPLETE!"
@@ -218,10 +206,10 @@ if __name__ == "__main__":  # pragma: no cover
             causal_dag,
             nodes_to_test=dag_nodes_to_test,
             nodes_to_ignore=set(causal_dag.cycle_nodes()),
-            threads=args.threads,
+            threads=threads,
         )
     else:
-        relations = generate_metamorphic_relations(causal_dag, nodes_to_test=dag_nodes_to_test, threads=args.threads)
+        relations = generate_metamorphic_relations(causal_dag, nodes_to_test=dag_nodes_to_test, threads=threads)
 
     tests = [
         relation.to_json_stub(skip=False)
@@ -229,6 +217,6 @@ if __name__ == "__main__":  # pragma: no cover
         if len(list(causal_dag.graph.predecessors(relation.base_test_case.outcome_variable))) > 0
     ]
 
-    logger.info(f"Generated {len(tests)} tests. Saving to {args.output_path}.")
-    with open(args.output_path, "w", encoding="utf-8") as f:
+    logger.info(f"Generated {len(tests)} tests. Saving to {output_path}.")
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump({"tests": tests}, f, indent=2)

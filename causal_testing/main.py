@@ -475,26 +475,35 @@ def setup_logging(verbose: bool = False) -> None:
 
 def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Causal Testing Framework")
-    parser.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
-    parser.add_argument("-d", "--data_paths", help="Paths to data files (.csv)", nargs="+", required=True)
-    parser.add_argument("-t", "--test_config", help="Path to test configuration file (.json)", required=True)
-    parser.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
-    parser.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
-    parser.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
-    parser.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
-    parser.add_argument(
-        "-s",
-        "--silent",
-        action="store_true",
-        help="Do not crash on error. If set to true, errors are recorded as test results.",
-        default=False,
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=0,
-        help="Run tests in batches of the specified size (default: 0, which means no batching)",
-    )
+    main_parser = argparse.ArgumentParser(add_help=False, description="Causal Testing Framework")
+    main_parser.add_argument("-G", "--generate", help="Generate test cases from a DAG", action="store_true")
+    main_parser.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
+    main_parser.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
+    main_parser.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
+    main_args, _ = main_parser.parse_known_args()
+
+    parser = argparse.ArgumentParser(parents=[main_parser])
+    if main_args.generate:
+        parser.add_argument(
+            "--threads", "-t", type=int, help="The number of parallel threads to use.", required=False, default=0
+        )
+    else:
+        parser.add_argument("-d", "--data_paths", help="Paths to data files (.csv)", nargs="+", required=True)
+        parser.add_argument("-t", "--test_config", help="Path to test configuration file (.json)", required=True)
+        parser.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
+        parser.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
+        parser.add_argument(
+            "-s",
+            "--silent",
+            action="store_true",
+            help="Do not crash on error. If set to true, errors are recorded as test results.",
+            default=False,
+        )
+        parser.add_argument(
+            "--batch-size",
+            type=int,
+            default=0,
+            help="Run tests in batches of the specified size (default: 0, which means no batching)",
+        )
 
     return parser.parse_args(args)

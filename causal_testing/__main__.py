@@ -5,6 +5,7 @@ import tempfile
 import json
 import os
 
+from causal_testing.testing.metamorphic_relation import generate_causal_tests
 from .main import setup_logging, parse_args, CausalTestingPaths, CausalTestingFramework
 
 
@@ -17,6 +18,12 @@ def main() -> None:
 
     # Parse arguments
     args = parse_args()
+
+    if args.generate:
+        logging.info("Generating causal tests")
+        generate_causal_tests(args.dag_path, args.output, args.ignore_cycles, args.threads)
+        logging.info("Causal test generation completed successfully")
+        return
 
     # Setup logging
     setup_logging(args.verbose)
