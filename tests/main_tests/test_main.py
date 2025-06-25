@@ -338,6 +338,22 @@ class TestCausalTestingFramework(unittest.TestCase):
             main()
             self.assertTrue((self.output_path.parent / "main_batch.json").exists())
 
+    def test_parse_args_generation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with unittest.mock.patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "--generate",
+                    "--dag_path",
+                    str(self.dag_path),
+                    "--output",
+                    os.path.join(tmp, "tests.json"),
+                ],
+            ):
+                main()
+                self.assertTrue(os.path.exists(os.path.join(tmp, "tests.json")))
+
     def tearDown(self):
         if self.output_path.parent.exists():
             shutil.rmtree(self.output_path.parent)
