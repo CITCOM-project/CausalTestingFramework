@@ -56,7 +56,7 @@ Documentation = "https://causal-testing-framework.readthedocs.io/"
 Source = "https://github.com/CITCOM-project/CausalTestingFramework"
 
 [tool.setuptools.packages]
-find = { }
+where = ["causal_tesing"]
 
 [tool.setuptools_scm]
 
