@@ -14,9 +14,10 @@ class BaseTestCase:
     :param effect: A string representing the effect, current support effects are 'direct' and 'total'
     """
 
-    def __init__(self, treatment_variable: Variable, outcome_variable: Variable, effect: str = Effect.TOTAL.value):
-        if treatment_variable == outcome_variable:
-            raise ValueError(f"Treatment variable {treatment_variable} cannot also be the outcome.")
-        self.treatment_variable = treatment_variable
-        self.outcome_variable = outcome_variable
-        self.effect = effect
+    treatment_variable: Variable
+    outcome_variable: Variable
+    effect: str = Effect.TOTAL.value
+
+    def __post_init__(self):
+        if self.treatment_variable == self.outcome_variable:
+            raise ValueError(f"Treatment variable {self.treatment_variable} cannot also be the outcome variable.")
