@@ -31,8 +31,7 @@ To instantiate a scenario, simply provide a set of variables and an optional set
 
 Note that scenario constraints are primarily intended to help specify the region of the input space under test in a
 manner consistent with the Category Partition Method. It is not intended to serve as a test oracle. Use constraints
-sparingly and with caution to avoid introducing data selection bias. We use Z3 to handle constraints. For help with
-this, check out `their documentation <https://ericpony.github.io/z3py-tutorial/guide-examples.htm>`_.
+sparingly and with caution to avoid introducing data selection bias.
 
 Having fully specified the modelling scenario, we are now ready to test. Causal tests are,
 essentially `metamorphic tests <https://en.wikipedia.org/wiki/Metamorphic_testing>`_ which are executed using statistical
