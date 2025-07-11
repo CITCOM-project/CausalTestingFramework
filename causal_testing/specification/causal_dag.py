@@ -10,10 +10,14 @@ from typing import Union
 import networkx as nx
 import pydot
 
+from typing import Generator, Set
+
 from causal_testing.testing.base_test_case import BaseTestCase
 
 from .scenario import Scenario
 from .variable import Output
+
+from itertools import combinations
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 
@@ -591,3 +595,164 @@ class CausalDAG(nx.DiGraph):
 
     def __str__(self):
         return f"Nodes: {self.nodes}\nEdges: {self.edges}"
+
+class OptimisedCausalDAG(CausalDAG):
+
+
+    def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
+        """Compute minimal adjustment sets using ancestor moral graph and Takata's separator algorithm."""
+
+        # Step 1: Build the proper back-door graph and its moralized ancestor graph
+        pbd_graph = self.get_proper_backdoor_graph(treatments, outcomes)
+        ancestor_graph = pbd_graph.get_ancestor_graph(treatments, outcomes)
+        moral_graph = nx.moral_graph(ancestor_graph.graph)
+
+        # Step 2: Add artificial TREATMENT and OUTCOME nodes
+        moral_graph.add_edges_from([("TREATMENT", t) for t in treatments])
+        moral_graph.add_edges_from([("OUTCOME", y) for y in outcomes])
+
+        # Step 3: Efficiently collect unique neighbors (excluding original nodes)
+        treatment_neighbors = set()
+        for t in treatments:
+            treatment_neighbors.update(moral_graph[t])
+        treatment_neighbors.difference_update(treatments)
+
+        outcome_neighbors = set()
+        for y in outcomes:
+            outcome_neighbors.update(moral_graph[y])
+        outcome_neighbors.difference_update(outcomes)
+
+        # Step 4: Add clique edges among neighbors to preserve connectivity after node deletion
+        moral_graph.add_edges_from(combinations(treatment_neighbors, 2))
+        moral_graph.add_edges_from(combinations(outcome_neighbors, 2))
+
+        # Step 5: Find minimal separators between artificial nodes
+        outcome_node_set = set(moral_graph["OUTCOME"]) | {"OUTCOME"}
+        sep_candidates = list_all_min_sep_opt(
+            moral_graph,
+            "TREATMENT",
+            "OUTCOME",
+            {"TREATMENT"},
+            outcome_node_set,
+        )
+
+        # Step 6: Filter using constructive back-door criterion
+        valid_sets = [
+            s for s in sep_candidates
+            if self.constructive_backdoor_criterion(pbd_graph, treatments, outcomes, s)
+        ]
+
+        return valid_sets
+
+    def constructive_backdoor_criterion(
+            self,
+            proper_backdoor_graph: CausalDAG,
+            treatments: list[str],
+            outcomes: list[str],
+            covariates: list[str],
+    ) -> bool:
+        """
+        Optimized check for the constructive back-door criterion.
+        """
+
+        covariate_set = set(covariates)
+
+        # Condition (1): Covariates must not be descendants of any node on a proper causal path
+        proper_path_vars = self.proper_causal_pathway(treatments, outcomes)
+
+        if proper_path_vars:
+            # Collect all descendants including each proper causal path var itself
+            all_descendants = set()
+            for var in proper_path_vars:
+                all_descendants.update(nx.descendants(self.graph, var))
+                all_descendants.add(var)
+
+            if covariate_set & all_descendants:
+                # Covariates intersect with disallowed descendants — fail condition 1
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info(
+                        "Failed Condition 1: Z=%s **is** a descendant of variables on a proper causal path between X=%s and Y=%s.",
+                        covariates,
+                        treatments,
+                        outcomes,
+                    )
+                return False
+
+        # Condition (2): Z must d-separate X and Y in the proper back-door graph
+        if not nx.d_separated(
+                proper_backdoor_graph.graph,
+                set(treatments),
+                set(outcomes),
+                covariate_set,
+        ):
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(
+                    "Failed Condition 2: Z=%s **does not** d-separate X=%s and Y=%s in the proper back-door graph.",
+                    covariates,
+                    treatments,
+                    outcomes,
+                )
+            return False
+
+        return True
+
+
+def list_all_min_sep_opt(
+        graph: nx.Graph,
+        treatment_node,
+        outcome_node,
+        treatment_node_set: Set,
+        outcome_node_set: Set,
+) -> Generator[Set, None, None]:
+    """List all minimal treatment-outcome separators in an undirected graph (Takata 2013)."""
+
+    # Step 1: Compute the close separator
+    close_separator_set = close_separator(graph, treatment_node, outcome_node, treatment_node_set)
+
+    # Step 2: Remove separator to identify connected components
+    subgraph = graph.copy()
+    subgraph.remove_nodes_from(close_separator_set)
+
+    # Step 3: Find the component containing the treatment node
+    treatment_component = None
+    for component in nx.connected_components(subgraph):
+        if treatment_node in component:
+            treatment_component = component
+            break
+
+    # Step 4: Stop early if no component found or intersects outcome set
+    if treatment_component is None or treatment_component & outcome_node_set:
+        return
+
+    # Step 5: Update treatment node set to the connected component
+    treatment_node_set = treatment_component
+
+    # Step 6: Get neighbours of the treatment set
+    neighbour_nodes = set()
+    for node in treatment_node_set:
+        neighbour_nodes.update(graph[node])
+    neighbour_nodes.difference_update(treatment_node_set)
+
+    # Step 7: If neighbours exist outside the outcome set, recurse
+    remaining = neighbour_nodes - outcome_node_set
+    if remaining:
+        chosen = sample(sorted(remaining), 1)[0]  # Choose one deterministically (sorted) but randomly
+        # Left branch: add to treatment set
+        yield from list_all_min_sep_opt(
+            graph,
+            treatment_node,
+            outcome_node,
+            treatment_node_set | {chosen},
+            outcome_node_set,
+        )
+        # Right branch: add to outcome set
+        yield from list_all_min_sep_opt(
+            graph,
+            treatment_node,
+            outcome_node,
+            treatment_node_set,
+            outcome_node_set | {chosen},
+        )
+    else:
+        # Step 8: All neighbours are in outcome set — we found a separator
+        yield neighbour_nodes

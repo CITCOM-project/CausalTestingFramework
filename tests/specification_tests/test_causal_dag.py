@@ -2,7 +2,7 @@ import unittest
 import os
 import shutil, tempfile
 import networkx as nx
-from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
+from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep, OptimisedCausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
@@ -472,6 +472,169 @@ class TestHiddenVariableDAG(unittest.TestCase):
         adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), scenario)
 
         self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.temp_dir_path)
+
+def time_it(label, func, *args, **kwargs):
+    import time
+    start = time.time()
+    result = func(*args, **kwargs)
+    print(f"{label} took {time.time() - start:.6f} seconds")
+    return result
+
+class TestOptimisedDAGIdentification(TestDAGIdentification):
+    """
+    Test the Causal DAG identification algorithms and supporting algorithms.
+    """
+
+    def test_is_min_adjustment_for_not_min_adjustment(self):
+        """Test whether is_min_adjustment can correctly test whether the minimum adjustment set is not minimal."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        xs, ys, zs = ["X1", "X2"], ["Y"], {"Z", "V"}
+
+        opt_dag = OptimisedCausalDAG(self.dag_dot_path)
+
+        norm_result = time_it(
+            "Norm",
+            lambda: causal_dag.adjustment_set_is_minimal(xs, ys, zs)
+        )
+        opt_result = time_it(
+            "Opt",
+            lambda: opt_dag.adjustment_set_is_minimal(xs, ys, zs)
+        )
+        self.assertEqual(norm_result, opt_result)
+
+    def test_is_min_adjustment_for_invalid_adjustment(self):
+        """Test whether is min_adjustment can correctly identify that the minimum adjustment set is invalid."""
+        causal_dag = OptimisedCausalDAG(self.dag_dot_path)
+        xs, ys, zs = ["X1", "X2"], ["Y"], set()
+        self.assertRaises(ValueError, causal_dag.adjustment_set_is_minimal, xs, ys, zs)
+
+    def test_get_ancestor_graph_of_causal_dag(self):
+        """Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
+        causal_dag = OptimisedCausalDAG(self.dag_dot_path)
+        xs, ys = ["X1", "X2"], ["Y"]
+        ancestor_graph = causal_dag.get_ancestor_graph(xs, ys)
+        self.assertEqual(list(ancestor_graph.nodes), ["X1", "X2", "D1", "Y", "Z"])
+        self.assertEqual(
+            list(ancestor_graph.edges),
+            [("X1", "X2"), ("X2", "D1"), ("D1", "Y"), ("Z", "X2"), ("Z", "Y")],
+        )
+
+    def test_get_ancestor_graph_of_proper_backdoor_graph(self):
+        """Test whether get_ancestor_graph converts a CausalDAG to the correct proper back-door graph."""
+        causal_dag = OptimisedCausalDAG(self.dag_dot_path)
+        xs, ys = ["X1", "X2"], ["Y"]
+        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+        ancestor_graph = proper_backdoor_graph.get_ancestor_graph(xs, ys)
+        self.assertEqual(list(ancestor_graph.nodes), ["X1", "X2", "D1", "Y", "Z"])
+        self.assertEqual(
+            list(ancestor_graph.edges),
+            [("X1", "X2"), ("D1", "Y"), ("Z", "X2"), ("Z", "Y")],
+        )
+
+    def test_enumerate_minimal_adjustment_sets(self):
+        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
+        causal_dag = OptimisedCausalDAG(self.dag_dot_path)
+        xs, ys = ["X1", "X2"], ["Y"]
+        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        self.assertEqual([{"Z"}], adjustment_sets)
+
+    def test_enumerate_minimal_adjustment_sets_multiple(self):
+        """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
+        causal_dag = CausalDAG()
+        causal_dag.graph.add_edges_from(
+            [
+                ("X1", "X2"),
+                ("X2", "V"),
+                ("Z1", "X2"),
+                ("Z1", "Z2"),
+                ("Z2", "Z3"),
+                ("Z3", "Y"),
+                ("D1", "Y"),
+                ("D1", "D2"),
+                ("Y", "D3"),
+            ]
+        )
+        opt_causal_dag = CausalDAG()
+        opt_causal_dag.graph.add_edges_from(
+            [
+                ("X1", "X2"),
+                ("X2", "V"),
+                ("Z1", "X2"),
+                ("Z1", "Z2"),
+                ("Z2", "Z3"),
+                ("Z3", "Y"),
+                ("D1", "Y"),
+                ("D1", "D2"),
+                ("Y", "D3"),
+            ]
+        )
+        xs, ys = ["X1", "X2"], ["Y"]
+
+        norm_adjustment_sets = time_it(
+            "Norm",
+            lambda: causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        )
+
+        opt_adjustment_sets = time_it(
+            "Opt",
+            lambda: opt_causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        )
+        set_of_opt_adjustment_sets = set(frozenset(min_separator) for min_separator in opt_adjustment_sets)
+
+        self.assertEqual(
+            {frozenset({"Z1"}), frozenset({"Z2"}), frozenset({"Z3"})},
+            set_of_opt_adjustment_sets,
+        )
+
+    def test_enumerate_minimal_adjustment_sets_two_adjustments(self):
+        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets of arity two."""
+        causal_dag = OptimisedCausalDAG()
+        causal_dag.graph.add_edges_from(
+            [
+                ("X1", "X2"),
+                ("X2", "V"),
+                ("Z1", "X2"),
+                ("Z1", "Z2"),
+                ("Z2", "Z3"),
+                ("Z3", "Y"),
+                ("D1", "Y"),
+                ("D1", "D2"),
+                ("Y", "D3"),
+                ("Z4", "X1"),
+                ("Z4", "Y"),
+                ("X2", "D1"),
+            ]
+        )
+        xs, ys = ["X1", "X2"], ["Y"]
+        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        set_of_adjustment_sets = set(frozenset(min_separator) for min_separator in adjustment_sets)
+        self.assertEqual(
+            {frozenset({"Z1", "Z4"}), frozenset({"Z2", "Z4"}), frozenset({"Z3", "Z4"})},
+            set_of_adjustment_sets,
+        )
+
+    def test_dag_with_non_character_nodes(self):
+        """Test identification for a DAG whose nodes are not just characters (strings of length greater than 1)."""
+        causal_dag = OptimisedCausalDAG()
+        causal_dag.graph.add_edges_from(
+            [
+                ("va", "ba"),
+                ("ba", "ia"),
+                ("ba", "da"),
+                ("ba", "ra"),
+                ("la", "va"),
+                ("la", "aa"),
+                ("aa", "ia"),
+                ("aa", "da"),
+                ("aa", "ra"),
+            ]
+        )
+        xs, ys = ["ba"], ["da"]
+        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+        self.assertEqual(adjustment_sets, [{"aa"}, {"la"}, {"va"}])
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
