@@ -98,6 +98,10 @@ class TestCausalTestExecution(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
 
+    def test_invalid_base_test_case(self):
+        with self.assertRaises(ValueError):
+            BaseTestCase(self.A, self.A)
+
     def test_check_minimum_adjustment_set(self):
         """Check that the minimum adjustment set is correctly made"""
         minimal_adjustment_set = self.causal_dag.identification(self.base_test_case_A_C)
