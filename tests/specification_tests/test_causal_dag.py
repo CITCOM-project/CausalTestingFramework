@@ -476,12 +476,15 @@ class TestHiddenVariableDAG(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
 
+
 def time_it(label, func, *args, **kwargs):
     import time
+
     start = time.time()
     result = func(*args, **kwargs)
     print(f"{label} took {time.time() - start:.6f} seconds")
     return result
+
 
 class TestOptimisedDAGIdentification(TestDAGIdentification):
     """
@@ -495,14 +498,8 @@ class TestOptimisedDAGIdentification(TestDAGIdentification):
 
         opt_dag = OptimisedCausalDAG(self.dag_dot_path)
 
-        norm_result = time_it(
-            "Norm",
-            lambda: causal_dag.adjustment_set_is_minimal(xs, ys, zs)
-        )
-        opt_result = time_it(
-            "Opt",
-            lambda: opt_dag.adjustment_set_is_minimal(xs, ys, zs)
-        )
+        norm_result = time_it("Norm", lambda: causal_dag.adjustment_set_is_minimal(xs, ys, zs))
+        opt_result = time_it("Opt", lambda: opt_dag.adjustment_set_is_minimal(xs, ys, zs))
         self.assertEqual(norm_result, opt_result)
 
     def test_is_min_adjustment_for_invalid_adjustment(self):
@@ -539,7 +536,7 @@ class TestOptimisedDAGIdentification(TestDAGIdentification):
         causal_dag = OptimisedCausalDAG(self.dag_dot_path)
         xs, ys = ["X1", "X2"], ["Y"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual([{"Z"}], adjustment_sets)
+        self.assertEqual([{"Z"}], list(adjustment_sets))
 
     def test_enumerate_minimal_adjustment_sets_multiple(self):
         """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
@@ -573,15 +570,9 @@ class TestOptimisedDAGIdentification(TestDAGIdentification):
         )
         xs, ys = ["X1", "X2"], ["Y"]
 
-        norm_adjustment_sets = time_it(
-            "Norm",
-            lambda: causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        )
+        norm_adjustment_sets = time_it("Norm", lambda: causal_dag.enumerate_minimal_adjustment_sets(xs, ys))
 
-        opt_adjustment_sets = time_it(
-            "Opt",
-            lambda: opt_causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        )
+        opt_adjustment_sets = time_it("Opt", lambda: opt_causal_dag.enumerate_minimal_adjustment_sets(xs, ys))
         set_of_opt_adjustment_sets = set(frozenset(min_separator) for min_separator in opt_adjustment_sets)
 
         self.assertEqual(
@@ -634,7 +625,7 @@ class TestOptimisedDAGIdentification(TestDAGIdentification):
         )
         xs, ys = ["ba"], ["da"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual(adjustment_sets, [{"aa"}, {"la"}, {"va"}])
+        self.assertEqual(list(adjustment_sets), [{"aa"}, {"la"}, {"va"}])
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)

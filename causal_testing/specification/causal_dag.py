@@ -376,8 +376,8 @@ class CausalDAG(nx.DiGraph):
             *[set(nx.neighbors(moralised_proper_backdoor_graph, outcome)) for outcome in outcomes]
         ) - set(outcomes)
 
-        neighbour_edges_to_add = list(combinations(treatment_neighbours, 2)) + list(combinations(outcome_neighbours, 2))
-        moralised_proper_backdoor_graph.add_edges_from(neighbour_edges_to_add)
+        moralised_proper_backdoor_graph.add_edges_from(combinations(treatment_neighbours, 2))
+        moralised_proper_backdoor_graph.add_edges_from(combinations(outcome_neighbours, 2))
 
         # 4.  Find all minimal separators of X^m and Y^m using Takata's algorithm for listing minimal separators
         treatment_node_set = {"TREATMENT"}
@@ -596,113 +596,133 @@ class CausalDAG(nx.DiGraph):
     def __str__(self):
         return f"Nodes: {self.nodes}\nEdges: {self.edges}"
 
+
 class OptimisedCausalDAG(CausalDAG):
 
-
     def enumerate_minimal_adjustment_sets(self, treatments: list[str], outcomes: list[str]) -> list[set[str]]:
-        """Compute minimal adjustment sets using ancestor moral graph and Takata's separator algorithm."""
+        """Get the smallest possible set of variables that blocks all back-door paths between all pairs of treatments
+        and outcomes.
+
+        This is an implementation of the Algorithm presented in Adjustment Criteria in Causal Diagrams: An
+        Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in Separators and adjustment sets in causal
+        graphs: Complete criteria and an algorithmic framework, Zander et al.,  2019. These works use the algorithm
+        presented by Takata et al. in their work entitled: Space-optimal, backtracking algorithms to list the minimal
+        vertex separators of a graph, 2013.
+
+        At a high-level, this algorithm proceeds as follows for a causal DAG G, set of treatments X, and set of
+        outcomes Y):
+        1). Transform G to a proper back-door graph G_pbd (remove the first edge from X on all proper causal paths).
+        2). Transform G_pbd to the ancestor moral graph (G_pbd[An(X union Y)])^m.
+        3). Apply Takata's algorithm to output all minimal X-Y separators in the graph.
+
+        :param treatments: A list of strings representing treatments.
+        :param outcomes: A list of strings representing outcomes.
+        :return: A list of strings representing the minimal adjustment set.
+        """
 
         # Step 1: Build the proper back-door graph and its moralized ancestor graph
-        pbd_graph = self.get_proper_backdoor_graph(treatments, outcomes)
-        ancestor_graph = pbd_graph.get_ancestor_graph(treatments, outcomes)
-        moral_graph = nx.moral_graph(ancestor_graph.graph)
+        proper_backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
+        ancestor_proper_backdoor_graph = proper_backdoor_graph.get_ancestor_graph(treatments, outcomes)
+        moralised_proper_backdoor_graph = nx.moral_graph(ancestor_proper_backdoor_graph.graph)
 
         # Step 2: Add artificial TREATMENT and OUTCOME nodes
-        moral_graph.add_edges_from([("TREATMENT", t) for t in treatments])
-        moral_graph.add_edges_from([("OUTCOME", y) for y in outcomes])
+        moralised_proper_backdoor_graph.add_edges_from([("TREATMENT", t) for t in treatments])
+        moralised_proper_backdoor_graph.add_edges_from([("OUTCOME", y) for y in outcomes])
 
-        # Step 3: Efficiently collect unique neighbors (excluding original nodes)
-        treatment_neighbors = set()
-        for t in treatments:
-            treatment_neighbors.update(moral_graph[t])
-        treatment_neighbors.difference_update(treatments)
+        # Step 3: Remove treatment and outcome nodes from graph and connect neighbours
+        treatment_neighbors = {
+            node for t in treatments for node in moralised_proper_backdoor_graph[t] if node not in treatments
+        }
+        moralised_proper_backdoor_graph.add_edges_from(combinations(treatment_neighbors, 2))
 
-        outcome_neighbors = set()
-        for y in outcomes:
-            outcome_neighbors.update(moral_graph[y])
-        outcome_neighbors.difference_update(outcomes)
+        outcome_neighbors = {
+            node for o in outcomes for node in moralised_proper_backdoor_graph[o] if node not in outcomes
+        }
+        moralised_proper_backdoor_graph.add_edges_from(combinations(outcome_neighbors, 2))
 
-        # Step 4: Add clique edges among neighbors to preserve connectivity after node deletion
-        moral_graph.add_edges_from(combinations(treatment_neighbors, 2))
-        moral_graph.add_edges_from(combinations(outcome_neighbors, 2))
-
-        # Step 5: Find minimal separators between artificial nodes
-        outcome_node_set = set(moral_graph["OUTCOME"]) | {"OUTCOME"}
+        # Step 4: Find all minimal separators of X^m and Y^m using Takata's algorithm for listing minimal separators
         sep_candidates = list_all_min_sep_opt(
-            moral_graph,
+            moralised_proper_backdoor_graph,
             "TREATMENT",
             "OUTCOME",
             {"TREATMENT"},
-            outcome_node_set,
+            set(moralised_proper_backdoor_graph["OUTCOME"]) | {"OUTCOME"},
         )
-
-        # Step 6: Filter using constructive back-door criterion
-        valid_sets = [
-            s for s in sep_candidates
-            if self.constructive_backdoor_criterion(pbd_graph, treatments, outcomes, s)
-        ]
-
-        return valid_sets
+        return filter(
+            lambda s: self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes, s),
+            sep_candidates,
+        )
+        # return [
+        #     s
+        #     for s in sep_candidates
+        #     if self.constructive_backdoor_criterion(proper_backdoor_graph, treatments, outcomes, s)
+        # ]
 
     def constructive_backdoor_criterion(
-            self,
-            proper_backdoor_graph: CausalDAG,
-            treatments: list[str],
-            outcomes: list[str],
-            covariates: list[str],
+        self,
+        proper_backdoor_graph: CausalDAG,
+        treatments: list[str],
+        outcomes: list[str],
+        covariates: list[str],
     ) -> bool:
-        """
-        Optimized check for the constructive back-door criterion.
-        """
+        """A variation of Pearl's back-door criterion applied to a proper backdoor graph which enables more efficient
+        computation of minimal adjustment sets for the effect of a set of treatments on a set of outcomes.
 
-        covariate_set = set(covariates)
+        The constructive back-door criterion is satisfied for a causal DAG G, a set of treatments X, a set of outcomes
+        Y, and a set of covariates Z, if:
+        (1) Z is not a descendent of any variable on a proper causal path between X and Y.
+        (2) Z d-separates X and Y in the proper back-door graph relative to X and Y.
+
+        Reference: (Separators and adjustment sets in causal graphs: Complete criteria and an algorithmic framework,
+        Zander et al.,  2019, Definition 4, p.16)
+
+        :param proper_backdoor_graph: A proper back-door graph relative to the specified treatments and outcomes.
+        :param treatments: A list of treatment variables that appear in the proper back-door graph.
+        :param outcomes: A list of outcome variables that appear in the proper back-door graph.
+        :param covariates: A list of variables that appear in the proper back-door graph that we will check against
+        the constructive back-door criterion.
+        :return: True or False, depending on whether the set of covariates satisfies the constructive back-door
+        criterion.
+        """
 
         # Condition (1): Covariates must not be descendants of any node on a proper causal path
         proper_path_vars = self.proper_causal_pathway(treatments, outcomes)
-
         if proper_path_vars:
             # Collect all descendants including each proper causal path var itself
-            all_descendants = set()
-            for var in proper_path_vars:
-                all_descendants.update(nx.descendants(self.graph, var))
-                all_descendants.add(var)
+            descendents_of_proper_casual_paths = set(proper_path_vars)
+            descendents_of_proper_casual_paths.update(
+                {node for var in proper_path_vars for node in nx.descendants(self.graph, var)}
+            )
 
-            if covariate_set & all_descendants:
+            if not set(covariates).issubset(set(self.nodes).difference(descendents_of_proper_casual_paths)):
                 # Covariates intersect with disallowed descendants — fail condition 1
-                if logger.isEnabledFor(logging.INFO):
-                    logger.info(
-                        "Failed Condition 1: Z=%s **is** a descendant of variables on a proper causal path between X=%s and Y=%s.",
-                        covariates,
-                        treatments,
-                        outcomes,
-                    )
-                return False
-
-        # Condition (2): Z must d-separate X and Y in the proper back-door graph
-        if not nx.d_separated(
-                proper_backdoor_graph.graph,
-                set(treatments),
-                set(outcomes),
-                covariate_set,
-        ):
-            if logger.isEnabledFor(logging.INFO):
                 logger.info(
-                    "Failed Condition 2: Z=%s **does not** d-separate X=%s and Y=%s in the proper back-door graph.",
+                    "Failed Condition 1: Z=%s **is** a descendant of variables on a proper causal path between X=%s and Y=%s.",
                     covariates,
                     treatments,
                     outcomes,
                 )
+                return False
+
+        # Condition (2): Z must d-separate X and Y in the proper back-door graph
+        if not nx.d_separated(proper_backdoor_graph.graph, set(treatments), set(outcomes), set(covariates)):
+            logger.info(
+                "Failed Condition 2: Z=%s **does not** d-separate X=%s and Y=%s in the proper back-door graph.",
+                covariates,
+                treatments,
+                outcomes,
+            )
             return False
 
         return True
 
 
 def list_all_min_sep_opt(
-        graph: nx.Graph,
-        treatment_node,
-        outcome_node,
-        treatment_node_set: Set,
-        outcome_node_set: Set,
+    graph: nx.Graph,
+    treatment_node,
+    outcome_node,
+    treatment_node_set: Set,
+    outcome_node_set: Set,
 ) -> Generator[Set, None, None]:
     """List all minimal treatment-outcome separators in an undirected graph (Takata 2013)."""
 
