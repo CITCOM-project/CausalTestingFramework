@@ -21,7 +21,15 @@ def main() -> None:
 
     if args.command == Command.GENERATE:
         logging.info("Generating causal tests")
-        generate_causal_tests(args.dag_path, args.output, args.ignore_cycles, args.threads)
+        generate_causal_tests(
+            args.dag_path,
+            args.output,
+            args.ignore_cycles,
+            args.threads,
+            effect_type=args.effect_type,
+            estimate_type=args.estimate_type,
+            estimator=args.estimator,
+        )
         logging.info("Causal test generation completed successfully")
         return
 

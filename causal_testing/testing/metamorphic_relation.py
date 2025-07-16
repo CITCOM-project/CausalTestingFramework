@@ -37,13 +37,25 @@ class MetamorphicRelation:
 class ShouldCause(MetamorphicRelation):
     """Class representing a should cause metamorphic relation."""
 
-    def to_json_stub(self, skip=True) -> dict:
-        """Convert to a JSON frontend stub string for user customisation"""
+    def to_json_stub(
+        self,
+        skip: bool = True,
+        estimate_type: str = "coefficient",
+        effect_type: str = "direct",
+        estimator: str = "LinearRegressionEstimator",
+    ) -> dict:
+        """
+        Convert to a JSON frontend stub string for user customisation.
+        :param skip: Whether to skip the test
+        :param effect_type: The type of causal effect to consider (total or direct)
+        :param estimate_type: The estimate type to use when evaluating tests
+        :param estimator: The name of the estimator class to use when evaluating the test
+        """
         return {
             "name": str(self),
-            "estimator": "LinearRegressionEstimator",
-            "estimate_type": "coefficient",
-            "effect": "direct",
+            "estimator": estimator,
+            "estimate_type": estimate_type,
+            "effect": effect_type,
             "treatment_variable": self.base_test_case.treatment_variable,
             "expected_effect": {self.base_test_case.outcome_variable: "SomeEffect"},
             "formula": (
@@ -63,13 +75,25 @@ class ShouldCause(MetamorphicRelation):
 class ShouldNotCause(MetamorphicRelation):
     """Class representing a should cause metamorphic relation."""
 
-    def to_json_stub(self, skip=True) -> dict:
-        """Convert to a JSON frontend stub string for user customisation"""
+    def to_json_stub(
+        self,
+        skip: bool = True,
+        estimate_type: str = "coefficient",
+        effect_type: str = "direct",
+        estimator: str = "LinearRegressionEstimator",
+    ) -> dict:
+        """
+        Convert to a JSON frontend stub string for user customisation.
+        :param skip: Whether to skip the test
+        :param effect_type: The type of causal effect to consider (total or direct)
+        :param estimate_type: The estimate type to use when evaluating tests
+        :param estimator: The name of the estimator class to use when evaluating the test
+        """
         return {
             "name": str(self),
-            "estimator": "LinearRegressionEstimator",
-            "estimate_type": "coefficient",
-            "effect": "direct",
+            "estimator": estimator,
+            "estimate_type": estimate_type,
+            "effect": effect_type,
             "treatment_variable": self.base_test_case.treatment_variable,
             "expected_effect": {self.base_test_case.outcome_variable: "NoEffect"},
             "formula": (
@@ -179,7 +203,15 @@ def generate_metamorphic_relations(
     return [item for items in metamorphic_relations for item in items]
 
 
-def generate_causal_tests(dag_path: str, output_path: str, ignore_cycles: bool = False, threads: int = 0):
+def generate_causal_tests(
+    dag_path: str,
+    output_path: str,
+    ignore_cycles: bool = False,
+    threads: int = 0,
+    estimate_type: str = "coefficient",
+    effect_type: str = "direct",
+    estimator: str = "LinearRegressionEstimator",
+):
     """
     Generate and output causal tests for a given DAG.
 
@@ -190,6 +222,9 @@ def generate_causal_tests(dag_path: str, output_path: str, ignore_cycles: bool =
                           be omitted from the test set.
     :param threads: The number of threads to use to generate tests in parallel. If unspecified, tests are generated in
                     serial. This is tylically fine unless the number of tests to be generated is >10000.
+    :param effect_type: The type of causal effect to consider (total or direct)
+    :param estimate_type: The estimate type to use when evaluating tests
+    :param estimator: The name of the estimator class to use when evaluating the test
     """
     causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)
 
@@ -212,7 +247,7 @@ def generate_causal_tests(dag_path: str, output_path: str, ignore_cycles: bool =
         relations = generate_metamorphic_relations(causal_dag, nodes_to_test=dag_nodes_to_test, threads=threads)
 
     tests = [
-        relation.to_json_stub(skip=False)
+        relation.to_json_stub(skip=False, estimate_type=estimate_type, effect_type=effect_type, estimator=estimator)
         for relation in relations
         if len(list(causal_dag.graph.predecessors(relation.base_test_case.outcome_variable))) > 0
     ]

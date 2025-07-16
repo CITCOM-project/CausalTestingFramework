@@ -490,9 +490,28 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         help="The action you want to run - call `causal_testing {action} -h` for further details", dest="command"
     )
 
+    # Generation
     parser_generate = subparsers.add_parser(Command.GENERATE.value, help="Generate causal tests from a DAG")
     parser_generate.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
     parser_generate.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
+    parser_generate.add_argument(
+        "-e",
+        "--estimator",
+        help="The name of the estimator class to use when evaluating tests (defaults to LinearRegressionEstimator)",
+        default="LinearRegressionEstimator",
+    )
+    parser_generate.add_argument(
+        "-T",
+        "--effect_type",
+        help="The effect type to estimate {direct, total}",
+        default="direct",
+    )
+    parser_generate.add_argument(
+        "-E",
+        "--estimate_type",
+        help="The estimate type to use when evaluating tests (defaults to coefficient)",
+        default="coefficient",
+    )
     parser_generate.add_argument(
         "-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False
     )
@@ -500,6 +519,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "--threads", "-t", type=int, help="The number of parallel threads to use.", required=False, default=0
     )
 
+    # Testing
     parser_test = subparsers.add_parser(Command.TEST.value, help="Run causal tests")
     parser_test.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
     parser_test.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
