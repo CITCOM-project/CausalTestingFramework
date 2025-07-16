@@ -217,8 +217,6 @@ def generate_causal_tests(
     :param threads: The number of threads to use to generate tests in parallel. If unspecified, tests are generated in
                     serial. This is tylically fine unless the number of tests to be generated is >10000.
     :param json_stub_kargs: Kwargs to pass into `to_json_stub` (see docstring for details.)
-    :param estimate_type: The estimate type to use when evaluating tests
-    :param estimator: The name of the estimator class to use when evaluating the test
     """
     causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)
 
