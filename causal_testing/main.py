@@ -3,12 +3,12 @@
 import argparse
 import json
 import logging
+from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union, Sequence
-from tqdm import tqdm
-from enum import Enum
 
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 
