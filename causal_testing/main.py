@@ -475,7 +475,7 @@ def setup_logging(verbose: bool = False) -> None:
 
 def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """Parse command line arguments."""
-    main_parser = argparse.ArgumentParser(add_help=False, description="Causal Testing Framework")
+    main_parser = argparse.ArgumentParser(description="Causal Testing Framework")
     main_parser.add_argument("-G", "--generate", help="Generate test cases from a DAG", action="store_true")
     main_parser.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
     main_parser.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
