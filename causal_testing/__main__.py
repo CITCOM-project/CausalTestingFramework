@@ -29,6 +29,7 @@ def main() -> None:
             effect_type=args.effect_type,
             estimate_type=args.estimate_type,
             estimator=args.estimator,
+            skip=True,
         )
         logging.info("Causal test generation completed successfully")
         return

@@ -204,13 +204,7 @@ def generate_metamorphic_relations(
 
 
 def generate_causal_tests(
-    dag_path: str,
-    output_path: str,
-    ignore_cycles: bool = False,
-    threads: int = 0,
-    estimate_type: str = "coefficient",
-    effect_type: str = "direct",
-    estimator: str = "LinearRegressionEstimator",
+    dag_path: str, output_path: str, ignore_cycles: bool = False, threads: int = 0, **json_stub_kargs
 ):
     """
     Generate and output causal tests for a given DAG.
@@ -222,7 +216,7 @@ def generate_causal_tests(
                           be omitted from the test set.
     :param threads: The number of threads to use to generate tests in parallel. If unspecified, tests are generated in
                     serial. This is tylically fine unless the number of tests to be generated is >10000.
-    :param effect_type: The type of causal effect to consider (total or direct)
+    :param json_stub_kargs: Kwargs to pass into `to_json_stub` (see docstring for details.)
     :param estimate_type: The estimate type to use when evaluating tests
     :param estimator: The name of the estimator class to use when evaluating the test
     """
@@ -247,7 +241,7 @@ def generate_causal_tests(
         relations = generate_metamorphic_relations(causal_dag, nodes_to_test=dag_nodes_to_test, threads=threads)
 
     tests = [
-        relation.to_json_stub(skip=False, estimate_type=estimate_type, effect_type=effect_type, estimator=estimator)
+        relation.to_json_stub(**json_stub_kargs)
         for relation in relations
         if len(list(causal_dag.graph.predecessors(relation.base_test_case.outcome_variable))) > 0
     ]
