@@ -305,6 +305,7 @@ class TestCausalTestingFramework(unittest.TestCase):
             "sys.argv",
             [
                 "causal_testing",
+                "test",
                 "--dag_path",
                 str(self.dag_path),
                 "--data_paths",
@@ -323,6 +324,7 @@ class TestCausalTestingFramework(unittest.TestCase):
             "sys.argv",
             [
                 "causal_testing",
+                "test",
                 "--dag_path",
                 str(self.dag_path),
                 "--data_paths",
@@ -344,7 +346,7 @@ class TestCausalTestingFramework(unittest.TestCase):
                 "sys.argv",
                 [
                     "causal_testing",
-                    "--generate",
+                    "generate",
                     "--dag_path",
                     str(self.dag_path),
                     "--output",
