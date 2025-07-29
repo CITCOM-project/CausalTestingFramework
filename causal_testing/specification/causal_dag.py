@@ -5,12 +5,10 @@ from __future__ import annotations
 import logging
 from itertools import combinations
 from random import sample
-from typing import Union, Generator
+from typing import Union, Generator, Set
 
 import networkx as nx
 import pydot
-
-from typing import Generator, Set
 
 from causal_testing.testing.base_test_case import BaseTestCase
 
@@ -136,13 +134,7 @@ class CausalDAG(nx.DiGraph):
         super().__init__(**attr)
         self.ignore_cycles = ignore_cycles
         if dot_path:
-            with open(dot_path, "r", encoding="utf-8") as file:
-                dot_content = file.read().replace("\n", "")
-            # Previously, we used pydot_graph_from_file() to read in the dot_path directly, however,
-            # this method does not currently have a way of removing spurious nodes.
-            # Workaround: Read in the file using open(), remove new lines, and then create the pydot_graph.
-            pydot_graph = pydot.graph_from_dot_data(dot_content)
-            self.graph = nx.DiGraph(nx.drawing.nx_pydot.from_pydot(pydot_graph[0]))
+            self.graph = nx.DiGraph(nx.nx_pydot.read_dot(dot_path))
         else:
             self.graph = nx.DiGraph()
 
@@ -576,10 +568,7 @@ class CausalDAG(nx.DiGraph):
         if scenario is not None:
             minimal_adjustment_sets = self.remove_hidden_adjustment_sets(minimal_adjustment_sets, scenario)
 
-        if len(minimal_adjustment_sets) == 0:
-            return set()
-
-        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len, default=set())
         return set(minimal_adjustment_set)
 
     def to_dot_string(self) -> str:
@@ -639,7 +628,7 @@ class OptimisedCausalDAG(CausalDAG):
         moralised_proper_backdoor_graph.add_edges_from(combinations(outcome_neighbors, 2))
 
         # Step 4: Find all minimal separators of X^m and Y^m using Takata's algorithm for listing minimal separators
-        sep_candidates = list_all_min_sep_opt(
+        sep_candidates = self.list_all_min_sep_opt(
             moralised_proper_backdoor_graph,
             "TREATMENT",
             "OUTCOME",
@@ -689,7 +678,8 @@ class OptimisedCausalDAG(CausalDAG):
             if not set(covariates).issubset(set(self.nodes).difference(descendents_of_proper_casual_paths)):
                 # Covariates intersect with disallowed descendants — fail condition 1
                 logger.info(
-                    "Failed Condition 1: Z=%s **is** a descendant of variables on a proper causal path between X=%s and Y=%s.",
+                    "Failed Condition 1: "
+                    "Z=%s **is** a descendant of variables on a proper causal path between X=%s and Y=%s.",
                     covariates,
                     treatments,
                     outcomes,
@@ -708,76 +698,74 @@ class OptimisedCausalDAG(CausalDAG):
 
         return True
 
+    def list_all_min_sep_opt(
+        self,
+        graph: nx.Graph,
+        treatment_node: str,
+        outcome_node: str,
+        treatment_node_set: Set,
+        outcome_node_set: Set,
+    ) -> Generator[Set, None, None]:
+        """A backtracking algorithm for listing all minimal treatment-outcome separators in an undirected graph.
 
-def list_all_min_sep_opt(
-    graph: nx.Graph,
-    treatment_node,
-    outcome_node,
-    treatment_node_set: Set,
-    outcome_node_set: Set,
-) -> Generator[Set, None, None]:
-    """A backtracking algorithm for listing all minimal treatment-outcome separators in an undirected graph.
+        Reference: (Space-optimal, backtracking algorithms to list the minimal vertex separators of a graph, Ken Takata,
+        2013, p.5, ListMinSep procedure).
 
-    Reference: (Space-optimal, backtracking algorithms to list the minimal vertex separators of a graph, Ken Takata,
-    2013, p.5, ListMinSep procedure).
+        :param graph: An undirected graph.
+        :param treatment_node: The node corresponding to the treatment variable we wish to separate from the output.
+        :param outcome_node: The node corresponding to the outcome variable we wish to separate from the input.
+        :param treatment_node_set: Set of treatment nodes.
+        :param outcome_node_set: Set of outcome nodes.
+        :return: A generator of minimal-sized sets of variables which separate treatment and outcome in the undirected
+                 graph.
+        """
+        # 1. Compute the close separator of the treatment set
+        close_separator_set = close_separator(graph, treatment_node, outcome_node, treatment_node_set)
 
-    :param graph: An undirected graph.
-    :param treatment_node: The node corresponding to the treatment variable we wish to separate from the output.
-    :param outcome_node: The node corresponding to the outcome variable we wish to separate from the input.
-    :param treatment_node_set: Set of treatment nodes.
-    :param outcome_node_set: Set of outcome nodes.
-    :return: A generator of minimal-sized sets of variables which separate treatment and outcome in the undirected graph.
-    """
-    # 1. Compute the close separator of the treatment set
-    close_separator_set = close_separator(graph, treatment_node, outcome_node, treatment_node_set)
+        # 2. Use the close separator to separate the graph and obtain the connected components (connected sub-graphs)
+        components_graph = graph.copy()
+        components_graph.remove_nodes_from(close_separator_set)
 
-    # 2. Use the close separator to separate the graph and obtain the connected components (connected sub-graphs)
-    components_graph = graph.copy()
-    components_graph.remove_nodes_from(close_separator_set)
+        # 3. Find the component containing the treatment node
+        treatment_component = set()
+        for component in nx.connected_components(components_graph):
+            if treatment_node in component:
+                treatment_component = component
+                break
 
-    # 3. Find the component containing the treatment node
-    treatment_component = set()
-    for component in nx.connected_components(components_graph):
-        if treatment_node in component:
-            treatment_component = component
-            break
+        # 4. Confirm that the connected component containing the treatment node is disjoint with the outcome node set
+        if treatment_component.intersection(outcome_node_set):
+            return
 
-    # 4. Confirm that the connected component containing the treatment node is disjoint with the outcome node set
-    if treatment_component.intersection(outcome_node_set):
-        raise ValueError(
-            f"Connected component {treatment_component} containing the treatment node is not disjoint with "
-            f"the outcome node set {outcome_node_set}"
-        )
+        # 5. Update the treatment node set to the set of nodes in the connected component containing the treatment node
+        treatment_node_set = treatment_component
 
-    # 5. Update the treatment node set to the set of nodes in the connected component containing the treatment node
-    treatment_node_set = treatment_component
+        # 6. Obtain the neighbours of the new treatment node set (this excludes the treatment nodes themselves)
+        neighbour_nodes = {
+            neighbour for node in treatment_node_set for neighbour in graph[node] if neighbour not in treatment_node_set
+        }
 
-    # 6. Obtain the neighbours of the new treatment node set (this excludes the treatment nodes themselves)
-    neighbour_nodes = {
-        neighbour for node in treatment_node_set for neighbour in graph[node] if neighbour not in treatment_node_set
-    }
-
-    # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
-    remaining = neighbour_nodes - outcome_node_set
-    if remaining:
-        # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
-        chosen = sample(sorted(remaining), 1)
-        # 7.2. Add this node to the treatment node set and recurse (left branch)
-        yield from list_all_min_sep_opt(
-            graph,
-            treatment_node,
-            outcome_node,
-            treatment_node_set.union(chosen),
-            outcome_node_set,
-        )
-        # 7.3. Add this node to the outcome node set and recurse (right branch)
-        yield from list_all_min_sep_opt(
-            graph,
-            treatment_node,
-            outcome_node,
-            treatment_node_set,
-            outcome_node_set.union(chosen),
-        )
-    else:
-        # Step 8: All neighbours are in outcome set — we found a separator
-        yield neighbour_nodes
+        # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
+        remaining = neighbour_nodes - outcome_node_set
+        if remaining:
+            # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
+            chosen = sample(sorted(remaining), 1)
+            # 7.2. Add this node to the treatment node set and recurse (left branch)
+            yield from self.list_all_min_sep_opt(
+                graph,
+                treatment_node,
+                outcome_node,
+                treatment_node_set.union(chosen),
+                outcome_node_set,
+            )
+            # 7.3. Add this node to the outcome node set and recurse (right branch)
+            yield from self.list_all_min_sep_opt(
+                graph,
+                treatment_node,
+                outcome_node,
+                treatment_node_set,
+                outcome_node_set.union(chosen),
+            )
+        else:
+            # Step 8: All neighbours are in outcome set — we found a separator
+            yield neighbour_nodes
