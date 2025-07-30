@@ -59,7 +59,7 @@ class CausalTestingPaths:
         output_path: Union[str, Path],
     ):
         self.dag_path = Path(dag_path)
-        self.data_paths = [Path(data_paths)] if isinstance(data_paths, str) else [Path(p) for p in data_paths]
+        self.data_paths = [Path(p) for p in data_paths]
         self.test_config_path = Path(test_config_path)
         self.output_path = Path(output_path)
 
