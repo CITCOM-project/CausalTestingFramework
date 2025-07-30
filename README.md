@@ -76,32 +76,6 @@ python -m causal_testing test --dag_path $PATH_TO_DAG --data_paths $PATH_TO_DATA
 The results will be saved for inspection in a JSON file located at `$OUTPUT`.
 In the future, we hope to add a visualisation tool to assist with this.
 
-## Docker Image
-Rather than installing the package and its dependencies locally, we also provide a docker image.
-To run this, the only pre-requisite is [Docker](https://www.docker.com/).
-To build the image, run
-```
-docker build --tag causal_testing # or some other tag if you prefer
-```
-
-After this, you can simply follow the usage instructions above, replacing `python -m causal_testing` with `docker run causal_testing`.
-You will also need to provide docker access to the input files.
-If you have the following directory structure
-```
-example
-    ├── causal_tests.json
-    ├── dag.dot
-    ├── data.csv
-```
-you would use the following docker command.
-```
-docker run -v full/path/to/example:/example -it causal_testing -D /example/dag.dot -o /example/log.json -d /example/data/random/data_random_1000.csv -t /example/causal_tests.json
-```
-A file called `log.json` would then appear in the `example` directory along with your causal tests, DAG, and data.
-
->[!NOTE]
-> Docker only deals with absolute paths, so you need to provide the full absolute path to the `example` directory, e.g. `/home/user/Documents/example` in linux, or `C:\Users\user\example` in Windows.
-
 ## How to Cite
 If you use our framework in your work, please cite the following:
 
