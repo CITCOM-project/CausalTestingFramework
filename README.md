@@ -66,12 +66,12 @@ For more information on how to use the Causal Testing Framework, please refer to
 2. If you do not already have causal test cases, you can convert your causal DAG to causal tests by running the following command.
 
 ```
-python causal_testing/testing/metamorphic_relation.py --dag_path $PATH_TO_DAG --output_path $PATH_TO_TESTS
+python -m causal_testing generate --dag_path $PATH_TO_DAG --output_path $PATH_TO_TESTS
 ```
 
 3. You can now execute your tests by running the following command.
 ```
-python -m causal_testing --dag_path $PATH_TO_DAG --data_paths $PATH_TO_DATA --test_config $PATH_TO_TESTS --output $OUTPUT
+python -m causal_testing test --dag_path $PATH_TO_DAG --data_paths $PATH_TO_DATA --test_config $PATH_TO_TESTS --output $OUTPUT
 ```
 The results will be saved for inspection in a JSON file located at `$OUTPUT`.
 In the future, we hope to add a visualisation tool to assist with this.
