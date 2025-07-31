@@ -2,7 +2,8 @@ import unittest
 import os
 import shutil, tempfile
 import networkx as nx
-from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep, OptimisedCausalDAG
+from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep, CausalDAG
+from causal_testing.specification.optimised_causal_dag import OptimisedCausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
