@@ -93,7 +93,7 @@ class TestCausalTestingFramework(unittest.TestCase):
     def test_load_dag_missing_node(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
-        framework.dag.graph.add_node("missing")
+        framework.dag.add_node("missing")
         with self.assertRaises(ValueError):
             framework.create_variables()
 

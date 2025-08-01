@@ -131,7 +131,7 @@ class CausalTestingFramework:
         """
         logger.info(f"Loading DAG from {self.paths.dag_path}")
         dag = CausalDAG(str(self.paths.dag_path), ignore_cycles=self.ignore_cycles)
-        logger.info(f"DAG loaded with {len(dag.graph.nodes)} nodes and {len(dag.graph.edges)} edges")
+        logger.info(f"DAG loaded with {len(dag.nodes)} nodes and {len(dag.edges)} edges")
         return dag
 
     def _read_dataframe(self, data_path):
@@ -163,18 +163,18 @@ class CausalTestingFramework:
         """
         Create variable objects from DAG nodes based on their connectivity.
         """
-        for node_name, node_data in self.dag.graph.nodes(data=True):
+        for node_name, node_data in self.dag.nodes(data=True):
             if node_name not in self.data.columns and not node_data.get("hidden", False):
                 raise ValueError(f"Node {node_name} missing from data. Should it be marked as hidden?")
 
             dtype = self.data.dtypes.get(node_name)
 
             # If node has no incoming edges, it's an input
-            if self.dag.graph.in_degree(node_name) == 0:
+            if self.dag.in_degree(node_name) == 0:
                 self.variables["inputs"][node_name] = Input(name=node_name, datatype=dtype)
 
             # Otherwise it's an output
-            if self.dag.graph.in_degree(node_name) > 0:
+            if self.dag.in_degree(node_name) > 0:
                 self.variables["outputs"][node_name] = Output(name=node_name, datatype=dtype)
 
     def create_scenario_and_specification(self) -> None:
