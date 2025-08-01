@@ -95,7 +95,7 @@ def list_all_min_sep(
     remaining = neighbour_nodes - outcome_node_set
     if remaining:
         # 6.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
-        chosen = {next(iter(remaining))}
+        chosen = {remaining.pop()}
         # 6.2. Add this node to the treatment node set and recurse (left branch)
         yield from list_all_min_sep(
             graph,
