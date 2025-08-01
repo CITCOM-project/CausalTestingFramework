@@ -20,6 +20,12 @@ class TestCausalDAGIssue90(unittest.TestCase):
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
 
+    def test_graphml(self):
+        dot_dag = CausalDAG(self.dag_dot_path)
+        xml_dag = CausalDAG(os.path.join("tests", "resources", "data", "dag.xml"))
+        self.assertEqual(dot_dag.nodes, xml_dag.nodes)
+        self.assertEqual(dot_dag.edges, xml_dag.edges)
+
     def test_enumerate_minimal_adjustment_sets(self):
         """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
         causal_dag = CausalDAG(self.dag_dot_path)
