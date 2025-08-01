@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from itertools import combinations
-from random import sample
 from typing import Union, Generator, Set
 
 import networkx as nx
@@ -64,14 +63,12 @@ class CausalDAG(nx.DiGraph):
         :param treatment_node_set: The set of variables containing the treatment node ({treatment_node}).
         :return: A treatment_node-outcome_node separator whose vertices are adjacent to those in treatments.
         """
-        treatment_neighbours = set.union(*[set(nx.neighbors(graph, treatment)) for treatment in treatment_node_set])
+        treatment_neighbours = {x for treatment in treatment_node_set for x in graph[treatment]}
         components_graph = graph.subgraph(set(graph.nodes) - treatment_neighbours)
         graph_components = nx.connected_components(components_graph)
         for component in graph_components:
             if outcome_node in component:
-                neighbours_of_variables_in_component = set.union(
-                    *[set(nx.neighbors(graph, variable)) for variable in component]
-                )
+                neighbours_of_variables_in_component = {x for variable in component for x in graph[variable]}
                 # For this algorithm, the neighbours of a node do not include the node itself
                 neighbours_of_variables_in_component = neighbours_of_variables_in_component.difference(component)
                 return neighbours_of_variables_in_component
@@ -115,37 +112,37 @@ class CausalDAG(nx.DiGraph):
         if treatment_component.intersection(outcome_node_set):
             return
 
-        # 5. Update the treatment node set to the set of nodes in the connected component containing the treatment node
-        treatment_node_set = treatment_component
-
-        # 6. Obtain the neighbours of the new treatment node set (this excludes the treatment nodes themselves)
+        # 5. Obtain the neighbours of the new treatment node set (this excludes the treatment nodes themselves)
         neighbour_nodes = {
-            neighbour for node in treatment_node_set for neighbour in graph[node] if neighbour not in treatment_node_set
+            neighbour
+            for node in treatment_component
+            for neighbour in graph[node]
+            if neighbour not in treatment_component
         }
 
-        # 7. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
+        # 6. Check that there exists at least one neighbour of the treatment nodes that is not in the outcome node set
         remaining = neighbour_nodes - outcome_node_set
         if remaining:
-            # 7.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
-            chosen = sample(sorted(remaining), 1)
-            # 7.2. Add this node to the treatment node set and recurse (left branch)
+            # 6.1. If so, sample a random node from the set of treatment nodes' neighbours not in the outcome node set
+            chosen = {next(iter(remaining))}
+            # 6.2. Add this node to the treatment node set and recurse (left branch)
             yield from self.list_all_min_sep(
                 graph,
                 treatment_node,
                 outcome_node,
-                treatment_node_set.union(chosen),
+                treatment_component.union(chosen),
                 outcome_node_set,
             )
-            # 7.3. Add this node to the outcome node set and recurse (right branch)
+            # 6.3. Add this node to the outcome node set and recurse (right branch)
             yield from self.list_all_min_sep(
                 graph,
                 treatment_node,
                 outcome_node,
-                treatment_node_set,
+                treatment_component,
                 outcome_node_set.union(chosen),
             )
         else:
-            # Step 8: All neighbours are in outcome set — we found a separator
+            # Step 7: All neighbours are in outcome set — we found a separator
             yield neighbour_nodes
 
     def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
@@ -185,7 +182,7 @@ class CausalDAG(nx.DiGraph):
         :param v_of_edge: To node
         :param attr: Attributes
         """
-        self.add_edge(u_of_edge, v_of_edge, **attr)
+        super().add_edge(u_of_edge, v_of_edge, **attr)
         if not self.is_acyclic():
             raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
@@ -240,9 +237,8 @@ class CausalDAG(nx.DiGraph):
         :param outcomes: A list of outcome variables to include in the ancestral graph (and their ancestors).
         :return: An ancestral graph relative to the set of variables X union Y.
         """
-        variables_to_keep = {
-            ancestor for var in treatments + outcomes for ancestor in nx.ancestors(self, var).union({var})
-        }
+        variables_to_keep = set(treatments + outcomes)
+        variables_to_keep.update({ancestor for var in treatments + outcomes for ancestor in nx.ancestors(self, var)})
         return self.subgraph(variables_to_keep)
 
     def get_indirect_graph(self, treatments: list[str], outcomes: list[str]) -> CausalDAG:
@@ -419,7 +415,8 @@ class CausalDAG(nx.DiGraph):
         proper_path_vars = self.proper_causal_pathway(treatments, outcomes)
         if proper_path_vars:
             # Collect all descendants including each proper causal path var itself
-            descendents_of_proper_casual_paths = set(proper_path_vars).union(
+            descendents_of_proper_casual_paths = set(proper_path_vars)
+            descendents_of_proper_casual_paths.update(
                 {node for var in proper_path_vars for node in nx.descendants(self, var)}
             )
 
@@ -458,12 +455,12 @@ class CausalDAG(nx.DiGraph):
         :return vars_on_proper_causal_pathway: Return a list of the variables on the proper causal pathway between
         treatments and outcomes.
         """
-        treatments_descendants = set.union(
-            *[nx.descendants(self, treatment).union({treatment}) for treatment in treatments]
-        )
-        treatments_descendants_without_treatments = set(treatments_descendants).difference(treatments)
+        treatments_descendants_without_treatments = {
+            x for treatment in treatments for x in nx.descendants(self, treatment) if x not in treatments
+        }
         backdoor_graph = self.get_backdoor_graph(set(treatments))
-        outcome_ancestors = set.union(*[nx.ancestors(backdoor_graph, outcome).union({outcome}) for outcome in outcomes])
+        outcome_ancestors = set(outcomes)
+        outcome_ancestors.update({x for outcome in outcomes for x in nx.ancestors(backdoor_graph, outcome)})
         nodes_on_proper_causal_paths = treatments_descendants_without_treatments.intersection(outcome_ancestors)
         return nodes_on_proper_causal_paths
 
@@ -512,6 +509,7 @@ class CausalDAG(nx.DiGraph):
         :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
         estimate as opposed to a purely associational estimate.
         """
+        # Naive method to guarantee termination when we have cycles
         if self.ignore_cycles:
             return set(self.predecessors(base_test_case.treatment_variable.name))
         minimal_adjustment_sets = []
