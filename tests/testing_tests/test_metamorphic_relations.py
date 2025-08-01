@@ -70,7 +70,7 @@ class TestMetamorphicRelation(unittest.TestCase):
         """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
         and there is only a single input."""
         causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.graph.remove_nodes_from(["X2", "X3"])
+        causal_dag.remove_nodes_from(["X2", "X3"])
         adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
         should_not_cause_mr = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
         self.assertEqual(
@@ -115,7 +115,7 @@ class TestMetamorphicRelation(unittest.TestCase):
         """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
         and there is only a single input."""
         causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.graph.remove_nodes_from(["X2", "X3"])
+        causal_dag.remove_nodes_from(["X2", "X3"])
         adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
         should_cause_mr = ShouldCause(BaseTestCase("X1", "Z"), adj_set)
         self.assertEqual(
