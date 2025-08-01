@@ -305,6 +305,7 @@ class TestCausalTestingFramework(unittest.TestCase):
             "sys.argv",
             [
                 "causal_testing",
+                "test",
                 "--dag_path",
                 str(self.dag_path),
                 "--data_paths",
@@ -323,6 +324,7 @@ class TestCausalTestingFramework(unittest.TestCase):
             "sys.argv",
             [
                 "causal_testing",
+                "test",
                 "--dag_path",
                 str(self.dag_path),
                 "--data_paths",
@@ -344,7 +346,7 @@ class TestCausalTestingFramework(unittest.TestCase):
                 "sys.argv",
                 [
                     "causal_testing",
-                    "--generate",
+                    "generate",
                     "--dag_path",
                     str(self.dag_path),
                     "--output",
@@ -353,6 +355,28 @@ class TestCausalTestingFramework(unittest.TestCase):
             ):
                 main()
                 self.assertTrue(os.path.exists(os.path.join(tmp, "tests.json")))
+
+    def test_parse_args_generation_non_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with unittest.mock.patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "generate",
+                    "--dag_path",
+                    str(self.dag_path),
+                    "--output",
+                    os.path.join(tmp, "tests_non_default.json"),
+                    "--estimator",
+                    "LogisticRegressionEstimator",
+                    "--estimate_type",
+                    "unit_odds_ratio",
+                    "--effect_type",
+                    "total",
+                ],
+            ):
+                main()
+                self.assertTrue(os.path.exists(os.path.join(tmp, "tests_non_default.json")))
 
     def tearDown(self):
         if self.output_path.parent.exists():

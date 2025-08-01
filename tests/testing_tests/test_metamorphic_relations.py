@@ -50,13 +50,37 @@ class TestMetamorphicRelation(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         causal_dag.remove_nodes_from(["X2", "X3"])
         adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_not_cause_MR = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
+        should_not_cause_mr = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
         self.assertEqual(
-            should_not_cause_MR.to_json_stub(),
+            should_not_cause_mr.to_json_stub(),
             {
                 "effect": "direct",
                 "estimate_type": "coefficient",
                 "estimator": "LinearRegressionEstimator",
+                "expected_effect": {"Z": "NoEffect"},
+                "treatment_variable": "X1",
+                "name": "X1 _||_ Z",
+                "formula": "Z ~ X1",
+                "alpha": 0.05,
+                "skip": True,
+            },
+        )
+
+    def test_should_not_cause_logistic_json_stub(self):
+        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
+        and there is only a single input."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.graph.remove_nodes_from(["X2", "X3"])
+        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
+        should_not_cause_mr = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
+        self.assertEqual(
+            should_not_cause_mr.to_json_stub(
+                effect_type="total", estimate_type="unit_odds_ratio", estimator="LogisticRegressionEstimator"
+            ),
+            {
+                "effect": "total",
+                "estimate_type": "unit_odds_ratio",
+                "estimator": "LogisticRegressionEstimator",
                 "expected_effect": {"Z": "NoEffect"},
                 "treatment_variable": "X1",
                 "name": "X1 _||_ Z",
@@ -72,13 +96,36 @@ class TestMetamorphicRelation(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         causal_dag.remove_nodes_from(["X2", "X3"])
         adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_cause_MR = ShouldCause(BaseTestCase("X1", "Z"), adj_set)
+        should_cause_mr = ShouldCause(BaseTestCase("X1", "Z"), adj_set)
         self.assertEqual(
-            should_cause_MR.to_json_stub(),
+            should_cause_mr.to_json_stub(),
             {
                 "effect": "direct",
                 "estimate_type": "coefficient",
                 "estimator": "LinearRegressionEstimator",
+                "expected_effect": {"Z": "SomeEffect"},
+                "formula": "Z ~ X1",
+                "treatment_variable": "X1",
+                "name": "X1 --> Z",
+                "skip": True,
+            },
+        )
+
+    def test_should_cause_logistic_json_stub(self):
+        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
+        and there is only a single input."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.graph.remove_nodes_from(["X2", "X3"])
+        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
+        should_cause_mr = ShouldCause(BaseTestCase("X1", "Z"), adj_set)
+        self.assertEqual(
+            should_cause_mr.to_json_stub(
+                effect_type="total", estimate_type="unit_odds_ratio", estimator="LogisticRegressionEstimator", skip=True
+            ),
+            {
+                "effect": "total",
+                "estimate_type": "unit_odds_ratio",
+                "estimator": "LogisticRegressionEstimator",
                 "expected_effect": {"Z": "SomeEffect"},
                 "formula": "Z ~ X1",
                 "treatment_variable": "X1",
@@ -216,7 +263,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 tests = json.load(f)
             expected = list(
                 map(
-                    lambda x: x.to_json_stub(skip=False),
+                    lambda x: x.to_json_stub(skip=True),
                     filter(
                         lambda relation: len(list(dcg.predecessors(relation.base_test_case.outcome_variable))) > 0,
                         relations,
@@ -235,7 +282,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 tests = json.load(f)
             expected = list(
                 map(
-                    lambda x: x.to_json_stub(skip=False),
+                    lambda x: x.to_json_stub(skip=True),
                     filter(
                         lambda relation: len(list(dag.predecessors(relation.base_test_case.outcome_variable))) > 0,
                         relations,
