@@ -541,8 +541,8 @@ class TestOptimisedDAGIdentification(TestDAGIdentification):
 
     def test_enumerate_minimal_adjustment_sets_multiple(self):
         """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
-        causal_dag = CausalDAG()
-        causal_dag.graph.add_edges_from(
+        causal_dag = OptimisedCausalDAG()
+        causal_dag.add_edges_from(
             [
                 ("X1", "X2"),
                 ("X2", "V"),
@@ -555,8 +555,8 @@ class TestOptimisedDAGIdentification(TestDAGIdentification):
                 ("Y", "D3"),
             ]
         )
-        opt_causal_dag = CausalDAG()
-        opt_causal_dag.graph.add_edges_from(
+        opt_causal_dag = OptimisedCausalDAG()
+        opt_causal_dag.add_edges_from(
             [
                 ("X1", "X2"),
                 ("X2", "V"),
@@ -584,7 +584,7 @@ class TestOptimisedDAGIdentification(TestDAGIdentification):
     def test_enumerate_minimal_adjustment_sets_two_adjustments(self):
         """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets of arity two."""
         causal_dag = OptimisedCausalDAG()
-        causal_dag.graph.add_edges_from(
+        causal_dag.add_edges_from(
             [
                 ("X1", "X2"),
                 ("X2", "V"),
@@ -611,7 +611,7 @@ class TestOptimisedDAGIdentification(TestDAGIdentification):
     def test_dag_with_non_character_nodes(self):
         """Test identification for a DAG whose nodes are not just characters (strings of length greater than 1)."""
         causal_dag = OptimisedCausalDAG()
-        causal_dag.graph.add_edges_from(
+        causal_dag.add_edges_from(
             [
                 ("va", "ba"),
                 ("ba", "ia"),
