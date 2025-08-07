@@ -28,16 +28,8 @@ class CausalTestResult:
         self.error_message = error_message
 
     def __str__(self):
-        def push(s, inc="  "):
-            return inc + str(s).replace("\n", "\n" + inc)
-
         result_str = str(self.effect_estimate.value.to_dict())
-        if "\n" in result_str:
-            result_str = "\n" + push(self.effect_estimate.value)
-        if isinstance(self.estimator.base_test_case.treatment_variable, list):
-            treatment = [x.name for x in self.estimator.base_test_case.treatment_variable]
-        else:
-            treatment = self.estimator.base_test_case.treatment_variable.name
+        treatment = self.estimator.base_test_case.treatment_variable.name
         base_str = (
             f"Causal Test Result\n==============\n"
             f"Treatment: {treatment}\n"

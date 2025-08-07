@@ -75,7 +75,7 @@ class TestCausalEffect(unittest.TestCase):
     def test_Positive_risk_ratio_pass(self):
         ctr = CausalTestResult(
             estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(5.05)),
+            effect_estimate=EffectEstimate(type="risk_ratio", value=pd.Series(5.05)),
         )
         ev = Positive()
         self.assertTrue(ev.apply(ctr))
