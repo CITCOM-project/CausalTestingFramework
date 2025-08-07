@@ -5,6 +5,7 @@ from abc import abstractmethod
 import pandas as pd
 
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
@@ -55,7 +56,7 @@ class ExperimentalEstimator(Estimator):
         :returns: The resulting output as a dict.
         """
 
-    def estimate_ate(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
+    def estimate_ate(self) -> EffectEstimate:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -88,14 +89,20 @@ class ExperimentalEstimator(Estimator):
         ci_low = difference.iloc[ci_low_index]
         ci_high = difference.iloc[self.repeats - ci_low_index]
 
-        return pd.Series(
-            {self.base_test_case.treatment_variable.name: difference.mean()[self.base_test_case.outcome_variable.name]}
-        ), [
+        return EffectEstimate(
+            "ate",
+            pd.Series(
+                {
+                    self.base_test_case.treatment_variable.name: difference.mean()[
+                        self.base_test_case.outcome_variable.name
+                    ]
+                }
+            ),
             pd.Series({self.base_test_case.treatment_variable.name: ci_low[self.base_test_case.outcome_variable.name]}),
             pd.Series(
                 {self.base_test_case.treatment_variable.name: ci_high[self.base_test_case.outcome_variable.name]}
             ),
-        ]
+        )
 
     def estimate_risk_ratio(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
         """Estimate the risk ratio of the treatment on the outcome. That is, the change in outcome caused
@@ -130,11 +137,11 @@ class ExperimentalEstimator(Estimator):
         ci_low = difference.iloc[ci_low_index]
         ci_high = difference.iloc[self.repeats - ci_low_index]
 
-        return pd.Series(
-            {self.base_test_case.treatment_variable.name: difference.mean()[self.base_test_case.outcome_variable.name]}
-        ), [
+        return EffectEstimate(
+            "ate",
+            {self.base_test_case.treatment_variable.name: difference.mean()[self.base_test_case.outcome_variable.name]},
             pd.Series({self.base_test_case.treatment_variable.name: ci_low[self.base_test_case.outcome_variable.name]}),
             pd.Series(
                 {self.base_test_case.treatment_variable.name: ci_high[self.base_test_case.outcome_variable.name]}
             ),
-        ]
+        )

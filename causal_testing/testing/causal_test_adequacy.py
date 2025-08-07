@@ -115,24 +115,10 @@ class DataAdequacy:
                 logger.warning(f"Adequacy ValueError: {e}")
                 continue
         outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
-        results = pd.DataFrame(c.to_dict() for c in results)[["effect_estimate", "ci_low", "ci_high"]]
+        results = pd.concat([c.effect_estimate.to_df() for c in results])
+        results["var"] = results.index
 
-        def convert_to_df(field):
-            converted = []
-            for r in results[field]:
-                if isinstance(r, float):
-                    converted.append(
-                        pd.DataFrame({self.test_case.base_test_case.treatment_variable.name: [r]}).transpose()
-                    )
-                else:
-                    converted.append(r)
-            return converted
-
-        for field in ["effect_estimate", "ci_low", "ci_high"]:
-            results[field] = convert_to_df(field)
-
-        effect_estimate = pd.concat(results["effect_estimate"].tolist(), axis=1).transpose().reset_index(drop=True)
-        self.kurtosis = effect_estimate.kurtosis()
+        self.kurtosis = results.groupby("var").apply(lambda x: x.kurtosis())["effect_estimate"]
         self.outcomes = sum(filter(lambda x: x is not None, outcomes))
         self.successful = sum(x is not None for x in outcomes)
 

@@ -19,7 +19,7 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import NoEffect, SomeEffect, Positive, Negative
-from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
+from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 
@@ -332,7 +332,6 @@ class CausalTestingFramework:
             expected_causal_effect=expected_effect,
             estimate_type=test.get("estimate_type", "ate"),
             estimate_params=test.get("estimate_params"),
-            effect_modifier_configuration=test.get("effect_modifier_configuration"),
             estimator=estimator,
         )
 
@@ -376,10 +375,7 @@ class CausalTestingFramework:
                             logger.error(f"Type or attribute error in test: {str(e)}")
                             raise
                         batch_results.append(
-                            CausalTestResult(
-                                estimator=test_case.estimator,
-                                test_value=TestValue("Error", str(e)),
-                            )
+                            CausalTestResult(effect_estimate=None, estimator=test_case.estimator, error_message=str(e))
                         )
 
                     progress.update(1)
@@ -410,10 +406,7 @@ class CausalTestingFramework:
                 if not silent:
                     logger.error(f"Error running test {test_case}: {str(e)}")
                     raise
-                result = CausalTestResult(
-                    estimator=test_case.estimator,
-                    test_value=TestValue("Error", str(e)),
-                )
+                result = CausalTestResult(estimator=test_case.estimator, effect_estimate=None, error_message=str(e))
                 results.append(result)
                 logger.info(f"Test errored: {test_case}")
 
@@ -432,17 +425,10 @@ class CausalTestingFramework:
         # Combine test configs with their results
         json_results = []
         for test_config, test_case, result in zip(test_configs["tests"], self.test_cases, results):
-            # Handle effect estimate - could be a Series or other format
-            effect_estimate = result.test_value.value
-            if isinstance(effect_estimate, pd.Series):
-                effect_estimate = effect_estimate.to_dict()
-
-            # Handle confidence intervals - convert to list if needed
-            ci_low = result.ci_low()
-            ci_high = result.ci_high()
-
             # Determine if test failed based on expected vs actual effect
-            test_passed = test_case.expected_causal_effect.apply(result) if result.test_value.type != "Error" else False
+            test_passed = (
+                test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
+            )
 
             output = {
                 "name": test_config["name"],
@@ -454,15 +440,16 @@ class CausalTestingFramework:
                 "alpha": test_config.get("alpha", 0.05),
                 "skip": test_config.get("skip", False),
                 "passed": test_passed,
-                "result": {
-                    "treatment": result.estimator.base_test_case.treatment_variable.name,
-                    "outcome": result.estimator.base_test_case.outcome_variable.name,
-                    "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
-                    "effect_measure": result.test_value.type,
-                    "effect_estimate": effect_estimate,
-                    "ci_low": ci_low,
-                    "ci_high": ci_high,
-                },
+                "result": (
+                    {
+                        "treatment": result.estimator.base_test_case.treatment_variable.name,
+                        "outcome": result.estimator.base_test_case.outcome_variable.name,
+                        "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
+                    }
+                    | result.effect_estimate.to_dict()
+                    if result.effect_estimate
+                    else {"error": result.error_message}
+                ),
             }
             json_results.append(output)
 

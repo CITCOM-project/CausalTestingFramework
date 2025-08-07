@@ -1,4 +1,4 @@
-"""Module containing implementation of search algorithm for surrogate search """
+"""Module containing implementation of search algorithm for surrogate search"""
 
 # Fitness functions are required to be iteratively defined, including all variables within.
 
@@ -45,7 +45,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                 for i, adjustment in enumerate(surrogate_model.adjustment_set):
                     adjustment_dict[adjustment] = solution[i + 1]
 
-                ate = surrogate_model.estimate_ate_calculated(adjustment_dict)
+                ate = surrogate_model.estimate_ate_calculated(adjustment_dict).value
                 if len(ate) > 1:
                     raise ValueError(
                         "Multiple ate values provided but currently only single values supported in this method"

@@ -42,10 +42,13 @@ class TestExperimentalEstimator(unittest.TestCase):
             alpha=0.05,
             repeats=200,
         )
-        ate, [ci_low, ci_high] = estimator.estimate_ate()
-        self.assertEqual(ate["X"], 2)
-        self.assertEqual(ci_low["X"], 2)
-        self.assertEqual(ci_high["X"], 2)
+        effect_estimate = estimator.estimate_ate()
+        print(effect_estimate.value)
+        print(effect_estimate.ci_low)
+        print(effect_estimate.ci_high)
+        self.assertEqual(effect_estimate.value["X"], 2)
+        self.assertEqual(effect_estimate.ci_low["X"], 2)
+        self.assertEqual(effect_estimate.ci_high["X"], 2)
 
     def test_estimate_risk_ratio(self):
         estimator = ConcreteExperimentalEstimator(
@@ -57,7 +60,7 @@ class TestExperimentalEstimator(unittest.TestCase):
             alpha=0.05,
             repeats=200,
         )
-        rr, [ci_low, ci_high] = estimator.estimate_risk_ratio()
-        self.assertEqual(rr["X"], 2)
-        self.assertEqual(ci_low["X"], 2)
-        self.assertEqual(ci_high["X"], 2)
+        effect_estimate = estimator.estimate_risk_ratio()
+        self.assertEqual(effect_estimate.value["X"], 2)
+        self.assertEqual(effect_estimate.ci_low["X"], 2)
+        self.assertEqual(effect_estimate.ci_high["X"], 2)

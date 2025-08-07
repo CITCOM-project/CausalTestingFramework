@@ -140,7 +140,10 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     # 9. Run the causal test and print results
     causal_test_result = causal_test_case.execute_test()
     logger.info("%s", causal_test_result)
-    return causal_test_result.test_value.value, causal_test_result.confidence_intervals
+    return causal_test_result.effect_estimate.value, (
+        causal_test_result.effect_estimate.ci_low,
+        causal_test_result.effect_estimate.ci_high,
+    )
 
 
 def plot_ates_with_cis(results_dict: dict, xs: list, save: bool = False, show: bool = False):

@@ -7,6 +7,7 @@ import pandas as pd
 import statsmodels.api as sm
 
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ class InstrumentalVariableEstimator(Estimator):
         """
         )
 
-    def estimate_iv_coefficient(self, df) -> float:
+    def iv_coefficient(self, df) -> float:
         """
         Estimate the linear regression coefficient of the treatment on the
         outcome.
@@ -75,16 +76,16 @@ class InstrumentalVariableEstimator(Estimator):
         # Estimate the coefficient of I on X by cancelling
         return ab / a
 
-    def estimate_coefficient(self, bootstrap_size=100) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
+    def estimate_coefficient(self, bootstrap_size=100) -> EffectEstimate:
         """
         Estimate the unit ate (i.e. coefficient) of the treatment on the
         outcome.
         """
         bootstraps = sorted(
-            [self.estimate_iv_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
+            [self.iv_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
         )
         bound = ceil((bootstrap_size * self.alpha) / 2)
         ci_low = pd.Series(bootstraps[bound])
         ci_high = pd.Series(bootstraps[bootstrap_size - bound])
 
-        return pd.Series(self.estimate_iv_coefficient(self.df)), [ci_low, ci_high]
+        return EffectEstimate("coefficient", pd.Series(self.iv_coefficient(self.df)), ci_low, ci_high)

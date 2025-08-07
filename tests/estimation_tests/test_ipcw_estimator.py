@@ -32,8 +32,8 @@ class TestIPCWEstimator(unittest.TestCase):
             fit_bltd_switch_formula=self.fit_bl_switch_formula,
             eligibility=None,
         )
-        estimate, _ = estimation_model.estimate_hazard_ratio()
-        self.assertEqual(round(estimate["trtrand"], 3), 1.351)
+        estimate = estimation_model.estimate_hazard_ratio()
+        self.assertEqual(round(estimate.value["trtrand"], 3), 1.351)
 
     def test_invalid_treatment_strategies(self):
         with self.assertRaises(ValueError):

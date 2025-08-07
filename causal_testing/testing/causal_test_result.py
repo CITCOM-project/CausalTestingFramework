@@ -1,21 +1,7 @@
-"""This module contains the CausalTestResult class, which is a container for the results of a causal test, and the
-TestValue dataclass.
-"""
-
-from typing import Any
-from dataclasses import dataclass
-import pandas as pd
+"""This module contains the CausalTestResult class, which is a container for the results of a causal test."""
 
 from causal_testing.estimation.abstract_estimator import Estimator
-from causal_testing.specification.variable import Variable
-
-
-@dataclass
-class TestValue:
-    """A dataclass to hold both the type and value of a causal test result"""
-
-    type: str
-    value: float
+from causal_testing.estimation.effect_estimate import EffectEstimate
 
 
 class CausalTestResult:
@@ -24,13 +10,11 @@ class CausalTestResult:
     confidence intervals."""
 
     def __init__(
-        # pylint: disable=too-many-arguments
         self,
         estimator: Estimator,
-        test_value: TestValue,
-        confidence_intervals: [pd.Series, pd.Series] = None,
-        effect_modifier_configuration: {Variable: Any} = None,
+        effect_estimate: EffectEstimate,
         adequacy=None,
+        error_message: str = None,
     ):
         self.estimator = estimator
         self.adequacy = adequacy
@@ -38,25 +22,12 @@ class CausalTestResult:
             self.adjustment_set = estimator.adjustment_set
         else:
             self.adjustment_set = set()
-        self.test_value = test_value
-        self.confidence_intervals = confidence_intervals
-
-        if effect_modifier_configuration is not None:
-            self.effect_modifier_configuration = effect_modifier_configuration
-        else:
-            self.effect_modifier_configuration = {}
+        self.effect_estimate = effect_estimate
+        self.error_message = error_message
 
     def __str__(self):
-        def push(s, inc="  "):
-            return inc + str(s).replace("\n", "\n" + inc)
-
-        result_str = str(self.test_value.value)
-        if "\n" in result_str:
-            result_str = "\n" + push(self.test_value.value)
-        if isinstance(self.estimator.base_test_case.treatment_variable, list):
-            treatment = [x.name for x in self.estimator.base_test_case.treatment_variable]
-        else:
-            treatment = self.estimator.base_test_case.treatment_variable.name
+        result_str = str(self.effect_estimate.value.to_dict())
+        treatment = self.estimator.base_test_case.treatment_variable.name
         base_str = (
             f"Causal Test Result\n==============\n"
             f"Treatment: {treatment}\n"
@@ -67,12 +38,11 @@ class CausalTestResult:
         )
         if hasattr(self.estimator, "formula"):
             base_str += f"Formula: {self.estimator.formula}\n"
-        base_str += f"{self.test_value.type}: {result_str}\n"
+        base_str += f"{self.effect_estimate.type}: {result_str}\n"
         confidence_str = ""
-        if self.confidence_intervals:
-            ci_str = " " + str(self.confidence_intervals)
-            if "\n" in ci_str:
-                ci_str = " " + push(pd.DataFrame(self.confidence_intervals).transpose().to_string(header=False))
+        if self.effect_estimate.ci_valid():
+            ci_str = f"CI low: {self.effect_estimate.ci_low.to_dict}\n"
+            ci_str += f"CI high: {self.effect_estimate.ci_high.to_dict}\n"
             confidence_str += f"Confidence intervals:{ci_str}\n"
             confidence_str += f"Alpha:{self.estimator.alpha}\n"
         adequacy_str = ""
@@ -94,44 +64,8 @@ class CausalTestResult:
             "treatment_value": self.estimator.treatment_value,
             "outcome": self.estimator.base_test_case.outcome_variable.name,
             "adjustment_set": list(self.adjustment_set) if json else self.adjustment_set,
-            "effect_measure": self.test_value.type,
-            "effect_estimate": (
-                self.test_value.value.to_dict()
-                if json and hasattr(self.test_value.value, "to_dict")
-                else self.test_value.value
-            ),
-            "ci_low": self.ci_low().to_dict() if json and hasattr(self.ci_low(), "to_dict") else self.ci_low(),
-            "ci_high": self.ci_high().to_dict() if json and hasattr(self.ci_high(), "to_dict") else self.ci_high(),
-        }
+            "effect_measure": self.effect_estimate.type,
+        } | self.effect_estimate.to_dict()
         if self.adequacy:
             base_dict["adequacy"] = self.adequacy.to_dict()
         return base_dict
-
-    def ci_low(self):
-        """Return the lower bracket of the confidence intervals."""
-        if self.confidence_intervals:
-            if isinstance(self.confidence_intervals[0], pd.Series):
-                return self.confidence_intervals[0].to_list()
-            return self.confidence_intervals[0]
-        return None
-
-    def ci_high(self):
-        """Return the higher bracket of the confidence intervals."""
-        if self.confidence_intervals:
-            if isinstance(self.confidence_intervals[1], pd.Series):
-                return self.confidence_intervals[1].to_list()
-            return self.confidence_intervals[1]
-        return None
-
-    def ci_valid(self) -> bool:
-        """Return whether or not the result has valid confidence invervals"""
-        return self.ci_low() and (not pd.isnull(self.ci_low())) and self.ci_high() and (not pd.isnull(self.ci_high()))
-
-    def summary(self):
-        """Summarise the causal test result as an intuitive sentence."""
-        treatment_variable = self.estimator.base_test_case.treatment_variable
-        print(
-            f"The causal effect of changing {treatment_variable.name} = {self.estimator.control_value} to "
-            f"{treatment_variable.name}' = {self.estimator.treatment_value} is {self.test_value.value}"
-            f"(95% confidence intervals: {self.confidence_intervals})."
-        )

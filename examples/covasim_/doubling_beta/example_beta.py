@@ -78,13 +78,13 @@ def doubling_beta_CATE_on_csv(
 
     # Store results for plotting
     results_dict["association"] = {
-        "ate": association_test_result.test_value.value,
-        "cis": association_test_result.confidence_intervals,
+        "ate": association_test_result.effect_estimate.value,
+        "cis": [association_test_result.effect_estimate.ci_low, association_test_result.effect_estimate.ci_high],
         "df": past_execution_df,
     }
     results_dict["causation"] = {
-        "ate": causal_test_result.test_value.value,
-        "cis": causal_test_result.confidence_intervals,
+        "ate": causal_test_result.effect_estimate.value,
+        "cis": [causal_test_result.effect_estimate.ci_low, causal_test_result.effect_estimate.ci_high],
         "df": past_execution_df,
     }
 
@@ -98,8 +98,11 @@ def doubling_beta_CATE_on_csv(
         counterfactual_causal_test_result = causal_test_case.execute_test()
 
         results_dict["counterfactual"] = {
-            "ate": counterfactual_causal_test_result.test_value.value,
-            "cis": counterfactual_causal_test_result.confidence_intervals,
+            "ate": counterfactual_causal_test_result.effect_estimate.value,
+            "cis": [
+                counterfactual_causal_test_result.effect_estimate.ci_low,
+                counterfactual_causal_test_result.effect_estimate.ci_high,
+            ],
             "df": counterfactual_past_execution_df,
         }
         if verbose:

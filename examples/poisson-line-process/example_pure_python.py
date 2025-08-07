@@ -11,6 +11,7 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import ExactValue, Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
@@ -26,7 +27,7 @@ class EmpiricalMeanEstimator(Estimator):
         """
         self.modelling_assumptions += "The data must contain runs with the exact configuration of interest."
 
-    def estimate_ate(self) -> float:
+    def estimate_ate(self) -> EffectEstimate:
         """Estimate the outcomes under control and treatment.
         :return: The empirical average treatment effect.
         """
@@ -36,7 +37,7 @@ class EmpiricalMeanEstimator(Estimator):
         treatment_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.treatment_value)[
             self.base_test_case.outcome_variable.name
         ].dropna()
-        return treatment_results.mean() - control_results.mean(), None
+        return EffectEstimate("ate", treatment_results.mean() - control_results.mean())
 
     def estimate_risk_ratio(self) -> float:
         """Estimate the outcomes under control and treatment.
@@ -48,7 +49,7 @@ class EmpiricalMeanEstimator(Estimator):
         treatment_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.treatment_value)[
             self.base_test_case.outcome_variable.name
         ].dropna()
-        return treatment_results.mean() / control_results.mean(), None
+        return EffectEstimate("risk_ratio", treatment_results.mean() / control_results.mean())
 
 
 # 1. Read in the Causal DAG
@@ -134,8 +135,8 @@ def test_poisson_intensity_num_shapes(save=False):
             "height": obs_causal_test_result.estimator.treatment_value,
             "control": obs_causal_test_result.estimator.control_value,
             "treatment": obs_causal_test_result.estimator.treatment_value,
-            "smt_risk_ratio": smt_causal_test_result.test_value.value,
-            "obs_risk_ratio": obs_causal_test_result.test_value.value[0],
+            "smt_risk_ratio": smt_causal_test_result.effect_estimate.value,
+            "obs_risk_ratio": obs_causal_test_result.effect_estimate.value[0],
         }
         for smt_causal_test_result, obs_causal_test_result in test_results
     ]
@@ -153,7 +154,6 @@ def test_poisson_width_num_shapes(save=False):
             base_test_case=base_test_case,
             expected_causal_effect=Positive(),
             estimate_type="ate_calculated",
-            effect_modifier_configuration={"intensity": i},
             estimator=LinearRegressionEstimator(
                 base_test_case=base_test_case,
                 treatment_value=w + 1.0,
@@ -173,10 +173,10 @@ def test_poisson_width_num_shapes(save=False):
         {
             "control": causal_test_result.estimator.control_value,
             "treatment": causal_test_result.estimator.treatment_value,
-            "intensity": causal_test_result.effect_modifier_configuration["intensity"],
-            "ate": causal_test_result.test_value.value[0],
-            "ci_low": causal_test_result.confidence_intervals[0][0],
-            "ci_high": causal_test_result.confidence_intervals[1][0],
+            "intensity": causal_test_result.estimator.effect_modifiers["intensity"],
+            "ate": causal_test_result.effect_estimate.value[0],
+            "ci_low": causal_test_result.effect_estimate.ci_low,
+            "ci_high": causal_test_result.effect_estimate.ci_high,
         }
         for causal_test_result in test_results
     ]

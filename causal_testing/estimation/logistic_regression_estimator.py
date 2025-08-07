@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class LogisticRegressionEstimator(RegressionEstimator):
         self.modelling_assumptions.append("The outcome must be binary.")
         self.modelling_assumptions.append("Independently and identically distributed errors.")
 
-    def estimate_unit_odds_ratio(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
+    def estimate_unit_odds_ratio(self) -> EffectEstimate:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
         coefficient of the treatment of interest.
 
@@ -40,7 +41,9 @@ class LogisticRegressionEstimator(RegressionEstimator):
         """
         model = self.fit_model(self.df)
         ci_low, ci_high = np.exp(model.conf_int(self.alpha).loc[self.base_test_case.treatment_variable.name])
-        return pd.Series(np.exp(model.params[self.base_test_case.treatment_variable.name])), [
+        return EffectEstimate(
+            "odds_ratio",
+            pd.Series(np.exp(model.params[self.base_test_case.treatment_variable.name])),
             pd.Series(ci_low),
             pd.Series(ci_high),
-        ]
+        )
