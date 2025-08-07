@@ -1,7 +1,5 @@
 """This module contains the CausalTestResult class, which is a container for the results of a causal test."""
 
-import pandas as pd
-
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
 
