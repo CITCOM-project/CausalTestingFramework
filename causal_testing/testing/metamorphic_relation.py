@@ -133,13 +133,13 @@ def generate_metamorphic_relation(
     # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
     if ((u, v) not in dag.edges) and ((v, u) not in dag.edges):
         # Case 1: U --> ... --> V
-        if u in nx.ancestors(dag.graph, v):
+        if u in nx.ancestors(dag, v):
             adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
                 metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0])))
 
         # Case 2: V --> ... --> U
-        elif v in nx.ancestors(dag.graph, u):
+        elif v in nx.ancestors(dag, u):
             adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
                 metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), list(adj_sets[0])))
@@ -221,7 +221,7 @@ def generate_causal_tests(
     causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)
 
     dag_nodes_to_test = [
-        node for node in causal_dag.nodes if nx.get_node_attributes(causal_dag.graph, "test", default=True)[node]
+        node for node in causal_dag.nodes if nx.get_node_attributes(causal_dag, "test", default=True)[node]
     ]
 
     if not causal_dag.is_acyclic() and ignore_cycles:
@@ -241,7 +241,7 @@ def generate_causal_tests(
     tests = [
         relation.to_json_stub(**json_stub_kargs)
         for relation in relations
-        if len(list(causal_dag.graph.predecessors(relation.base_test_case.outcome_variable))) > 0
+        if len(list(causal_dag.predecessors(relation.base_test_case.outcome_variable))) > 0
     ]
 
     logger.info(f"Generated {len(tests)} tests. Saving to {output_path}.")
