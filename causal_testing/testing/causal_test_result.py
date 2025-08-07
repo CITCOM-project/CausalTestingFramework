@@ -53,8 +53,6 @@ class CausalTestResult:
         if self.effect_estimate.ci_valid():
             ci_str = f"CI low: {self.effect_estimate.ci_low.to_dict}\n"
             ci_str += f"CI high: {self.effect_estimate.ci_high.to_dict}\n"
-            if "\n" in ci_str:
-                ci_str = " " + push(pd.DataFrame(self.confidence_intervals).transpose().to_string(header=False))
             confidence_str += f"Confidence intervals:{ci_str}\n"
             confidence_str += f"Alpha:{self.estimator.alpha}\n"
         adequacy_str = ""

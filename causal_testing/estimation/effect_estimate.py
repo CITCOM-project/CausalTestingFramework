@@ -2,8 +2,8 @@
 This module contains the EffectEstimate dataclass.
 """
 
-import pandas as pd
 from dataclasses import dataclass
+import pandas as pd
 
 
 @dataclass
@@ -39,4 +39,5 @@ class EffectEstimate:
         return d
 
     def to_df(self) -> pd.DataFrame:
+        """Return representation as a pandas dataframe."""
         return pd.DataFrame({"effect_estimate": self.value, "ci_low": self.ci_low, "ci_high": self.ci_high})
