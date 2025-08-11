@@ -39,14 +39,14 @@ class ShouldCause(MetamorphicRelation):
 
     def to_json_stub(
         self,
-        skip: bool = True,
+        skip: bool = False,
         estimate_type: str = "coefficient",
         effect_type: str = "direct",
         estimator: str = "LinearRegressionEstimator",
     ) -> dict:
         """
         Convert to a JSON frontend stub string for user customisation.
-        :param skip: Whether to skip the test
+        :param skip: Whether to skip the test (default False).
         :param effect_type: The type of causal effect to consider (total or direct)
         :param estimate_type: The estimate type to use when evaluating tests
         :param estimator: The name of the estimator class to use when evaluating the test
@@ -77,14 +77,14 @@ class ShouldNotCause(MetamorphicRelation):
 
     def to_json_stub(
         self,
-        skip: bool = True,
+        skip: bool = False,
         estimate_type: str = "coefficient",
         effect_type: str = "direct",
         estimator: str = "LinearRegressionEstimator",
     ) -> dict:
         """
         Convert to a JSON frontend stub string for user customisation.
-        :param skip: Whether to skip the test
+        :param skip: Whether to skip the test (default False).
         :param effect_type: The type of causal effect to consider (total or direct)
         :param estimate_type: The estimate type to use when evaluating tests
         :param estimator: The name of the estimator class to use when evaluating the test
@@ -243,6 +243,10 @@ def generate_causal_tests(
         for relation in relations
         if len(list(causal_dag.graph.predecessors(relation.base_test_case.outcome_variable))) > 0
     ]
+
+    logger.warning("The skip parameter is hard-coded to False during test generation for better integration with the "
+                   "causal testing component (python -m causal_testing test ...)"
+                   "Please carefully review the generated tests and decide which to skip.")
 
     logger.info(f"Generated {len(tests)} tests. Saving to {output_path}.")
     with open(output_path, "w", encoding="utf-8") as f:
