@@ -62,7 +62,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "name": "X1 _||_ Z",
                 "formula": "Z ~ X1",
                 "alpha": 0.05,
-                "skip": True,
+                "skip": False,
             },
         )
 
@@ -86,7 +86,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "name": "X1 _||_ Z",
                 "formula": "Z ~ X1",
                 "alpha": 0.05,
-                "skip": True,
+                "skip": False,
             },
         )
 
@@ -107,7 +107,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "formula": "Z ~ X1",
                 "treatment_variable": "X1",
                 "name": "X1 --> Z",
-                "skip": True,
+                "skip": False,
             },
         )
 
@@ -130,7 +130,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "formula": "Z ~ X1",
                 "treatment_variable": "X1",
                 "name": "X1 --> Z",
-                "skip": True,
+                "skip": False,
             },
         )
 
