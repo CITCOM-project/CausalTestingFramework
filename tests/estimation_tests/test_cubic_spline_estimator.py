@@ -24,10 +24,10 @@ class TestCubicSplineRegressionEstimator(unittest.TestCase):
 
         cublic_spline_estimator = CubicSplineRegressionEstimator(base_test_case, 1, 0, set(), 3, df)
 
-        ate_1 = cublic_spline_estimator.estimate_ate_calculated()
+        ate_1 = cublic_spline_estimator.estimate_ate_calculated().value
 
         cublic_spline_estimator.treatment_value = 2
-        ate_2 = cublic_spline_estimator.estimate_ate_calculated()
+        ate_2 = cublic_spline_estimator.estimate_ate_calculated().value
 
         # Doubling the treatemebnt value should roughly but not exactly double the ATE
         self.assertNotEqual(ate_1[0] * 2, ate_2[0])

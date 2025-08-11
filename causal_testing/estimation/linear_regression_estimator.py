@@ -10,6 +10,7 @@ from patsy import dmatrix, ModelDesc  # pylint: disable = no-name-in-module
 from causal_testing.specification.variable import Variable
 from causal_testing.estimation.genetic_programming_regression_fitter import GP
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         formula = gp.simplify(formula)
         self.formula = f"{self.base_test_case.outcome_variable.name} ~ I({formula}) - 1"
 
-    def estimate_coefficient(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
+    def estimate_coefficient(self) -> EffectEstimate:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
         caused by a unit change in treatment.
 
@@ -121,9 +122,9 @@ class LinearRegressionEstimator(RegressionEstimator):
         ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
-        return unit_effect, [ci_low, ci_high]
+        return EffectEstimate("coefficient", unit_effect, ci_low, ci_high)
 
-    def estimate_ate(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
+    def estimate_ate(self) -> EffectEstimate:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -146,10 +147,10 @@ class LinearRegressionEstimator(RegressionEstimator):
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])
         ate = pd.Series(t_test_results.effect[0])
         confidence_intervals = list(t_test_results.conf_int(alpha=self.alpha).flatten())
-        confidence_intervals = [pd.Series(interval) for interval in confidence_intervals]
-        return ate, confidence_intervals
+        ci_low, ci_high = [pd.Series(interval) for interval in confidence_intervals]
+        return EffectEstimate("ate", ate, ci_low, ci_high)
 
-    def estimate_risk_ratio(self, adjustment_config: dict = None) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
+    def estimate_risk_ratio(self, adjustment_config: dict = None) -> EffectEstimate:
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
@@ -159,9 +160,11 @@ class LinearRegressionEstimator(RegressionEstimator):
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"])
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"])
-        return pd.Series(treatment_outcome["mean"] / control_outcome["mean"]), [ci_low, ci_high]
+        return EffectEstimate(
+            "risk_ratio", pd.Series(treatment_outcome["mean"] / control_outcome["mean"]), ci_low, ci_high
+        )
 
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
+    def estimate_ate_calculated(self, adjustment_config: dict = None) -> EffectEstimate:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
@@ -177,7 +180,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"])
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"])
-        return pd.Series(treatment_outcome["mean"] - control_outcome["mean"]), [ci_low, ci_high]
+        return EffectEstimate("ate", pd.Series(treatment_outcome["mean"] - control_outcome["mean"]), ci_low, ci_high)
 
     def _get_confidence_intervals(self, model, treatment):
         confidence_intervals = model.conf_int(alpha=self.alpha, cols=None)

@@ -11,6 +11,7 @@ import statsmodels.formula.api as smf
 from lifelines import CoxPHFitter
 
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.specification.variable import Variable
 
@@ -285,7 +286,7 @@ class IPCWEstimator(Estimator):
         if len(self.df.loc[self.df["trtrand"] == 1]) == 0:
             raise ValueError(f"No individuals began the treatment strategy {self.treatment_strategy}")
 
-    def estimate_hazard_ratio(self):
+    def estimate_hazard_ratio(self) -> EffectEstimate:
         """
         Estimate the hazard ratio.
         """
@@ -380,4 +381,4 @@ class IPCWEstimator(Estimator):
 
         ci_low, ci_high = [np.exp(cox_ph.confidence_intervals_)[col] for col in cox_ph.confidence_intervals_.columns]
 
-        return (cox_ph.hazard_ratios_, (ci_low, ci_high))
+        return EffectEstimate("hazard_ratio", cox_ph.hazard_ratios_, ci_low, ci_high)
