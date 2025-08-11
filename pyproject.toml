@@ -15,9 +15,7 @@ requires-python = ">=3.10"
 license = { text = "MIT" }
 keywords = ["causal inference", "verification"]
 dependencies = [
-    "fitter~=1.7",
     "lifelines~=0.29.0",
-    "lhsmdu~=1.1",
     "networkx>=3.4,<3.5",
     "numpy~=1.26",
     "pandas>=2.1",
