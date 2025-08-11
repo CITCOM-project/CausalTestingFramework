@@ -20,12 +20,18 @@ class TestCausalDAGIssue90(unittest.TestCase):
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
 
+    def test_graphml(self):
+        dot_dag = CausalDAG(self.dag_dot_path)
+        xml_dag = CausalDAG(os.path.join("tests", "resources", "data", "dag.xml"))
+        self.assertEqual(dot_dag.nodes, xml_dag.nodes)
+        self.assertEqual(dot_dag.edges, xml_dag.edges)
+
     def test_enumerate_minimal_adjustment_sets(self):
         """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ["X"], ["Y"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual([{"Z"}], adjustment_sets)
+        self.assertEqual([{"Z"}], list(adjustment_sets))
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
@@ -46,19 +52,19 @@ class TestIVAssumptions(unittest.TestCase):
 
     def test_unrelated_instrument(self):
         causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.graph.remove_edge("I", "X")
+        causal_dag.remove_edge("I", "X")
         with self.assertRaises(ValueError):
             causal_dag.check_iv_assumptions("X", "Y", "I")
 
     def test_direct_cause(self):
         causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.graph.add_edge("I", "Y")
+        causal_dag.add_edge("I", "Y")
         with self.assertRaises(ValueError):
             causal_dag.check_iv_assumptions("X", "Y", "I")
 
     def test_common_cause(self):
         causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.graph.add_edge("U", "I")
+        causal_dag.add_edge("U", "I")
         with self.assertRaises(ValueError):
             causal_dag.check_iv_assumptions("X", "Y", "I")
 
@@ -279,12 +285,12 @@ class TestDAGIdentification(unittest.TestCase):
         causal_dag = CausalDAG(self.dag_dot_path)
         xs, ys = ["X1", "X2"], ["Y"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual([{"Z"}], adjustment_sets)
+        self.assertEqual([{"Z"}], list(adjustment_sets))
 
     def test_enumerate_minimal_adjustment_sets_multiple(self):
         """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
         causal_dag = CausalDAG()
-        causal_dag.graph.add_edges_from(
+        causal_dag.add_edges_from(
             [
                 ("X1", "X2"),
                 ("X2", "V"),
@@ -308,7 +314,7 @@ class TestDAGIdentification(unittest.TestCase):
     def test_enumerate_minimal_adjustment_sets_two_adjustments(self):
         """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets of arity two."""
         causal_dag = CausalDAG()
-        causal_dag.graph.add_edges_from(
+        causal_dag.add_edges_from(
             [
                 ("X1", "X2"),
                 ("X2", "V"),
@@ -335,7 +341,7 @@ class TestDAGIdentification(unittest.TestCase):
     def test_dag_with_non_character_nodes(self):
         """Test identification for a DAG whose nodes are not just characters (strings of length greater than 1)."""
         causal_dag = CausalDAG()
-        causal_dag.graph.add_edges_from(
+        causal_dag.add_edges_from(
             [
                 ("va", "ba"),
                 ("ba", "ia"),
@@ -350,7 +356,7 @@ class TestDAGIdentification(unittest.TestCase):
         )
         xs, ys = ["ba"], ["da"]
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual(adjustment_sets, [{"aa"}, {"la"}, {"va"}])
+        self.assertEqual(list(adjustment_sets), [{"aa"}, {"la"}, {"va"}])
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
@@ -475,3 +481,12 @@ class TestHiddenVariableDAG(unittest.TestCase):
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
+
+
+def time_it(label, func, *args, **kwargs):
+    import time
+
+    start = time.time()
+    result = func(*args, **kwargs)
+    print(f"{label} took {time.time() - start:.6f} seconds")
+    return result
