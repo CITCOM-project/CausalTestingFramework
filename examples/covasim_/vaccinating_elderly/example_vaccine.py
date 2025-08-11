@@ -69,7 +69,8 @@ def setup_test_case(verbose: bool = False):
     for outcome_variable, expected_effect in expected_outcome_effects.items():
         base_test_case = BaseTestCase(treatment_variable=vaccine, outcome_variable=outcome_variable)
         causal_test_case = CausalTestCase(
-            base_test_case=base_test_case, expected_causal_effect=expected_effect,
+            base_test_case=base_test_case,
+            expected_causal_effect=expected_effect,
         )
         # 7. Obtain the minimal adjustment set for the causal test case from the causal DAG
         minimal_adjustment_set = causal_dag.identification(base_test_case)
@@ -89,9 +90,12 @@ def setup_test_case(verbose: bool = False):
         if verbose:
             logging.info("Causation:\n%s", causal_test_result)
 
-        results_dict[outcome_variable.name]["ate"] = causal_test_result.test_value.value
+        results_dict[outcome_variable.name]["ate"] = causal_test_result.effect_estimate.value
 
-        results_dict[outcome_variable.name]["cis"] = causal_test_result.confidence_intervals
+        results_dict[outcome_variable.name]["cis"] = [
+            causal_test_result.effect_estimate.ci_low,
+            causal_test_result.effect_estimate.ci_high,
+        ]
 
         results_dict[outcome_variable.name]["test_passes"] = causal_test_case.expected_causal_effect.apply(
             causal_test_result

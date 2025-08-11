@@ -126,7 +126,7 @@ class TestCausalTestExecution(unittest.TestCase):
             self.df,
         )
         causal_test_result = self.causal_test_case.execute_test(estimation_model)
-        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1e-10)
+        pd.testing.assert_series_equal(causal_test_result.effect_estimate.value, pd.Series(4.0), atol=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_direct_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -150,7 +150,7 @@ class TestCausalTestExecution(unittest.TestCase):
         self.treatment_value = 1
         self.control_value = 0
         causal_test_result = causal_test_case.execute_test()
-        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1e-10)
+        pd.testing.assert_series_equal(causal_test_result.effect_estimate.value, pd.Series(4.0), atol=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_coefficient(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -164,7 +164,7 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         self.causal_test_case.estimate_type = "coefficient"
         causal_test_result = self.causal_test_case.execute_test(estimation_model)
-        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series({"D": 0.0}), atol=1e-1)
+        pd.testing.assert_series_equal(causal_test_result.effect_estimate.value, pd.Series({"D": 0.0}), atol=1e-1)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -178,7 +178,7 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         self.causal_test_case.estimate_type = "risk_ratio"
         causal_test_result = self.causal_test_case.execute_test(estimation_model)
-        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(0.0), atol=1)
+        pd.testing.assert_series_equal(causal_test_result.effect_estimate.value, pd.Series(0.0), atol=1)
 
     def test_invalid_estimate_type(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -206,7 +206,7 @@ class TestCausalTestExecution(unittest.TestCase):
             formula=f"C ~ A + {'+'.join(self.minimal_adjustment_set)} + (D ** 2)",
         )
         causal_test_result = self.causal_test_case.execute_test(estimation_model)
-        pd.testing.assert_series_equal(causal_test_result.test_value.value, pd.Series(4.0), atol=1)
+        pd.testing.assert_series_equal(causal_test_result.effect_estimate.value, pd.Series(4.0), atol=1)
 
     def test_estimate_params_none(self):
         """Check that estimate_params defaults to empty dict when None is passed into the estimator object"""
@@ -248,4 +248,4 @@ class TestCausalTestExecution(unittest.TestCase):
             estimator=estimator,
         )
         self.assertEqual(causal_test_case.estimate_params, estimate_params)
-        self.assertEqual(round(causal_test_case.execute_test().test_value.value[0], 3), 1.444)
+        self.assertEqual(round(causal_test_case.execute_test().effect_estimate.value[0], 3), 1.444)

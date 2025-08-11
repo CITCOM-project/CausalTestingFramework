@@ -1,3 +1,7 @@
+import os
+import shutil, tempfile
+import pandas as pd
+import numpy as np
 import unittest
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.causal_specification import CausalSpecification
@@ -10,11 +14,6 @@ from causal_testing.surrogate.causal_surrogate_assisted import (
 )
 from causal_testing.surrogate.surrogate_search_algorithms import GeneticSearchAlgorithm
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
-
-import os
-import shutil, tempfile
-import pandas as pd
-import numpy as np
 
 
 class TestSimulationResult(unittest.TestCase):

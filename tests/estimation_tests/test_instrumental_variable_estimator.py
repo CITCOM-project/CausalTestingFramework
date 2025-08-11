@@ -31,7 +31,7 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
             adjustment_set=set(),
             instrument="Z",
         )
-        coefficient, [low, high] = iv_estimator.estimate_coefficient()
-        self.assertEqual(coefficient[0], 2)
-        self.assertEqual(low[0], 2)
-        self.assertEqual(high[0], 2)
+        effect_estimate = iv_estimator.estimate_coefficient()
+        self.assertEqual(effect_estimate.value[0], 2)
+        self.assertEqual(effect_estimate.ci_low[0], 2)
+        self.assertEqual(effect_estimate.ci_high[0], 2)
