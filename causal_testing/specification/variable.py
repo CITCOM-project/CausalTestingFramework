@@ -5,7 +5,6 @@ from abc import ABC
 from collections.abc import Callable
 from typing import TypeVar
 
-import lhsmdu
 from pandas import DataFrame
 from scipy.stats._distn_infrastructure import rv_generic
 
@@ -37,19 +36,6 @@ class Variable(ABC):
 
     def __repr__(self):
         return f"{self.typestring()}: {self.name}::{self.datatype.__name__}"
-
-    def sample(self, n_samples: int) -> [T]:
-        """Generate a Latin Hypercube Sample of size n_samples according to the
-        Variable's distribution.
-
-        :param int n_samples: The number of samples to generate.
-        :return: A list of samples
-        :rtype: List[T]
-
-        """
-        assert self.distribution is not None, "Sampling requires a distribution to be specified."
-        lhs = lhsmdu.sample(1, n_samples).tolist()[0]
-        return lhsmdu.inverseTransformSample(self.distribution, lhs).tolist()
 
     def typestring(self) -> str:
         """Return the type of the Variable, e.g. INPUT, or OUTPUT. Note that

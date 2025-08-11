@@ -13,10 +13,6 @@ class TestVariable(unittest.TestCase):
     def setUp(self) -> None:
         pass
 
-    def test_sample_flakey(self):
-        ip = Input("ip", float, norm)
-        self.assertGreater(kstest(ip.sample(10), norm.cdf).pvalue, 0.95)
-
     def test_typestring(self):
         class Var(Variable):
             pass
