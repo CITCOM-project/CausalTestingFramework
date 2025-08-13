@@ -69,8 +69,6 @@ class NoEffect(CausalEffect):
                 if isinstance(res.effect_estimate.ci_high, Iterable)
                 else [res.effect_estimate.value]
             )
-            for ci_low, ci_high, v in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high, value):
-                print(not ((ci_low < 0 < ci_high) or abs(v) < self.atol))
             return (
                 sum(
                     not ((ci_low < 0 < ci_high) or abs(v) < self.atol)
