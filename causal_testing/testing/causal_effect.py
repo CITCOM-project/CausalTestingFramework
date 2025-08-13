@@ -56,7 +56,7 @@ class NoEffect(CausalEffect):
         self.ctol = ctol
 
     def apply(self, res: CausalTestResult) -> bool:
-        if res.effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio"):
+        if res.effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
             return any(
                 ci_low < 1 < ci_high or np.isclose(value, 1.0, atol=self.atol)
                 for ci_low, ci_high, value in zip(
