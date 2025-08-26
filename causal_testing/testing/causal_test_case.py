@@ -1,13 +1,11 @@
 """This module contains the CausalTestCase class, a class that holds the information required for a causal test"""
 
 import logging
-from typing import Any
 
-from causal_testing.specification.variable import Variable
 from causal_testing.testing.causal_effect import CausalEffect
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.estimation.abstract_estimator import Estimator
-from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
+from causal_testing.testing.causal_test_result import CausalTestResult
 
 
 logger = logging.getLogger(__name__)
@@ -29,14 +27,12 @@ class CausalTestCase:
         expected_causal_effect: CausalEffect,
         estimate_type: str = "ate",
         estimate_params: dict = None,
-        effect_modifier_configuration: dict[Variable:Any] = None,
         estimator: type(Estimator) = None,
     ):
         """
         :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
         :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
         :param estimate_type: A string which denotes the type of estimate to return.
-        :param effect_modifier_configuration: The assignment of the effect modifiers to use for estimates.
         :param estimator: An Estimator class object
         """
         self.base_test_case = base_test_case
@@ -52,11 +48,6 @@ class CausalTestCase:
             self.estimate_params = estimate_params
 
         self.effect = base_test_case.effect
-
-        if effect_modifier_configuration:
-            self.effect_modifier_configuration = effect_modifier_configuration
-        else:
-            self.effect_modifier_configuration = {}
 
     def execute_test(self, estimator: type(Estimator) = None) -> CausalTestResult:
         """
@@ -74,12 +65,10 @@ class CausalTestCase:
         if not hasattr(estimator, f"estimate_{self.estimate_type}"):
             raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
         estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
-        effect, confidence_intervals = estimate_effect(**self.estimate_params)
+        effect_estimate = estimate_effect(**self.estimate_params)
         return CausalTestResult(
             estimator=estimator,
-            test_value=TestValue(self.estimate_type, effect),
-            effect_modifier_configuration=self.effect_modifier_configuration,
-            confidence_intervals=confidence_intervals,
+            effect_estimate=effect_estimate,
         )
 
     def __str__(self):

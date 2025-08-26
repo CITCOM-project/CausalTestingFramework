@@ -3,12 +3,12 @@
 import argparse
 import json
 import logging
+from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union, Sequence
+
 from tqdm import tqdm
-
-
 import pandas as pd
 import numpy as np
 
@@ -19,11 +19,20 @@ from causal_testing.specification.causal_specification import CausalSpecificatio
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import NoEffect, SomeEffect, Positive, Negative
-from causal_testing.testing.causal_test_result import CausalTestResult, TestValue
+from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 
 logger = logging.getLogger(__name__)
+
+
+class Command(Enum):
+    """
+    Enum for supported CTF commands.
+    """
+
+    TEST = "test"
+    GENERATE = "generate"
 
 
 @dataclass
@@ -131,7 +140,7 @@ class CausalTestingFramework:
         """
         logger.info(f"Loading DAG from {self.paths.dag_path}")
         dag = CausalDAG(str(self.paths.dag_path), ignore_cycles=self.ignore_cycles)
-        logger.info(f"DAG loaded with {len(dag.graph.nodes)} nodes and {len(dag.graph.edges)} edges")
+        logger.info(f"DAG loaded with {len(dag.nodes)} nodes and {len(dag.edges)} edges")
         return dag
 
     def _read_dataframe(self, data_path):
@@ -163,18 +172,18 @@ class CausalTestingFramework:
         """
         Create variable objects from DAG nodes based on their connectivity.
         """
-        for node_name, node_data in self.dag.graph.nodes(data=True):
+        for node_name, node_data in self.dag.nodes(data=True):
             if node_name not in self.data.columns and not node_data.get("hidden", False):
                 raise ValueError(f"Node {node_name} missing from data. Should it be marked as hidden?")
 
             dtype = self.data.dtypes.get(node_name)
 
             # If node has no incoming edges, it's an input
-            if self.dag.graph.in_degree(node_name) == 0:
+            if self.dag.in_degree(node_name) == 0:
                 self.variables["inputs"][node_name] = Input(name=node_name, datatype=dtype)
 
             # Otherwise it's an output
-            if self.dag.graph.in_degree(node_name) > 0:
+            if self.dag.in_degree(node_name) > 0:
                 self.variables["outputs"][node_name] = Output(name=node_name, datatype=dtype)
 
     def create_scenario_and_specification(self) -> None:
@@ -323,7 +332,6 @@ class CausalTestingFramework:
             expected_causal_effect=expected_effect,
             estimate_type=test.get("estimate_type", "ate"),
             estimate_params=test.get("estimate_params"),
-            effect_modifier_configuration=test.get("effect_modifier_configuration"),
             estimator=estimator,
         )
 
@@ -367,10 +375,7 @@ class CausalTestingFramework:
                             logger.error(f"Type or attribute error in test: {str(e)}")
                             raise
                         batch_results.append(
-                            CausalTestResult(
-                                estimator=test_case.estimator,
-                                test_value=TestValue("Error", str(e)),
-                            )
+                            CausalTestResult(effect_estimate=None, estimator=test_case.estimator, error_message=str(e))
                         )
 
                     progress.update(1)
@@ -401,10 +406,7 @@ class CausalTestingFramework:
                 if not silent:
                     logger.error(f"Error running test {test_case}: {str(e)}")
                     raise
-                result = CausalTestResult(
-                    estimator=test_case.estimator,
-                    test_value=TestValue("Error", str(e)),
-                )
+                result = CausalTestResult(estimator=test_case.estimator, effect_estimate=None, error_message=str(e))
                 results.append(result)
                 logger.info(f"Test errored: {test_case}")
 
@@ -423,17 +425,10 @@ class CausalTestingFramework:
         # Combine test configs with their results
         json_results = []
         for test_config, test_case, result in zip(test_configs["tests"], self.test_cases, results):
-            # Handle effect estimate - could be a Series or other format
-            effect_estimate = result.test_value.value
-            if isinstance(effect_estimate, pd.Series):
-                effect_estimate = effect_estimate.to_dict()
-
-            # Handle confidence intervals - convert to list if needed
-            ci_low = result.ci_low()
-            ci_high = result.ci_high()
-
             # Determine if test failed based on expected vs actual effect
-            test_passed = test_case.expected_causal_effect.apply(result) if result.test_value.type != "Error" else False
+            test_passed = (
+                test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
+            )
 
             output = {
                 "name": test_config["name"],
@@ -445,15 +440,16 @@ class CausalTestingFramework:
                 "alpha": test_config.get("alpha", 0.05),
                 "skip": test_config.get("skip", False),
                 "passed": test_passed,
-                "result": {
-                    "treatment": result.estimator.base_test_case.treatment_variable.name,
-                    "outcome": result.estimator.base_test_case.outcome_variable.name,
-                    "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
-                    "effect_measure": result.test_value.type,
-                    "effect_estimate": effect_estimate,
-                    "ci_low": ci_low,
-                    "ci_high": ci_high,
-                },
+                "result": (
+                    {
+                        "treatment": result.estimator.base_test_case.treatment_variable.name,
+                        "outcome": result.estimator.base_test_case.outcome_variable.name,
+                        "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
+                    }
+                    | result.effect_estimate.to_dict()
+                    if result.effect_estimate
+                    else {"error": result.error_message}
+                ),
             }
             json_results.append(output)
 
@@ -475,35 +471,64 @@ def setup_logging(verbose: bool = False) -> None:
 
 def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """Parse command line arguments."""
-    main_parser = argparse.ArgumentParser(add_help=False, description="Causal Testing Framework")
-    main_parser.add_argument("-G", "--generate", help="Generate test cases from a DAG", action="store_true")
-    main_parser.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
-    main_parser.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
-    main_parser.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
-    main_args, _ = main_parser.parse_known_args()
+    main_parser = argparse.ArgumentParser(add_help=True, description="Causal Testing Framework")
 
-    parser = argparse.ArgumentParser(parents=[main_parser])
-    if main_args.generate:
-        parser.add_argument(
-            "--threads", "-t", type=int, help="The number of parallel threads to use.", required=False, default=0
-        )
-    else:
-        parser.add_argument("-d", "--data_paths", help="Paths to data files (.csv)", nargs="+", required=True)
-        parser.add_argument("-t", "--test_config", help="Path to test configuration file (.json)", required=True)
-        parser.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
-        parser.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
-        parser.add_argument(
-            "-s",
-            "--silent",
-            action="store_true",
-            help="Do not crash on error. If set to true, errors are recorded as test results.",
-            default=False,
-        )
-        parser.add_argument(
-            "--batch-size",
-            type=int,
-            default=0,
-            help="Run tests in batches of the specified size (default: 0, which means no batching)",
-        )
+    subparsers = main_parser.add_subparsers(
+        help="The action you want to run - call `causal_testing {action} -h` for further details", dest="command"
+    )
 
-    return parser.parse_args(args)
+    # Generation
+    parser_generate = subparsers.add_parser(Command.GENERATE.value, help="Generate causal tests from a DAG")
+    parser_generate.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
+    parser_generate.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
+    parser_generate.add_argument(
+        "-e",
+        "--estimator",
+        help="The name of the estimator class to use when evaluating tests (defaults to LinearRegressionEstimator)",
+        default="LinearRegressionEstimator",
+    )
+    parser_generate.add_argument(
+        "-T",
+        "--effect_type",
+        help="The effect type to estimate {direct, total}",
+        default="direct",
+    )
+    parser_generate.add_argument(
+        "-E",
+        "--estimate_type",
+        help="The estimate type to use when evaluating tests (defaults to coefficient)",
+        default="coefficient",
+    )
+    parser_generate.add_argument(
+        "-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False
+    )
+    parser_generate.add_argument(
+        "--threads", "-t", type=int, help="The number of parallel threads to use.", required=False, default=0
+    )
+
+    # Testing
+    parser_test = subparsers.add_parser(Command.TEST.value, help="Run causal tests")
+    parser_test.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
+    parser_test.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
+    parser_test.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
+    parser_test.add_argument("-d", "--data_paths", help="Paths to data files (.csv)", nargs="+", required=True)
+    parser_test.add_argument("-t", "--test_config", help="Path to test configuration file (.json)", required=True)
+    parser_test.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
+    parser_test.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
+    parser_test.add_argument(
+        "-s",
+        "--silent",
+        action="store_true",
+        help="Do not crash on error. If set to true, errors are recorded as test results.",
+        default=False,
+    )
+    parser_test.add_argument(
+        "--batch-size",
+        type=int,
+        default=0,
+        help="Run tests in batches of the specified size (default: 0, which means no batching)",
+    )
+
+    args = main_parser.parse_args(args)
+    args.command = Command(args.command)
+    return args

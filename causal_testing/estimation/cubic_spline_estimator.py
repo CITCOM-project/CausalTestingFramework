@@ -8,6 +8,7 @@ import pandas as pd
 
 from causal_testing.specification.variable import Variable
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
             )
             self.formula = f"{base_test_case.outcome_variable.name} ~ cr({'+'.join(terms)}, df={basis})"
 
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> pd.Series:
+    def estimate_ate_calculated(self, adjustment_config: dict = None) -> EffectEstimate:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
@@ -74,4 +75,4 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
         x[self.base_test_case.treatment_variable.name] = self.control_value
         control = model.predict(x).iloc[0]
 
-        return pd.Series(treatment - control)
+        return EffectEstimate("ate", pd.Series(treatment - control))

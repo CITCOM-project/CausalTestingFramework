@@ -17,3 +17,7 @@ class BaseTestCase:
     treatment_variable: Variable
     outcome_variable: Variable
     effect: str = Effect.TOTAL.value
+
+    def __post_init__(self):
+        if self.treatment_variable == self.outcome_variable:
+            raise ValueError(f"Treatment variable {self.treatment_variable} cannot also be the outcome variable.")

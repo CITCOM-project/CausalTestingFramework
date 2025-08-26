@@ -2,11 +2,12 @@ import unittest
 from pathlib import Path
 import tempfile
 import os
+from unittest.mock import patch
+
 
 import shutil
 import json
 import pandas as pd
-from unittest.mock import patch
 
 from causal_testing.main import CausalTestingPaths, CausalTestingFramework
 from causal_testing.__main__ import main
@@ -93,7 +94,7 @@ class TestCausalTestingFramework(unittest.TestCase):
     def test_load_dag_missing_node(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
-        framework.dag.graph.add_node("missing")
+        framework.dag.add_node("missing")
         with self.assertRaises(ValueError):
             framework.create_variables()
 
@@ -135,6 +136,8 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.load_tests()
         results = framework.run_tests()
 
+        print(results)
+
         # Save results
         framework.save_results(results)
 
@@ -142,7 +145,7 @@ class TestCausalTestingFramework(unittest.TestCase):
             test_configs = json.load(f)
 
         tests_passed = [
-            test_case.expected_causal_effect.apply(result) if result.test_value.type != "Error" else False
+            test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
             for test_config, test_case, result in zip(test_configs["tests"], framework.test_cases, results)
         ]
 
@@ -171,6 +174,15 @@ class TestCausalTestingFramework(unittest.TestCase):
 
         self.assertEqual([result["passed"] for result in all_results], [True])
 
+    def test_ctf_exception(self):
+        framework = CausalTestingFramework(self.paths, query="test_input < 0")
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+        with self.assertRaises(ValueError):
+            framework.run_tests()
+
     def test_ctf_batches_exception_silent(self):
         framework = CausalTestingFramework(self.paths, query="test_input < 0")
         framework.setup()
@@ -193,7 +205,7 @@ class TestCausalTestingFramework(unittest.TestCase):
                     all_results.extend(json.load(f))
 
         self.assertEqual([result["passed"] for result in all_results], [False])
-        self.assertEqual([result["result"]["effect_measure"] for result in all_results], ["Error"])
+        self.assertIsNotNone([result["result"].get("error") for result in all_results])
 
     def test_ctf_batches_exception(self):
         framework = CausalTestingFramework(self.paths, query="test_input < 0")
@@ -301,10 +313,11 @@ class TestCausalTestingFramework(unittest.TestCase):
         self.assertTrue((causal_test.estimator.df["test_output"] > 0).all())
 
     def test_parse_args(self):
-        with unittest.mock.patch(
+        with patch(
             "sys.argv",
             [
                 "causal_testing",
+                "test",
                 "--dag_path",
                 str(self.dag_path),
                 "--data_paths",
@@ -319,10 +332,11 @@ class TestCausalTestingFramework(unittest.TestCase):
             self.assertTrue((self.output_path.parent / "main.json").exists())
 
     def test_parse_args_batches(self):
-        with unittest.mock.patch(
+        with patch(
             "sys.argv",
             [
                 "causal_testing",
+                "test",
                 "--dag_path",
                 str(self.dag_path),
                 "--data_paths",
@@ -340,11 +354,11 @@ class TestCausalTestingFramework(unittest.TestCase):
 
     def test_parse_args_generation(self):
         with tempfile.TemporaryDirectory() as tmp:
-            with unittest.mock.patch(
+            with patch(
                 "sys.argv",
                 [
                     "causal_testing",
-                    "--generate",
+                    "generate",
                     "--dag_path",
                     str(self.dag_path),
                     "--output",
@@ -353,6 +367,28 @@ class TestCausalTestingFramework(unittest.TestCase):
             ):
                 main()
                 self.assertTrue(os.path.exists(os.path.join(tmp, "tests.json")))
+
+    def test_parse_args_generation_non_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "generate",
+                    "--dag_path",
+                    str(self.dag_path),
+                    "--output",
+                    os.path.join(tmp, "tests_non_default.json"),
+                    "--estimator",
+                    "LogisticRegressionEstimator",
+                    "--estimate_type",
+                    "unit_odds_ratio",
+                    "--effect_type",
+                    "total",
+                ],
+            ):
+                main()
+                self.assertTrue(os.path.exists(os.path.join(tmp, "tests_non_default.json")))
 
     def tearDown(self):
         if self.output_path.parent.exists():
