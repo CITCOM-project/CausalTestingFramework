@@ -21,8 +21,8 @@ class ExperimentalEstimator(Estimator):
         base_test_case: BaseTestCase,
         treatment_value: float,
         control_value: float,
-        adjustment_set: dict[str:Any],
-        effect_modifiers: dict[str:Any] = None,
+        adjustment_set: dict[str, Any],
+        effect_modifiers: dict[str, Any] = None,
         alpha: float = 0.05,
         repeats: int = 200,
     ):

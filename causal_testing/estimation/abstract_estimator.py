@@ -38,7 +38,7 @@ class Estimator(ABC):
         control_value: float,
         adjustment_set: set,
         df: pd.DataFrame = None,
-        effect_modifiers: dict[str:Any] = None,
+        effect_modifiers: dict[str, Any] = None,
         alpha: float = 0.05,
         query: str = "",
     ):

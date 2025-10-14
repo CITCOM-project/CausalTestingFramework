@@ -43,6 +43,7 @@ dev = [
     "myst-parser",
     "sphinx-autoapi",
     "sphinx_rtd_theme",
+    "tqdm",
 ]
 test = [
   "covasim~=3.0.7",
