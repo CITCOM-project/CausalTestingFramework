@@ -3,6 +3,7 @@ data/*.xls
 data/*.xlsx
 causal_testing_framework
 .idea
+.venv
 .DS_Store
 */.DS_Store
 # Byte-compiled / optimized / DLL files

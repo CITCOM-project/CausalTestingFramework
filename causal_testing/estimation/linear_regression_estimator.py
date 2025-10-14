@@ -31,7 +31,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         control_value: float,
         adjustment_set: set,
         df: pd.DataFrame = None,
-        effect_modifiers: dict[Variable:Any] = None,
+        effect_modifiers: dict[Variable, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
         query: str = "",
