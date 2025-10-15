@@ -28,7 +28,7 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
         adjustment_set: set,
         basis: int,
         df: pd.DataFrame = None,
-        effect_modifiers: dict[Variable:Any] = None,
+        effect_modifiers: dict[Variable, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
         expected_relationship=None,
