@@ -4,6 +4,7 @@ import logging
 import tempfile
 import json
 import os
+from pathlib import Path
 
 from causal_testing.testing.metamorphic_relation import generate_causal_tests
 from .main import setup_logging, parse_args, CausalTestingPaths, CausalTestingFramework, Command
@@ -68,7 +69,9 @@ def main() -> None:
                 with open(file_path, "r", encoding="utf-8") as f:
                     all_results.extend(json.load(f))
 
-            # Save the final stitched results to your desired location
+            output_path = Path(args.output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
             with open(args.output, "w", encoding="utf-8") as f:
                 json.dump(all_results, f, indent=4)
     else:

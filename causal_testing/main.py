@@ -418,6 +418,9 @@ class CausalTestingFramework:
             output_path = self.paths.output_path
         logger.info(f"Saving results to {output_path}")
 
+        # Create parent directory if it doesn't exist
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
         # Load original test configs to preserve test metadata
         with open(self.paths.test_config_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
