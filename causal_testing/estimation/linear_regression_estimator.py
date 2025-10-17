@@ -5,12 +5,12 @@ from typing import Any
 
 import pandas as pd
 import statsmodels.formula.api as smf
-from patsy import dmatrix, ModelDesc  # pylint: disable = no-name-in-module
+from patsy import ModelDesc, dmatrix  # pylint: disable = no-name-in-module
 
-from causal_testing.specification.variable import Variable
-from causal_testing.estimation.genetic_programming_regression_fitter import GP
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
+from causal_testing.estimation.genetic_programming_regression_fitter import GP
+from causal_testing.specification.variable import Variable
 from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)

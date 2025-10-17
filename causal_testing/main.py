@@ -3,25 +3,25 @@
 import argparse
 import json
 import logging
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Union, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union
 
-from tqdm import tqdm
-import pandas as pd
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
 
-from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Input, Output
-from causal_testing.specification.causal_specification import CausalSpecification
-from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.causal_effect import NoEffect, SomeEffect, Positive, Negative
-from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
+from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.specification.causal_specification import CausalSpecification
+from causal_testing.specification.scenario import Scenario
+from causal_testing.specification.variable import Input, Output
+from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.causal_effect import Negative, NoEffect, Positive, SomeEffect
+from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.causal_test_result import CausalTestResult
 
 logger = logging.getLogger(__name__)
 
@@ -417,6 +417,9 @@ class CausalTestingFramework:
         if output_path is None:
             output_path = self.paths.output_path
         logger.info(f"Saving results to {output_path}")
+
+        # Create parent directory if it doesn't exist
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
         # Load original test configs to preserve test metadata
         with open(self.paths.test_config_path, "r", encoding="utf-8") as f:

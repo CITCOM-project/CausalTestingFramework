@@ -3,14 +3,15 @@ This module contains code to measure various aspects of causal test adequacy.
 """
 
 import logging
-from itertools import combinations
 from copy import deepcopy
-import pandas as pd
-from numpy.linalg import LinAlgError
-from lifelines.exceptions import ConvergenceError
+from itertools import combinations
 
-from causal_testing.specification.causal_dag import CausalDAG
+import pandas as pd
+from lifelines.exceptions import ConvergenceError
+from numpy.linalg import LinAlgError
+
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
 
 logger = logging.getLogger(__name__)

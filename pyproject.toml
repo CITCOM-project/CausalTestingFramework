@@ -11,16 +11,16 @@ name = "causal_testing_framework"
 authors = [{ name = "The CITCOM team" }]
 description = "A framework for causal testing using causal directed acyclic graphs."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 license = { text = "MIT" }
 keywords = ["causal inference", "verification"]
 dependencies = [
-    "lifelines~=0.29.0",
+    "lifelines~=0.30.0",
     "networkx>=3.4,<3.5",
-    "numpy~=1.26",
+    "numpy>=1.2.6, <=2.2.0",
     "pandas>=2.1",
     "scikit_learn~=1.4",
-    "scipy>=1.12.0,<1.14.0",
+    "scipy>=1.12.0,<=1.16.2",
     "statsmodels~=0.14",
     "tabulate~=0.9",
     "pydot~=2.0",
@@ -29,22 +29,27 @@ dependencies = [
     "sympy~=1.13.1",
     "pyarrow~=19.0.1",
     "fastparquet~=2024.11.0",
+    "tqdm~=4.67.1"
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
-    "autopep8",
     "isort",
     "pytest",
     "pylint",
     "black",
     "autoapi",
     "myst-parser",
+    "sphinx",
     "sphinx-autoapi",
     "sphinx_rtd_theme",
-    "tqdm",
+    "nbsphinx",
+    "ipykernel",
+    "pandoc",
+    "pre-commit"
 ]
+
 test = [
   "covasim~=3.0.7",
 ]
@@ -64,14 +69,34 @@ find = {}
 line-length = 120
 target-version = ["py310"]
 
-[tool.autopep8]
-max_line_length = 120
-in-place = true
-recursive = true
-aggressive = 3
+[tool.isort]
+profile = "black"
+line_length = 120
 
 [tool.pytest.ini_options]
 minversion = "6.0"
 python_files=[
     "test_*.py",
     "example_*.py"]
+
+[tool.tox]
+requires = ["tox>=4.19"]
+env_list = ["3.10", "3.11", "3.12", "3.13"]
+skip_missing_interpreters = false  # fail if devs don’t have all required Python versions
+
+# Base configuration for all test environments
+[tool.tox.env_run_base]
+description = "Run pytest under {base_python}"
+extras = ["dev", "test"]
+deps = ["pytest"]
+commands = [["pytest"]]
+
+# Automatically test for type-checking (TODO: enable type checking in env_list in the future)
+[tool.tox.env.type]
+description = "Run type checks with mypy on the codebase"
+deps = [
+    "mypy==1.18.2",
+    "types-cachetools>=5.5.0.20240820",
+    "types-chardet>=5.0.4.6"
+]
+commands = [["mypy", "causal_testing"], ["mypy", "tests"]]

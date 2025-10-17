@@ -3,6 +3,7 @@ This module contains the EffectEstimate dataclass.
 """
 
 from dataclasses import dataclass
+
 import pandas as pd
 
 

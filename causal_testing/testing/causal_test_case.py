@@ -2,11 +2,10 @@
 
 import logging
 
-from causal_testing.testing.causal_effect import CausalEffect
-from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.causal_effect import CausalEffect
 from causal_testing.testing.causal_test_result import CausalTestResult
-
 
 logger = logging.getLogger(__name__)
 
