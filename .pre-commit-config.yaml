@@ -10,6 +10,7 @@ repos:
       - id: check-merge-conflict
       - id: debug-statements
       - id: mixed-line-ending
+        files: \.py$
 
   # Black
   - repo: https://github.com/psf/black
