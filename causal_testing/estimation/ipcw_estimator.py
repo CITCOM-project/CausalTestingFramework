@@ -4,7 +4,6 @@ import logging
 from typing import Any
 from uuid import uuid4
 
-
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
@@ -12,8 +11,8 @@ from lifelines import CoxPHFitter
 
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
-from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.specification.variable import Variable
+from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 

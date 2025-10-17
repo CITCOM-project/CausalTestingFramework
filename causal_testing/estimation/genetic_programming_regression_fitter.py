@@ -4,20 +4,18 @@ form between the adjustment set and the outcome.
 """
 
 import copy
+import random
 from inspect import isclass
 from operator import add, mul
-import random
 
-import patsy
 import numpy as np
 import pandas as pd
-import statsmodels.formula.api as smf
+import patsy
 import statsmodels
+import statsmodels.formula.api as smf
 import sympy
-
-from deap import base, creator, tools, gp
-
-from numpy import power, log
+from deap import base, creator, gp, tools
+from numpy import log, power
 
 
 def reciprocal(x: float) -> float:

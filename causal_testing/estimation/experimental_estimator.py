@@ -1,7 +1,8 @@
 """This module contains the ExperimentalEstimator class for directly interacting with the system under test."""
 
-from typing import Any
 from abc import abstractmethod
+from typing import Any
+
 import pandas as pd
 
 from causal_testing.estimation.abstract_estimator import Estimator

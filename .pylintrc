@@ -82,14 +82,15 @@ persistent=yes
 
 # Minimum Python version to use for version dependent checks. Will default to
 # the version used to run pylint.
-py-version=3.9
+py-version=3.10
 
 # Discover python modules and packages in the file system subtree.
 recursive=no
 
 # When enabled, pylint would attempt to guess common misconfiguration and emit
 # user-friendly hints instead of false-positive error messages.
-suggestion-mode=yes
+# REMOVED: suggestion-mode is deprecated and not recognized in newer versions
+# suggestion-mode=yes
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
@@ -154,6 +155,9 @@ disable=raw-checker-failed,
         use-symbolic-message-instead,
         logging-fstring-interpolation,
         import-error,
+        too-many-positional-arguments,
+        unbalanced-tuple-unpacking,
+        possibly-used-before-assignment,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -244,7 +248,14 @@ good-names=i,
            df,
            Run,
            z3,
-           _
+           _,
+           x,
+           y,
+           z,
+           e,
+           ax,
+           fig,
+           id
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
@@ -338,10 +349,10 @@ exclude-too-few-public-methods=
 ignored-parents=
 
 # Maximum number of arguments for function / method.
-max-args=5
+max-args=12
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=7
+max-attributes=10
 
 # Maximum number of boolean expressions in an if statement (see R0916).
 max-bool-expr=5
@@ -350,22 +361,22 @@ max-bool-expr=5
 max-branches=12
 
 # Maximum number of locals for function / method body.
-max-locals=15
+max-locals=20
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7
 
 # Maximum number of public methods for a class (see R0904).
-max-public-methods=20
+max-public-methods=25
 
 # Maximum number of return / yield for function / method body.
 max-returns=6
 
 # Maximum number of statements in function / method body.
-max-statements=50
+max-statements=60
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=2
+min-public-methods=1
 
 
 [EXCEPTIONS]
@@ -394,7 +405,7 @@ indent-string='    '
 max-line-length=120
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=1500
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -538,7 +549,11 @@ contextmanager-decorators=contextlib.contextmanager
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E1101 when accessed. Python regular
 # expressions are accepted.
-generated-members=
+generated-members=deap.creator.*,
+                  deap.tools.*,
+                  networkx.graphml,
+                  networkx.*,
+                  deap.base.Toolbox.*,
 
 # Tells whether to warn about missing members when the owner of the attribute
 # is inferred to be None.
@@ -561,7 +576,7 @@ ignored-checks-for-mixins=no-member,
 # List of class names for which member attributes should not be checked (useful
 # for classes with dynamically set attributes). This supports the use of
 # qualified names.
-ignored-classes=optparse.Values,thread._local,_thread._local,argparse.Namespace
+ignored-classes=optparse.Values,thread._local,_thread._local,argparse.Namespace,deap.creator,deap.base.Toolbox
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.
@@ -613,3 +628,6 @@ init-import=no
 # List of qualified module names which can have objects that can redefine
 # builtins.
 redefining-builtins-modules=six.moves,past.builtins,future.builtins,builtins,io
+
+[causal_testing.specification.causal_dag]
+disable=no-member

@@ -1,6 +1,7 @@
 """This module contains the Variable abstract class, as well as its concrete extensions: Input, Output and Meta."""
 
 from __future__ import annotations
+
 from abc import ABC
 from collections.abc import Callable
 from typing import TypeVar

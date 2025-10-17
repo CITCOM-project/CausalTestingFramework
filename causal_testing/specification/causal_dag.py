@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from itertools import combinations
-from typing import Union, Set, Generator
+from typing import Generator, Set, Union
 
 import networkx as nx
 
@@ -12,7 +12,6 @@ from causal_testing.testing.base_test_case import BaseTestCase
 
 from .scenario import Scenario
 from .variable import Output
-
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 

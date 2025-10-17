@@ -3,10 +3,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable
+
 import pandas as pd
+
+from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
 
 
 @dataclass
