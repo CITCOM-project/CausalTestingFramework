@@ -63,6 +63,7 @@ Source = "https://github.com/CITCOM-project/CausalTestingFramework"
 find = {}
 
 [tool.setuptools_scm]
+write_to = "causal_testing/_version.py"
 
 [tool.black]
 # https://github.com/psf/black

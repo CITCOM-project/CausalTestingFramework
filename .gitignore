@@ -9,7 +9,7 @@ causal_testing_framework
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
+/causal_testing/_version.py
 # C extensions
 *.so
 
