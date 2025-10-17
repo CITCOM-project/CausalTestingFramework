@@ -9,7 +9,7 @@ discussion, please see whether a relevant one already exists - someone may have 
 Upon identifying any bugs or features that could be improved, please open an
 [issue](https://github.com/CITCOM-project/CausalTestingFramework/issues) and label with bug or feature suggestion. Every issue
 should clearly explain the bug or feature to be improved and, where necessary, instructions to replicate. We also
-provide templates for each scenario when creating an issue.
+provide templates for common scenarios when creating an issue.
 
 ### Contributing to the Codebase
 To contribute to our work, please ensure the following:
