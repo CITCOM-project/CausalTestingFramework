@@ -49,7 +49,7 @@ git checkout tags/<tag> -b <branch>
 pip install . # For core API only
 pip install -e . # For editable install, useful for development work
 ```
-For more information on how to use the Causal Testing Framework, please refer to our [documentation](https://causal-testing-framework.readthedocs.io/en/latest/?badge=latest).  
+For more information on how to use the Causal Testing Framework, please refer to our [documentation](https://causal-testing-framework.readthedocs.io/en/latest/?badge=latest).
 
 >[!NOTE]
 >We recommend you use a 64-bit OS (standard in most modern machines) as we have had reports of the installation crashing on legacy 32-bit Debian systems.

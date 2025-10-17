@@ -35,7 +35,6 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
-    "autopep8",
     "isort",
     "pytest",
     "pylint",
@@ -48,6 +47,7 @@ dev = [
     "nbsphinx",
     "ipykernel",
     "pandoc",
+    "pre-commit"
 ]
 
 test = [
@@ -68,12 +68,6 @@ find = {}
 # https://github.com/psf/black
 line-length = 120
 target-version = ["py310"]
-
-[tool.autopep8]
-max_line_length = 120
-in-place = true
-recursive = true
-aggressive = 3
 
 [tool.pytest.ini_options]
 minversion = "6.0"

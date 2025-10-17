@@ -1,15 +1,15 @@
 """This module contains the RegressionEstimator, which is an abstract class for concrete regression estimators."""
 
 import logging
-from typing import Any
 from abc import abstractmethod
+from typing import Any
 
 import pandas as pd
-from statsmodels.regression.linear_model import RegressionResultsWrapper
 from patsy import dmatrix  # pylint: disable = no-name-in-module
+from statsmodels.regression.linear_model import RegressionResultsWrapper
 
-from causal_testing.specification.variable import Variable
 from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.specification.variable import Variable
 from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)

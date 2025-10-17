@@ -3,12 +3,12 @@ This module contains the ShouldCause and ShouldNotCause metamorphic relations as
 defined in our ICST paper [https://eprints.whiterose.ac.uk/195317/].
 """
 
-from dataclasses import dataclass
-from typing import Iterable
-from itertools import combinations
-import logging
 import json
+import logging
+from dataclasses import dataclass
+from itertools import combinations
 from multiprocessing import Pool
+from typing import Iterable
 
 import networkx as nx
 

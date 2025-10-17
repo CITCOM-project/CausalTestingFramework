@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 
-from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
+from causal_testing.estimation.effect_estimate import EffectEstimate
 
 logger = logging.getLogger(__name__)
 

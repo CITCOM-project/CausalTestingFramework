@@ -1,13 +1,14 @@
 """This module contains the main entrypoint functionality to the Causal Testing Framework."""
 
-import logging
-import tempfile
 import json
+import logging
 import os
+import tempfile
 from pathlib import Path
 
 from causal_testing.testing.metamorphic_relation import generate_causal_tests
-from .main import setup_logging, parse_args, CausalTestingPaths, CausalTestingFramework, Command
+
+from .main import CausalTestingFramework, CausalTestingPaths, Command, parse_args, setup_logging
 
 
 def main() -> None:
