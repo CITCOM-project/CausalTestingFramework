@@ -54,7 +54,7 @@ class DAGAdequacy:
         self.dag_adequacy = len(self.tested_pairs) / len(self.pairs_to_test)
 
     def to_dict(self):
-        "Returns the adequacy object as a dictionary."
+        """Returns the adequacy object as a dictionary."""
         return {
             "causal_dag": self.causal_dag,
             "test_suite": self.test_suite,
@@ -68,10 +68,11 @@ class DAGAdequacy:
 class DataAdequacy:
     """
     Measures the adequacy of a given test according to the Fisher kurtosis of the bootstrapped result.
-    - Positive kurtoses indicate the model doesn't have enough data so is unstable.
-    - Negative kurtoses indicate the model doesn't have enough data, but is too stable, indicating that the spread of
-      inputs is insufficient.
-    - Zero kurtosis is optimal.
+
+    * Positive kurtoses indicate the model doesn't have enough data so is unstable.
+    * Negative kurtoses indicate the model doesn't have enough data, but is too stable,
+    indicating that the spread of inputs is insufficient.
+    * Zero kurtosis is optimal.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -124,7 +125,7 @@ class DataAdequacy:
         self.successful = sum(x is not None for x in outcomes)
 
     def to_dict(self):
-        "Returns the adequacy object as a dictionary."
+        """Returns the adequacy object as a dictionary."""
         return {
             "kurtosis": self.kurtosis.to_dict(),
             "bootstrap_size": self.bootstrap_size,

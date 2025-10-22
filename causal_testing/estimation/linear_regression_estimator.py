@@ -70,12 +70,12 @@ class LinearRegressionEstimator(RegressionEstimator):
         :param ngen: The maximum number of GP generations to run for.
         :param pop_size: The GP population size.
         :param num_offspring: The number of offspring per generation.
-        :param max_order: The maximum polynomial order to use, e.g. `max_order=2` will give
-                          polynomials of the form `ax^2 + bx + c`.
-        :param extra_operators: Additional operators for the GP (defaults are +, *, log(x), and 1/x).
+        :param max_order: The maximum polynomial order to use, e.g. ``max_order=2`` will give
+                          polynomials of the form ``ax^2 + bx + c``.
+        :param extra_operators: Additional operators for the GP (defaults are +, \*, log(x), and 1/x).
                                 Operations should be of the form (fun, numArgs), e.g. (add, 2).
         :param sympy_conversions: Dictionary of conversions of extra_operators for sympy,
-                                  e.g. `"mul": lambda *args_: "Mul({},{})".format(*args_)`.
+                                  e.g. ``"mul": lambda \*args_: "Mul({},{})".format(\*args_)``.
         :param seeds: Seed individuals for the population (e.g. if you think that the relationship between X and Y is
                       probably logarithmic, you can put that in).
         :param seed: Random seed for the GP.

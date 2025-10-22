@@ -16,7 +16,7 @@ class CausalTestCase:
     A CausalTestCase extends the information held in a BaseTestCase. As well as storing the treatment and outcome
     variables, a CausalTestCase stores the values of these variables. Also the outcome variable and value are
     specified. The goal of a CausalTestCase is to test whether the intervention made to the control via the treatment
-               causes the model-under-test to produce the expected change.
+    causes the model-under-test to produce the expected change.
     """
 
     def __init__(
@@ -42,10 +42,8 @@ class CausalTestCase:
         self.estimator = estimator
         if estimate_params is None:
             self.estimate_params = {}
-
         else:
             self.estimate_params = estimate_params
-
         self.effect = base_test_case.effect
 
     def execute_test(self, estimator: type(Estimator) = None) -> CausalTestResult:

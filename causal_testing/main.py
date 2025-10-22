@@ -474,7 +474,11 @@ def setup_logging(verbose: bool = False) -> None:
 
 def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """Parse command line arguments."""
-    main_parser = argparse.ArgumentParser(add_help=True, description="Causal Testing Framework")
+    main_parser = argparse.ArgumentParser(
+        add_help=True,
+        description="Causal Testing Framework - "
+        "A causal inference-driven framework for functional black-box testing of complex software.",
+    )
 
     subparsers = main_parser.add_subparsers(
         help="The action you want to run - call `causal_testing {action} -h` for further details", dest="command"
