@@ -391,6 +391,7 @@ class GP:
 
         :return: The mutated expression.
         """
+        mutated = None
         choice = random.randint(1, 3)
         if choice == 1:
             mutated = gp.mutNodeReplacement(self.toolbox.clone(expression), self.pset)
