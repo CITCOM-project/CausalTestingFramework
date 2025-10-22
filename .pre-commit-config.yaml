@@ -36,5 +36,5 @@ repos:
         entry: pylint
         language: system
         types: [python]
-        args: ['--max-line-length=120', '--max-positional-arguments=12', '--disable=W1401']
+        args: ['--rcfile=.pylintrc', '--max-line-length=120', '--max-positional-arguments=12', '--disable=W1401']
         files: ^causal_testing/
