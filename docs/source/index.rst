@@ -6,89 +6,12 @@ Welcome to the Causal Testing Framework
 Overview
 **********
 
-Causal testing is a :term:`causal inference`-driven framework for functional black-box testing. This framework utilises
-graphical causal inference (CI) techniques for the specification and functional testing of software from a black-box
-perspective. In this framework, we use causal directed acyclic graphs (DAGs) to express the anticipated cause-effect
-relationships amongst the inputs and outputs of the system-under-test and the supporting mathematical framework to
-design statistical procedures capable of making causal inferences. Each causal test case focuses on the causal effect
-of an intervention made to the system-under test. That is, a prescribed change to the input configuration of the
-system-under-test that is expected to cause a change to some output(s).
-
-.. raw:: html
-
-   <style>
-   .zoom-overlay {
-       position: fixed;
-       top: 0;
-       left: 0;
-       width: 100%;
-       height: 100%;
-       background-color: rgba(0, 0, 0, 0.7);
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       z-index: 9999;
-   }
-
-   .zoom-container {
-       cursor: zoom-in;
-       transition: transform 1s ease-in-out;
-       background-color: white;
-   }
-
-   .zoom-container.zoomed {
-       transform: scale(4);
-       cursor: zoom-out;
-   }
-
-   .zoomable-image {
-       max-width: 100%;
-       max-height: 100%;
-       margin: auto;
-       background-color: white;
-   }
-
-   .zoom-container:hover {
-       cursor: zoom-in;
-   }
-   </style>
-
-.. raw:: html
-
-   <script>
-   document.addEventListener('DOMContentLoaded', function () {
-       var image = document.querySelector('.zoomable-image');
-
-       image.addEventListener('click', function () {
-           var overlay = document.createElement('div');
-           overlay.className = 'zoom-overlay';
-
-           var container = document.createElement('div');
-           container.className = 'zoom-container';
-           container.style.cursor = 'zoom-out';
-
-           var clonedImage = image.cloneNode();
-           clonedImage.classList.add('zoomable-image');
-           container.appendChild(clonedImage);
-           overlay.appendChild(container);
-
-           document.body.appendChild(overlay);
-
-           overlay.addEventListener('click', function () {
-               overlay.remove();
-           });
-       });
-   });
-   </script>
-
-
-
-.. container:: zoom-container
-
-   .. image:: ../../images/schematic.png
-      :class: zoomable-image
-      :alt: Schematic diagram of the Causal Testing Framework
-
+The Causal Testing Framework is composed of a :term:`causal inference`-driven architecture designed for functional black-box testing.
+It leverages graphical causal inference (CI) techniques to specify and evaluate software behaviour from a black-box perspective.
+Within this framework, causal directed acyclic graphs (DAGs) are used to represent the expected cause–effect relationships between
+the inputs and outputs of the system under test, supported by mathematical foundations for designing statistical procedures that
+enable causal inference. Each causal test case targets the causal effect of a specific intervention on the system under test--that is,
+a deliberate modification to the input configuration expected to produce a corresponding change in one or more outputs.
 
 .. toctree::
    :hidden:
@@ -99,9 +22,10 @@ system-under-test that is expected to cause a change to some output(s).
    :maxdepth: 1
    :caption: Introduction
 
-   description
+   background
    installation
-   usage
+   tutorials
+
 
 .. toctree::
    :hidden:
@@ -109,7 +33,8 @@ system-under-test that is expected to cause a change to some output(s).
    :caption: Module Descriptions
 
    /modules/causal_specification
-   /modules/causal_tests
+   /modules/estimators
+   /modules/causal_testing
 
 .. toctree::
    :maxdepth: 2
@@ -140,6 +65,7 @@ system-under-test that is expected to cause a change to some output(s).
    :hidden:
    :maxdepth: 2
 
+   CITCoM Homepage <https://sites.google.com/sheffield.ac.uk/citcom/home>
    Paper <https://dl.acm.org/doi/10.1145/3607184>
    Figshare <https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516>
    PyPI <https://pypi.org/project/causal-testing-framework/>

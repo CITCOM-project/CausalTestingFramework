@@ -3,7 +3,7 @@ Project Documentation
 
 This page describes:
 
-#. The projects documentation style,
+#. Our project's documentation style,
 
 #. The tools used for documentation,
 
@@ -14,8 +14,8 @@ Style and Tools
 -------------------
 
 The `Sphinx docstring format <https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format>`_ is used
-throughout the projects codebase to allow for the easy understanding of classes, methods, functions, etc. This format
-allows for the easy generation of html documentation pages. It also checks for docstrings that have been added to the projects PyLint configuration.
+throughout our project's codebase to allow for the easy understanding of classes, methods and functions. This format
+allows for the easy generation of html documentation pages. It also checks for docstrings that have been added to the project's pyLint configuration.
 
 To install the packages required to work with the documentation, please ensure the projects **dev** dependencies are installed::
 
@@ -24,10 +24,7 @@ To install the packages required to work with the documentation, please ensure t
 Sphinx
 ******
 
-This project makes use of `Sphinx <https://www.sphinx-doc.org/en/master/>`_, to generate documentation.
-
-The documentation for the project sits within the `docs/` directory inside the project root.
-
+This project makes use of `Sphinx <https://www.sphinx-doc.org/en/master/>`_, to generate documentation. The documentation for the project sits within the `docs/` directory inside the project root.
 To manually build the docs, first navigate to the `docs/` directory and run::
 
     make html
@@ -39,7 +36,7 @@ To cleanup the compiled docs you can run::
 
 
 
-The source reStructuredText files (.rst) files can be found within `docs/source` directory, which contains the
+The source reStructuredText files (``.rst``) files can be found within the ``docs/source`` directory, which contains the
 handwritten documentation pages and get compiled by the ``make`` commands.
 
 Autodoc & AutoAPI
@@ -58,5 +55,4 @@ ReadTheDocs
 `Read the Docs <https://readthedocs.org/>`_ is a documentation hosting site that hosts, versions and builds documentation
 for free for open source projects.
 
-This project makes use of a Github Webhook to trigger the build in ReadTheDocs, further reading on this can be found :doc:`here <../dev/actions_and_webhooks>`\
-
+This project makes use of a Github Webhook to trigger the build in ReadTheDocs, further reading on this can be found :doc:`here <../dev/actions_and_webhooks>`\.
