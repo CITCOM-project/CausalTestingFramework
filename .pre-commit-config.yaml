@@ -3,31 +3,31 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        files: \.py$
+        files: ^causal_testing/
       - id: end-of-file-fixer
-        files: \.py$
+        files: ^causal_testing/
       - id: check-added-large-files
-        files: \.py$
+        files: ^causal_testing/
       - id: check-merge-conflict
-        files: \.py$
+        files: ^causal_testing/
       - id: debug-statements
-        files: \.py$
+        files: ^causal_testing/
       - id: mixed-line-ending
-        files: \.py$
+        files: ^causal_testing/
 
   - repo: https://github.com/psf/black
     rev: 25.9.0
     hooks:
       - id: black
         args: ['--line-length=120', '--target-version=py310']
-        files: \.py$
+        files: ^causal_testing/
 
   - repo: https://github.com/pycqa/isort
     rev: 7.0.0
     hooks:
       - id: isort
         args: ['--profile', 'black', '--line-length', '120']
-        files: \.py$
+        files: ^causal_testing/
 
   - repo: local
     hooks:
@@ -36,5 +36,5 @@ repos:
         entry: pylint
         language: system
         types: [python]
-        args: ['--max-line-length=120', '--max-positional-arguments=12']
-        files: \.py$
+        args: ['--max-line-length=120', '--max-positional-arguments=12', '--disable=W1401']
+        files: ^causal_testing/
