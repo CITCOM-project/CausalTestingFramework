@@ -47,7 +47,8 @@ dev = [
     "nbsphinx",
     "ipykernel",
     "pandoc",
-    "pre-commit"
+    "pre-commit",
+    "tox"
 ]
 
 test = [
