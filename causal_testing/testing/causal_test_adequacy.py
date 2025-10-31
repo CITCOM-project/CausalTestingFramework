@@ -71,7 +71,7 @@ class DataAdequacy:
 
     * Positive kurtoses indicate the model doesn't have enough data so is unstable.
     * Negative kurtoses indicate the model doesn't have enough data, but is too stable,
-    indicating that the spread of inputs is insufficient.
+      indicating that the spread of inputs is insufficient.
     * Zero kurtosis is optimal.
     """
 
