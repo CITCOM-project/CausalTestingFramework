@@ -3,7 +3,7 @@ Getting Started
 
 Installation
 -----------------
-* We currently support Python versions 3.10, 3.11, 3.12 and 3.13.
+* We currently support Python versions 3.10, 3.11, 3.12, and 3.13.
 
 * The Causal Testing Framework can be installed through either the `Python Package Index (PyPI)`_ (recommended), or directly from source (recommended for contributors).
 

@@ -165,7 +165,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         )
 
     def estimate_ate_calculated(self, adjustment_config: dict = None) -> EffectEstimate:
-        """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
+        """Estimate the ATE of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
