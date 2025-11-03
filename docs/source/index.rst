@@ -3,8 +3,13 @@ Welcome to the Causal Testing Framework
 
 |status| |ci-tests| |code-cov| |docs| |python| |pypi| |doi| |license|
 
-Overview
-**********
+Motivation
+----------
+
+A common problem in computer science is to develop robust and reliable software systems that can perform correctly under various input configurations and maintain consistency across complex, physical scenarios. However, software systems, and more specifically computational models, can be difficult to test: they may contain hundreds of parameters, making testing all possible inputs computationally infeasible; some models may be inherently non-deterministic, producing different outputs for the same inputs due to randomness; or there may exist hidden causal relationships between input-output pairs, causing errors that only appear under specific combinations of input configurations.
+
+The Framework
+-------------
 
 The Causal Testing Framework is composed of a :term:`causal inference`-driven architecture designed for functional black-box testing.
 It leverages graphical causal inference (CI) techniques to specify and evaluate software behaviour from a black-box perspective.
@@ -16,7 +21,6 @@ a deliberate modification to the input configuration expected to produce a corre
 .. toctree::
    :hidden:
    :caption: Home
-
 .. toctree::
    :hidden:
    :maxdepth: 1
