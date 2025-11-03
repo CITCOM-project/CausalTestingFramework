@@ -78,9 +78,9 @@ class Meta(Variable):
     :param str name: The name of the variable.
     :param T datatype: The datatype of the variable.
     :param Callable[[DataFrame], DataFrame] populate: Populate a given dataframe containing runtime data with the
-    metavariable values as calculated from model inputs and ouputs.
-    :attr populate:
+        metavariable values as calculated from model inputs and ouputs.
 
+    :attr populate: The populate function.
     """
 
     populate: Callable[[DataFrame], DataFrame]

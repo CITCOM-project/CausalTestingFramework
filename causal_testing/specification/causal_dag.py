@@ -34,6 +34,7 @@ def close_separator(
     :param treatment_node: A label for the treatment node (parent of treatments in undirected graph).
     :param outcome_node: A label for the outcome node (parent of outcomes in undirected graph).
     :param treatment_node_set: The set of variables containing the treatment node ({treatment_node}).
+
     :return: A treatment_node-outcome_node separator whose vertices are adjacent to those in treatments.
     """
     treatment_neighbours = {x for treatment in treatment_node_set for x in graph[treatment]}
@@ -65,6 +66,7 @@ def list_all_min_sep(
     :param outcome_node: The node corresponding to the outcome variable we wish to separate from the input.
     :param treatment_node_set: Set of treatment nodes.
     :param outcome_node_set: Set of outcome nodes.
+
     :return: A generator of minimal-sized sets of variables which separate treatment and outcome in the undirected
              graph.
     """
@@ -147,7 +149,7 @@ class CausalDAG(nx.DiGraph):
         Checks the three instrumental variable assumptions, raising a
         ValueError if any are violated.
 
-        :return Boolean True if the three IV assumptions hold.
+        :return: Boolean True if the three IV assumptions hold.
         """
         # (i) Instrument is associated with treatment
         if nx.d_separated(self, {instrument}, {treatment}, set()):
@@ -175,6 +177,7 @@ class CausalDAG(nx.DiGraph):
         """Add an edge to the causal DAG.
 
         Overrides the default networkx method to prevent users from adding a cycle.
+
         :param u_of_edge: From node
         :param v_of_edge: To node
         :param attr: Attributes
@@ -185,6 +188,7 @@ class CausalDAG(nx.DiGraph):
 
     def cycle_nodes(self) -> list:
         """Get the nodes involved in any cycles.
+
         :return: A list containing all nodes involved in a cycle.
         """
         return [node for cycle in nx.simple_cycles(self) for node in cycle]
@@ -208,6 +212,7 @@ class CausalDAG(nx.DiGraph):
 
         :param treatments: A list of treatment variables.
         :param outcomes: A list of outcomes.
+
         :return: A CausalDAG corresponding to the proper back-door graph.
         """
         for var in treatments + outcomes:
@@ -228,11 +233,12 @@ class CausalDAG(nx.DiGraph):
         An ancestor graph G[An(W)] for a CausalDAG G is a subgraph of G consisting of only the vertices who are
         ancestors of the set of variables W and all edges between them. Note that a node is an ancestor of itself.
 
-        Reference: (Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective, Textor and Lískiewicz, 2012,
+        Reference: (Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective, Textor and Lískiewicz, 2012,
         p. 3 [Descendants and Ancestors]).
 
         :param treatments: A list of treatment variables to include in the ancestral graph (and their ancestors).
         :param outcomes: A list of outcome variables to include in the ancestral graph (and their ancestors).
+
         :return: An ancestral graph relative to the set of variables X union Y.
         """
         variables_to_keep = set(treatments + outcomes)
@@ -244,10 +250,10 @@ class CausalDAG(nx.DiGraph):
         This is the counterpart of the back-door graph for direct effects. We remove only edges pointing from X to Y.
         It is a Python implementation of the indirectGraph function from Dagitty.
 
-        :param list[str] treatments: List of treatment names.
-        :param list[str] outcomes: List of outcome names.
+        :param treatments: List of treatment names.
+        :param outcomes: List of outcome names.
+
         :return: The indirect graph with edges pointing from X to Y removed.
-        :rtype: CausalDAG
         """
         ee = {(s, t) for s in treatments for t in outcomes if (s, t) in self.edges}
         gback = CausalDAG()
@@ -263,7 +269,7 @@ class CausalDAG(nx.DiGraph):
         and outcomes for DIRECT causal effect.
 
         This is an Python implementation of the listMsasTotalEffect function from Dagitty using Algorithms presented in
-        Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in
+        Adjustment Criteria in Causal Diagrams: An Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in
         Separators and adjustment sets in causal graphs: Complete criteria and an algorithmic framework, Zander et al.,
         2019. These works use the algorithm presented by Takata et al. in their work entitled: Space-optimal,
         backtracking algorithms to list the minimal vertex separators of a graph, 2013.
@@ -271,9 +277,9 @@ class CausalDAG(nx.DiGraph):
         :param treatments: List of treatment names.
         :param outcomes: List of outcome names.
         :param nodes_to_ignore: List of nodes to exclude from tests if they appear as treatments, outcomes, or in the
-        adjustment set.
+                                adjustment set.
+
         :return: A list of possible adjustment sets.
-        :rtype: list[set[str]]
         """
 
         if nodes_to_ignore is None:
@@ -297,19 +303,21 @@ class CausalDAG(nx.DiGraph):
         and outcomes.
 
         This is an implementation of the Algorithm presented in Adjustment Criteria in Causal Diagrams: An
-        Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in Separators and adjustment sets in causal
+        Algorithmic Perspective, Textor and Lískiewicz, 2012 and extended in Separators and adjustment sets in causal
         graphs: Complete criteria and an algorithmic framework, Zander et al.,  2019. These works use the algorithm
         presented by Takata et al. in their work entitled: Space-optimal, backtracking algorithms to list the minimal
         vertex separators of a graph, 2013.
 
         At a high-level, this algorithm proceeds as follows for a causal DAG G, set of treatments X, and set of
         outcomes Y):
-        1). Transform G to a proper back-door graph G_pbd (remove the first edge from X on all proper causal paths).
-        2). Transform G_pbd to the ancestor moral graph (G_pbd[An(X union Y)])^m.
-        3). Apply Takata's algorithm to output all minimal X-Y separators in the graph.
+
+        1. Transform G to a proper back-door graph G_pbd (remove the first edge from X on all proper causal paths).
+        2. Transform G_pbd to the ancestor moral graph (G_pbd[An(X union Y)])^m.
+        3. Apply Takata's algorithm to output all minimal X-Y separators in the graph.
 
         :param treatments: A list of strings representing treatments.
         :param outcomes: A list of strings representing outcomes.
+
         :return: A list of strings representing the minimal adjustment set.
         """
 
@@ -359,6 +367,7 @@ class CausalDAG(nx.DiGraph):
         :param treatments: List of treatment variables.
         :param outcomes: List of outcome variables.
         :param adjustment_set: Set of adjustment variables.
+
         :return: True or False depending on whether the adjustment set is minimal.
         """
         proper_backdoor_graph = self.get_proper_backdoor_graph(treatments, outcomes)
@@ -395,6 +404,7 @@ class CausalDAG(nx.DiGraph):
 
         The constructive back-door criterion is satisfied for a causal DAG G, a set of treatments X, a set of outcomes
         Y, and a set of covariates Z, if:
+
         (1) Z is not a descendent of any variable on a proper causal path between X and Y.
         (2) Z d-separates X and Y in the proper back-door graph relative to X and Y.
 
@@ -405,9 +415,10 @@ class CausalDAG(nx.DiGraph):
         :param treatments: A list of treatment variables that appear in the proper back-door graph.
         :param outcomes: A list of outcome variables that appear in the proper back-door graph.
         :param covariates: A list of variables that appear in the proper back-door graph that we will check against
-        the constructive back-door criterion.
+                           the constructive back-door criterion.
+
         :return: True or False, depending on whether the set of covariates satisfies the constructive back-door
-        criterion.
+                 criterion.
         """
 
         # Condition (1): Covariates must not be descendants of any node on a proper causal path
@@ -446,13 +457,14 @@ class CausalDAG(nx.DiGraph):
         """Given a list of treatments and outcomes, compute the proper causal pathways between them.
 
         PCP(X, Y) = {DeX^(X) - X} intersect AnX_(Y)}, where:
+
         - DeX^(X) refers to the descendents of X in the graph obtained by deleting all edges into X.
         - AnX_(Y) refers to the ancestors of Y in the graph obtained by deleting all edges leaving X.
 
         :param treatments: A list of treatment variables in the causal DAG.
         :param outcomes: A list of outcomes in the causal DAG.
-        :return vars_on_proper_causal_pathway: Return a list of the variables on the proper causal pathway between
-        treatments and outcomes.
+
+        :return: Return a list of the variables on the proper causal pathway between treatments and outcomes.
         """
         treatments_descendants_without_treatments = {
             x for treatment in treatments for x in nx.descendants(self, treatment) if x not in treatments
@@ -468,6 +480,7 @@ class CausalDAG(nx.DiGraph):
         treatment nodes are deleted.
 
         :param treatments: The set of treatments whose outgoing edges will be deleted.
+
         :return: A back-door graph corresponding to the given causal DAG and set of treatments.
         """
         outgoing_edges = self.out_edges(treatments)
@@ -483,10 +496,10 @@ class CausalDAG(nx.DiGraph):
 
         NOTE: The graph must be acyclic for this to terminate.
 
-        :param Node node: The node in the DAG representing the variable of interest.
-        :param Scenario scenario: The modelling scenario.
+        :param node: The node in the DAG representing the variable of interest.
+        :param scenario: The modelling scenario.
+
         :return: Whether the given variable is or depends on an output.
-        :rtype: bool
         """
         if isinstance(scenario.variables[node], Output):
             return True
@@ -495,6 +508,7 @@ class CausalDAG(nx.DiGraph):
     @staticmethod
     def remove_hidden_adjustment_sets(minimal_adjustment_sets: list[str], scenario: Scenario):
         """Remove variables labelled as hidden from adjustment set(s)
+
         :param minimal_adjustment_sets: list of minimal adjustment set(s) to have hidden variables removed from
         :param scenario: The modelling scenario which informs the variables that are hidden
         """
@@ -504,10 +518,11 @@ class CausalDAG(nx.DiGraph):
         """Identify and return the minimum adjustment set
 
         :param base_test_case: A base test case instance containing the outcome_variable and the
-        treatment_variable required for identification.
+                               treatment_variable required for identification.
         :param scenario: The modelling scenario relating to the tests
-        :return minimal_adjustment_set: The smallest set of variables which can be adjusted for to obtain a causal
-        estimate as opposed to a purely associational estimate.
+
+        :return: The smallest set of variables which can be adjusted for to obtain a causal
+                 estimate as opposed to a purely associational estimate.
         """
         # Naive method to guarantee termination when we have cycles
         if self.ignore_cycles:
@@ -532,7 +547,8 @@ class CausalDAG(nx.DiGraph):
 
     def to_dot_string(self) -> str:
         """Return a string of the DOT representation of the causal DAG.
-        :return DOT string of the DAG.
+
+        :return: DOT string of the DAG.
         """
         dotstring = "digraph G {\n"
         dotstring += "".join([f"{a} -> {b};\n" for a, b in self.edges])

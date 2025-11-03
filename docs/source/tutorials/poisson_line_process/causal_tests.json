@@ -1,0 +1,226 @@
+{
+  "tests": [
+    {
+      "name": "width --> num_lines_abs",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "width",
+      "expected_effect": {
+        "num_lines_abs": "SomeEffect"
+      },
+      "formula": "num_lines_abs ~ width",
+      "skip": false
+    },
+    {
+      "name": "width --> num_shapes_abs | ['height', 'num_lines_abs']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "width",
+      "expected_effect": {
+        "num_shapes_abs": "SomeEffect"
+      },
+      "formula": "num_shapes_abs ~ width + height + num_lines_abs",
+      "skip": false
+    },
+    {
+      "name": "width --> num_lines_unit | ['height', 'num_lines_abs']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "width",
+      "expected_effect": {
+        "num_lines_unit": "SomeEffect"
+      },
+      "formula": "num_lines_unit ~ width + height + num_lines_abs",
+      "skip": false
+    },
+    {
+      "name": "width --> num_shapes_unit | ['height', 'num_shapes_abs']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "width",
+      "expected_effect": {
+        "num_shapes_unit": "SomeEffect"
+      },
+      "formula": "num_shapes_unit ~ width + height + num_shapes_abs",
+      "skip": false
+    },
+    {
+      "name": "num_lines_abs --> num_shapes_abs | ['height', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "num_lines_abs",
+      "expected_effect": {
+        "num_shapes_abs": "SomeEffect"
+      },
+      "formula": "num_shapes_abs ~ num_lines_abs + height + width",
+      "skip": false
+    },
+    {
+      "name": "num_lines_abs --> num_lines_unit | ['height', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "num_lines_abs",
+      "expected_effect": {
+        "num_lines_unit": "SomeEffect"
+      },
+      "formula": "num_lines_unit ~ num_lines_abs + height + width",
+      "skip": false
+    },
+    {
+      "name": "num_lines_abs _||_ num_shapes_unit | ['height', 'num_shapes_abs', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "num_lines_abs",
+      "expected_effect": {
+        "num_shapes_unit": "NoEffect"
+      },
+      "formula": "num_shapes_unit ~ num_lines_abs + height + num_shapes_abs + width",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "height --> num_lines_abs",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "height",
+      "expected_effect": {
+        "num_lines_abs": "SomeEffect"
+      },
+      "formula": "num_lines_abs ~ height",
+      "skip": false
+    },
+    {
+      "name": "intensity --> num_lines_abs",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "intensity",
+      "expected_effect": {
+        "num_lines_abs": "SomeEffect"
+      },
+      "formula": "num_lines_abs ~ intensity",
+      "skip": false
+    },
+    {
+      "name": "num_shapes_abs _||_ num_lines_unit | ['height', 'width', 'num_lines_abs']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "num_shapes_abs",
+      "expected_effect": {
+        "num_lines_unit": "NoEffect"
+      },
+      "formula": "num_lines_unit ~ num_shapes_abs + height + width + num_lines_abs",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "num_shapes_abs --> num_shapes_unit | ['height', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "num_shapes_abs",
+      "expected_effect": {
+        "num_shapes_unit": "SomeEffect"
+      },
+      "formula": "num_shapes_unit ~ num_shapes_abs + height + width",
+      "skip": false
+    },
+    {
+      "name": "height --> num_shapes_abs | ['num_lines_abs', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "height",
+      "expected_effect": {
+        "num_shapes_abs": "SomeEffect"
+      },
+      "formula": "num_shapes_abs ~ height + num_lines_abs + width",
+      "skip": false
+    },
+    {
+      "name": "intensity _||_ num_shapes_abs | ['height', 'width', 'num_lines_abs']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "intensity",
+      "expected_effect": {
+        "num_shapes_abs": "NoEffect"
+      },
+      "formula": "num_shapes_abs ~ intensity + height + width + num_lines_abs",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "num_lines_unit _||_ num_shapes_unit | ['height', 'num_shapes_abs', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "num_lines_unit",
+      "expected_effect": {
+        "num_shapes_unit": "NoEffect"
+      },
+      "formula": "num_shapes_unit ~ num_lines_unit + height + num_shapes_abs + width",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "height --> num_lines_unit | ['num_lines_abs', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "height",
+      "expected_effect": {
+        "num_lines_unit": "SomeEffect"
+      },
+      "formula": "num_lines_unit ~ height + num_lines_abs + width",
+      "skip": false
+    },
+    {
+      "name": "intensity _||_ num_lines_unit | ['height', 'width', 'num_lines_abs']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "intensity",
+      "expected_effect": {
+        "num_lines_unit": "NoEffect"
+      },
+      "formula": "num_lines_unit ~ intensity + height + width + num_lines_abs",
+      "alpha": 0.05,
+      "skip": false
+    },
+    {
+      "name": "height --> num_shapes_unit | ['num_shapes_abs', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "height",
+      "expected_effect": {
+        "num_shapes_unit": "SomeEffect"
+      },
+      "formula": "num_shapes_unit ~ height + num_shapes_abs + width",
+      "skip": false
+    },
+    {
+      "name": "intensity _||_ num_shapes_unit | ['height', 'num_shapes_abs', 'width']",
+      "estimator": "LinearRegressionEstimator",
+      "estimate_type": "coefficient",
+      "effect": "direct",
+      "treatment_variable": "intensity",
+      "expected_effect": {
+        "num_shapes_unit": "NoEffect"
+      },
+      "formula": "num_shapes_unit ~ intensity + height + num_shapes_abs + width",
+      "alpha": 0.05,
+      "skip": false
+    }
+  ]
+}

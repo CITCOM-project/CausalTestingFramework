@@ -11,6 +11,9 @@ The CSS below will only work if 'logo_only':True in conf.py, but will require ad
     width:auto;
 }
 
+.wy-nav-content {
+    background-color: white;
+}
 
 
 .wy-nav-top a {
@@ -26,4 +29,21 @@ The CSS below will only work if 'logo_only':True in conf.py, but will require ad
 .rst-content code.literal, .highlight .s2, .highlight .s1, .rst-content tt.literal{
     color: #440099;
     font-weight: bold;
+}
+
+
+.sig {
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal !important;
+}
+
+.sig-param {
+    display: inline-block;
+}
+
+dl.class > dt {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal !important;
 }

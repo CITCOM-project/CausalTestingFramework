@@ -9,7 +9,7 @@ causal_testing_framework
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
+/causal_testing/_version.py
 # C extensions
 *.so
 
@@ -57,6 +57,7 @@ coverage.xml
 # Sphinx documentation
 docs/build/
 docs/source/autoapi
+.ipynb_checkpoints/
 
 # v/docs/build/scode
 .vscode/

@@ -1,4 +1,4 @@
-Acknowledging CITCOM
+Acknowledging CITCoM
 *********************
 
 If you use the Causal Testing Framework for your work, please add the following line within your paper to acknowledge
@@ -30,8 +30,7 @@ Figshare DOI_ for the version used in your research.
     keywords = {Software Testing, Causal Testing, Causal Inference}
     }
 
-The CITCOM Team
+The CITCoM Team
 ***************
 
 - Andrew G. Clark, Michael Foster, Richard Somers, Christopher Wild, Farhad Allian, Robert M. Hierons, Nick Latimer, David Wagg, Neil Walkinshaw.
-

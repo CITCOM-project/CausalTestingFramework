@@ -4,11 +4,9 @@ Github Actions and Webhooks
 Actions
 --------------
 
-Currently, this project makes use of 5 `Github Actions <https://github.com/features/actions>`_,
+The Causal Testing Framework makes use of 5 `Github Actions <https://github.com/features/actions>`_,
 which can be found in the
-`.github/workflows <https://github.com/CITCOM-project/CausalTestingFramework/tree/main/.github/workflows>`_ directory.
-
-They are:
+`.github/workflows <https://github.com/CITCOM-project/CausalTestingFramework/tree/main/.github/workflows>`_ directory. These include:
 
 #.  ``ci-tests.yaml``, which runs continuous integration (CI) tests on each on each pull request.
 
@@ -24,7 +22,7 @@ They are:
 Webhooks
 ---------------
 
-The project also uses 2 `Webhooks <https://docs.github.com/en/webhooks-and-events/webhooks/about-webhooks>`_, which can
+We also use two `Webhooks <https://docs.github.com/en/webhooks-and-events/webhooks/about-webhooks>`_, which can
 be found in the `project settings <https://github.com/CITCOM-project/CausalTestingFramework/settings>`_ on Github. These
 include:
 

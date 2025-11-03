@@ -42,22 +42,25 @@ class Scenario:
         self.treatment_variables = {}
 
     def __str__(self):
-        """Returns a printable string of a scenario, e.g.
-        Modelling scenario with variables:
-            ------  ---------------  -----
-            INPUT   location         str
-            INPUT   n_days           int
-            INPUT   pop_size         int
-            META    average_age      int
-            META    household_size   float
-            OUTPUT  cum_deaths       int
-            OUTPUT  cum_infections   int
-            OUTPUT  cum_quarantined  int
-            ------  ---------------  -----
-        And constraints:
-            n_days <= 365
-            n_days >= 60
-            average_age > 0
+        """Returns a printable string of a scenario.
+
+        Example output::
+
+            Modelling scenario with variables:
+                ------  ---------------  -----
+                INPUT   location         str
+                INPUT   n_days           int
+                INPUT   pop_size         int
+                META    average_age      int
+                META    household_size   float
+                OUTPUT  cum_deaths       int
+                OUTPUT  cum_infections   int
+                OUTPUT  cum_quarantined  int
+                ------  ---------------  -----
+            And constraints:
+                n_days <= 365
+                n_days >= 60
+                average_age > 0
 
         :return: A printable version of a scenario.
         :rtype: str
@@ -148,6 +151,7 @@ class Scenario:
 
     def add_variable(self, v: Variable) -> None:
         """Add variable to variables attribute
+
         :param v: Variable to be added
         """
         self.variables[v.name]: v
