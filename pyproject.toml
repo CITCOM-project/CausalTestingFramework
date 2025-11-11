@@ -35,6 +35,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
+    "astroid==3.3.8",
     "isort",
     "pytest",
     "pylint",
