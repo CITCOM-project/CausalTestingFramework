@@ -86,7 +86,7 @@ html_css_files = ["css/custom.css"]
 # Path to generate documentation from using Sphinx AutoAPI
 autoapi_dirs = [os.path.abspath(os.path.join("..", "..", "causal_testing"))]
 autoapi_generate_api_docs = True
-autoapi_keep_files = False
+autoapi_keep_files = True
 
 # HTML logo and theme options
 html_logo = "_static/images/CITCOM-logo.png"
