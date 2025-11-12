@@ -23,3 +23,5 @@ sphinx:
 python:
    install:
    - requirements: docs/source/requirements.txt
+   - method: pip
+     path: . # This should tell RTD to install the CTF from root to render the Estimators page correctly.
