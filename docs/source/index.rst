@@ -1,7 +1,8 @@
 Welcome to the Causal Testing Framework
 ==========================================
 
-|status| |ci-tests| |code-cov| |docs| |python| |pypi| |doi| |license|
+|status| |ci-tests| |code-cov| |docs| |python| |pypi| |conda-forge| |license| |joss| |doi|
+
 
 Motivation
 ----------
@@ -87,6 +88,10 @@ a deliberate modification to the input configuration expected to produce a corre
    :target: https://github.com/CITCOM-project/CausalTestingFramework/actions/workflows/ci-tests.yaml
    :alt: Continuous Integration Tests
 
+.. |conda-forge| image:: https://img.shields.io/conda/v/conda-forge/causal-testing-framework.svg
+   :target: https://anaconda.org/conda-forge/causal-testing-framework
+   :alt: Conda Forge
+
 .. |code-cov| image:: https://codecov.io/gh/CITCOM-project/CausalTestingFramework/branch/main/graph/badge.svg?token=04ijFVrb4a
    :target: https://codecov.io/gh/CITCOM-project/CausalTestingFramework
    :alt: Code coverage
@@ -110,6 +115,11 @@ a deliberate modification to the input configuration expected to produce a corre
 .. |doi| image:: https://t.ly/FCT1B
    :target: https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516
    :alt: DOI
+
+.. |joss| image:: https://joss.theoj.org/papers/10.21105/joss.07739/status.svg
+   :target: https://joss.theoj.org/papers/10.21105/joss.07739
+   :alt: JOSS
+
 
 .. |license| image:: https://img.shields.io/github/license/CITCOM-project/CausalTestingFramework
    :target: https://github.com/CITCOM-project/CausalTestingFramework
