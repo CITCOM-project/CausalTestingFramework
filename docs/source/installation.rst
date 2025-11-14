@@ -5,15 +5,41 @@ Installation
 -----------------
 * We currently support Python versions 3.10, 3.11, 3.12, and 3.13.
 
-* The Causal Testing Framework can be installed through either the `Python Package Index (PyPI)`_ (recommended), or directly from source (recommended for contributors).
+* The Causal Testing Framework can be installed through `conda-forge`_ (recommended), the `Python Package Index (PyPI)`_, or directly from source (recommended for contributors).
 
-.. _Python Package Index (PyPI): https://dl.acm.org/doi/10.1145/3607184
+.. _conda-forge: https://anaconda.org/conda-forge/causal-testing-framework
+.. _Python Package Index (PyPI): https://pypi.org/project/causal-testing-framework/
 
 .. note::
    We recommend you use a 64-bit OS (standard in most modern machines) as we have had reports of the installation crashing on legacy 32-bit Debian systems.
 
-Method 1: Installing via pip
+Method 1: Installing via conda-forge (Recommended)
+...................................................
+
+**We recommend using conda or mamba for installation**, as they provide better dependency management and environment isolation, particularly for scientific computing workflows.
+
+First, create a new conda environment with a supported Python version, e.g::
+
+    conda create -n causal-testing-env python=3.13
+    conda activate causal-testing-env
+
+.. note::
+   If you have `Miniforge <https://conda-forge.org/download/>`_ installed, you can replace :code:`conda` with :code:`mamba` in any of the commands below for faster package resolution.
+
+Add the :code:`conda-forge` channel::
+
+    conda config --add channels conda-forge
+    conda config --set channel_priority strict
+
+Install :code:`causal-testing-framework`::
+
+    conda install causal-testing-framework
+
+
+Method 2: Installing via pip
 ..............................
+
+If you prefer using pip or need the development packages, you can install from PyPI.
 
 To install the Causal Testing Framework using :code:`pip` for the latest stable version::
 
@@ -26,10 +52,10 @@ If you also want to install the framework with (optional) development packages/t
     pip install causal-testing-framework[dev]
 
 
-Method 2: Installing via Source
-...............................
+Method 3: Installing via Source (For Developers/Contributors)
+...............................................................
 
-To install from source::
+If you're planning to contribute to the project or need an editable installation for development, you can install directly from source::
 
     git clone https://github.com/CITCOM-project/CausalTestingFramework
     cd CausalTestingFramework
