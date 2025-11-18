@@ -337,7 +337,7 @@ class CausalTestingFramework:
         )
 
     def run_tests_in_batches(
-        self, batch_size: int = 100, silent: bool = False, adequacy=False, bootstrap_size=100
+        self, batch_size: int = 100, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100
     ) -> List[CausalTestResult]:
         """
         Run tests in batches to reduce memory usage.
@@ -394,7 +394,9 @@ class CausalTestingFramework:
                 yield batch_results
         logger.info(f"Completed processing in {num_batches} batches")
 
-    def run_tests(self, silent=False, adequacy=False, bootstrap_size=100) -> List[CausalTestResult]:
+    def run_tests(
+        self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100
+    ) -> List[CausalTestResult]:
         """
         Run all test cases and return their results.
 
