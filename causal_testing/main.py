@@ -344,6 +344,9 @@ class CausalTestingFramework:
 
         :param batch_size: Number of tests to run in each batch
         :param silent: Whether to suppress errors
+        :param adequacy: Whether to calculate causal test adequacy (defaults to False)
+        :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
+        (defaults to 100)
         :return: List of all test results
         :raises: ValueError if no tests are loaded
         """
@@ -394,6 +397,11 @@ class CausalTestingFramework:
     def run_tests(self, silent=False, adequacy=False, bootstrap_size=100) -> List[CausalTestResult]:
         """
         Run all test cases and return their results.
+
+        :param silent: Whether to suppress errors
+        :param adequacy: Whether to calculate causal test adequacy (defaults to False)
+        :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
+        (defaults to 100)
 
         :return: List of CausalTestResult objects
         :raises: ValueError if no tests are loaded

@@ -10,7 +10,6 @@ import pandas as pd
 from lifelines.exceptions import ConvergenceError
 from numpy.linalg import LinAlgError
 
-from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
 
