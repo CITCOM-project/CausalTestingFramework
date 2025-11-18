@@ -42,7 +42,7 @@ class LogisticRegressionEstimator(RegressionEstimator):
         model = self.fit_model(self.df)
         ci_low, ci_high = np.exp(model.conf_int(self.alpha).loc[self.base_test_case.treatment_variable.name])
         return EffectEstimate(
-            "odds_ratio",
+            "unit_odds_ratio",
             pd.Series(np.exp(model.params[self.base_test_case.treatment_variable.name])),
             pd.Series(ci_low),
             pd.Series(ci_high),
