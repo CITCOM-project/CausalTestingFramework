@@ -79,12 +79,10 @@ class DataAdequacy:
     def __init__(
         self,
         test_case: CausalTestCase,
-        estimator: Estimator,
         bootstrap_size: int = 100,
         group_by=None,
     ):
         self.test_case = test_case
-        self.estimator = estimator
         self.kurtosis = None
         self.outcomes = None
         self.successful = None
@@ -97,7 +95,7 @@ class DataAdequacy:
         """
         results = []
         for i in range(self.bootstrap_size):
-            estimator = deepcopy(self.estimator)
+            estimator = deepcopy(self.test_case.estimator)
 
             if self.group_by is not None:
                 ids = pd.Series(estimator.df[self.group_by].unique())
