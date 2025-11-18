@@ -117,7 +117,7 @@ class DataAdequacy:
         results = pd.concat([c.effect_estimate.to_df() for c in results])
         results["var"] = results.index
 
-        self.kurtosis = results.groupby("var").apply(lambda x: x.kurtosis())["effect_estimate"]
+        self.kurtosis = results.groupby("var")["effect_estimate"].apply(lambda x: x.kurtosis())
         self.outcomes = sum(filter(lambda x: x is not None, outcomes))
         self.successful = sum(x is not None for x in outcomes)
 

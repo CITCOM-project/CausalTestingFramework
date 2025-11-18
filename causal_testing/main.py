@@ -418,7 +418,6 @@ class CausalTestingFramework:
         for test_case in tqdm(self.test_cases):
             try:
                 result = test_case.execute_test()
-                print("adequacy", adequacy)
                 if adequacy:
                     result.adequacy = DataAdequacy(test_case=test_case, bootstrap_size=bootstrap_size)
                     result.adequacy.measure_adequacy()
@@ -472,6 +471,7 @@ class CausalTestingFramework:
                         "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
                     }
                     | result.effect_estimate.to_dict()
+                    | (result.adequacy.to_dict() if result.adequacy else {})
                     if result.effect_estimate
                     else {"error": result.error_message}
                 ),
