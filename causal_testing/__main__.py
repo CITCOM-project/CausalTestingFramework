@@ -74,7 +74,6 @@ def main() -> None:
             # Now stitch the results together from the temporary files
             all_results = []
             for file_path in output_files:
-
                 with open(file_path, "r", encoding="utf-8") as f:
                     all_results.extend(json.load(f))
 
