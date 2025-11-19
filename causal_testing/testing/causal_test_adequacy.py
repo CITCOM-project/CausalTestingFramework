@@ -10,7 +10,6 @@ import pandas as pd
 from lifelines.exceptions import ConvergenceError
 from numpy.linalg import LinAlgError
 
-from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
 
@@ -79,12 +78,10 @@ class DataAdequacy:
     def __init__(
         self,
         test_case: CausalTestCase,
-        estimator: Estimator,
         bootstrap_size: int = 100,
         group_by=None,
     ):
         self.test_case = test_case
-        self.estimator = estimator
         self.kurtosis = None
         self.outcomes = None
         self.successful = None
@@ -97,7 +94,7 @@ class DataAdequacy:
         """
         results = []
         for i in range(self.bootstrap_size):
-            estimator = deepcopy(self.estimator)
+            estimator = deepcopy(self.test_case.estimator)
 
             if self.group_by is not None:
                 ids = pd.Series(estimator.df[self.group_by].unique())
@@ -120,7 +117,7 @@ class DataAdequacy:
         results = pd.concat([c.effect_estimate.to_df() for c in results])
         results["var"] = results.index
 
-        self.kurtosis = results.groupby("var").apply(lambda x: x.kurtosis())["effect_estimate"]
+        self.kurtosis = results.groupby("var")["effect_estimate"].apply(lambda x: x.kurtosis())
         self.outcomes = sum(filter(lambda x: x is not None, outcomes))
         self.successful = sum(x is not None for x in outcomes)
 
