@@ -1,7 +1,7 @@
 Welcome to the Causal Testing Framework
 ==========================================
 
-|status| |ci-tests| |code-cov| |docs| |python| |pypi| |conda-forge| |license| |joss| |doi|
+|status| |ci-tests| |code-cov| |docs| |deep-wiki| |python| |pypi| |conda-forge| |license| |joss| |doi|
 
 
 Motivation
@@ -74,6 +74,7 @@ a deliberate modification to the input configuration expected to produce a corre
    Paper <https://dl.acm.org/doi/10.1145/3607184>
    Figshare <https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516>
    PyPI <https://pypi.org/project/causal-testing-framework/>
+   DeepWiki <https://deepwiki.com/CITCOM-project/CausalTestingFramework>
 
 .. toctree::
    :hidden:
@@ -124,3 +125,7 @@ a deliberate modification to the input configuration expected to produce a corre
 .. |license| image:: https://img.shields.io/github/license/CITCOM-project/CausalTestingFramework
    :target: https://github.com/CITCOM-project/CausalTestingFramework
    :alt: License
+
+.. |deep-wiki| image:: https://deepwiki.com/badge.svg
+   :target: https://deepwiki.com/CITCOM-project/CausalTestingFramework
+   :alt: DeepWiki

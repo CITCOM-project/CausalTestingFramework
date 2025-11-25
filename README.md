@@ -6,6 +6,7 @@
 ![example workflow](https://github.com/CITCOM-project/CausalTestingFramework/actions/workflows/ci-tests.yaml/badge.svg)
 [![codecov](https://codecov.io/gh/CITCOM-project/CausalTestingFramework/branch/main/graph/badge.svg?token=04ijFVrb4a)](https://codecov.io/gh/CITCOM-project/CausalTestingFramework)
 [![Documentation Status](https://readthedocs.org/projects/causal-testing-framework/badge/?version=latest)](https://causal-testing-framework.readthedocs.io/en/latest/?badge=latest)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CITCOM-project/CausalTestingFramework)
 ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCITCOM-project%2FCausalTestingFramework%2Fmain%2Fpyproject.toml&query=%24.project%5B'requires-python'%5D&label=python)
 ![PyPI - Version](https://img.shields.io/pypi/v/causal-testing-framework)
 [![conda-forge](https://img.shields.io/conda/v/conda-forge/causal-testing-framework.svg)](https://anaconda.org/conda-forge/causal-testing-framework)
