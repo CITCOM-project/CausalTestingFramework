@@ -22,6 +22,7 @@ from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import Negative, NoEffect, Positive, SomeEffect
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
 logger = logging.getLogger(__name__)
 
@@ -335,12 +336,17 @@ class CausalTestingFramework:
             estimator=estimator,
         )
 
-    def run_tests_in_batches(self, batch_size: int = 100, silent: bool = False) -> List[CausalTestResult]:
+    def run_tests_in_batches(
+        self, batch_size: int = 100, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100
+    ) -> List[CausalTestResult]:
         """
         Run tests in batches to reduce memory usage.
 
         :param batch_size: Number of tests to run in each batch
         :param silent: Whether to suppress errors
+        :param adequacy: Whether to calculate causal test adequacy (defaults to False)
+        :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
+        (defaults to 100)
         :return: List of all test results
         :raises: ValueError if no tests are loaded
         """
@@ -368,7 +374,12 @@ class CausalTestingFramework:
                 batch_results = []
                 for test_case in current_batch:
                     try:
-                        batch_results.append(test_case.execute_test())
+                        result = test_case.execute_test()
+                        if adequacy:
+                            result.adequacy = DataAdequacy(test_case=test_case, bootstrap_size=bootstrap_size)
+                            result.adequacy.measure_adequacy()
+
+                        batch_results.append(result)
                     # pylint: disable=broad-exception-caught
                     except Exception as e:
                         if not silent:
@@ -383,9 +394,16 @@ class CausalTestingFramework:
                 yield batch_results
         logger.info(f"Completed processing in {num_batches} batches")
 
-    def run_tests(self, silent=False) -> List[CausalTestResult]:
+    def run_tests(
+        self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100
+    ) -> List[CausalTestResult]:
         """
         Run all test cases and return their results.
+
+        :param silent: Whether to suppress errors
+        :param adequacy: Whether to calculate causal test adequacy (defaults to False)
+        :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
+        (defaults to 100)
 
         :return: List of CausalTestResult objects
         :raises: ValueError if no tests are loaded
@@ -400,6 +418,9 @@ class CausalTestingFramework:
         for test_case in tqdm(self.test_cases):
             try:
                 result = test_case.execute_test()
+                if adequacy:
+                    result.adequacy = DataAdequacy(test_case=test_case, bootstrap_size=bootstrap_size)
+                    result.adequacy.measure_adequacy()
                 results.append(result)
             # pylint: disable=broad-exception-caught
             except Exception as e:
@@ -450,6 +471,7 @@ class CausalTestingFramework:
                         "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
                     }
                     | result.effect_estimate.to_dict()
+                    | (result.adequacy.to_dict() if result.adequacy else {})
                     if result.effect_estimate
                     else {"error": result.error_message}
                 ),
@@ -523,6 +545,17 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_test.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
     parser_test.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
     parser_test.add_argument(
+        "-a", "--adequacy", help="Calculate causal test adequacy for each test case", action="store_true", default=False
+    )
+    parser_test.add_argument(
+        "-b",
+        "--adequacy-bootstrap-size",
+        dest="bootstrap_size",
+        help="Number of bootstrap samples for causal test adequacy. Defaults to 100",
+        type=int,
+        default=100,
+    )
+    parser_test.add_argument(
         "-s",
         "--silent",
         action="store_true",
@@ -537,5 +570,10 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
 
     args = main_parser.parse_args(args)
+
+    # Assume the user wants test adequacy if they're setting bootstrap_size
+    if hasattr(args, "bootstrap_size") and args.bootstrap_size:
+        args.adequacy = True
+
     args.command = Command(args.command)
     return args
