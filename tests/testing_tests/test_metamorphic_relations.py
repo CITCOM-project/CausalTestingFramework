@@ -120,7 +120,10 @@ class TestMetamorphicRelation(unittest.TestCase):
         should_cause_mr = ShouldCause(BaseTestCase("X1", "Z"), adj_set)
         self.assertEqual(
             should_cause_mr.to_json_stub(
-                effect_type="total", estimate_type="unit_odds_ratio", estimator="LogisticRegressionEstimator", skip=False
+                effect_type="total",
+                estimate_type="unit_odds_ratio",
+                estimator="LogisticRegressionEstimator",
+                skip=False,
             ),
             {
                 "effect": "total",
@@ -287,6 +290,22 @@ class TestMetamorphicRelation(unittest.TestCase):
                         lambda relation: len(list(dag.predecessors(relation.base_test_case.outcome_variable))) > 0,
                         relations,
                     ),
+                )
+            )
+            self.assertEqual(tests["tests"], expected)
+
+    def test_generate_causal_tests_test_inputs(self):
+        dag = CausalDAG(self.dag_dot_path)
+        relations = generate_metamorphic_relations(dag)
+        with tempfile.TemporaryDirectory() as tmp:
+            tests_file = os.path.join(tmp, "causal_tests.json")
+            generate_causal_tests(self.dag_dot_path, tests_file, test_inputs=True)
+            with open(tests_file, encoding="utf8") as f:
+                tests = json.load(f)
+            expected = list(
+                map(
+                    lambda x: x.to_json_stub(skip=False),
+                    relations,
                 )
             )
             self.assertEqual(tests["tests"], expected)
