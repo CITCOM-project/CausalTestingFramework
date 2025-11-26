@@ -204,7 +204,7 @@ def generate_metamorphic_relations(
 
 
 def generate_causal_tests(
-    dag_path: str, output_path: str, ignore_cycles: bool = False, threads: int = 0, **json_stub_kargs
+    dag_path: str, output_path: str, ignore_cycles: bool = False, threads: int = 0, test_inputs=False, **json_stub_kargs
 ):
     """
     Generate and output causal tests for a given DAG.
@@ -241,7 +241,7 @@ def generate_causal_tests(
     tests = [
         relation.to_json_stub(**json_stub_kargs)
         for relation in relations
-        if len(list(causal_dag.predecessors(relation.base_test_case.outcome_variable))) > 0
+        if test_inputs or len(list(causal_dag.predecessors(relation.base_test_case.outcome_variable))) > 0
     ]
 
     logger.warning(
