@@ -204,7 +204,12 @@ def generate_metamorphic_relations(
 
 
 def generate_causal_tests(
-    dag_path: str, output_path: str, ignore_cycles: bool = False, threads: int = 0, test_inputs=False, **json_stub_kargs
+    dag_path: str,
+    output_path: str,
+    ignore_cycles: bool = False,
+    threads: int = 0,
+    test_inputs: bool = False,
+    **json_stub_kargs,
 ):
     """
     Generate and output causal tests for a given DAG.
@@ -216,6 +221,8 @@ def generate_causal_tests(
                           be omitted from the test set.
     :param threads: The number of threads to use to generate tests in parallel. If unspecified, tests are generated in
                     serial. This is tylically fine unless the number of tests to be generated is >10000.
+    :param test_inputs: Whether to test independences between inputs (i.e. root nodes in the DAG). Defaults to False
+    as they will typically be independent by construction.
     :param json_stub_kargs: Kwargs to pass into `to_json_stub` (see docstring for details.)
     """
     causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)
