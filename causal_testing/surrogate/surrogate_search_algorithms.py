@@ -55,16 +55,18 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
 
             gene_types, gene_space = self.create_gene_types(surrogate_model, specification)
 
+            num_genes = 1 + len(surrogate_model.adjustment_set)
+
             ga = GA(
                 num_generations=200,
                 num_parents_mating=4,
                 fitness_func=fitness_function,
                 sol_per_pop=10,
-                num_genes=1 + len(surrogate_model.adjustment_set),
+                num_genes=num_genes,
                 gene_space=gene_space,
                 gene_type=gene_types,
+                mutation_percent_genes=(1 / num_genes) * 100,
             )
-
             if self.config is not None:
                 for k, v in self.config.items():
                     if k == "gene_space":

@@ -1,6 +1,5 @@
 import unittest
 import pandas as pd
-from operator import sub
 
 from causal_testing.estimation.genetic_programming_regression_fitter import GP
 

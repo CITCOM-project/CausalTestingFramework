@@ -5,6 +5,7 @@ from causal_testing.specification.variable import Input, Output
 from causal_testing.utils.validation import CausalValidator
 
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.genetic_programming_regression_fitter import reciprocal
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
@@ -178,8 +179,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # for term_to_square in terms_to_square:
         effect_estimate = linear_regression_estimator.estimate_coefficient()
 
-        self.assertEqual(round(effect_estimate.value[0], 1), 3.5)
-        self.assertEqual([round(effect_estimate.ci_low[0], 1), round(effect_estimate.ci_high[0], 1)], [2.6, 4.3])
+        self.assertEqual(round(effect_estimate.value.iloc[0], 1), 3.5)
+        self.assertEqual(round(effect_estimate.ci_low.iloc[0], 1), 2.6)
+        self.assertEqual(round(effect_estimate.ci_high.iloc[0], 1), 4.3)
 
     def test_program_15_no_interaction_ate(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -268,7 +270,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         df["Y"] = 1 / (df["X"] + 1)
         base_test_case = BaseTestCase(Input("X", float), Output("Y", float))
         linear_regression_estimator = LinearRegressionEstimator(base_test_case, 0, 1, set(), df.astype(float))
-        linear_regression_estimator.gp_formula(seeds=["reciprocal(add(X, 1))"])
+        linear_regression_estimator.gp_formula(seeds=["reciprocal(add(X, 1))"], extra_operators=[(reciprocal, 1)])
         self.assertEqual(linear_regression_estimator.formula, "Y ~ I(1/(X + 1)) - 1")
         effect_estimate = linear_regression_estimator.estimate_ate_calculated()
         self.assertEqual(round(effect_estimate.value[0], 2), 0.50)
@@ -281,7 +283,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         df["X"] = np.arange(10)
         df["Y"] = 2 * (df["X"] ** 2)
         linear_regression_estimator = LinearRegressionEstimator(base_test_case, 0, 1, set(), df.astype(float))
-        linear_regression_estimator.gp_formula(seed=1, max_order=2, seeds=["mul(2, power_2(X))"])
+        linear_regression_estimator.gp_formula(seed=1, max_order=2, seeds=["mul(2, power_2(X))"], extra_operators=[])
         self.assertEqual(
             linear_regression_estimator.formula,
             "Y ~ I(2*X**2) - 1",

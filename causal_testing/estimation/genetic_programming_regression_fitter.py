@@ -17,6 +17,9 @@ import sympy
 from deap import base, creator, gp, tools
 from numpy import log, power
 
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
+
 
 def reciprocal(x: float) -> float:
     """
@@ -146,9 +149,6 @@ class GP:
                     f"{i}. Please choose a different name for your function."
                 )
             self.sympy_conversions[name] = conversion
-
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
 
         self.toolbox = base.Toolbox()
         self.toolbox.register("expr", gp.genHalfAndHalf, pset=self.pset, min_=1, max_=2)
