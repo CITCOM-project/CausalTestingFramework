@@ -194,7 +194,7 @@ class IPCWEstimator(Estimator):
         self.df["fault_time"] = fault_time_df["fault_time"].values
 
         assert (
-            self.df.groupby("id", sort=False).apply(lambda x: len(set(x["fault_time"])) == 1).all()
+            self.df.groupby("id", sort=False)["fault_time"].apply(lambda x: len(set(x)) == 1).all()
         ), "Each individual must have a unique fault time."
 
         fault_t_do_df = self.df.groupby("id", sort=False)[["id", "time", self.status_column]].apply(
@@ -221,7 +221,8 @@ class IPCWEstimator(Estimator):
             .copy()
         )
         control_group["trtrand"] = 0
-        ctrl_xo_t_do_df = control_group.groupby("id", sort=False).apply(
+        treated_vars = list(set([v for _, v, _ in self.treatment_strategy] + [v for _, v, _ in self.control_strategy]))
+        ctrl_xo_t_do_df = control_group.groupby("id", sort=False)[["time", "eligible", "xo_t_do"] + treated_vars].apply(
             self.setup_xo_t_do, strategy_assigned=self.control_strategy
         )
         control_group["xo_t_do"] = ctrl_xo_t_do_df["xo_t_do"].values
@@ -242,9 +243,9 @@ class IPCWEstimator(Estimator):
             .copy()
         )
         treatment_group["trtrand"] = 1
-        trt_xo_t_do_df = treatment_group.groupby("id", sort=False).apply(
-            self.setup_xo_t_do, strategy_assigned=self.treatment_strategy
-        )
+        trt_xo_t_do_df = treatment_group.groupby("id", sort=False)[
+            ["time", "eligible", "xo_t_do"] + treated_vars
+        ].apply(self.setup_xo_t_do, strategy_assigned=self.treatment_strategy)
         treatment_group["xo_t_do"] = trt_xo_t_do_df["xo_t_do"].values
         treatment_group["old_id"] = treatment_group["id"]
         # treatment_group["id"] = trt_xo_t_do_df["id"].values
@@ -260,6 +261,14 @@ class IPCWEstimator(Estimator):
 
         self.len_control_group = len(control_group.groupby("id"))
         self.len_treatment_group = len(treatment_group.groupby("id"))
+
+        if self.len_control_group == 0 and self.len_treatment_group == 0:
+            raise ValueError("No individuals followed either strategy.")
+        if self.len_control_group == 0:
+            raise ValueError(f"No individuals began the control strategy {self.control_strategy}")
+        if self.len_treatment_group == 0:
+            raise ValueError(f"No individuals began the treatment strategy {self.treatment_strategy}")
+
         individuals = pd.concat([control_group, treatment_group])
         individuals = individuals.loc[
             (
@@ -272,18 +281,11 @@ class IPCWEstimator(Estimator):
             )
         ]
 
-        if len(individuals) == 0:
-            raise ValueError("No individuals followed either strategy.")
         self.df = individuals.loc[
             individuals["time"]
             < np.ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
         ].reset_index()
         logger.debug(f"{len(individuals.groupby('id'))} individuals")
-
-        if len(self.df.loc[self.df["trtrand"] == 0]) == 0:
-            raise ValueError(f"No individuals began the control strategy {self.control_strategy}")
-        if len(self.df.loc[self.df["trtrand"] == 1]) == 0:
-            raise ValueError(f"No individuals began the treatment strategy {self.treatment_strategy}")
 
     def estimate_hazard_ratio(self) -> EffectEstimate:
         """

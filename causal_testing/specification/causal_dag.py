@@ -152,7 +152,7 @@ class CausalDAG(nx.DiGraph):
         :return: Boolean True if the three IV assumptions hold.
         """
         # (i) Instrument is associated with treatment
-        if nx.d_separated(self, {instrument}, {treatment}, set()):
+        if nx.is_d_separator(self, {instrument}, {treatment}, set()):
             raise ValueError(f"Instrument {instrument} is not associated with treatment {treatment} in the DAG")
 
         # (ii) Instrument does not affect outcome except through its potential effect on treatment
@@ -442,7 +442,7 @@ class CausalDAG(nx.DiGraph):
                 return False
 
         # Condition (2): Z must d-separate X and Y in the proper back-door graph
-        if not nx.d_separated(proper_backdoor_graph, set(treatments), set(outcomes), set(covariates)):
+        if not nx.is_d_separator(proper_backdoor_graph, set(treatments), set(outcomes), set(covariates)):
             logger.info(
                 "Failed Condition 2: Z=%s **does not** d-separate X=%s and Y=%s in the proper back-door graph.",
                 covariates,
