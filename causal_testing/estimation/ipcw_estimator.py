@@ -262,6 +262,8 @@ class IPCWEstimator(Estimator):
         self.len_control_group = len(control_group.groupby("id"))
         self.len_treatment_group = len(treatment_group.groupby("id"))
 
+        if self.len_control_group == 0 and self.len_treatment_group == 0:
+            raise ValueError("No individuals followed either strategy.")
         if self.len_control_group == 0:
             raise ValueError(f"No individuals began the control strategy {self.control_strategy}")
         if self.len_treatment_group == 0:
@@ -279,8 +281,6 @@ class IPCWEstimator(Estimator):
             )
         ]
 
-        if len(individuals) == 0:
-            raise ValueError("No individuals followed either strategy.")
         self.df = individuals.loc[
             individuals["time"]
             < np.ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
