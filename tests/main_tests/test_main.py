@@ -331,6 +331,77 @@ class TestCausalTestingFramework(unittest.TestCase):
             main()
             self.assertTrue((self.output_path.parent / "main.json").exists())
 
+    def test_parse_args_adequacy(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag_path",
+                str(self.dag_path),
+                "--data_paths",
+                str(self.data_paths[0]),
+                "--test_config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "-a",
+            ],
+        ):
+            main()
+            with open(self.output_path.parent / "main.json") as f:
+                log = json.load(f)
+            assert all(test["result"]["bootstrap_size"] == 100 for test in log)
+
+    def test_parse_args_bootstrap_size(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag_path",
+                str(self.dag_path),
+                "--data_paths",
+                str(self.data_paths[0]),
+                "--test_config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "-b",
+                "50",
+            ],
+        ):
+            main()
+            with open(self.output_path.parent / "main.json") as f:
+                log = json.load(f)
+            print(log)
+            assert all(test["result"]["bootstrap_size"] == 50 for test in log)
+
+    def test_parse_args_bootstrap_size_explicit_adequacy(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag_path",
+                str(self.dag_path),
+                "--data_paths",
+                str(self.data_paths[0]),
+                "--test_config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "-a",
+                "-b",
+                "50",
+            ],
+        ):
+            main()
+            with open(self.output_path.parent / "main.json") as f:
+                log = json.load(f)
+            print(log)
+            assert all(test["result"]["bootstrap_size"] == 50 for test in log)
+
     def test_parse_args_batches(self):
         with patch(
             "sys.argv",
