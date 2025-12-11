@@ -489,22 +489,6 @@ class CausalDAG(nx.DiGraph):
         backdoor_graph.add_edges_from(filter(lambda x: x not in outgoing_edges, self.edges))
         return backdoor_graph
 
-    def depends_on_outputs(self, node: Node, scenario: Scenario) -> bool:
-        """Check whether a given node in a given scenario is or depends on a
-        model output in the given scenario. That is, whether or not the model
-        needs to be run to determine its value.
-
-        NOTE: The graph must be acyclic for this to terminate.
-
-        :param node: The node in the DAG representing the variable of interest.
-        :param scenario: The modelling scenario.
-
-        :return: Whether the given variable is or depends on an output.
-        """
-        if isinstance(scenario.variables[node], Output):
-            return True
-        return any((self.depends_on_outputs(n, scenario) for n in self.predecessors(node)))
-
     @staticmethod
     def remove_hidden_adjustment_sets(minimal_adjustment_sets: list[str], scenario: Scenario):
         """Remove variables labelled as hidden from adjustment set(s)
