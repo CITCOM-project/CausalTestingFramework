@@ -573,7 +573,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     # Assume the user wants test adequacy if they're setting bootstrap_size
     if hasattr(args, "bootstrap_size") and args.bootstrap_size:
         args.adequacy = True
-    if args.adequacy:
+    if hasattr(args, "adequacy") and args.adequacy:
         # Need this here rather than a default value because otherwise the above always sets adequacy to True
         args.bootstrap_size = 100
 
