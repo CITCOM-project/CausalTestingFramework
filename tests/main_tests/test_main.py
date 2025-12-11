@@ -128,6 +128,19 @@ class TestCausalTestingFramework(unittest.TestCase):
             framework.create_base_test({"treatment_variable": "test_input", "expected_effect": {"missing": "NoEffect"}})
         self.assertEqual("\"Outcome variable 'missing' not found in inputs or outputs\"", str(e.exception))
 
+    def test_unloaded_tests(self):
+        framework = CausalTestingFramework(self.paths)
+        with self.assertRaises(ValueError) as e:
+            framework.run_tests()
+        self.assertEqual("No tests loaded. Call load_tests() first.", str(e.exception))
+
+    def test_unloaded_tests_batches(self):
+        framework = CausalTestingFramework(self.paths)
+        with self.assertRaises(ValueError) as e:
+            # Need the next because of the yield statement in run_tests_in_batches
+            next(framework.run_tests_in_batches())
+        self.assertEqual("No tests loaded. Call load_tests() first.", str(e.exception))
+
     def test_ctf(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
@@ -135,8 +148,6 @@ class TestCausalTestingFramework(unittest.TestCase):
         # Load and run tests
         framework.load_tests()
         results = framework.run_tests()
-
-        print(results)
 
         # Save results
         framework.save_results(results)
@@ -205,7 +216,30 @@ class TestCausalTestingFramework(unittest.TestCase):
                     all_results.extend(json.load(f))
 
         self.assertEqual([result["passed"] for result in all_results], [False])
-        self.assertIsNotNone([result["result"].get("error") for result in all_results])
+        self.assertIsNotNone([result.get("error") for result in all_results])
+
+    def test_ctf_exception_silent(self):
+        framework = CausalTestingFramework(self.paths, query="test_input < 0")
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+
+        results = framework.run_tests(silent=True)
+
+        with open(self.test_config_path, "r", encoding="utf-8") as f:
+            test_configs = json.load(f)
+
+        tests_passed = [
+            test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
+            for test_config, test_case, result in zip(test_configs["tests"], framework.test_cases, results)
+        ]
+
+        self.assertEqual(tests_passed, [False])
+        self.assertEqual(
+            [result.error_message for result in results],
+            ["zero-size array to reduction operation maximum which has no identity"],
+        )
 
     def test_ctf_batches_exception(self):
         framework = CausalTestingFramework(self.paths, query="test_input < 0")
@@ -214,7 +248,7 @@ class TestCausalTestingFramework(unittest.TestCase):
         # Load and run tests
         framework.load_tests()
         with self.assertRaises(ValueError):
-            list(framework.run_tests_in_batches())
+            next(framework.run_tests_in_batches())
 
     def test_ctf_batches_matches_run_tests(self):
         # Run the tests normally
@@ -318,11 +352,11 @@ class TestCausalTestingFramework(unittest.TestCase):
             [
                 "causal_testing",
                 "test",
-                "--dag_path",
+                "--dag-path",
                 str(self.dag_path),
-                "--data_paths",
+                "--data-paths",
                 str(self.data_paths[0]),
-                "--test_config",
+                "--test-config",
                 str(self.test_config_path),
                 "--output",
                 str(self.output_path.parent / "main.json"),
@@ -331,17 +365,110 @@ class TestCausalTestingFramework(unittest.TestCase):
             main()
             self.assertTrue((self.output_path.parent / "main.json").exists())
 
+    def test_parse_args_adequacy(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag-path",
+                str(self.dag_path),
+                "--data-paths",
+                str(self.data_paths[0]),
+                "--test-config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "-a",
+            ],
+        ):
+            main()
+            with open(self.output_path.parent / "main.json") as f:
+                log = json.load(f)
+            assert all(test["result"]["bootstrap_size"] == 100 for test in log)
+
+    def test_parse_args_adequacy_batches(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag-path",
+                str(self.dag_path),
+                "--data-paths",
+                str(self.data_paths[0]),
+                "--test-config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "-a",
+                "--batch-size",
+                "5",
+            ],
+        ):
+            main()
+            with open(self.output_path.parent / "main.json") as f:
+                log = json.load(f)
+            assert all(test["result"]["bootstrap_size"] == 100 for test in log)
+
+    def test_parse_args_bootstrap_size(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag-path",
+                str(self.dag_path),
+                "--data-paths",
+                str(self.data_paths[0]),
+                "--test-config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "-b",
+                "50",
+            ],
+        ):
+            main()
+            with open(self.output_path.parent / "main.json") as f:
+                log = json.load(f)
+            assert all(test["result"]["bootstrap_size"] == 50 for test in log)
+
+    def test_parse_args_bootstrap_size_explicit_adequacy(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag-path",
+                str(self.dag_path),
+                "--data-paths",
+                str(self.data_paths[0]),
+                "--test-config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "-a",
+                "-b",
+                "50",
+            ],
+        ):
+            main()
+            with open(self.output_path.parent / "main.json") as f:
+                log = json.load(f)
+            assert all(test["result"]["bootstrap_size"] == 50 for test in log)
+
     def test_parse_args_batches(self):
         with patch(
             "sys.argv",
             [
                 "causal_testing",
                 "test",
-                "--dag_path",
+                "--dag-path",
                 str(self.dag_path),
-                "--data_paths",
+                "--data-paths",
                 str(self.data_paths[0]),
-                "--test_config",
+                "--test-config",
                 str(self.test_config_path),
                 "--output",
                 str(self.output_path.parent / "main_batch.json"),
@@ -359,7 +486,7 @@ class TestCausalTestingFramework(unittest.TestCase):
                 [
                     "causal_testing",
                     "generate",
-                    "--dag_path",
+                    "--dag-path",
                     str(self.dag_path),
                     "--output",
                     os.path.join(tmp, "tests.json"),
@@ -375,15 +502,15 @@ class TestCausalTestingFramework(unittest.TestCase):
                 [
                     "causal_testing",
                     "generate",
-                    "--dag_path",
+                    "--dag-path",
                     str(self.dag_path),
                     "--output",
                     os.path.join(tmp, "tests_non_default.json"),
                     "--estimator",
                     "LogisticRegressionEstimator",
-                    "--estimate_type",
+                    "--estimate-type",
                     "unit_odds_ratio",
-                    "--effect_type",
+                    "--effect-type",
                     "total",
                 ],
             ):
