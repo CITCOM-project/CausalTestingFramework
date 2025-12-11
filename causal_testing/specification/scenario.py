@@ -31,3 +31,11 @@ class Scenario:
             self.constraints = set(constraints)
         else:
             self.constraints = set()
+
+    def hidden_variables(self) -> set[Variable]:
+        """Get the set of hidden variables
+
+        :return The variables marked as hidden.
+        :rtype: {Variable}
+        """
+        return {v for v in self.variables.values() if v.hidden}

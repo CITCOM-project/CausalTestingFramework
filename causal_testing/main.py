@@ -313,7 +313,10 @@ class CausalTestingFramework:
             base_test_case=base_test,
             treatment_value=test.get("treatment_value"),
             control_value=test.get("control_value"),
-            adjustment_set=test.get("adjustment_set", self.causal_specification.causal_dag.identification(base_test)),
+            adjustment_set=test.get(
+                "adjustment_set",
+                self.causal_specification.causal_dag.identification(base_test, self.scenario.hidden_variables()),
+            ),
             df=filtered_df,
             effect_modifiers=None,
             formula=test.get("formula"),
