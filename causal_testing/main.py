@@ -132,6 +132,7 @@ class CausalTestingFramework:
         self.causal_specification = CausalSpecification(
             variables=list(self.variables["inputs"].values()) + list(self.variables["outputs"].values()),
             causal_dag=self.dag,
+            constraints={self.query} if self.query else None,
         )
 
         logger.info("Setup completed successfully")
