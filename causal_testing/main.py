@@ -193,9 +193,6 @@ class CausalTestingFramework:
         all_variables = list(self.variables["inputs"].values()) + list(self.variables["outputs"].values())
         self.scenario = Scenario(variables=all_variables)
 
-        # Set up treatment variables
-        self.scenario.setup_treatment_variables()
-
         # Create causal specification
         self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.dag)
 
