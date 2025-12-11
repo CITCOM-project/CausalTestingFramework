@@ -149,8 +149,6 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.load_tests()
         results = framework.run_tests()
 
-        print(results)
-
         # Save results
         framework.save_results(results)
 
@@ -331,11 +329,11 @@ class TestCausalTestingFramework(unittest.TestCase):
             [
                 "causal_testing",
                 "test",
-                "--dag_path",
+                "--dag-path",
                 str(self.dag_path),
-                "--data_paths",
+                "--data-paths",
                 str(self.data_paths[0]),
-                "--test_config",
+                "--test-config",
                 str(self.test_config_path),
                 "--output",
                 str(self.output_path.parent / "main.json"),
@@ -350,15 +348,39 @@ class TestCausalTestingFramework(unittest.TestCase):
             [
                 "causal_testing",
                 "test",
-                "--dag_path",
+                "--dag-path",
                 str(self.dag_path),
-                "--data_paths",
+                "--data-paths",
                 str(self.data_paths[0]),
-                "--test_config",
+                "--test-config",
                 str(self.test_config_path),
                 "--output",
                 str(self.output_path.parent / "main.json"),
                 "-a",
+            ],
+        ):
+            main()
+            with open(self.output_path.parent / "main.json") as f:
+                log = json.load(f)
+            assert all(test["result"]["bootstrap_size"] == 100 for test in log)
+
+    def test_parse_args_adequacy_batches(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag-path",
+                str(self.dag_path),
+                "--data-paths",
+                str(self.data_paths[0]),
+                "--test-config",
+                str(self.test_config_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+                "-a",
+                "--batch-size",
+                "5",
             ],
         ):
             main()
@@ -372,11 +394,11 @@ class TestCausalTestingFramework(unittest.TestCase):
             [
                 "causal_testing",
                 "test",
-                "--dag_path",
+                "--dag-path",
                 str(self.dag_path),
-                "--data_paths",
+                "--data-paths",
                 str(self.data_paths[0]),
-                "--test_config",
+                "--test-config",
                 str(self.test_config_path),
                 "--output",
                 str(self.output_path.parent / "main.json"),
@@ -387,7 +409,6 @@ class TestCausalTestingFramework(unittest.TestCase):
             main()
             with open(self.output_path.parent / "main.json") as f:
                 log = json.load(f)
-            print(log)
             assert all(test["result"]["bootstrap_size"] == 50 for test in log)
 
     def test_parse_args_bootstrap_size_explicit_adequacy(self):
@@ -396,11 +417,11 @@ class TestCausalTestingFramework(unittest.TestCase):
             [
                 "causal_testing",
                 "test",
-                "--dag_path",
+                "--dag-path",
                 str(self.dag_path),
-                "--data_paths",
+                "--data-paths",
                 str(self.data_paths[0]),
-                "--test_config",
+                "--test-config",
                 str(self.test_config_path),
                 "--output",
                 str(self.output_path.parent / "main.json"),
@@ -412,7 +433,6 @@ class TestCausalTestingFramework(unittest.TestCase):
             main()
             with open(self.output_path.parent / "main.json") as f:
                 log = json.load(f)
-            print(log)
             assert all(test["result"]["bootstrap_size"] == 50 for test in log)
 
     def test_parse_args_batches(self):
@@ -421,11 +441,11 @@ class TestCausalTestingFramework(unittest.TestCase):
             [
                 "causal_testing",
                 "test",
-                "--dag_path",
+                "--dag-path",
                 str(self.dag_path),
-                "--data_paths",
+                "--data-paths",
                 str(self.data_paths[0]),
-                "--test_config",
+                "--test-config",
                 str(self.test_config_path),
                 "--output",
                 str(self.output_path.parent / "main_batch.json"),
@@ -443,7 +463,7 @@ class TestCausalTestingFramework(unittest.TestCase):
                 [
                     "causal_testing",
                     "generate",
-                    "--dag_path",
+                    "--dag-path",
                     str(self.dag_path),
                     "--output",
                     os.path.join(tmp, "tests.json"),
@@ -459,15 +479,15 @@ class TestCausalTestingFramework(unittest.TestCase):
                 [
                     "causal_testing",
                     "generate",
-                    "--dag_path",
+                    "--dag-path",
                     str(self.dag_path),
                     "--output",
                     os.path.join(tmp, "tests_non_default.json"),
                     "--estimator",
                     "LogisticRegressionEstimator",
-                    "--estimate_type",
+                    "--estimate-type",
                     "unit_odds_ratio",
-                    "--effect_type",
+                    "--effect-type",
                     "total",
                 ],
             ):

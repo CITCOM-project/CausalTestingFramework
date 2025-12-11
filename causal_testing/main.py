@@ -508,7 +508,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
     # Generation
     parser_generate = subparsers.add_parser(Command.GENERATE.value, help="Generate causal tests from a DAG")
-    parser_generate.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
+    parser_generate.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
     parser_generate.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
     parser_generate.add_argument(
         "-e",
@@ -518,13 +518,13 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
     parser_generate.add_argument(
         "-T",
-        "--effect_type",
+        "--effect-type",
         help="The effect type to estimate {direct, total}",
         default="direct",
     )
     parser_generate.add_argument(
         "-E",
-        "--estimate_type",
+        "--estimate-type",
         help="The estimate type to use when evaluating tests (defaults to coefficient)",
         default="coefficient",
     )
@@ -537,11 +537,11 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
     # Testing
     parser_test = subparsers.add_parser(Command.TEST.value, help="Run causal tests")
-    parser_test.add_argument("-D", "--dag_path", help="Path to the DAG file (.dot)", required=True)
+    parser_test.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
     parser_test.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
     parser_test.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
-    parser_test.add_argument("-d", "--data_paths", help="Paths to data files (.csv)", nargs="+", required=True)
-    parser_test.add_argument("-t", "--test_config", help="Path to test configuration file (.json)", required=True)
+    parser_test.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
+    parser_test.add_argument("-t", "--test-config", help="Path to test configuration file (.json)", required=True)
     parser_test.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
     parser_test.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
     parser_test.add_argument(
