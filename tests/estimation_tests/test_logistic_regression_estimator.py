@@ -20,4 +20,4 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
             BaseTestCase(Input("length_in", float), Output("completed", bool)), 65, 55, set(), df
         )
         effect_estimate = logistic_regression_estimator.estimate_unit_odds_ratio()
-        self.assertEqual(round(effect_estimate.value[0], 4), 0.8948)
+        self.assertEqual(round(effect_estimate.value.iloc[0], 4), 0.8948)

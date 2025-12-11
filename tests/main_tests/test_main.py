@@ -128,6 +128,19 @@ class TestCausalTestingFramework(unittest.TestCase):
             framework.create_base_test({"treatment_variable": "test_input", "expected_effect": {"missing": "NoEffect"}})
         self.assertEqual("\"Outcome variable 'missing' not found in inputs or outputs\"", str(e.exception))
 
+    def test_unloaded_tests(self):
+        framework = CausalTestingFramework(self.paths)
+        with self.assertRaises(ValueError) as e:
+            framework.run_tests()
+        self.assertEqual("No tests loaded. Call load_tests() first.", str(e.exception))
+
+    def test_unloaded_tests_batches(self):
+        framework = CausalTestingFramework(self.paths)
+        with self.assertRaises(ValueError) as e:
+            # Need the next because of the yield statement in run_tests_in_batches
+            next(framework.run_tests_in_batches())
+        self.assertEqual("No tests loaded. Call load_tests() first.", str(e.exception))
+
     def test_ctf(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
