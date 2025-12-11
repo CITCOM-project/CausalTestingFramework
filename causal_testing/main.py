@@ -553,7 +553,6 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         dest="bootstrap_size",
         help="Number of bootstrap samples for causal test adequacy. Defaults to 100",
         type=int,
-        default=100,
     )
     parser_test.add_argument(
         "-s",
@@ -574,6 +573,9 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     # Assume the user wants test adequacy if they're setting bootstrap_size
     if hasattr(args, "bootstrap_size") and args.bootstrap_size:
         args.adequacy = True
+    if args.adequacy:
+        # Need this here rather than a default value because otherwise the above always sets adequacy to True
+        args.bootstrap_size = 100
 
     args.command = Command(args.command)
     return args
