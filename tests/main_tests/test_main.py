@@ -216,7 +216,30 @@ class TestCausalTestingFramework(unittest.TestCase):
                     all_results.extend(json.load(f))
 
         self.assertEqual([result["passed"] for result in all_results], [False])
-        self.assertIsNotNone([result["result"].get("error") for result in all_results])
+        self.assertIsNotNone([result.get("error") for result in all_results])
+
+    def test_ctf_exception_silent(self):
+        framework = CausalTestingFramework(self.paths, query="test_input < 0")
+        framework.setup()
+
+        # Load and run tests
+        framework.load_tests()
+
+        results = framework.run_tests(silent=True)
+
+        with open(self.test_config_path, "r", encoding="utf-8") as f:
+            test_configs = json.load(f)
+
+        tests_passed = [
+            test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
+            for test_config, test_case, result in zip(test_configs["tests"], framework.test_cases, results)
+        ]
+
+        self.assertEqual(tests_passed, [False])
+        self.assertEqual(
+            [result.error_message for result in results],
+            ["zero-size array to reduction operation maximum which has no identity"],
+        )
 
     def test_ctf_batches_exception(self):
         framework = CausalTestingFramework(self.paths, query="test_input < 0")
@@ -225,7 +248,7 @@ class TestCausalTestingFramework(unittest.TestCase):
         # Load and run tests
         framework.load_tests()
         with self.assertRaises(ValueError):
-            list(framework.run_tests_in_batches())
+            next(framework.run_tests_in_batches())
 
     def test_ctf_batches_matches_run_tests(self):
         # Run the tests normally
