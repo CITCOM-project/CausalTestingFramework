@@ -93,19 +93,19 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
     ) -> tuple[list, list]:
         """Generate the gene_types and gene_space for a given fitness function and specification
         :param surrogate_model: Instance of a CubicSplineRegressionEstimator
-        :param specification: The Causal Specification (combination of Scenario and Causal Dag)"""
+        :param specification: The Causal Specification"""
 
         var_space = {}
         var_space[surrogate_model.base_test_case.treatment_variable.name] = {}
         for adj in surrogate_model.adjustment_set:
             var_space[adj] = {}
 
-        for relationship in list(specification.scenario.constraints):
+        for relationship in list(specification.constraints):
             print(relationship)
             rel_split = str(relationship).split(" ")
 
             if rel_split[0] in var_space:
-                datatype = specification.scenario.variables.get(rel_split[0]).datatype
+                datatype = specification.variables.get(rel_split[0]).datatype
                 if rel_split[1] == ">=":
                     var_space[rel_split[0]]["low"] = datatype(rel_split[2])
                 elif rel_split[1] == "<=":
@@ -119,9 +119,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             gene_space.append(var_space[adj])
 
         gene_types = []
-        gene_types.append(
-            specification.scenario.variables.get(surrogate_model.base_test_case.treatment_variable.name).datatype
-        )
+        gene_types.append(specification.variables.get(surrogate_model.base_test_case.treatment_variable.name).datatype)
         for adj in surrogate_model.adjustment_set:
-            gene_types.append(specification.scenario.variables.get(adj).datatype)
+            gene_types.append(specification.variables.get(adj).datatype)
         return gene_types, gene_space

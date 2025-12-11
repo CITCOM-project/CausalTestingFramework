@@ -10,7 +10,6 @@ from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_adequacy import DAGAdequacy
 from causal_testing.testing.causal_effect import NoEffect, SomeEffect
-from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
@@ -26,12 +25,6 @@ class TestCausalTestAdequacy(unittest.TestCase):
         self.df = pd.read_csv("tests/resources/data/data_with_categorical.csv")
         self.dag = CausalDAG("tests/resources/data/dag.dot")
         self.example_distribution = scipy.stats.uniform(1, 10)
-        inputs = [
-            Input("test_input", float, self.example_distribution),
-            Input("test_input_no_dist", float, self.example_distribution),
-        ]
-        outputs = [Output("test_output", float)]
-        self.scenario = Scenario(variables=inputs + outputs)
 
     def test_data_adequacy_numeric(self):
         base_test_case = BaseTestCase(

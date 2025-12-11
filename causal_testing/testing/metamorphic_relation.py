@@ -12,7 +12,8 @@ from typing import Iterable
 
 import networkx as nx
 
-from causal_testing.specification.causal_specification import CausalDAG, Node
+from causal_testing.specification.causal_specification import CausalDAG
+from causal_testing.specification.variable import Variable
 from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class MetamorphicRelation:
     """Class representing a metamorphic relation."""
 
     base_test_case: BaseTestCase
-    adjustment_vars: Iterable[Node]
+    adjustment_vars: Iterable[Variable]
 
     def __eq__(self, other):
         same_type = self.__class__ == other.__class__

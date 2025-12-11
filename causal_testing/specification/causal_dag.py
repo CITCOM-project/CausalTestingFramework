@@ -493,7 +493,7 @@ class CausalDAG(nx.DiGraph):
 
         :param base_test_case: A base test case instance containing the outcome_variable and the
                                treatment_variable required for identification.
-        :param scenario: The modelling scenario relating to the tests
+        :param avoid_variables: Variables not to be adjusted for (e.g. hidden variables).
 
         :return: The smallest set of variables which can be adjusted for to obtain a causal
                  estimate as opposed to a purely associational estimate.

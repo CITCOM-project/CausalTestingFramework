@@ -4,8 +4,8 @@ import shutil
 import tempfile
 import networkx as nx
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
+from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
@@ -420,11 +420,11 @@ class TestHiddenVariableDAG(unittest.TestCase):
         x = Input("X", int)
         m = Input("M", int)
 
-        scenario = Scenario(variables={z, x, m})
-        adjustment_sets = causal_dag.identification(BaseTestCase(x, m), scenario.hidden_variables())
+        specification = CausalSpecification(variables={z, x, m}, causal_dag=causal_dag)
+        adjustment_sets = causal_dag.identification(BaseTestCase(x, m), specification.hidden_variables())
 
         z.hidden = True
-        adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), scenario.hidden_variables())
+        adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), specification.hidden_variables())
 
         self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
 

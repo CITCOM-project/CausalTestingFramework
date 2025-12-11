@@ -33,10 +33,12 @@ class SearchAlgorithm(ABC):  # pylint: disable=too-few-public-methods
     def search(
         self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification
     ) -> list:
-        """Function which implements a search routine which searches for the optimal fitness value for the specified
-        scenario
+        """
+        Function which implements a search routine which searches for the optimal fitness value for the given
+        causal specification.
         :param surrogate_models: The surrogate models to be searched
-        :param specification:  The Causal Specification (combination of Scenario and Causal Dag)"""
+        :param specification:  The Causal Specification
+        """
 
 
 class Simulator(ABC):
@@ -81,9 +83,9 @@ class CausalSurrogateAssistedTestCase:
         """For this specific test case, a search algorithm is used to find the most contradictory point in the input
         space which is, therefore, most likely to indicate incorrect behaviour. This cadidate test case is run against
         the simulator, checked for faults and the result returned.
-        :param df: An dataframe which contains data relevant to the specified scenario
-        :param max_executions: Maximum number of simulator executions before exiting the search
-        :param custom_data_aggregator:
+        :param df: A dataframe containg data relevant to the causal specification.
+        :param max_executions: Maximum number of simulator executions before exiting the search.
+        :param custom_data_aggregator: Function to aggregate the data.
         :return: tuple containing SimulationResult or str, execution number and dataframe"""
 
         for i in range(max_executions):
@@ -120,21 +122,21 @@ class CausalSurrogateAssistedTestCase:
         self, specification: CausalSpecification, df: pd.DataFrame
     ) -> list[CubicSplineRegressionEstimator]:
         """Generate a surrogate model for each edge of the dag that specifies it is included in the DAG metadata.
-        :param specification: The Causal Specification (combination of Scenario and Causal Dag)
-        :param df: An dataframe which contains data relevant to the specified scenario
-        :return: A list of surrogate models
+        :param specification: The Causal Specification.
+        :param df: A dataframe containg data relevant to the causal specification.
+        :return: A list of surrogate models.
         """
         surrogate_models = []
 
         for u, v in specification.causal_dag.edges:
             edge_metadata = specification.causal_dag.adj[u][v]
             if "included" in edge_metadata:
-                from_var = specification.scenario.variables.get(u)
-                to_var = specification.scenario.variables.get(v)
+                from_var = specification.variables.get(u)
+                to_var = specification.variables.get(v)
                 base_test_case = BaseTestCase(from_var, to_var)
 
                 minimal_adjustment_set = specification.causal_dag.identification(
-                    base_test_case, specification.scenario.hidden_variables()
+                    base_test_case, specification.hidden_variables()
                 )
 
                 surrogate = CubicSplineRegressionEstimator(

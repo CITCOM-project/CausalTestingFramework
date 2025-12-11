@@ -1,18 +1,15 @@
+import os
+import logging
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import Positive, Negative, NoEffect
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
-from matplotlib.pyplot import rcParams
 
-import os
-import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
@@ -87,42 +84,10 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     # 1. Define Causal DAG
     causal_dag = CausalDAG(f"{ROOT}/dag.dot")
 
-    # 2. Specify all inputs
-    g_na = Input("G_Na", float)
-    g_si = Input("G_si", float)
-    g_k = Input("G_K", float)
-    g_k1 = Input("G_K1", float)
-    g_kp = Input("G_Kp", float)
-    g_b = Input("G_b", float)
-
-    # 3. Specify all outputs
-    max_voltage = Output("max_voltage", float)
-    rest_voltage = Output("rest_voltage", float)
-    max_voltage_gradient = Output("max_voltage_gradient", float)
-    dome_voltage = Output("dome_voltage", float)
-    apd50 = Output("APD50", int)
+    # 2. Specify relevant variables
     apd90 = Output("APD90", int)
 
-    # 4. Create scenario by applying constraints over a subset of the inputs
-    scenario = Scenario(
-        variables={
-            g_na,
-            g_si,
-            g_k,
-            g_k1,
-            g_kp,
-            g_b,
-            max_voltage,
-            rest_voltage,
-            max_voltage_gradient,
-            dome_voltage,
-            apd50,
-            apd90,
-        },
-        constraints=set(),
-    )
-
-    # 5. Create a causal specification from the scenario and causal DAG
+    # 3. Create a causal specification
     base_test_case = BaseTestCase(treatment_var, apd90)
     # 6. Create a causal test case
     causal_test_case = CausalTestCase(
@@ -137,7 +102,7 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
         ),
     )
 
-    # 9. Run the causal test and print results
+    # 4. Run the causal test and print results
     causal_test_result = causal_test_case.execute_test()
     logger.info("%s", causal_test_result)
     return causal_test_result.effect_estimate.value, (

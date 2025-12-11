@@ -1,13 +1,9 @@
 import unittest
 import os
 import shutil, tempfile
-import pandas as pd
-from itertools import combinations
-import tempfile
 import json
 
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.causal_specification import Scenario
 from causal_testing.testing.metamorphic_relation import (
     ShouldCause,
     ShouldNotCause,
@@ -30,16 +26,6 @@ class TestMetamorphicRelation(unittest.TestCase):
         dcg_dot = """digraph dct { a -> b -> c -> d; d -> c; }"""
         with open(self.dcg_dot_path, "w") as f:
             f.write(dcg_dot)
-
-        X1 = Input("X1", float)
-        X2 = Input("X2", float)
-        X3 = Input("X3", float)
-        Z = Output("Z", float)
-        M = Output("M", float)
-        Y = Output("Y", float)
-        self.scenario = Scenario(variables={X1, X2, X3, Z, M, Y})
-        self.default_control_input_config = {"X1": 1, "X2": 2, "X3": 3}
-        self.default_treatment_input_config = {"X1": 2, "X2": 3, "X3": 3}
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)

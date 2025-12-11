@@ -2,7 +2,6 @@ import os
 import logging
 import pandas as pd
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -28,36 +27,16 @@ def setup_test_case(verbose: bool = False):
     causal_dag = CausalDAG(f"{ROOT}/dag.dot")
 
     # 2. Create variables
-    pop_size = Input("pop_size", int)
-    pop_infected = Input("pop_infected", int)
-    n_days = Input("n_days", int)
     vaccine = Input("vaccine", int)
     cum_infections = Output("cum_infections", int)
     cum_vaccinations = Output("cum_vaccinations", int)
     cum_vaccinated = Output("cum_vaccinated", int)
     max_doses = Output("max_doses", int)
 
-    # 3. Create scenario by applying constraints over a subset of the input variables
-    scenario = Scenario(
-        variables={
-            pop_size,
-            pop_infected,
-            n_days,
-            cum_infections,
-            vaccine,
-            cum_vaccinated,
-            cum_vaccinations,
-            max_doses,
-        },
-    )
-
-    # 4. Construct a causal specification from the scenario and causal DAG
-    causal_specification = CausalSpecification(scenario, causal_dag)
-
-    # 5. Read the previously simulated data
+    # 3. Read the previously simulated data
     obs_df = pd.read_csv("simulated_data.csv")
 
-    # 6. Express expected outcomes
+    # 4. Express expected outcomes
     expected_outcome_effects = {
         cum_infections: Positive(),
         cum_vaccinations: Negative(),
@@ -72,10 +51,10 @@ def setup_test_case(verbose: bool = False):
             base_test_case=base_test_case,
             expected_causal_effect=expected_effect,
         )
-        # 7. Obtain the minimal adjustment set for the causal test case from the causal DAG
+        # 5. Obtain the minimal adjustment set for the causal test case from the causal DAG
         minimal_adjustment_set = causal_dag.identification(base_test_case)
 
-        # 8. Build statistical model using the Linear Regression estimator
+        # 6. Build statistical model using the Linear Regression estimator
         linear_regression_estimator = LinearRegressionEstimator(
             base_test_case=base_test_case,
             treatment_value=1,
@@ -84,7 +63,7 @@ def setup_test_case(verbose: bool = False):
             df=obs_df,
         )
 
-        # 9. Execute test and save results in dict
+        # 7. Execute test and save results in dict
         causal_test_result = causal_test_case.execute_test(linear_regression_estimator)
 
         if verbose:

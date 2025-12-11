@@ -4,7 +4,6 @@ import logging
 import pandas as pd
 
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -66,8 +65,9 @@ num_lines_unit = Output("num_lines_unit", float)
 num_shapes_abs = Output("num_shapes_abs", float)
 num_shapes_unit = Output("num_shapes_unit", float)
 
-# 3. Create scenario
-scenario = Scenario(
+
+# 3. Construct a causal specification
+causal_specification = CausalSpecification(
     variables={
         width,
         height,
@@ -76,11 +76,9 @@ scenario = Scenario(
         num_lines_unit,
         num_shapes_abs,
         num_shapes_unit,
-    }
+    },
+    causal_dag=causal_dag,
 )
-
-# 4. Construct a causal specification from the scenario and causal DAG
-causal_specification = CausalSpecification(scenario, causal_dag)
 
 observational_data_path = f"{ROOT}/data/random/data_random_1000.csv"
 
