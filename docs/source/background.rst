@@ -83,11 +83,12 @@ Background
 
    <div style="margin-top: 30px;"></div>
 
-The Causal Testing Framework primarily consists of the following 2 components: 1) Causal Specification and 2) Causal Test Case.
+The Causal Testing Framework primarily consists of the following 3 components: 1) Modelling Scenario, 2) Causal Graph, and 2) Causal Test Case.
 
 #.
-   :doc:`Causal Specification <../modules/causal_specification>`\ : To apply graphical causal inference techniques for testing, we need a *causal specification*.
-   This takes the form of a directed acyclic graph (DAG) that depicts causal relationships amongst inputs and outputs and a set of constraints over input variables that capture the modelling scenario of interest.
+   :doc:`Causal Graph <../modules/causal_specification>`\ : To apply graphical causal inference techniques for testing, we need a *specification*.
+   For this, we must specify the variables that are relevant to the modelling scenario of interest, and any constraints over them.
+   We must also specify the expected causal relationships between the variables as a directed acyclic graph (DAG).
 
 
 #.
