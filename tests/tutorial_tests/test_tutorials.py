@@ -1,5 +1,17 @@
-import pathlib
 import os
+
+os.environ["JUPYTER_PLATFORM_DIRS"] = "1"
+
+import sys
+import warnings
+import asyncio
+
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=r"Jupyter is migrating.*")
+
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+import pathlib
 import pytest
 import nbformat
 from nbclient.client import NotebookClient
