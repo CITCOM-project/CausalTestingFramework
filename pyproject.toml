@@ -1,8 +1,8 @@
 [build-system]
 requires = [
-    "setuptools>=64",
-    "setuptools_scm[toml]>=6.2",
-    "wheel"
+"setuptools>=64",
+"setuptools_scm[toml]>=6.2",
+"wheel"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -17,7 +17,7 @@ keywords = ["causal inference","verification"]
 dependencies = [
 "lifelines~=0.30.0",
 "networkx>=3.4,<3.5",
-"numpy>=1.2.6, <=2.2.0",
+"numpy>=1.26.0,<=2.2.0",
 "pandas>=2.1",
 "scikit_learn~=1.4",
 "scipy>=1.12.0,<=1.16.2",
@@ -51,7 +51,6 @@ dev = [
 "pre-commit",
 "tox",
 ]
-
 test = [
 "nbclient",
 "nbformat",
@@ -59,9 +58,10 @@ test = [
 ]
 
 [project.urls]
-Bug_Tracker = "https://github.com/CITCOM-project/CausalTestingFramework/issues"
+Homepage = "https://sites.google.com/sheffield.ac.uk/citcom/home"
 Documentation = "https://causal-testing-framework.readthedocs.io/"
-Source = "https://github.com/CITCOM-project/CausalTestingFramework"
+Repository = "https://github.com/CITCOM-project/CausalTestingFramework"
+Issues = "https://github.com/CITCOM-project/CausalTestingFramework/issues"
 
 [tool.setuptools.packages]
 find = {}
@@ -79,15 +79,21 @@ profile = "black"
 line_length = 120
 
 [tool.pytest.ini_options]
+filterwarnings = [
+"ignore:datetime.datetime.utcnow:DeprecationWarning:lifelines",
+"ignore::DeprecationWarning:jupyter_client.*",
+"ignore::RuntimeWarning:zmq.*",
+]
 minversion = "6.0"
-python_files=[
+python_files = [
 "test_*.py",
-"example_*.py"]
+"example_*.py"
+]
 
 [tool.tox]
 requires = ["tox>=4.19"]
 env_list = ["3.10","3.11","3.12","3.13"]
-skip_missing_interpreters = false  # fail if devs don’t have all required Python versions
+skip_missing_interpreters = false # fail if devs don’t have all required Python versions
 
 # Base configuration for all test environments
 [tool.tox.env_run_base]
