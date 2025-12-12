@@ -166,8 +166,8 @@ def generate_metamorphic_relation(
 def generate_metamorphic_relations(
     dag: CausalDAG, nodes_to_ignore: set = None, threads: int = 0, nodes_to_test: set = None
 ) -> list[MetamorphicRelation]:
-    """Construct a list of metamorphic relations implied by the Causal DAG.
-
+    """
+    Construct a list of metamorphic relations implied by the Causal DAG.
     This list of metamorphic relations contains a ShouldCause relation for every edge, and a ShouldNotCause
     relation for every (minimal) conditional independence relation implied by the structure of the DAG.
 
@@ -222,7 +222,7 @@ def generate_causal_tests(
     :param threads: The number of threads to use to generate tests in parallel. If unspecified, tests are generated in
                     serial. This is tylically fine unless the number of tests to be generated is >10000.
     :param test_inputs: Whether to test independences between inputs (i.e. root nodes in the DAG). Defaults to False
-    as they will typically be independent by construction.
+        as they will typically be independent by construction.
     :param json_stub_kargs: Kwargs to pass into `to_json_stub` (see docstring for details.)
     """
     causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)
