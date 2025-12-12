@@ -7,8 +7,8 @@ from operator import itemgetter
 from pygad import GA
 
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
-from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm
 from causal_testing.specification.scenario import Scenario
+from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm
 
 
 class GeneticSearchAlgorithm(SearchAlgorithm):

@@ -1,15 +1,15 @@
 """Module containing classes to define and run causal surrogate assisted test cases"""
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable
-import logging
 
 import pandas as pd
 
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)

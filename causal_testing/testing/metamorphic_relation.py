@@ -114,7 +114,8 @@ class ShouldNotCause(MetamorphicRelation):
 def generate_metamorphic_relation(
     node_pair: tuple[str, str], dag: CausalDAG, nodes_to_ignore: set = None
 ) -> MetamorphicRelation:
-    """Construct a metamorphic relation for a given node pair implied by the Causal DAG, or None if no such relation can
+    """
+    Construct a metamorphic relation for a given node pair implied by the Causal DAG, or None if no such relation can
     be constructed (e.g. because every valid adjustment set contains a node to ignore).
 
     :param node_pair: The pair of nodes to consider.
@@ -222,7 +223,7 @@ def generate_causal_tests(
     :param threads: The number of threads to use to generate tests in parallel. If unspecified, tests are generated in
                     serial. This is tylically fine unless the number of tests to be generated is >10000.
     :param test_inputs: Whether to test independences between inputs (i.e. root nodes in the DAG). Defaults to False
-        as they will typically be independent by construction.
+                        as they will typically be independent by construction.
     :param json_stub_kargs: Kwargs to pass into `to_json_stub` (see docstring for details.)
     """
     causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)

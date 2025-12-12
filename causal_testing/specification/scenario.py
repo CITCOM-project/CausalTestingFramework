@@ -3,7 +3,6 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-
 from .variable import Variable
 
 
