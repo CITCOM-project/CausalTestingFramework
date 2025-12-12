@@ -54,7 +54,8 @@ dev = [
 
 test = [
 "nbclient",
-"nbformat"
+"nbformat",
+"ipykernel",
 ]
 
 [project.urls]
