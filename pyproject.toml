@@ -50,12 +50,12 @@ dev = [
 "pandoc",
 "pre-commit",
 "tox",
-"nbclient",
-"nbformat"
 ]
 
 test = [
 "covasim~=3.0.7",
+"nbclient",
+"nbformat"
 ]
 
 [project.urls]
