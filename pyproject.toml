@@ -49,7 +49,9 @@ dev = [
 "ipykernel",
 "pandoc",
 "pre-commit",
-"tox"
+"tox",
+"nbclient",
+"nbformat"
 ]
 
 test = [
@@ -81,7 +83,6 @@ minversion = "6.0"
 python_files=[
 "test_*.py",
 "example_*.py"]
-nb_file_pattern="*.ipynb"
 
 [tool.tox]
 requires = ["tox>=4.19"]
