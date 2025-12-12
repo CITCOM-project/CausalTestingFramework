@@ -6,7 +6,6 @@ import pandas as pd
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import ExactValue, Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
@@ -79,9 +78,6 @@ scenario = Scenario(
     }
 )
 
-# 4. Construct a causal specification from the scenario and causal DAG
-causal_specification = CausalSpecification(scenario, causal_dag)
-
 observational_data_path = f"{ROOT}/data/random/data_random_1000.csv"
 
 
@@ -99,7 +95,7 @@ def test_poisson_intensity_num_shapes(save=False):
                     base_test_case=base_test_case,
                     treatment_value=treatment_value,
                     control_value=control_value,
-                    adjustment_set=causal_specification.causal_dag.identification(base_test_case),
+                    adjustment_set=causal_dag.identification(base_test_case),
                     df=pd.read_csv(f"{ROOT}/data/smt_100/data_smt_wh{wh}_100.csv", index_col=0).astype(float),
                     effect_modifiers=None,
                     alpha=0.05,
@@ -114,7 +110,7 @@ def test_poisson_intensity_num_shapes(save=False):
                     base_test_case=base_test_case,
                     treatment_value=treatment_value,
                     control_value=control_value,
-                    adjustment_set=causal_specification.causal_dag.identification(base_test_case),
+                    adjustment_set=causal_dag.identification(base_test_case),
                     df=observational_df,
                     effect_modifiers=None,
                     formula="num_shapes_unit ~ I(intensity ** 2) + intensity - 1",
@@ -158,7 +154,7 @@ def test_poisson_width_num_shapes(save=False):
                 base_test_case=base_test_case,
                 treatment_value=w + 1.0,
                 control_value=float(w),
-                adjustment_set=causal_specification.causal_dag.identification(base_test_case),
+                adjustment_set=causal_dag.identification(base_test_case),
                 df=df,
                 effect_modifiers={"intensity": i},
                 formula="num_shapes_unit ~ width + I(intensity ** 2)+I(width ** -1)+intensity-1",

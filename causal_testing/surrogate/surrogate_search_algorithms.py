@@ -7,8 +7,8 @@ from operator import itemgetter
 from pygad import GA
 
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.surrogate.causal_surrogate_assisted import SearchAlgorithm
+from causal_testing.specification.scenario import Scenario
 
 
 class GeneticSearchAlgorithm(SearchAlgorithm):
@@ -27,9 +27,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         }
 
     # pylint: disable=too-many-locals
-    def search(
-        self, surrogate_models: list[CubicSplineRegressionEstimator], specification: CausalSpecification
-    ) -> list:
+    def search(self, surrogate_models: list[CubicSplineRegressionEstimator], scenario: Scenario) -> list:
         solutions = []
 
         for surrogate_model in surrogate_models:
@@ -53,7 +51,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                     )
                 return contradiction_function(ate[0])
 
-            gene_types, gene_space = self.create_gene_types(surrogate_model, specification)
+            gene_types, gene_space = self.create_gene_types(surrogate_model, scenario)
 
             num_genes = 1 + len(surrogate_model.adjustment_set)
 
@@ -71,8 +69,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                 for k, v in self.config.items():
                     if k == "gene_space":
                         raise ValueError(
-                            "Gene space should not be set through config. This is generated from the causal "
-                            "specification"
+                            "Gene space should not be set through config. This is generated from the modelling scenario"
                         )
                     setattr(ga, k, v)
 
@@ -88,24 +85,22 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         return max(solutions, key=itemgetter(1))  # This can be done better with fitness normalisation between edges
 
     @staticmethod
-    def create_gene_types(
-        surrogate_model: CubicSplineRegressionEstimator, specification: CausalSpecification
-    ) -> tuple[list, list]:
-        """Generate the gene_types and gene_space for a given fitness function and specification
+    def create_gene_types(surrogate_model: CubicSplineRegressionEstimator, scenario: Scenario) -> tuple[list, list]:
+        """Generate the gene_types and gene_space for a given fitness function and scenario
         :param surrogate_model: Instance of a CubicSplineRegressionEstimator
-        :param specification: The Causal Specification (combination of Scenario and Causal Dag)"""
+        :param scenario: The modelling scenario"""
 
         var_space = {}
         var_space[surrogate_model.base_test_case.treatment_variable.name] = {}
         for adj in surrogate_model.adjustment_set:
             var_space[adj] = {}
 
-        for relationship in list(specification.scenario.constraints):
+        for relationship in list(scenario.constraints):
             print(relationship)
             rel_split = str(relationship).split(" ")
 
             if rel_split[0] in var_space:
-                datatype = specification.scenario.variables.get(rel_split[0]).datatype
+                datatype = scenario.variables.get(rel_split[0]).datatype
                 if rel_split[1] == ">=":
                     var_space[rel_split[0]]["low"] = datatype(rel_split[2])
                 elif rel_split[1] == "<=":
@@ -119,9 +114,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             gene_space.append(var_space[adj])
 
         gene_types = []
-        gene_types.append(
-            specification.scenario.variables.get(surrogate_model.base_test_case.treatment_variable.name).datatype
-        )
+        gene_types.append(scenario.variables.get(surrogate_model.base_test_case.treatment_variable.name).datatype)
         for adj in surrogate_model.adjustment_set:
-            gene_types.append(specification.scenario.variables.get(adj).datatype)
+            gene_types.append(scenario.variables.get(adj).datatype)
         return gene_types, gene_space

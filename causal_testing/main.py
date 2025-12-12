@@ -15,7 +15,6 @@ from tqdm import tqdm
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
@@ -106,7 +105,6 @@ class CausalTestingFramework:
         self.data: Optional[pd.DataFrame] = None
         self.variables: Dict[str, Any] = {"inputs": {}, "outputs": {}, "metas": {}}
         self.scenario: Optional[Scenario] = None
-        self.causal_specification: Optional[CausalSpecification] = None
         self.test_cases: Optional[List[CausalTestCase]] = None
 
     def setup(self) -> None:
@@ -130,8 +128,11 @@ class CausalTestingFramework:
         # Create variables from DAG
         self.create_variables()
 
-        # Create scenario and specification
-        self.create_scenario_and_specification()
+        # Create scenario
+        self.scenario = Scenario(
+            list(self.variables["inputs"].values()) + list(self.variables["outputs"].values()),
+            {self.query} if self.query else None,
+        )
 
         logger.info("Setup completed successfully")
 
@@ -186,15 +187,6 @@ class CausalTestingFramework:
             # Otherwise it's an output
             if self.dag.in_degree(node_name) > 0:
                 self.variables["outputs"][node_name] = Output(name=node_name, datatype=dtype)
-
-    def create_scenario_and_specification(self) -> None:
-        """Create scenario and causal specification objects from loaded data."""
-        # Create scenario
-        all_variables = list(self.variables["inputs"].values()) + list(self.variables["outputs"].values())
-        self.scenario = Scenario(variables=all_variables)
-
-        # Create causal specification
-        self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.dag)
 
     def load_tests(self) -> None:
         """
@@ -315,7 +307,7 @@ class CausalTestingFramework:
             control_value=test.get("control_value"),
             adjustment_set=test.get(
                 "adjustment_set",
-                self.causal_specification.causal_dag.identification(base_test, self.scenario.hidden_variables()),
+                self.dag.identification(base_test, self.scenario.hidden_variables()),
             ),
             df=filtered_df,
             effect_modifiers=None,

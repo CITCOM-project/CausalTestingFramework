@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import Positive, Negative, NoEffect
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
