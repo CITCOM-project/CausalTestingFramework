@@ -76,7 +76,7 @@ git checkout tags/<tag> -b <branch>
 pip install . # For core API only
 pip install -e . # For editable install, useful for development work
 ```
-For more information on how to use the Causal Testing Framework, please refer to our [documentation](https://causal-testing-framework.readthedocs.io/en/latest/?badge=latest).
+For more information on how to use the Causal Testing Framework, please refer to our [documentation](https://causal-testing-framework.readthedocs.io/en/latest/?badge=latest). If you have any questions, you can also reach us by [email](citcom-group@sheffield.ac.uk).
 
 >[!NOTE]
 >We recommend you use a 64-bit OS (standard in most modern machines) as we have had reports of the installation crashing on legacy 32-bit Debian systems.
@@ -89,12 +89,12 @@ For more information on how to use the Causal Testing Framework, please refer to
 
 2. If you do not already have causal test cases, you can convert your causal DAG to causal tests by running the following command.
 ```
-python -m causal_testing generate --dag_path $PATH_TO_DAG --output_path $PATH_TO_TESTS
+python -m causal_testing generate --dag-path $PATH_TO_DAG --output $PATH_TO_TESTS
 ```
 
 3. You can now execute your tests by running the following command.
 ```
-python -m causal_testing test --dag_path $PATH_TO_DAG --data_paths $PATH_TO_DATA --test_config $PATH_TO_TESTS --output $OUTPUT
+python -m causal_testing test --dag-path $PATH_TO_DAG --data-paths $PATH_TO_DATA --test-config $PATH_TO_TESTS --output $OUTPUT
 ```
 The results will be saved for inspection in a JSON file located at `$OUTPUT`.
 In the future, we hope to add a visualisation tool to assist with this.

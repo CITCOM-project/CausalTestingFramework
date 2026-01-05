@@ -19,6 +19,8 @@ the inputs and outputs of the system under test, supported by mathematical found
 enable causal inference. Each causal test case targets the causal effect of a specific intervention on the system under test--that is,
 a deliberate modification to the input configuration expected to produce a corresponding change in one or more outputs.
 
+If you have any questions about our framework, you can also reach us by [email](citcom-group@sheffield.ac.uk).
+
 .. toctree::
    :hidden:
    :caption: Home
@@ -72,8 +74,9 @@ a deliberate modification to the input configuration expected to produce a corre
 
    CITCoM Homepage <https://sites.google.com/sheffield.ac.uk/citcom/home>
    Paper <https://dl.acm.org/doi/10.1145/3607184>
-   Figshare <https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516>
    PyPI <https://pypi.org/project/causal-testing-framework/>
+   Conda-forge <https://anaconda.org/channels/conda-forge/packages/causal-testing-framework/overview>
+   Figshare <https://orda.shef.ac.uk/articles/software/CITCOM_Software_Release/24427516>
    DeepWiki <https://deepwiki.com/CITCOM-project/CausalTestingFramework>
 
 .. toctree::
