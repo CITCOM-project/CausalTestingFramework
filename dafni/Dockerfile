@@ -9,7 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Label maintainer
-LABEL maintainer="Dr. Farhad Allian - The University of Sheffield"
+LABEL maintainer="Dr. Neil Walkinshaw - The University of Sheffield"
 
 # Create a folder for the source code/outputs
 RUN mkdir -p ./causal_testing
@@ -19,11 +19,12 @@ RUN mkdir -p ./data/outputs
 COPY --chown=nobody  ./causal_testing ./causal_testing
 COPY --chown=nobody ./dafni/data/inputs ./data/inputs
 
+# Copy your entrypoint script
+COPY dafni/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Install core dependencies using PyPi
 RUN pip install causal-testing-framework --no-cache-dir
 
-# Set the PYTHONPATH environment variable to include the /src directory
-ENV PYTHONPATH="/causal_testing:${PYTHONPATH}"
-
 # Define the entrypoint/commands
-CMD python -m causal_testing --dag_path $DAG_PATH --data_path $DATA_PATH --test_config $TESTS_PATH --output $OUTPUT
+ENTRYPOINT ["/entrypoint.sh"]
