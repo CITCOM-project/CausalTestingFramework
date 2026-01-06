@@ -90,7 +90,7 @@ spec:
 
       - name: IGNORE_CYCLES
         title: Ignore Cycles
-        description: If true, cycles in the DAG are ignored. Generation mode only
+        description: If true, cycles in the DAG are ignored. Generation mode only.
         type: boolean
         default: false
         required: false
