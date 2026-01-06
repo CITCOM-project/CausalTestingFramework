@@ -19,7 +19,7 @@ the inputs and outputs of the system under test, supported by mathematical found
 enable causal inference. Each causal test case targets the causal effect of a specific intervention on the system under test--that is,
 a deliberate modification to the input configuration expected to produce a corresponding change in one or more outputs.
 
-If you have any questions about our framework, you can also reach us by [email](citcom-group@sheffield.ac.uk).
+If you have any questions about our framework, you can also reach us by `email <mailto:citcom-group@sheffield.ac.uk>`__.
 
 .. toctree::
    :hidden:
