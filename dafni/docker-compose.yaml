@@ -6,4 +6,5 @@ services:
     env_file:
       - .env
     volumes:
-      - .:/usr/src/
+      - ./data/inputs:/data/inputs:ro
+      - ./data/outputs:/data/outputs
