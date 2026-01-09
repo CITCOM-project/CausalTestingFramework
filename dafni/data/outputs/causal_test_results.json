@@ -103,13 +103,13 @@
       ],
       "effect_measure": "coefficient",
       "effect_estimate": {
-        "cum_vaccinations": 0.9998656401531978
+        "cum_vaccinations": 0.9998656401531969
       },
       "ci_low": {
-        "cum_vaccinations": 0.9929245394500337
+        "cum_vaccinations": 0.9929245394500371
       },
       "ci_high": {
-        "cum_vaccinations": 1.006806740856362
+        "cum_vaccinations": 1.0068067408563566
       }
     }
   },
@@ -133,13 +133,13 @@
       ],
       "effect_measure": "coefficient",
       "effect_estimate": {
-        "cum_vaccinations": -0.006416682407512808
+        "cum_vaccinations": -0.006416682407513252
       },
       "ci_low": {
-        "cum_vaccinations": -0.056630100838863134
+        "cum_vaccinations": -0.05663010083886358
       },
       "ci_high": {
-        "cum_vaccinations": 0.04379673602383752
+        "cum_vaccinations": 0.043796736023837074
       }
     }
   },

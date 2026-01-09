@@ -143,7 +143,7 @@ spec:
           A .csv file containing the input runtime data to be used
         default:
           - 2b7336cd-eb68-4c1f-8f91-26d8969b8cb3
-        path: inputs/
+        path: inputs/runtime-data
         required: true
 
       - name: DAG data
@@ -151,20 +151,23 @@ spec:
           A .dot file containing the input DAG to be used
         default:
           - 74665fdb-43a2-4c51-b81e-d5299b38bf8c
-        path: inputs/
+        path: inputs/dag-data
         required: true
 
       - name: Causal tests
         description: >
           A .JSON file containing the input causal tests to be used. This file can also be generated using the input DAG.
-        default:
-          - 6f2f7c1f-81b4-4804-8f86-cca304dc7f66
-        path: inputs/
+        path: inputs/causal-tests
         required: false
 
   outputs:
     datasets:
+      - name: causal_tests.json
+        type: json
+        description: >
+          Generated causal tests from the DAG. Created when running in generate mode or auto mode (when no causal tests are provided).
+
       - name: causal_test_results.json
         type: json
         description: >
-          A JSON file containing the output causal test results.
+          Results from executing causal tests. Created when running in test mode or auto mode (when causal tests are provided).

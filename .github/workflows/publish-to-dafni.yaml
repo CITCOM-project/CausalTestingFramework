@@ -50,7 +50,7 @@ jobs:
 
       - name: Build the container
         run: |
-          docker build -t ctf:${{ env.VERSION }} -f ./dafni/Dockerfile .
+          docker build --no-cache -t ctf:${{ env.VERSION }} -f ./dafni/Dockerfile .
           docker save ctf:${{ env.VERSION }} | gzip > ctf-dafni-${{ env.VERSION }}.tar.gz
 
       - name: Log into DAFNI
