@@ -27,6 +27,9 @@ jobs:
           pip install -e .
           pip install -e .[test]
           pip install pytest pytest-cov
+    - name: Register Jupyter Kernel
+      run: |
+        python -m ipykernel install --user --name python3
     - name: Test with pytest
       run: |
         pytest --cov=causal_testing --cov-report=xml

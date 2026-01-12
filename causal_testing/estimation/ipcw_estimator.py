@@ -21,6 +21,20 @@ class IPCWEstimator(Estimator):
     """
     Class to perform Inverse Probability of Censoring Weighting (IPCW) estimation
     for sequences of treatments over time-varying data.
+
+    :param: df: Input DataFrame containing time-varying data.
+    :param: timesteps_per_observation: Number of timesteps per observation.
+    :param: control_strategy: The control strategy, with entries of the form (timestep, variable, value).
+    :param: treatment_strategy: The treatment strategy, with entries of the form (timestep, variable, value).
+    :param: outcome: Name of the outcome column in the DataFrame.
+    :param: status_column: Name of the status column in the DataFrame, which should be True for operating normally,
+                           False for a fault.
+    :param: fit_bl_switch_formula: Formula for fitting the baseline switch model.
+    :param: fit_bltd_switch_formula: Formula for fitting the baseline time-dependent switch model.
+    :param: eligibility: Function to determine eligibility for treatment. Defaults to None for "always eligible".
+    :param: alpha: Significance level for hypothesis testing. Defaults to 0.05.
+    :param: total_time: Total time for the analysis. Defaults to one plus the length of of the strategy (control or
+                        treatment) with the most elements multiplied by `timesteps_per_observation`.
     """
 
     # pylint: disable=too-many-arguments
@@ -40,23 +54,6 @@ class IPCWEstimator(Estimator):
         alpha: float = 0.05,
         total_time: float = None,
     ):
-        """
-        Initialise IPCWEstimator.
-
-        :param: df: Input DataFrame containing time-varying data.
-        :param: timesteps_per_observation: Number of timesteps per observation.
-        :param: control_strategy: The control strategy, with entries of the form (timestep, variable, value).
-        :param: treatment_strategy: The treatment strategy, with entries of the form (timestep, variable, value).
-        :param: outcome: Name of the outcome column in the DataFrame.
-        :param: status_column: Name of the status column in the DataFrame, which should be True for operating normally,
-                               False for a fault.
-        :param: fit_bl_switch_formula: Formula for fitting the baseline switch model.
-        :param: fit_bltd_switch_formula: Formula for fitting the baseline time-dependent switch model.
-        :param: eligibility: Function to determine eligibility for treatment. Defaults to None for "always eligible".
-        :param: alpha: Significance level for hypothesis testing. Defaults to 0.05.
-        :param: total_time: Total time for the analysis. Defaults to one plus the length of of the strategy (control or
-                            treatment) with the most elements multiplied by `timesteps_per_observation`.
-        """
         super().__init__(
             base_test_case=BaseTestCase(None, outcome),
             treatment_value=[val for _, _, val in treatment_strategy],
