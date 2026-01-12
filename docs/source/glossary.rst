@@ -17,9 +17,6 @@ Glossary
       **Outcome Variable**
          The observed variable of interest (``Y``).
 
-   Causal Specification
-      A causal specification is a pair ``S = (M, G)`` comprising a modelling scenario ``M`` and a causal DAG ``G`` capturing the causal relationships amongst the inputs and outputs of the SUT that are central to the modelling scenario.
-
    Causal Test Case
       Formally, a causal test case is a 4-tuple ``(M, X, delta, Y)`` that captures the expected causal effect, Y, of an intervention, ``delta``, made to an input valuation, ``X``, on some model outcome in the context of modelling scenario ``M``.
       Simply put, causal tests are essentially `metamorphic tests <https://en.wikipedia.org/wiki/Metamorphic_testing>`_ that are executed using statistical causal inference.

@@ -2,9 +2,7 @@ import os
 import logging
 import pandas as pd
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import Positive, Negative, NoEffect
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
@@ -16,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 ROOT = os.path.realpath(os.path.dirname(__file__))
 
 
-def setup_test_case(verbose: bool = False):
+def run_test_case(verbose: bool = False):
     """Run the causal test case for the effect of changing vaccine to prioritise elderly from observational
     data that was previously simulated.
 
@@ -25,37 +23,17 @@ def setup_test_case(verbose: bool = False):
     """
 
     # 1. Read in the Causal DAG
-    causal_dag = CausalDAG(f"{ROOT}/dag.dot")
+    causal_dag = CausalDAG(os.path.join(ROOT, "dag.dot"))
 
     # 2. Create variables
-    pop_size = Input("pop_size", int)
-    pop_infected = Input("pop_infected", int)
-    n_days = Input("n_days", int)
     vaccine = Input("vaccine", int)
     cum_infections = Output("cum_infections", int)
     cum_vaccinations = Output("cum_vaccinations", int)
     cum_vaccinated = Output("cum_vaccinated", int)
     max_doses = Output("max_doses", int)
 
-    # 3. Create scenario by applying constraints over a subset of the input variables
-    scenario = Scenario(
-        variables={
-            pop_size,
-            pop_infected,
-            n_days,
-            cum_infections,
-            vaccine,
-            cum_vaccinated,
-            cum_vaccinations,
-            max_doses,
-        },
-    )
-
-    # 4. Construct a causal specification from the scenario and causal DAG
-    causal_specification = CausalSpecification(scenario, causal_dag)
-
     # 5. Read the previously simulated data
-    obs_df = pd.read_csv("simulated_data.csv")
+    obs_df = pd.read_csv(os.path.join(ROOT, "simulated_data.csv"))
 
     # 6. Express expected outcomes
     expected_outcome_effects = {
@@ -104,8 +82,12 @@ def setup_test_case(verbose: bool = False):
     return results_dict
 
 
+def test_example_vaccine():
+    run_test_case()
+
+
 if __name__ == "__main__":
 
-    test_results = setup_test_case(verbose=True)
+    test_results = run_test_case(verbose=True)
 
     logging.info("%s", test_results)

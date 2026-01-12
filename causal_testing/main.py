@@ -15,14 +15,13 @@ from tqdm import tqdm
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import Negative, NoEffect, Positive, SomeEffect
+from causal_testing.testing.causal_test_adequacy import DataAdequacy
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
-from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +105,6 @@ class CausalTestingFramework:
         self.data: Optional[pd.DataFrame] = None
         self.variables: Dict[str, Any] = {"inputs": {}, "outputs": {}, "metas": {}}
         self.scenario: Optional[Scenario] = None
-        self.causal_specification: Optional[CausalSpecification] = None
         self.test_cases: Optional[List[CausalTestCase]] = None
 
     def setup(self) -> None:
@@ -130,8 +128,11 @@ class CausalTestingFramework:
         # Create variables from DAG
         self.create_variables()
 
-        # Create scenario and specification
-        self.create_scenario_and_specification()
+        # Create scenario
+        self.scenario = Scenario(
+            list(self.variables["inputs"].values()) + list(self.variables["outputs"].values()),
+            {self.query} if self.query else None,
+        )
 
         logger.info("Setup completed successfully")
 
@@ -186,18 +187,6 @@ class CausalTestingFramework:
             # Otherwise it's an output
             if self.dag.in_degree(node_name) > 0:
                 self.variables["outputs"][node_name] = Output(name=node_name, datatype=dtype)
-
-    def create_scenario_and_specification(self) -> None:
-        """Create scenario and causal specification objects from loaded data."""
-        # Create scenario
-        all_variables = list(self.variables["inputs"].values()) + list(self.variables["outputs"].values())
-        self.scenario = Scenario(variables=all_variables)
-
-        # Set up treatment variables
-        self.scenario.setup_treatment_variables()
-
-        # Create causal specification
-        self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.dag)
 
     def load_tests(self) -> None:
         """
@@ -316,7 +305,10 @@ class CausalTestingFramework:
             base_test_case=base_test,
             treatment_value=test.get("treatment_value"),
             control_value=test.get("control_value"),
-            adjustment_set=test.get("adjustment_set", self.causal_specification.causal_dag.identification(base_test)),
+            adjustment_set=test.get(
+                "adjustment_set",
+                self.dag.identification(base_test, self.scenario.hidden_variables()),
+            ),
             df=filtered_df,
             effect_modifiers=None,
             formula=test.get("formula"),
@@ -346,7 +338,7 @@ class CausalTestingFramework:
         :param silent: Whether to suppress errors
         :param adequacy: Whether to calculate causal test adequacy (defaults to False)
         :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
-        (defaults to 100)
+                               (defaults to 100)
         :return: List of all test results
         :raises: ValueError if no tests are loaded
         """
@@ -403,7 +395,7 @@ class CausalTestingFramework:
         :param silent: Whether to suppress errors
         :param adequacy: Whether to calculate causal test adequacy (defaults to False)
         :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
-        (defaults to 100)
+                               (defaults to 100)
 
         :return: List of CausalTestResult objects
         :raises: ValueError if no tests are loaded

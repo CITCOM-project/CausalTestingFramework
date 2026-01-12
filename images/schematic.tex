@@ -22,47 +22,14 @@
 
 \begin{tikzpicture}[background rectangle/.style={fill=none}, show background rectangle, color=black]
 
-  \begin{scope}[name prefix=scenario-, local bounding box=specification]
-    % Causal DAG
-    \begin{scope}[name prefix=dag-]
-      \node[node] (x1) at (-0.1,-0.2) {$X_1$};
-      \node[node] (x2) at (-0.1, 1.2) {$X_2$};
-      \node[node] (i) at (0.5,0.5) {$I$};
-      \node[node] (y1) at (1.3,-0.2) {$Y_{1}$};
-      \node[node] (y2) at (1.3,0.5) {$Y_2$};
-      \node[node] (y3) at (1.3,1.2) {$Y_3$};
-
-      \draw[edge] (x1) to (i);
-      \draw[edge] (x2) to (i);
-      \draw[edge] (i) to (y1);
-      \draw[edge] (i) to (y2);
-      \draw[edge] (i) to (y3);
-      \draw[edge] (x1) to (y1);
-      \draw[edge] (x2) to (y3);
-      \node[draw=none, rectangle] (nodes) [fit=(x1) (x2) (y1) (y2) (y3) (i)] {};
-      \node[draw=none, rectangle, anchor=south] (title) at (nodes.north) {Causal DAG};
-    \end{scope}
-    \node[draw, rectangle] (dag) [fit=(dag-nodes) (dag-title)] {};
-
-    \begin{scope}[name prefix=scenario-, shift={($(dag.east |- dag-title.north)+(0.3, 0)$)}, anchor=north west]
-      \node[draw=none, rectangle] (title) at (0, 0) {Modelling Scenario};
-      \node[anchor=north] (constraints) at (title.south) {$\{ x_1 < 5, x_2 = \text{``UK''} \}$};
-    \end{scope}
-    \node[draw, rectangle] (scenario) [fit=(scenario-title) (scenario-constraints)] {};
-
-    \node[draw=none, rectangle] (scenario) [fit=(dag) (scenario)] {};
-    \node[draw=none, rectangle, anchor=south] (title) at (scenario.north) {Causal Specification};
-  \end{scope}
-  \node[draw, rectangle] [fit=(scenario-scenario) (scenario-title)] {};
-
-  \begin{scope}[name prefix=test-, local bounding box=test-case, shift={($(scenario-specification.south)+(0, -1)$)}]
+  % Test Case
+  \begin{scope}[name prefix=test-, local bounding box=test-case]
     \node[draw=none, rectangle, anchor=north] (title) at (0, 0) {Causal Test Case};
     \node[anchor=north] (tuple) at (title.south) {$(X=i, \Delta=\text{increase}, Y=y_1)$};
-    \coordinate (left) at (scenario-scenario.east |- {(0, 0)});
-    \coordinate (right) at (scenario-scenario.west |- {(0, 0)});
-    \node[draw, rectangle] [fit=(title) (tuple) (left) (right)] {};
+    \node[draw, rectangle] [fit=(title) (tuple)] {};
   \end{scope}
 
+  % Estimand
   \begin{scope}[name prefix=estimand-, local bounding box=estimand, anchor=south, shift={($(test-test-case.east |- test-tuple.south) + (1, 0)$)}]
     \node[anchor=south west] (eqn) at (0,0) {
       $\Delta Y=\expe{[I=0 | X_1]} - \expe{[I=1 | X_1]} $
@@ -71,6 +38,7 @@
     \node[draw, rectangle] [fit=(estimand-title) (estimand-eqn)] {};
   \end{scope}
 
+  % Estimate
   \begin{scope}[name prefix=estimate-, local bounding box=estimate, shift={($(estimand-estimand.east)+(1, 0)$)}]
     \node[draw=none, rectangle, anchor=south west] (title) at (0, 0) {Causal Estimate};
     \node[anchor=north] (table) at (title.south) {
@@ -81,22 +49,7 @@
     \node[draw, rectangle] [fit=(title) (table) (top) (bot)] {};
   \end{scope}
 
-  \begin{scope}[name prefix=data-, local bounding box=test-data, shift={($(estimate-estimate.north)+(0, 1)$)},]
-    \node[draw=none, rectangle] (title) at (estimate-estimate |- scenario-title) {Test Data};
-    \node[anchor=north] (table) at (title.south) {
-      \begin{tabular}{rrrrrr}
-        \toprule
-        $X_1$ & $X_2$  & $I$ & $Y_1$ & $Y_2$ & $Y_3$ \\
-        \midrule
-        1.2   & ``UK'' & 0.3 & 7.8   & 4     & 100   \\
-        3.2   & ``UK'' & 0.1 & 7.6   & 8     & 95    \\
-        \multicolumn{6}{c}{$\vdots$}                 \\
-        \bottomrule
-      \end{tabular}
-    };
-    \node[draw, rectangle] [fit=(title) (table)] {};
-  \end{scope}
-
+  % Oracle
   \begin{scope}[name prefix=oracle-, local bounding box=test-oracle, shift={($(estimate-estimate.east) + (1.54, -0.4)$)}]
     \begin{scope}[shift={(0,0)}, local bounding box=brain, scale=1.2]
       \begin{scope}[shift={(-7.6932,3.5256)}, local bounding box=brain]
@@ -126,6 +79,7 @@
     \node[draw, rectangle] [fit=(title) (brain)] {};
   \end{scope}
 
+  % Outcome
   \begin{scope}[name prefix=outcome-, local bounding box=test-outcome, shift={($(oracle-brain.east |- estimate-estimate.east) + (1, 0)$)}]
     \node[draw=none, rectangle, anchor=south west] (title) at (0,0) {Test Outcomes};
     \node[draw=none, anchor=north] (ok) at (title.south) {\cmark ~ \xmark};
@@ -135,8 +89,61 @@
     \node[draw, rectangle] (test-outcome) [fit=(outcome-title) (outcome-ok) (top) (bot)] {};
   \end{scope}
 
-  \draw[edge, dashed] ($(scenario-specification.east) + (0.15, 0)$) -- (estimand-estimand.north |- scenario-specification.east) -- (estimand-estimand.north);
+
+  % Causal DAG
+  \begin{scope}[name prefix=dag-, shift={($(estimand-estimand.north) + (0, 2)$)}]
+    \node[node] (x1) at (-1, 0) {$X_1$};
+    \node[node] (x2) at (-1, 1.4) {$X_2$};
+    \node[node] (i) at (0, 0.7) {$I$};
+    \node[node] (y1) at (1,0) {$Y_{1}$};
+    \node[node] (y2) at (1,0.7) {$Y_2$};
+    \node[node] (y3) at (1,1.4) {$Y_3$};
+
+    \draw[edge] (x1) to (i);
+    \draw[edge] (x2) to (i);
+    \draw[edge] (i) to (y1);
+    \draw[edge] (i) to (y2);
+    \draw[edge] (i) to (y3);
+    \draw[edge] (x1) to (y1);
+    \draw[edge] (x2) to (y3);
+    \node[draw=none, rectangle] (nodes) [fit=(x1) (x2) (y1) (y2) (y3) (i)] {};
+    \node[draw=none, rectangle, anchor=south] (title) at (nodes.north) {Causal DAG};
+  \end{scope}
+
+  % Scenario
+  \begin{scope}[name prefix=scenario-, shift={($(estimand-estimand.south) + (0, -2)$)}]
+    \node[draw=none, rectangle] (title) at (0, 0) {Modelling Scenario};
+    \node[anchor=north] (constraints) at (title.south) {$\{ x_1 < 5, x_2 = \text{``UK''} \}$};
+  \end{scope}
+  \node[draw, rectangle] (scenario) [fit=(scenario-title) (scenario-constraints)] {};
+
+  % Data
+  \begin{scope}[name prefix=data-, local bounding box=test-data]
+    \node[draw=none, rectangle] (title) at (estimate-estimate |- dag-title) {Test Data};
+    \node[anchor=north] (table) at (title.south) {
+      \begin{tabular}{rrrrrr}
+        \toprule
+        $X_1$ & $X_2$  & $I$ & $Y_1$ & $Y_2$ & $Y_3$ \\
+        \midrule
+        1.2   & ``UK'' & 0.3 & 7.8   & 4     & 100   \\
+        3.2   & ``UK'' & 0.1 & 7.6   & 8     & 95    \\
+        \multicolumn{6}{c}{$\vdots$}                 \\
+        \bottomrule
+      \end{tabular}
+    };
+    \node[draw, rectangle] [fit=(title) (table)] {};
+  \end{scope}
+
+  % DAG outline
+  \node[draw, rectangle] (dag) [fit=(dag-nodes) (dag-title) (dag-title |- data-table.south)] {};
+
+  %Information flow
+  \draw[edge, dashed] (dag) -- (estimand-estimand.north);
   \draw[edge, dashed] (test-test-case) -- (estimand-estimand);
+
+  \draw[edge, dashed] (scenario.north) -- (estimand-estimand);
+  \draw[edge, dashed] (scenario.north) -- ([yshift=7.3mm]scenario.north) -- ([yshift=7.3mm]scenario.north -| test-test-case) -- (test-test-case);
+  \draw[edge, dashed] (scenario.north) -- ([yshift=7.3mm]scenario.north) -- ([yshift=7.3mm]scenario.north -| estimate-estimate) -- (estimate-estimate);
 
   \draw[edge, dashed] (data-test-data.south) -- (estimate-estimate.north);
   \draw[edge, dashed] (estimand-estimand) -- (estimate-estimate);

@@ -10,8 +10,7 @@ import networkx as nx
 
 from causal_testing.testing.base_test_case import BaseTestCase
 
-from .scenario import Scenario
-from .variable import Output
+from .variable import Variable
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 
@@ -489,38 +488,12 @@ class CausalDAG(nx.DiGraph):
         backdoor_graph.add_edges_from(filter(lambda x: x not in outgoing_edges, self.edges))
         return backdoor_graph
 
-    def depends_on_outputs(self, node: Node, scenario: Scenario) -> bool:
-        """Check whether a given node in a given scenario is or depends on a
-        model output in the given scenario. That is, whether or not the model
-        needs to be run to determine its value.
-
-        NOTE: The graph must be acyclic for this to terminate.
-
-        :param node: The node in the DAG representing the variable of interest.
-        :param scenario: The modelling scenario.
-
-        :return: Whether the given variable is or depends on an output.
-        """
-        if isinstance(scenario.variables[node], Output):
-            return True
-        return any((self.depends_on_outputs(n, scenario) for n in self.predecessors(node)))
-
-    @staticmethod
-    def remove_hidden_adjustment_sets(minimal_adjustment_sets: list[str], scenario: Scenario):
-        """Remove variables labelled as hidden from adjustment set(s)
-
-        :param minimal_adjustment_sets: list of minimal adjustment set(s) to have hidden variables removed from
-        :param scenario: The modelling scenario which informs the variables that are hidden
-        """
-        return [adj for adj in minimal_adjustment_sets if all(not scenario.variables.get(x).hidden for x in adj)]
-
-    def identification(self, base_test_case: BaseTestCase, scenario: Scenario = None):
+    def identification(self, base_test_case: BaseTestCase, avoid_variables: set[Variable] = None):
         """Identify and return the minimum adjustment set
 
         :param base_test_case: A base test case instance containing the outcome_variable and the
                                treatment_variable required for identification.
-        :param scenario: The modelling scenario relating to the tests
-
+        :param avoid_variables: Variables not to be adjusted for (e.g. hidden variables).
         :return: The smallest set of variables which can be adjusted for to obtain a causal
                  estimate as opposed to a purely associational estimate.
         """
@@ -539,8 +512,10 @@ class CausalDAG(nx.DiGraph):
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
 
-        if scenario is not None:
-            minimal_adjustment_sets = self.remove_hidden_adjustment_sets(minimal_adjustment_sets, scenario)
+        if avoid_variables is not None:
+            minimal_adjustment_sets = [
+                adj for adj in minimal_adjustment_sets if not {x.name for x in avoid_variables}.intersection(adj)
+            ]
 
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len, default=set())
         return set(minimal_adjustment_set)

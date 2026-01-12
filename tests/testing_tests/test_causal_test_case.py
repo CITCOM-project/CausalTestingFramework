@@ -5,7 +5,7 @@ import shutil
 import pandas as pd
 import numpy as np
 
-from causal_testing.specification.causal_specification import CausalSpecification, Scenario
+from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -68,7 +68,6 @@ class TestCausalTestExecution(unittest.TestCase):
         self.C = Output("C", float)
         self.D = Output("D", float)
         self.scenario = Scenario({self.A, self.C, self.D})
-        self.causal_specification = CausalSpecification(scenario=self.scenario, causal_dag=self.causal_dag)
 
         # 3. Create a causal test case
         self.expected_causal_effect = ExactValue(4)

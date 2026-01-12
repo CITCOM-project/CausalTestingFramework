@@ -45,14 +45,14 @@ class SomeEffect(CausalEffect):
 
 
 class NoEffect(CausalEffect):
-    """An extension of CausalEffect representing that the expected causal effect should be zero."""
+    """
+    An extension of CausalEffect representing that the expected causal effect should be zero.
+    :param atol: Arithmetic tolerance. The test will pass if the absolute value of the causal effect is less than
+    atol.
+    :param ctol: Categorical tolerance. The test will pass if this proportion of categories pass.
+    """
 
     def __init__(self, atol: float = 1e-10, ctol: float = 0.05):
-        """
-        :param atol: Arithmetic tolerance. The test will pass if the absolute value of the causal effect is less than
-                     atol.
-        :param ctol: Categorical tolerance. The test will pass if this proportion of categories pass.
-        """
         self.atol = atol
         self.ctol = ctol
 

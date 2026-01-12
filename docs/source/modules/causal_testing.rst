@@ -4,7 +4,7 @@ Causal Testing
 A ``causal test`` or ``causal test case`` is the expected change in an outcome that applying an intervention to the input should cause.
 In this context, an intervention is simply a function which manipulates the input configuration of the scenario-under-test in a way that is expected to cause a change to some outcome.
 Programmatically, the data structure of causal tests can either be a ``.json`` file or hard-coded (e.g. our :doc:`tutorials <../tutorials>` contain examples of how to
-encode your causal tests). Moreover, by ``causal testing`` we refer to the overall process and execution of using the ``causal specification`` and ``causal test case(s)``, including statistical estimators,
+encode your causal tests). Moreover, by ``causal testing`` we refer to the overall process and execution of using the ``modelling scenario``, ``causal graph``, and ``causal test case(s)``, including statistical estimators,
 to determine whether each test case passes or fails relative to the test oracle.
 
 Getting Started
@@ -33,16 +33,20 @@ Example: Testing Virus Spread in a Classroom
 In the following sections, we describe the end-to-end process of ``causal testing`` for a hypothetical epidemiological computational model in which we are testing the model within a classroom scenario.
 In particular, suppose we're interested in how various precautions, such as hand-washing and mask-wearing, can prevent the spread of a virus within a classroom.
 
-1. Specification
+1. Modelling Scenario
 ----------------
 
-For our causal specification, suppose we define the scenario with the following constraints:
+For our modelling scenario, suppose we define the scenario with the following constraints:
 
 * ``n_people ~ Uniform(20, 30)`` (There are between 20 and 30 people in the classroom).
 * ``environment = Grid(x,y ~ Uniform(20, 40))`` (The classroom is square grid of between 20x20 and 40x40 units).
 * ``n_infected_t0 = 1`` (One person is infected initially).
 * ``precaution = None`` (No precautions taken).
   We also specify the output we are interested in as ``n_infected_t5``\ , the number of people infected after five days of daily one hour lessons.
+
+
+2. Causal Graph
+----------------
 
 Then, we create a simple causal directed acyclic graph (DAG), which represents causality amongst these variables:
 
@@ -135,7 +139,7 @@ Then, we create a simple causal directed acyclic graph (DAG), which represents c
 
 
 
-2. Causal Test Cases
+3. Causal Test Cases
 --------------------
 
 We then define a number of causal test cases to apply to the scenario-under-test. For example, supposing we expect mask wearing and hand washing to have a preventative effect:
@@ -147,14 +151,14 @@ We then define a number of causal test cases to apply to the scenario-under-test
 
 - To run these test cases observationally, we need *valid* observational data for the scenario-under-test. This means we can only use executions with between 20 and 30 people, a square environment of size betwen 20x20 and 40x40, and where a single person was initially infected. In addition, this data must contain executions both with and without the intervention. Next, we need to identify any sources of bias in this data and determine a procedure to counteract them. This is achieved automatically using graphical causal inference techniques that identify a set of variables that can be adjusted to obtain a causal estimate. Finally, for any categorical biasing variables, we need to make sure we have executions corresponding to each category otherwise we have a positivity violation (i.e. missing data). In the worst case, this at least guides the user to an area of the system-under-test that should be executed.
 
-3. Causal Testing
+4. Causal Testing
 -----------------
 
 - After obtaining suitable test data, we can now apply causal inference. First, as described above, we use our causal graph to identify a set of adjustment variables that mitigate all bias in the data. Next, we use statistical models to adjust for these variables (implementing the statistical procedure necessary to isolate the causal effect) and obtain the desired causal estimate. Depending on the statistical model used, we can also generate 95% confidence intervals (or confidence intervals at any confidence level for that matter).
 
 - In our example, the causal DAG tells us it is necessary to adjust for ``environment`` in order to obtain the causal effect of ``precaution`` on ``n_infected_t5``. Supposing the relationship is linear, we can employ a linear regression model of the form ``n_infected_t5 ~ p0*precaution + p1*environment`` to carry out this adjustment. If we use experimental data, only a single environment is used by design and therefore the adjustment has no impact. However, if we use observational data, the environment may vary and therefore this adjustment will look at the causal effect within different environments and then provide a weighted average, which turns out to be the partial coefficient ``p0``.
 
-4. Test Oracle Procedure
+5. Test Oracle Procedure
 -------------------------
 
 - After conducting causal inference, all that remains is to ascertain whether the causal effect is expected or not. In our example, this is simply a case of checking whether the causal effect on ``n_infected_t5`` falls within the specified range. However, in the future, we may wish to implement more complex oracles.

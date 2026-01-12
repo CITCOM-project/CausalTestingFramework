@@ -1,6 +1,7 @@
 import unittest
 import os
-import shutil, tempfile
+import shutil
+import tempfile
 import networkx as nx
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
 from causal_testing.specification.scenario import Scenario
@@ -362,58 +363,6 @@ class TestDAGIdentification(unittest.TestCase):
         shutil.rmtree(self.temp_dir_path)
 
 
-class TestDependsOnOutputs(unittest.TestCase):
-    """
-    Test the depends_on_outputs method.
-    """
-
-    def setUp(self) -> None:
-        from scipy.stats import uniform
-        from causal_testing.specification.variable import Input, Output, Meta
-        from causal_testing.specification.scenario import Scenario
-
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C}"""
-        f = open(self.dag_dot_path, "w")
-        f.write(dag_dot)
-        f.close()
-
-        D = Input("D", float, uniform(0, 1))
-        A = Meta("A", float, uniform(0, 1))
-        B = Output("B", float, uniform(0, 1))
-        C = Meta("C", float, uniform(0, 1))
-
-        self.scenario = Scenario({A, B, C, D})
-
-    def test_depends_on_outputs_output(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        print("nodes:", causal_dag.nodes())
-        print("graph:", causal_dag)
-        self.assertTrue(causal_dag.depends_on_outputs("B", self.scenario))
-
-    def test_depends_on_outputs_output_meta(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        print("nodes:", causal_dag.nodes())
-        print("graph:", causal_dag)
-        self.assertTrue(causal_dag.depends_on_outputs("C", self.scenario))
-
-    def test_depends_on_outputs_input_meta(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        print("nodes:", causal_dag.nodes())
-        print("graph:", causal_dag)
-        self.assertFalse(causal_dag.depends_on_outputs("A", self.scenario))
-
-    def test_depends_on_outputs_input(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        print("nodes:", causal_dag.nodes())
-        print("graph:", causal_dag)
-        self.assertFalse(causal_dag.depends_on_outputs("D", self.scenario))
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
-
-
 class TestUndirectedGraphAlgorithms(unittest.TestCase):
     """
     Test the graph algorithms designed for the undirected graph variants of a Causal DAG.
@@ -472,10 +421,10 @@ class TestHiddenVariableDAG(unittest.TestCase):
         m = Input("M", int)
 
         scenario = Scenario(variables={z, x, m})
-        adjustment_sets = causal_dag.identification(BaseTestCase(x, m), scenario)
+        adjustment_sets = causal_dag.identification(BaseTestCase(x, m), scenario.hidden_variables())
 
         z.hidden = True
-        adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), scenario)
+        adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), scenario.hidden_variables())
 
         self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
 
