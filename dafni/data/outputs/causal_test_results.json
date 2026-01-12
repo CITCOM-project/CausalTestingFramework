@@ -19,12 +19,12 @@
       "effect_estimate": {
         "vaccine": 315785.1333333332
       },
-      "ci_low": [
-        315339.1666500188
-      ],
-      "ci_high": [
-        316231.1000166476
-      ]
+      "ci_low": {
+        "vaccine": 315339.1666500188
+      },
+      "ci_high": {
+        "vaccine": 316231.1000166476
+      }
     }
   },
   {
@@ -45,14 +45,14 @@
       "adjustment_set": [],
       "effect_measure": "coefficient",
       "effect_estimate": {
-        "vaccine": 266389.91666666657
+        "vaccine": 266389.9166666665
       },
-      "ci_low": [
-        265943.93821015797
-      ],
-      "ci_high": [
-        266835.89512317517
-      ]
+      "ci_low": {
+        "vaccine": 265943.9382101579
+      },
+      "ci_high": {
+        "vaccine": 266835.8951231751
+      }
     }
   },
   {
@@ -75,12 +75,12 @@
       "effect_estimate": {
         "vaccine": 3332.883333333332
       },
-      "ci_low": [
-        3274.9650508109467
-      ],
-      "ci_high": [
-        3390.801615855717
-      ]
+      "ci_low": {
+        "vaccine": 3274.9650508109467
+      },
+      "ci_high": {
+        "vaccine": 3390.801615855717
+      }
     }
   },
   {
@@ -103,14 +103,14 @@
       ],
       "effect_measure": "coefficient",
       "effect_estimate": {
-        "cum_vaccinations": 0.9998656401531605
+        "cum_vaccinations": 0.9998656401531969
       },
-      "ci_low": [
-        0.9929245394499968
-      ],
-      "ci_high": [
-        1.0068067408563242
-      ]
+      "ci_low": {
+        "cum_vaccinations": 0.9929245394500371
+      },
+      "ci_high": {
+        "cum_vaccinations": 1.0068067408563566
+      }
     }
   },
   {
@@ -133,14 +133,14 @@
       ],
       "effect_measure": "coefficient",
       "effect_estimate": {
-        "cum_vaccinations": -0.006416682407515084
+        "cum_vaccinations": -0.006416682407513252
       },
-      "ci_low": [
-        -0.05663010083886572
-      ],
-      "ci_high": [
-        0.043796736023835554
-      ]
+      "ci_low": {
+        "cum_vaccinations": -0.05663010083886358
+      },
+      "ci_high": {
+        "cum_vaccinations": 0.043796736023837074
+      }
     }
   },
   {
@@ -163,14 +163,14 @@
       ],
       "effect_measure": "coefficient",
       "effect_estimate": {
-        "cum_vaccinated": -0.006176900588291234
+        "cum_vaccinated": -0.00617690058829258
       },
-      "ci_low": [
-        -0.05639349612119588
-      ],
-      "ci_high": [
-        0.04403969494461341
-      ]
+      "ci_low": {
+        "cum_vaccinated": -0.056393496121197616
+      },
+      "ci_high": {
+        "cum_vaccinated": 0.044039694944612455
+      }
     }
   }
 ]

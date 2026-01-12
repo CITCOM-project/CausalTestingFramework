@@ -1,33 +1,36 @@
 # Causal Testing Framework on DAFNI
 
 - This directory contains the containerisation files of the causal testing framework using Docker, which is used
-to upload the framework onto [DAFNI](https://www.dafni.ac.uk).
+  to upload the framework onto [DAFNI](https://www.dafni.ac.uk).
 - It is **not** recommended to install the causal testing framework using Docker, and should only be installed
-  using [PyPI](https://pypi.org/project/causal-testing-framework/).
+  using [conda-forge](https://anaconda.org/channels/conda-forge/packages/causal-testing-framework/overview) or [PyPI](https://pypi.org/project/causal-testing-framework/).
 
 ### Directory Hierarchy
 
-- `data` contains two sub-folders (the structure is important for DAFNI).
-  - `inputs` is a folder that contains the input files that are (separately) uploaded to DAFNI.
-    - `causal_tests.json` is a JSON file that contains the causal tests.
-    - `dag.dot` is a dot file that contains the directed acyclic graph (dag). In this file, Causal Variables are defined as 
-       node metadata attributes as key-value pairs using the following syntax: 
-       `node [datatype="int", typestring="input"]`. The `datatype` key specifies the datatype of the causal variable
-       as a string (e.g. `"int"`, `"str"`) and the `typestring` key specifies its typestring, which is also a string 
-       representing the variable type (e.g. `"input"` or `"output"`).
-    - `runtime_data.csv` is the `.csv` file that contains the runtime data.
+- `data` contains two folders (structure is critical for DAFNI workflows):
+  - `inputs` contains all input files that are uploaded to DAFNI.
+    - `causal_tests.json` is a JSON file containing generated causal tests. If it exists, the framework can automatically run tests without regenerating.
+    - `dag.dot` is a DOT file defining the directed acyclic graph (DAG). Causal variables are stored in node metadata as key-value pairs using the syntax:  
+      `node [datatype="int", typestring="input"]`  
+      - `datatype` specifies the variable's data type (e.g., `"int"`, `"str"`).  
+      - `typestring` specifies whether the variable is an `"input"` or `"output"`.
+    - `runtime_data.csv` contains the input runtime data for testing.
+  - `outputs` is the folder where `causal_test_results.json` is created after running tests.
 
-  - `outputs` is a folder where the `causal_tests_results.json` output file is created.
+### Workflow
+
+- The `entrypoint.sh` script now supports auto-detection:  
+  - If `causal_tests.json` exists in `data/inputs`, the script automatically runs the test mode.  
+  - If it does not exist, the script generates the causal tests first.  
+  - The user can still override this behaviour by setting `EXECUTION_MODE` explicitly in the `.env` file.
+- Filenames for `causal_tests.json` and `causal_test_results.json` are now configurable through environment variables (`CAUSAL_TESTS` and `CAUSAL_TEST_RESULTS`) in the `.env` file.
+- Input/output directories are fixed as `data/inputs` and `data/outputs` to comply with DAFNI requirements.
+- The script now reads all configuration parameters (estimator, effect type, threads, verbosity, query filters, adequacy metrics, etc.) **from the `.env` file**, keeping the Docker image and container clean and flexible.
 
 ### Docker files
-- `model_definition.yaml` is the model metadata that is required to be uploaded to DAFNI.
-- `Dockerfile` is the main blueprint that builds the image. The main command calls the `causal_testing` module, 
-   with specified paths for the DAG, input runtime data, test configurations, and the output filename as defined above. 
-   This command is identical to that referenced in the main [README.md](../README.md) file.
-- `docker-compose.yaml` is another method of building the image and running the container in one line. 
-   Note: the `.env` file that contains the environment variables for `main_dafni.py` is only used here.
-- `.dockerignore` tells the Dockerfile which files to not include in the image.
-- `.env` is an example of a configuration file containing the environment variables. This is only required
-    if using `docker-compose` to build the image. 
 
-
+- `model_definition.yaml` is the model metadata required for DAFNI.
+- `Dockerfile` builds the container image and uses `entrypoint.sh` as the main entrypoint. All paths and options are now configurable via `.env`.
+- `docker-compose.yaml` allows building and running the container with a single command. The `.env` file is required here to define all environment variables.
+- `.dockerignore` specifies files to exclude from the Docker image.
+- `.env` provides all configurable environment variables for the workflow (execution mode, filenames, estimator options, DAG/effects configuration, and runtime options). This is only needed if using `docker-compose`.
