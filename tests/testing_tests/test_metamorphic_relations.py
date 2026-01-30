@@ -1,13 +1,10 @@
 import unittest
 import os
 import shutil, tempfile
-import pandas as pd
-from itertools import combinations
-import tempfile
 import json
 
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.causal_specification import Scenario
+from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.metamorphic_relation import (
     ShouldCause,
     ShouldNotCause,

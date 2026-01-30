@@ -1,10 +1,10 @@
 import os
-import shutil, tempfile
+import shutil
+import tempfile
+import unittest
 import pandas as pd
 import numpy as np
-import unittest
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.causal_specification import CausalSpecification
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.surrogate.causal_surrogate_assisted import (
@@ -55,7 +55,6 @@ class TestCausalSurrogate(unittest.TestCase):
             f.write(dag_dot)
 
     def test_surrogate_model_generation(self):
-        c_s_a_test_case = CausalSurrogateAssistedTestCase(None, None, None)
 
         df = self.class_df.copy()
 
@@ -65,9 +64,9 @@ class TestCausalSurrogate(unittest.TestCase):
         m = Input("M", int)
         y = Output("Y", float)
         scenario = Scenario(variables={z, x, m, y})
-        specification = CausalSpecification(scenario, causal_dag)
 
-        surrogate_models = c_s_a_test_case.generate_surrogates(specification, df)
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(scenario, causal_dag, None, None)
+        surrogate_models = c_s_a_test_case.generate_surrogates(df)
         self.assertEqual(len(surrogate_models), 2)
 
         for surrogate_model in surrogate_models:
@@ -86,8 +85,6 @@ class TestCausalSurrogate(unittest.TestCase):
         scenario = Scenario(
             variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
         )
-        specification = CausalSpecification(scenario, causal_dag)
-
         search_algorithm = GeneticSearchAlgorithm(
             config={
                 "parent_selection_type": "tournament",
@@ -99,7 +96,7 @@ class TestCausalSurrogate(unittest.TestCase):
         )
         simulator = TestSimulator()
 
-        c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(scenario, causal_dag, search_algorithm, simulator)
 
         result, iterations, result_data = c_s_a_test_case.execute(df)
 
@@ -118,7 +115,6 @@ class TestCausalSurrogate(unittest.TestCase):
         scenario = Scenario(
             variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
         )
-        specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
             config={
@@ -131,7 +127,7 @@ class TestCausalSurrogate(unittest.TestCase):
         )
         simulator = TestSimulatorFailing()
 
-        c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(scenario, causal_dag, search_algorithm, simulator)
 
         result, iterations, result_data = c_s_a_test_case.execute(df, 1)
 
@@ -150,7 +146,6 @@ class TestCausalSurrogate(unittest.TestCase):
         scenario = Scenario(
             variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
         )
-        specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
             config={
@@ -163,7 +158,7 @@ class TestCausalSurrogate(unittest.TestCase):
         )
         simulator = TestSimulator()
 
-        c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(scenario, causal_dag, search_algorithm, simulator)
 
         result, iterations, result_data = c_s_a_test_case.execute(df, custom_data_aggregator=data_double_aggregator)
 
@@ -182,7 +177,6 @@ class TestCausalSurrogate(unittest.TestCase):
         scenario = Scenario(
             variables={z, x, m, y}, constraints={"Z <= 0", "Z >= 3", "X <= 0", "X >= 3", "M <= 0", "M >= 3"}
         )
-        specification = CausalSpecification(scenario, causal_dag)
 
         search_algorithm = GeneticSearchAlgorithm(
             config={
@@ -196,7 +190,7 @@ class TestCausalSurrogate(unittest.TestCase):
         )
         simulator = TestSimulator()
 
-        c_s_a_test_case = CausalSurrogateAssistedTestCase(specification, search_algorithm, simulator)
+        c_s_a_test_case = CausalSurrogateAssistedTestCase(scenario, causal_dag, search_algorithm, simulator)
 
         self.assertRaises(
             ValueError,

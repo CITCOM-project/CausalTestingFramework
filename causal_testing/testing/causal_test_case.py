@@ -17,6 +17,10 @@ class CausalTestCase:
     variables, a CausalTestCase stores the values of these variables. Also the outcome variable and value are
     specified. The goal of a CausalTestCase is to test whether the intervention made to the control via the treatment
     causes the model-under-test to produce the expected change.
+    :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
+    :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
+    :param estimate_type: A string which denotes the type of estimate to return.
+    :param estimator: An Estimator class object
     """
 
     def __init__(
@@ -28,12 +32,6 @@ class CausalTestCase:
         estimate_params: dict = None,
         estimator: type(Estimator) = None,
     ):
-        """
-        :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
-        :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
-        :param estimate_type: A string which denotes the type of estimate to return.
-        :param estimator: An Estimator class object
-        """
         self.base_test_case = base_test_case
         self.expected_causal_effect = expected_causal_effect
         self.outcome_variable = base_test_case.outcome_variable

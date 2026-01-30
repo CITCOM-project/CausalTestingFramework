@@ -2,52 +2,46 @@
 Causal Specification
 =====================
 
-- In causal testing, our units of interest are specific usage **scenarios** of the system-under-test. For example,
-  when testing an epidemiological computational model, one scenario could focus on the simulation of the spread of a virus in a crowded indoors space.
-  For this scenario, our causal specification will describe how a number of interventions should **cause** some outputs to change e.g. opening a window should reduce the spread of the virus by some factor.
-
-- In order to isolate the causal effect of the defined interventions, the user needs to express the anticipated cause-effect relationships amongst the inputs and outputs involved in the scenario.
-  This is achieved using a causal DAG, a simple dot and arrow graph that does not contain any cycles where nodes are random variables that represent the
-  inputs and outputs in the scenario-under-test, and edges represent causality. For example, ``window --> infection_prob`` encodes the belief that opening or closing the
-  window should cause the probability of infection to change.
-
-- A causal specification is simply the combination of these components: a series of requirements for the scenario-under-test and a causal DAG representing causality
-  amongst the inputs and outputs.
-
-- Collectively, the components of the causal specification provide both contextual information in the form of constraints and requirements, as well as causal information in the form of a causal DAG.
-  It's these components that are used to design statistical experiments that can answer causal questions about the scenario-under-test.
+As in traditional software testing, the specification defines the expected behaviour of the system.
+In causal testing, this is made up of two components: the modelling scenario and the causal graph.
+These components are then used to design statistical experiments that can answer causal questions about the system-under-test.
 
 1. Modelling Scenario
-----------------------
+---------------------
 
-- Each scenario is defined as a series of constraints placed over a set of input variables. A constraint is simply a mapping
-  from an input variable to a specific value or distribution that characterises the scenario in question.
-  For example, a scenario simulating the spread of a virus in a crowded indoors space would likely place a constraint over the size of room,
-  the number of windows, and the number of people in the room.
+- In causal testing, our units of interest are specific usage **scenarios** of the system-under-test.
+  For example, when testing an epidemiological computational model, one scenario could focus on the simulation of the spread of a virus through a population.
+  For this scenario, we may then test how a number of interventions should **cause** some outputs to change e.g. vaccinations should reduce the total number of deaths.
+
+- Each scenario is defined as a series of constraints placed over a set of input variables.
+  A constraint is simply a mapping from an input variable to a specific value or distribution that characterises the scenario in question.
+  For example, a scenario simulating the spread of a virus would likely place constraints on the location, population demographics, and who is vaccinated.
 
 - Requirements for this scenario should describe how a particular intervention
-  (e.g. opening the window, changing the number of people, changing the size of the room etc.) is expected to cause a particular outcome (number of infections, deaths, R0 etc.) to change.
+  (e.g.changing the number of people, changing who is vaccinated, etc.) is expected to cause a particular outcome (number of infections, deaths, R0, etc.) to change.
   The way these requirements are expressed is up to the user, however, it is essential that they focus on the expected effect of an intervention.
 
-2. Causal DAG
---------------
+2. Causal Graph
+---------------
 
+To isolate the causal effect of the defined interventions, the user needs to express the anticipated cause-effect relationships amongst the inputs and outputs involved in the scenario.
+This is done using a directed acyclic graph (DAG) in which nodes represent variables in the system and edges represent causal effects.
 In order to apply CI techniques, we need to capture causality amongst the inputs and outputs in the scenario-under-test.
 Therefore, for each scenario, the user must define a causal DAG.
-As an example, consider the DAG shown below for the `Poisson Line Process example. <https://github.com/CITCOM-project/CausalTestingFramework/tree/main/examples/poisson-line-process>`_
-Here, the model has three inputs: ``width``, ``height``, and ``intensity``.
-These inputs control the number of lines (``num_lines_abs``) and polygons (``num_shapes_abs``) that are drawn, which then feed into the numbers of lines (``num_lines_unit``) and polygons (``num_shapes_unit``) per unit area.
-Note though that the ``num_lines_abs`` does not have a direct causal effect on ``num_shapes_unit``, since the number of polygons per unit area is defined entirely by the total number of polygons and the area of the sampling window.
+
+As an example, consider the DAG shown below for the `vaccinating the elderly example. <https://github.com/CITCOM-project/CausalTestingFramework/tree/main/examples/covasim_/vaccinating_elderly>`_
+This modelling scenario has two inputs `vaccine` and `max_doses` and three outputs `cum_vaccinations`, `cum_vaccinated`, and `cum_infections`.
+We do not expect `max_doses` to have a causal effect on any of the outputs since this remains constant throughout modelling scenario.
 
 .. container:: zoom-container
 
-   .. image:: ../../../examples/poisson-line-process/dag.png
+   .. image:: ../../../examples/covasim_/vaccinating_elderly/dag.png
       :class: zoomable-image
-      :alt: Schematic diagram of the Poisson Line Process DAG
+      :alt: Causal DAG of the vaccinating the elderly modelling scenario
 
-.. literalinclude:: ../../../examples/poisson-line-process/dag.dot
+.. literalinclude:: ../../../examples/covasim_/vaccinating_elderly/dag.dot
    :language: graphviz
-   :caption: **Figure:** Example Causal DAG for the Poisson line process example.
+   :caption: **Figure:** Example Causal DAG for the vaccinating the elderly example.
 
 .. raw:: html
 

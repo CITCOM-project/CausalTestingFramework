@@ -48,10 +48,17 @@ class TestCausalTestAdequacy(unittest.TestCase):
         )
         adequacy_metric = DataAdequacy(causal_test_case)
         adequacy_metric.measure_adequacy()
+
         self.assertEqual(
-            adequacy_metric.to_dict(),
-            {"kurtosis": {"test_input": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
+            adequacy_metric.kurtosis["test_input"],
+            0,
+            f"Expected kurtosis not {adequacy_metric.kurtosis['test_input']}",
         )
+        self.assertEqual(
+            adequacy_metric.bootstrap_size, 100, f"Expected bootstrap size 100 not {adequacy_metric.bootstrap_size}"
+        )
+        self.assertEqual(adequacy_metric.passing, 100, f"Expected passing 32 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
     def test_data_adequacy_categorical(self):
         base_test_case = BaseTestCase(
@@ -68,10 +75,17 @@ class TestCausalTestAdequacy(unittest.TestCase):
         )
         adequacy_metric = DataAdequacy(causal_test_case)
         adequacy_metric.measure_adequacy()
+
         self.assertEqual(
-            adequacy_metric.to_dict(),
-            {"kurtosis": {"test_input_no_dist[T.b]": 0.0}, "bootstrap_size": 100, "passing": 100, "successful": 100},
+            adequacy_metric.kurtosis["test_input_no_dist[T.b]"],
+            0,
+            f"Expected kurtosis not {adequacy_metric.kurtosis['test_input_no_dist[T.b]']}",
         )
+        self.assertEqual(
+            adequacy_metric.bootstrap_size, 100, f"Expected bootstrap size 100 not {adequacy_metric.bootstrap_size}"
+        )
+        self.assertEqual(adequacy_metric.passing, 100, f"Expected passing 100 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
     def test_data_adequacy_group_by(self):
         timesteps_per_intervention = 1
@@ -102,13 +116,17 @@ class TestCausalTestAdequacy(unittest.TestCase):
         )
         adequacy_metric = DataAdequacy(causal_test_case, group_by="id")
         adequacy_metric.measure_adequacy()
-        adequacy_dict = adequacy_metric.to_dict()
-        self.assertEqual(round(adequacy_dict["kurtosis"]["trtrand"], 3), -0.857)
-        adequacy_dict.pop("kurtosis")
+
         self.assertEqual(
-            adequacy_dict,
-            {"bootstrap_size": 100, "passing": 32, "successful": 100},
+            round(adequacy_metric.kurtosis["trtrand"], 3),
+            -0.857,
+            f"Expected kurtosis not {round(adequacy_metric.kurtosis['trtrand'], 3)}",
         )
+        self.assertEqual(
+            adequacy_metric.bootstrap_size, 100, f"Expected bootstrap size 100 not {adequacy_metric.bootstrap_size}"
+        )
+        self.assertEqual(adequacy_metric.passing, 32, f"Expected passing 32 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
     def test_dag_adequacy_dependent(self):
         base_test_case = BaseTestCase(

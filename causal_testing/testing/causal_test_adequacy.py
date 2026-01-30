@@ -83,7 +83,8 @@ class DataAdequacy:
     ):
         self.test_case = test_case
         self.kurtosis = None
-        self.outcomes = None
+        self.passing = None
+        self.results = None
         self.successful = None
         self.bootstrap_size = bootstrap_size
         self.group_by = group_by
@@ -93,6 +94,7 @@ class DataAdequacy:
         Calculate the adequacy measurement, and populate the data_adequacy field.
         """
         results = []
+        outcomes = []
         for i in range(self.bootstrap_size):
             estimator = deepcopy(self.test_case.estimator)
 
@@ -103,7 +105,9 @@ class DataAdequacy:
             else:
                 estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
             try:
-                results.append(self.test_case.execute_test(estimator))
+                result = self.test_case.execute_test(estimator)
+                outcomes.append(self.test_case.expected_causal_effect.apply(result))
+                results.append(result.effect_estimate.to_df())
             except LinAlgError:
                 logger.warning("Adequacy LinAlgError")
                 continue
@@ -113,12 +117,15 @@ class DataAdequacy:
             except ValueError as e:
                 logger.warning(f"Adequacy ValueError: {e}")
                 continue
-        outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
-        results = pd.concat([c.effect_estimate.to_df() for c in results])
+        # outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
+        # results = pd.concat([c.effect_estimate.to_df() for c in results])
+        results = pd.concat(results)
         results["var"] = results.index
+        results["passed"] = outcomes
 
+        self.results = results
         self.kurtosis = results.groupby("var")["effect_estimate"].apply(lambda x: x.kurtosis())
-        self.outcomes = sum(filter(lambda x: x is not None, outcomes))
+        self.passing = sum(filter(lambda x: x is not None, outcomes))
         self.successful = sum(x is not None for x in outcomes)
 
     def to_dict(self):
@@ -126,6 +133,7 @@ class DataAdequacy:
         return {
             "kurtosis": self.kurtosis.to_dict(),
             "bootstrap_size": self.bootstrap_size,
-            "passing": self.outcomes,
+            "passing": self.passing,
             "successful": self.successful,
+            "results": self.results.reset_index(drop=True).to_dict(),
         }

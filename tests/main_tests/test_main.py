@@ -311,10 +311,8 @@ class TestCausalTestingFramework(unittest.TestCase):
         self.assertTrue((causal_test.estimator.df["test_input"] > 0).all())
 
         query_framework.create_variables()
-        query_framework.create_scenario_and_specification()
 
         self.assertIsNotNone(query_framework.scenario)
-        self.assertIsNotNone(query_framework.causal_specification)
 
     def test_test_specific_query(self):
         framework = CausalTestingFramework(self.paths)
