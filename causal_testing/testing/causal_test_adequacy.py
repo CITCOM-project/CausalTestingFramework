@@ -7,8 +7,6 @@ from copy import deepcopy
 from itertools import combinations
 
 import pandas as pd
-from lifelines.exceptions import ConvergenceError
-from numpy.linalg import LinAlgError
 
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -104,21 +102,9 @@ class DataAdequacy:
                 estimator.df = estimator.df[estimator.df[self.group_by].isin(ids)]
             else:
                 estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
-            try:
-                result = self.test_case.execute_test(estimator)
-                outcomes.append(self.test_case.expected_causal_effect.apply(result))
-                results.append(result.effect_estimate.to_df())
-            except LinAlgError:
-                logger.warning("Adequacy LinAlgError")
-                continue
-            except ConvergenceError:
-                logger.warning("Adequacy ConvergenceError")
-                continue
-            except ValueError as e:
-                logger.warning(f"Adequacy ValueError: {e}")
-                continue
-        # outcomes = [self.test_case.expected_causal_effect.apply(c) for c in results]
-        # results = pd.concat([c.effect_estimate.to_df() for c in results])
+            result = self.test_case.execute_test(estimator)
+            outcomes.append(self.test_case.expected_causal_effect.apply(result))
+            results.append(result.effect_estimate.to_df())
         results = pd.concat(results)
         results["var"] = results.index
         results["passed"] = outcomes
