@@ -155,9 +155,11 @@ class TestCausalTestingFramework(unittest.TestCase):
         with open(self.test_config_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
+        active_tests = [test for test in test_configs["tests"] if not test.get("skip", False)]
+
         tests_passed = [
             test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
-            for test_config, test_case, result in zip(test_configs["tests"], framework.test_cases, results)
+            for test_config, test_case, result in zip(active_tests, framework.test_cases, results)
         ]
 
         self.assertEqual(tests_passed, [True])
@@ -230,9 +232,10 @@ class TestCausalTestingFramework(unittest.TestCase):
         with open(self.test_config_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
+        active_tests = [test for test in test_configs["tests"] if not test.get("skip", False)]
         tests_passed = [
             test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
-            for test_config, test_case, result in zip(test_configs["tests"], framework.test_cases, results)
+            for test_config, test_case, result in zip(active_tests, framework.test_cases, results)
         ]
 
         self.assertEqual(tests_passed, [False])

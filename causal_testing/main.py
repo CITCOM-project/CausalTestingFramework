@@ -20,9 +20,9 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import Negative, NoEffect, Positive, SomeEffect
+from causal_testing.testing.causal_test_adequacy import DataAdequacy
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
-from causal_testing.testing.causal_test_adequacy import DataAdequacy
 
 logger = logging.getLogger(__name__)
 
@@ -446,9 +446,11 @@ class CausalTestingFramework:
         with open(self.paths.test_config_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
+        active_tests = [test for test in test_configs["tests"] if not test.get("skip", False)]
+
         # Combine test configs with their results
         json_results = []
-        for test_config, test_case, result in zip(test_configs["tests"], self.test_cases, results):
+        for test_config, test_case, result in zip(active_tests, self.test_cases, results):
             # Determine if test failed based on expected vs actual effect
             test_passed = (
                 test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
