@@ -18,7 +18,7 @@ dependencies = [
 "lifelines~=0.30.0",
 "networkx>=3.4,<3.5",
 "numpy>=1.26.0,<=2.2.0",
-"pandas>=2.1",
+"pandas>=2.1,<3",
 "scikit_learn~=1.4",
 "scipy>=1.12.0,<=1.16.2",
 "statsmodels~=0.14",
@@ -100,8 +100,12 @@ skip_missing_interpreters = false # fail if devs don’t have all required Pytho
 description = "Run pytest under {base_python}"
 extras = ["dev","test"]
 deps = ["pytest"]
-commands = [["pytest"]]
-
+commands = [
+  [
+    "pytest",
+    "{posargs:tests}",
+  ],
+]
 # Automatically test for type-checking (TODO: enable type checking in env_list in the future)
 [tool.tox.env.type]
 description = "Run type checks with mypy on the codebase"

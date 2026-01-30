@@ -33,6 +33,36 @@ class MetamorphicRelation:
         same_adjustment_set = set(self.adjustment_vars) == set(other.adjustment_vars)
         return same_type and same_treatment and same_outcome and same_effect and same_adjustment_set
 
+    def to_json_stub(
+        self,
+        skip: bool = False,
+        estimate_type: str = "coefficient",
+        effect_type: str = "direct",
+        estimator: str = "LinearRegressionEstimator",
+        alpha: float = 0.05,
+    ) -> dict:
+        """
+        Convert to a JSON frontend stub string for user customisation.
+        :param skip: Whether to skip the test (default False).
+        :param effect_type: The type of causal effect to consider (total or direct)
+        :param estimate_type: The estimate type to use when evaluating tests
+        :param estimator: The name of the estimator class to use when evaluating the test
+        :param alpha: The significance level to use when calculating the confidence intervals
+        """
+        return {
+            "name": str(self),
+            "estimator": estimator,
+            "estimate_type": estimate_type,
+            "effect": effect_type,
+            "treatment_variable": self.base_test_case.treatment_variable,
+            "formula": (
+                f"{self.base_test_case.outcome_variable} ~ "
+                f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
+            ),
+            "alpha": alpha,
+            "skip": skip,
+        }
+
 
 class ShouldCause(MetamorphicRelation):
     """Class representing a should cause metamorphic relation."""
@@ -43,6 +73,7 @@ class ShouldCause(MetamorphicRelation):
         estimate_type: str = "coefficient",
         effect_type: str = "direct",
         estimator: str = "LinearRegressionEstimator",
+        alpha: float = 0.05,
     ) -> dict:
         """
         Convert to a JSON frontend stub string for user customisation.
@@ -50,19 +81,12 @@ class ShouldCause(MetamorphicRelation):
         :param effect_type: The type of causal effect to consider (total or direct)
         :param estimate_type: The estimate type to use when evaluating tests
         :param estimator: The name of the estimator class to use when evaluating the test
+        :param alpha: The significance level to use when calculating the confidence intervals
         """
-        return {
-            "name": str(self),
-            "estimator": estimator,
-            "estimate_type": estimate_type,
-            "effect": effect_type,
-            "treatment_variable": self.base_test_case.treatment_variable,
+        return super().to_json_stub(
+            skip=skip, estimate_type=estimate_type, effect_type=effect_type, estimator=estimator, alpha=alpha
+        ) | {
             "expected_effect": {self.base_test_case.outcome_variable: "SomeEffect"},
-            "formula": (
-                f"{self.base_test_case.outcome_variable} ~ "
-                f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
-            ),
-            "skip": skip,
         }
 
     def __str__(self):
@@ -81,6 +105,7 @@ class ShouldNotCause(MetamorphicRelation):
         estimate_type: str = "coefficient",
         effect_type: str = "direct",
         estimator: str = "LinearRegressionEstimator",
+        alpha: float = 0.05,
     ) -> dict:
         """
         Convert to a JSON frontend stub string for user customisation.
@@ -88,20 +113,12 @@ class ShouldNotCause(MetamorphicRelation):
         :param effect_type: The type of causal effect to consider (total or direct)
         :param estimate_type: The estimate type to use when evaluating tests
         :param estimator: The name of the estimator class to use when evaluating the test
+        :param alpha: The significance level to use when calculating the confidence intervals
         """
-        return {
-            "name": str(self),
-            "estimator": estimator,
-            "estimate_type": estimate_type,
-            "effect": effect_type,
-            "treatment_variable": self.base_test_case.treatment_variable,
+        return super().to_json_stub(
+            skip=skip, estimate_type=estimate_type, effect_type=effect_type, estimator=estimator, alpha=alpha
+        ) | {
             "expected_effect": {self.base_test_case.outcome_variable: "NoEffect"},
-            "formula": (
-                f"{self.base_test_case.outcome_variable} ~ "
-                f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
-            ),
-            "alpha": 0.05,
-            "skip": skip,
         }
 
     def __str__(self):
