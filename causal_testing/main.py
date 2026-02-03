@@ -450,7 +450,7 @@ class CausalTestingFramework:
                     "effect": test_config.get("effect", "direct"),
                     "treatment_variable": test_config["treatment_variable"],
                     "expected_effect": test_config["expected_effect"],
-                    "formula": None,
+                    "formula": test_config.get("formula"),
                     "alpha": test_config.get("alpha", 0.05),
                     "skip": True,
                     "passed": None,  # Don't need this for skipped tests
