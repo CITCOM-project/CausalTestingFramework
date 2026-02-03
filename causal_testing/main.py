@@ -442,18 +442,23 @@ class CausalTestingFramework:
         result_index = 0
 
         for test_config in test_configs["tests"]:
+
+            # Create a base output first of common entries
+            base_output = {
+                "name": test_config["name"],
+                "estimate_type": test_config["estimate_type"],
+                "effect": test_config.get("effect", "direct"),
+                "treatment_variable": test_config["treatment_variable"],
+                "expected_effect": test_config["expected_effect"],
+                "alpha": test_config.get("alpha", 0.05),
+            }
             if test_config.get("skip", False):
                 # Include those skipped test entry without execution results
                 output = {
-                    "name": test_config["name"],
-                    "estimate_type": test_config["estimate_type"],
-                    "effect": test_config.get("effect", "direct"),
-                    "treatment_variable": test_config["treatment_variable"],
-                    "expected_effect": test_config["expected_effect"],
+                    **base_output,
                     "formula": test_config.get("formula"),
-                    "alpha": test_config.get("alpha", 0.05),
                     "skip": True,
-                    "passed": None,  # Don't need this for skipped tests
+                    "passed": None,
                     "result": {
                         "status": "skipped",
                         "reason": "Test marked as skip:true in the causal test config file.",
@@ -470,13 +475,8 @@ class CausalTestingFramework:
                 )
 
                 output = {
-                    "name": test_config["name"],
-                    "estimate_type": test_config["estimate_type"],
-                    "effect": test_config.get("effect", "direct"),
-                    "treatment_variable": test_config["treatment_variable"],
-                    "expected_effect": test_config["expected_effect"],
+                    **base_output,
                     "formula": result.estimator.formula if hasattr(result.estimator, "formula") else None,
-                    "alpha": test_config.get("alpha", 0.05),
                     "skip": False,
                     "passed": test_passed,
                     "result": (
