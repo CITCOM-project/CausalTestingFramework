@@ -488,7 +488,7 @@ class CausalTestingFramework:
                         | result.effect_estimate.to_dict()
                         | (result.adequacy.to_dict() if result.adequacy else {})
                         if result.effect_estimate
-                        else {"error": result.error_message}
+                        else {"status": "error", "reason": result.error_message}
                     ),
                 }
 
