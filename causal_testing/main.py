@@ -425,7 +425,7 @@ class CausalTestingFramework:
 
         return results
 
-    def save_results(self, results: List[CausalTestResult], output_path: str = None) -> None:
+    def save_results(self, results: List[CausalTestResult], output_path: str = None) -> list:
         """Save test results to JSON file in the expected format."""
         if output_path is None:
             output_path = self.paths.output_path
@@ -438,36 +438,60 @@ class CausalTestingFramework:
         with open(self.paths.test_config_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
-        # Combine test configs with their results
         json_results = []
-        for test_config, test_case, result in zip(test_configs["tests"], self.test_cases, results):
-            # Determine if test failed based on expected vs actual effect
-            test_passed = (
-                test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
-            )
+        result_index = 0
 
-            output = {
+        for test_config in test_configs["tests"]:
+
+            # Create a base output first of common entries
+            base_output = {
                 "name": test_config["name"],
                 "estimate_type": test_config["estimate_type"],
                 "effect": test_config.get("effect", "direct"),
                 "treatment_variable": test_config["treatment_variable"],
                 "expected_effect": test_config["expected_effect"],
-                "formula": result.estimator.formula if hasattr(result.estimator, "formula") else None,
                 "alpha": test_config.get("alpha", 0.05),
-                "skip": test_config.get("skip", False),
-                "passed": test_passed,
-                "result": (
-                    {
-                        "treatment": result.estimator.base_test_case.treatment_variable.name,
-                        "outcome": result.estimator.base_test_case.outcome_variable.name,
-                        "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
-                    }
-                    | result.effect_estimate.to_dict()
-                    | (result.adequacy.to_dict() if result.adequacy else {})
-                    if result.effect_estimate
-                    else {"error": result.error_message}
-                ),
             }
+            if test_config.get("skip", False):
+                # Include those skipped test entry without execution results
+                output = {
+                    **base_output,
+                    "formula": test_config.get("formula"),
+                    "skip": True,
+                    "passed": None,
+                    "result": {
+                        "status": "skipped",
+                        "reason": "Test marked as skip:true in the causal test config file.",
+                    },
+                }
+            else:
+                # Add executed test with actual results
+                test_case = self.test_cases[result_index]
+                result = results[result_index]
+                result_index += 1
+
+                test_passed = (
+                    test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
+                )
+
+                output = {
+                    **base_output,
+                    "formula": result.estimator.formula if hasattr(result.estimator, "formula") else None,
+                    "skip": False,
+                    "passed": test_passed,
+                    "result": (
+                        {
+                            "treatment": result.estimator.base_test_case.treatment_variable.name,
+                            "outcome": result.estimator.base_test_case.outcome_variable.name,
+                            "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
+                        }
+                        | result.effect_estimate.to_dict()
+                        | (result.adequacy.to_dict() if result.adequacy else {})
+                        if result.effect_estimate
+                        else {"status": "error", "reason": result.error_message}
+                    ),
+                }
+
             json_results.append(output)
 
         # Save to file
