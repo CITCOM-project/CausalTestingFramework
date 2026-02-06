@@ -3,6 +3,8 @@ continuous outcomes with changes in behaviour"""
 
 import logging
 from typing import Any
+import statsmodels.formula.api as smf
+from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 import pandas as pd
 
@@ -18,6 +20,8 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
     """A Cubic Spline Regression Estimator is a parametric estimator which restricts the variables in the data to a
     combination of parameters and basis functions of the variables.
     """
+
+    regressor = smf.ols
 
     def __init__(
         # pylint: disable=too-many-arguments
@@ -48,6 +52,16 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
             )
             self.formula = f"{base_test_case.outcome_variable.name} ~ cr({'+'.join(terms)}, df={basis})"
 
+    def fit_model(self, data=None) -> RegressionResultsWrapper:
+        """Run linear regression of the treatment and adjustment set against the outcome and return the model.
+
+        :return: The model after fitting to data.
+        """
+        if data is None:
+            data = self.df
+        model = self.regressor(formula=self.formula, data=data).fit(disp=0)
+        return model
+
     def estimate_ate_calculated(self, adjustment_config: dict = None) -> EffectEstimate:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
@@ -62,7 +76,7 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
         """
         model = self.fit_model()
 
-        x = {"Intercept": 1, self.base_test_case.treatment_variable.name: self.treatment_value}
+        x = pd.DataFrame({"Intercept": [1], self.base_test_case.treatment_variable.name: [self.treatment_value]})
         if adjustment_config is not None:
             for k, v in adjustment_config.items():
                 x[k] = v

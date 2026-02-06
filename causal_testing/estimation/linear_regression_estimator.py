@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 import pandas as pd
-import statsmodels.formula.api as smf
+import statsmodels.api as sm
 from patsy import ModelDesc, dmatrix  # pylint: disable = no-name-in-module
 
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
@@ -21,7 +21,7 @@ class LinearRegressionEstimator(RegressionEstimator):
     combination of parameters and functions of the variables (note these functions need not be linear).
     """
 
-    regressor = smf.ols
+    regressor = sm.OLS
 
     def __init__(
         # pylint: disable=too-many-arguments
@@ -92,6 +92,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         formula = gp.run_gp(ngen=ngen, pop_size=pop_size, num_offspring=num_offspring, seeds=seeds)
         formula = gp.simplify(formula)
         self.formula = f"{self.base_test_case.outcome_variable.name} ~ I({formula}) - 1"
+        self.setup_formula()
 
     def estimate_coefficient(self) -> EffectEstimate:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome

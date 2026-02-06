@@ -4,7 +4,7 @@ import logging
 
 import numpy as np
 import pandas as pd
-import statsmodels.formula.api as smf
+import statsmodels.api as sm
 
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
@@ -18,7 +18,7 @@ class LogisticRegressionEstimator(RegressionEstimator):
     for estimating categorical outcomes.
     """
 
-    regressor = smf.logit
+    regressor = sm.Logit
 
     def add_modelling_assumptions(self):
         """

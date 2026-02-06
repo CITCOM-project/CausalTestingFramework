@@ -247,13 +247,13 @@
       ],
       "effect_measure": "coefficient",
       "effect_estimate": {
-        "cum_vaccinated": 0.0017107387725956436
+        "cum_vaccinated": 0.0017107387725947554
       },
       "ci_low": {
-        "cum_vaccinated": -0.03931269141189769
+        "cum_vaccinated": -0.03931269141189859
       },
       "ci_high": {
-        "cum_vaccinated": 0.04273416895708898
+        "cum_vaccinated": 0.0427341689570881
       }
     }
   }

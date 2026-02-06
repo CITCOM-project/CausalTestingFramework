@@ -5,7 +5,7 @@ from abc import abstractmethod
 from typing import Any
 
 import pandas as pd
-from patsy import dmatrix  # pylint: disable = no-name-in-module
+from patsy import dmatrix, dmatrices  # pylint: disable = no-name-in-module
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from causal_testing.estimation.abstract_estimator import Estimator
@@ -56,6 +56,17 @@ class RegressionEstimator(Estimator):
                 [base_test_case.treatment_variable.name] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             )
             self.formula = f"{base_test_case.outcome_variable.name} ~ {'+'.join(terms)}"
+        self.setup_formula()
+
+    def setup_formula(self):
+        if self.df is not None:
+            _, covariate_data = dmatrices(self.formula, self.df, return_type="dataframe")
+            self.covariates = covariate_data.columns
+            self.df = pd.concat(
+                [self.df, covariate_data[[col for col in covariate_data.columns if col not in self.df]]], axis=1
+            )
+        else:
+            self.covariates = None
 
     @property
     @abstractmethod
@@ -85,7 +96,16 @@ class RegressionEstimator(Estimator):
         """
         if data is None:
             data = self.df
-        model = self.regressor(formula=self.formula, data=data).fit(disp=0)
+        if self.covariates is None:
+            _, covariate_data = dmatrices(self.formula, data, return_type="dataframe")
+            covariates = covariate_data.columns
+            data = pd.concat(
+                [data, covariate_data[[col for col in covariate_data.columns if col not in data]]], axis=1
+            ).dropna()
+            model = self.regressor(data[self.base_test_case.outcome_variable.name], data[covariates]).fit(disp=0)
+        else:
+            data = data.dropna(subset=self.covariates)
+            model = self.regressor(data[self.base_test_case.outcome_variable.name], data[self.covariates]).fit(disp=0)
         return model
 
     def _predict(self, data=None, adjustment_config: dict = None) -> pd.DataFrame:
@@ -115,6 +135,4 @@ class RegressionEstimator(Estimator):
             if str(x.dtypes[col]) == "object":
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
 
-        # This has to be here in case the treatment variable is in an I(...) block in the self.formula
-        x[self.base_test_case.treatment_variable.name] = [self.treatment_value, self.control_value]
         return model.get_prediction(x).summary_frame()
