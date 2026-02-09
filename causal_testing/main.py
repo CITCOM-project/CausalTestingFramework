@@ -442,7 +442,6 @@ class CausalTestingFramework:
         result_index = 0
 
         for test_config in test_configs["tests"]:
-
             # Create a base output first of common entries
             base_output = {
                 "name": test_config["name"],

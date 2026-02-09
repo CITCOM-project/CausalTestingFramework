@@ -92,7 +92,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         formula = gp.run_gp(ngen=ngen, pop_size=pop_size, num_offspring=num_offspring, seeds=seeds)
         formula = gp.simplify(formula)
         self.formula = f"{self.base_test_case.outcome_variable.name} ~ I({formula}) - 1"
-        self.setup_formula()
+        self.setup_covariates()
 
     def estimate_coefficient(self) -> EffectEstimate:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome

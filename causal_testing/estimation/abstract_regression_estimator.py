@@ -56,9 +56,14 @@ class RegressionEstimator(Estimator):
                 [base_test_case.treatment_variable.name] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             )
             self.formula = f"{base_test_case.outcome_variable.name} ~ {'+'.join(terms)}"
-        self.setup_formula()
+        self.setup_covariates()
 
-    def setup_formula(self):
+    def setup_covariates(self):
+        """
+        Parse the formula and set up the covariates from the design matrix so we can use them in the statsmodels array
+        API. This allows us to only parse the formula once, rather than using the formula API, which parses it every
+        time the regression model is fit, which can be a lot if using causal test adequacy.
+        """
         if self.df is not None:
             _, covariate_data = dmatrices(self.formula, self.df, return_type="dataframe")
             self.covariates = covariate_data.columns
