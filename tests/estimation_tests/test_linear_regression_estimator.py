@@ -68,15 +68,15 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_query(self):
         df = self.nhefs_df
         linear_regression_estimator = LinearRegressionEstimator(
-            self.base_test_case, None, None, set(), df, query="sex==1"
+            self.program_15_base_test_case, None, None, set(), df, query="sex==1"
         )
         self.assertTrue(linear_regression_estimator.df.sex.all())
 
     def test_linear_regression_categorical_ate(self):
         df = self.scarf_df.copy()
         base_test_case = BaseTestCase(Input("color", float), Output("completed", float))
-        logistic_regression_estimator = LinearRegressionEstimator(base_test_case, None, None, set(), df)
-        effect_estimate = logistic_regression_estimator.estimate_coefficient()
+        linear_regression_estimator = LinearRegressionEstimator(base_test_case, None, None, set(), df)
+        effect_estimate = linear_regression_estimator.estimate_coefficient()
         self.assertTrue(
             all([ci_low < 0 < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high)])
         )

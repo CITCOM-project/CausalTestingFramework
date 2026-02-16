@@ -7,8 +7,8 @@
     "expected_effect": {
       "cum_vaccinations": "NoEffect"
     },
-    "formula": "cum_vaccinations ~ max_doses",
     "alpha": 0.05,
+    "formula": "cum_vaccinations ~ max_doses",
     "skip": false,
     "passed": false,
     "result": {
@@ -35,8 +35,8 @@
     "expected_effect": {
       "cum_vaccinated": "NoEffect"
     },
-    "formula": "cum_vaccinated ~ max_doses",
     "alpha": 0.05,
+    "formula": "cum_vaccinated ~ max_doses",
     "skip": false,
     "passed": false,
     "result": {
@@ -63,8 +63,8 @@
     "expected_effect": {
       "cum_infections": "NoEffect"
     },
-    "formula": "cum_infections ~ max_doses",
     "alpha": 0.05,
+    "formula": "cum_infections ~ max_doses",
     "skip": false,
     "passed": false,
     "result": {
@@ -91,8 +91,8 @@
     "expected_effect": {
       "cum_vaccinations": "SomeEffect"
     },
-    "formula": "cum_vaccinations ~ vaccine",
     "alpha": 0.05,
+    "formula": "cum_vaccinations ~ vaccine",
     "skip": false,
     "passed": true,
     "result": {
@@ -119,8 +119,8 @@
     "expected_effect": {
       "cum_vaccinated": "SomeEffect"
     },
-    "formula": "cum_vaccinated ~ vaccine",
     "alpha": 0.05,
+    "formula": "cum_vaccinated ~ vaccine",
     "skip": false,
     "passed": true,
     "result": {
@@ -147,8 +147,8 @@
     "expected_effect": {
       "cum_infections": "SomeEffect"
     },
-    "formula": "cum_infections ~ vaccine",
     "alpha": 0.05,
+    "formula": "cum_infections ~ vaccine",
     "skip": false,
     "passed": true,
     "result": {
@@ -175,8 +175,8 @@
     "expected_effect": {
       "cum_vaccinated": "NoEffect"
     },
-    "formula": "cum_vaccinated ~ cum_vaccinations + vaccine",
     "alpha": 0.05,
+    "formula": "cum_vaccinated ~ cum_vaccinations + vaccine",
     "skip": false,
     "passed": false,
     "result": {
@@ -205,8 +205,8 @@
     "expected_effect": {
       "cum_infections": "NoEffect"
     },
-    "formula": "cum_infections ~ cum_vaccinations + vaccine",
     "alpha": 0.05,
+    "formula": "cum_infections ~ cum_vaccinations + vaccine",
     "skip": false,
     "passed": true,
     "result": {
@@ -235,8 +235,8 @@
     "expected_effect": {
       "cum_infections": "NoEffect"
     },
-    "formula": "cum_infections ~ cum_vaccinated + vaccine",
     "alpha": 0.05,
+    "formula": "cum_infections ~ cum_vaccinated + vaccine",
     "skip": false,
     "passed": true,
     "result": {
@@ -247,13 +247,13 @@
       ],
       "effect_measure": "coefficient",
       "effect_estimate": {
-        "cum_vaccinated": 0.0017107387725956436
+        "cum_vaccinated": 0.0017107387725947554
       },
       "ci_low": {
-        "cum_vaccinated": -0.03931269141189769
+        "cum_vaccinated": -0.03931269141189859
       },
       "ci_high": {
-        "cum_vaccinated": 0.04273416895708898
+        "cum_vaccinated": 0.0427341689570881
       }
     }
   }
