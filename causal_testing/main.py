@@ -13,13 +13,10 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.causal_effect import Negative, NoEffect, Positive, SomeEffect
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
@@ -302,8 +299,8 @@ class CausalTestingFramework:
         if effect_type not in effect_map:
             raise ValueError(
                 f"Unsupported causal effect {effect_type}. Supported: {sorted(effect_map)}. "
-                "If you have implemented a custom causal effect, you will need to add this to your entrypoints via your "
-                "pyproject.toml file."
+                "If you have implemented a custom causal effect, you will need to add this to your entrypoints via "
+                "your pyproject.toml file."
             )
         expected_effect = effect_map[effect_type].load()(**test.get("effect_kwargs", {}))
 
