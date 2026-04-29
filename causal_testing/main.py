@@ -268,15 +268,10 @@ class CausalTestingFramework:
 
         if test["estimator"] not in estimator_map:
             raise ValueError(
-                f"Unsupported estimator {estimator}. Supported: {sorted(estimator_map)}"
+                f"Unsupported estimator {test['estimator']}. Supported: {sorted(estimator_map)}. "
                 "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
                 "pyproject.toml file."
             )
-
-        # Get the estimator class
-        estimator_class = estimator_map.get(test["estimator"]).load()
-        if estimator_class is None:
-            raise ValueError(f"Unknown estimator: {test['estimator']}")
 
         # Handle combined queries (global and test-specific)
         test_query = test.get("query")
@@ -298,6 +293,7 @@ class CausalTestingFramework:
         filtered_df = self.data.query(combined_query) if combined_query else self.data
 
         # Create the estimator with correct parameters
+        estimator_class = estimator_map.get(test["estimator"]).load()
         estimator = estimator_class(
             base_test_case=base_test,
             treatment_value=test.get("treatment_value"),
@@ -316,9 +312,9 @@ class CausalTestingFramework:
 
         # Get effect type and create expected effect
         effect_type = test["expected_effect"][base_test.outcome_variable.name]
-        if test["estimator"] not in estimator_map:
+        if effect_type not in effect_map:
             raise ValueError(
-                f"Unsupported causal effect {effect_type}. Supported: {sorted(effect_map)}"
+                f"Unsupported causal effect {effect_type}. Supported: {sorted(effect_map)}. "
                 "If you have implemented a custom causal effect, you will need to add this to your entrypoints via your "
                 "pyproject.toml file."
             )
