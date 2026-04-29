@@ -65,6 +65,13 @@ Documentation = "https://causal-testing-framework.readthedocs.io/"
 Repository = "https://github.com/CITCOM-project/CausalTestingFramework"
 Issues = "https://github.com/CITCOM-project/CausalTestingFramework/issues"
 
+[project.entry-points."estimators"]
+LinearRegressionEstimator = "causal_testing.estimation.linear_regression_estimator:LinearRegressionEstimator"
+LogisticRegressionEstimator = "causal_testing.estimation.linear_regression_estimator:LogisticRegressionEstimator"
+CubicSplineEstimator = "causal_testing.estimation.linear_regression_estimator:CubicSplineEstimator"
+InstrumentalVariableEstimator = "causal_testing.estimation.linear_regression_estimator:InstrumentalVariableEstimator"
+IPCWEstimator = "causal_testing.estimation.linear_regression_estimator:IPCWEstimator"
+
 [tool.setuptools.packages]
 find = {}
 

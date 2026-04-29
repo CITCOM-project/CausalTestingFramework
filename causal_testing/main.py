@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
+from importlib.metadata import entry_points
 
 import numpy as np
 import pandas as pd
@@ -267,17 +268,20 @@ class CausalTestingFramework:
             "Negative": Negative(),
         }
 
-        # Map estimator string to estimator class
-        estimator_map = {
-            "LinearRegressionEstimator": LinearRegressionEstimator,
-            "LogisticRegressionEstimator": LogisticRegressionEstimator,
-        }
+        estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
 
         if "estimator" not in test:
             raise ValueError("Test configuration must specify an estimator")
 
+        if test["estimator"] not in estimator_map:
+            print(
+                f"Unsupported estimator {estimator}. Supported: {sorted(estimators)}"
+                "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
+                "pyproject.toml file."
+            )
+
         # Get the estimator class
-        estimator_class = estimator_map.get(test["estimator"])
+        estimator_class = estimator_map.get(test["estimator"]).load()
         if estimator_class is None:
             raise ValueError(f"Unknown estimator: {test['estimator']}")
 
