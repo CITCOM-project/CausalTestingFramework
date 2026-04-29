@@ -311,6 +311,7 @@ class CausalTestingFramework:
             formula=test.get("formula"),
             alpha=test.get("alpha", 0.05),
             query=combined_query,
+            **test.get("estimator_kwargs", {}),
         )
 
         # Get effect type and create expected effect
@@ -329,6 +330,7 @@ class CausalTestingFramework:
             estimate_type=test.get("estimate_type", "ate"),
             estimate_params=test.get("estimate_params"),
             estimator=estimator,
+            **test.get("effect_kwargs", {}),
         )
 
     def run_tests_in_batches(
