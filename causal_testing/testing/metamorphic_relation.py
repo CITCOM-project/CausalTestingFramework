@@ -279,7 +279,7 @@ def generate_causal_tests(
 
     logger.warning(
         "The skip parameter is hard-coded to False during test generation for better integration with the "
-        "causal testing component (python -m causal_testing test ...)"
+        "causal testing component (causal-testing test ...)"
         "Please carefully review the generated tests and decide which to skip."
     )
 

@@ -74,7 +74,7 @@ if [ "$EXECUTION_MODE" = "generate" ]; then
     echo "Running causal_testing GENERATE..."
     echo "Will write causal tests to: $CAUSAL_TESTS_OUTPUT_PATH"
 
-    python -m causal_testing generate \
+    causal-testing generate \
         -D "$DAG_PATH" \
         -o "$CAUSAL_TESTS_OUTPUT_PATH" \
         -e "$ESTIMATOR" \
@@ -107,7 +107,7 @@ elif [ "$EXECUTION_MODE" = "test" ]; then
     # Build command with adequacy flags only when ADEQUACY is true
     if [ "$ADEQUACY" = "true" ]; then
         echo "DEBUG: Executing WITH adequacy flags"
-        python -m causal_testing test \
+        causal-testing test \
             -D "$DAG_PATH" \
             -d $DATA_PATHS \
             -t "$CAUSAL_TESTS_INPUT_PATH" \
@@ -120,7 +120,7 @@ elif [ "$EXECUTION_MODE" = "test" ]; then
             $([ "$BATCH_SIZE" != "0" ] && echo "--batch-size $BATCH_SIZE")
     else
         echo "DEBUG: Executing WITHOUT adequacy flags"
-        python -m causal_testing test \
+        causal-testing test \
             -D "$DAG_PATH" \
             -d $DATA_PATHS \
             -t "$CAUSAL_TESTS_INPUT_PATH" \

@@ -65,6 +65,9 @@ Documentation = "https://causal-testing-framework.readthedocs.io/"
 Repository = "https://github.com/CITCOM-project/CausalTestingFramework"
 Issues = "https://github.com/CITCOM-project/CausalTestingFramework/issues"
 
+[project.scripts]
+causal-testing = "causal_testing.__main__:main"
+
 [project.entry-points."estimators"]
 LinearRegressionEstimator = "causal_testing.estimation.linear_regression_estimator:LinearRegressionEstimator"
 LogisticRegressionEstimator = "causal_testing.estimation.logistic_regression_estimator:LogisticRegressionEstimator"
