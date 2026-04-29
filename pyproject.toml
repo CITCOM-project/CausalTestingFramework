@@ -72,6 +72,13 @@ CubicSplineEstimator = "causal_testing.estimation.linear_regression_estimator:Cu
 InstrumentalVariableEstimator = "causal_testing.estimation.linear_regression_estimator:InstrumentalVariableEstimator"
 IPCWEstimator = "causal_testing.estimation.linear_regression_estimator:IPCWEstimator"
 
+[project.entry-points."causal_effects"]
+NoEffect = "causal_testing.testing.causal_effect:NoEffect"
+SomeEffect = "causal_testing.testing.causal_effect:SomeEffect"
+Positive = "causal_testing.testing.causal_effect:Positive"
+Negative = "causal_testing.testing.causal_effect:Negative"
+ExactValue = "causal_testing.testing.causal_effect:ExactValue"
+
 [tool.setuptools.packages]
 find = {}
 

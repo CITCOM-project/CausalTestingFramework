@@ -260,22 +260,15 @@ class CausalTestingFramework:
         :return: CausalTestCase object
         :raises: ValueError if invalid estimator or configuration is provided
         """
-        # Map effect string to effect class
-        effect_map = {
-            "NoEffect": NoEffect(),
-            "SomeEffect": SomeEffect(),
-            "Positive": Positive(),
-            "Negative": Negative(),
-        }
-
         estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
+        effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
 
         if "estimator" not in test:
             raise ValueError("Test configuration must specify an estimator")
 
         if test["estimator"] not in estimator_map:
-            print(
-                f"Unsupported estimator {estimator}. Supported: {sorted(estimators)}"
+            raise ValueError(
+                f"Unsupported estimator {estimator}. Supported: {sorted(estimator_map)}"
                 "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
                 "pyproject.toml file."
             )
@@ -322,7 +315,13 @@ class CausalTestingFramework:
 
         # Get effect type and create expected effect
         effect_type = test["expected_effect"][base_test.outcome_variable.name]
-        expected_effect = effect_map[effect_type]
+        if test["estimator"] not in estimator_map:
+            raise ValueError(
+                f"Unsupported causal effect {effect_type}. Supported: {sorted(effect_map)}"
+                "If you have implemented a custom causal effect, you will need to add this to your entrypoints via your "
+                "pyproject.toml file."
+            )
+        expected_effect = effect_map[effect_type].load()()
 
         return CausalTestCase(
             base_test_case=base_test,
