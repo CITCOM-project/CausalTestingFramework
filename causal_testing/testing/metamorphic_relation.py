@@ -49,6 +49,12 @@ class MetamorphicRelation:
         :param estimator: The name of the estimator class to use when evaluating the test
         :param alpha: The significance level to use when calculating the confidence intervals
         """
+        if estimator not in ["LinearRegressionEstimator", "LogisticRegressionEstimator"]:
+            raise ValueError(
+                f"Unsupported estimator {estimator}. "
+                "We only support autogeneration using LinearRegressionEstimator or LogisticRegressionEstimator."
+                "More advanced estimators require careful thought that cannot be easily automated."
+            )
         return {
             "name": str(self),
             "estimator": estimator,

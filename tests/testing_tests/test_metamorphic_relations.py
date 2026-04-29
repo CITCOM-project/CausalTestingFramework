@@ -41,6 +41,17 @@ class TestMetamorphicRelation(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
 
+    def test_json_stub_invalid_estimator(self):
+        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
+        and there is only a single input."""
+        causal_dag = CausalDAG(self.dag_dot_path)
+        causal_dag.remove_nodes_from(["X2", "X3"])
+        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
+        should_not_cause_mr = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
+        with self.assertRaises(ValueError) as e:
+            should_not_cause_mr.to_json_stub(estimator="InvalidEstimator")
+            self.assertTrue(e.exception.startswith("Unsupported estimator estimator InvalidEstimator."))
+
     def test_should_not_cause_json_stub(self):
         """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
         and there is only a single input."""
@@ -57,7 +68,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "expected_effect": {"Z": "NoEffect"},
                 "treatment_variable": "X1",
                 "name": "X1 _||_ Z",
-                "formula": "Z ~ X1",
+                "estimator_kwargs": {"formula": "Z ~ X1"},
                 "alpha": 0.05,
                 "skip": False,
             },
@@ -81,7 +92,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "expected_effect": {"Z": "NoEffect"},
                 "treatment_variable": "X1",
                 "name": "X1 _||_ Z",
-                "formula": "Z ~ X1",
+                "estimator_kwargs": {"formula": "Z ~ X1"},
                 "alpha": 0.05,
                 "skip": False,
             },
@@ -101,7 +112,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "estimate_type": "coefficient",
                 "estimator": "LinearRegressionEstimator",
                 "expected_effect": {"Z": "SomeEffect"},
-                "formula": "Z ~ X1",
+                "estimator_kwargs": {"formula": "Z ~ X1"},
                 "treatment_variable": "X1",
                 "name": "X1 --> Z",
                 "alpha": 0.05,
@@ -128,7 +139,7 @@ class TestMetamorphicRelation(unittest.TestCase):
                 "estimate_type": "unit_odds_ratio",
                 "estimator": "LogisticRegressionEstimator",
                 "expected_effect": {"Z": "SomeEffect"},
-                "formula": "Z ~ X1",
+                "estimator_kwargs": {"formula": "Z ~ X1"},
                 "treatment_variable": "X1",
                 "name": "X1 --> Z",
                 "alpha": 0.05,
