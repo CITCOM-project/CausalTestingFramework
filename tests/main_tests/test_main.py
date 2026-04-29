@@ -144,6 +144,36 @@ class TestCausalTestingFramework(unittest.TestCase):
             str(e.exception),
         )
 
+    def test_create_test_case_effect_kwargs(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        test = {
+            "name": "test1",
+            "treatment_variable": "test_input",
+            "estimator": "LinearRegressionEstimator",
+            "estimate_type": "coefficient",
+            "expected_effect": {"test_output": "ExactValue"},
+            "effect_kwargs": {"value": 4},
+        }
+        base_test_case = framework.create_base_test(test)
+        test_case = framework.create_causal_test(test, base_test_case)
+        self.assertEqual(test_case.expected_causal_effect.value, 4)
+
+    def test_create_test_case_estimator_kwargs(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        test = {
+            "name": "test1",
+            "treatment_variable": "test_input",
+            "estimator": "InstrumentalVariableEstimator",
+            "estimate_type": "coefficient",
+            "expected_effect": {"test_output": "SomeEffect"},
+            "estimator_kwargs": {"instrument": "instrumental_variable"},
+        }
+        base_test_case = framework.create_base_test(test)
+        test_case = framework.create_causal_test(test, base_test_case)
+        self.assertEqual(test_case.estimator.instrument, "instrumental_variable")
+
     def test_create_base_test_case_missing_outcome(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()

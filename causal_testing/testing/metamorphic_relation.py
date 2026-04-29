@@ -55,12 +55,14 @@ class MetamorphicRelation:
             "estimate_type": estimate_type,
             "effect": effect_type,
             "treatment_variable": self.base_test_case.treatment_variable,
-            "formula": (
-                f"{self.base_test_case.outcome_variable} ~ "
-                f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
-            ),
             "alpha": alpha,
             "skip": skip,
+            "estimator_kwargs": {
+                "formula": (
+                    f"{self.base_test_case.outcome_variable} ~ "
+                    f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
+                ),
+            },
         }
 
 

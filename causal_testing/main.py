@@ -273,27 +273,17 @@ class CausalTestingFramework:
                 "pyproject.toml file."
             )
 
-        # Handle combined queries (global and test-specific)
-        test_query = test.get("query")
-        combined_query = None
-
-        if self.query and test_query:
-            combined_query = f"({self.query}) and ({test_query})"
-            logger.info(
-                f"Combining global query '{self.query}' with test-specific query "
-                f"'{test_query}' for test '{test['name']}'"
-            )
-        elif test_query:
-            combined_query = test_query
-            logger.info(f"Using test-specific query for '{test['name']}': {test_query}")
-        elif self.query:
-            combined_query = self.query
-            logger.info(f"Using global query for '{test['name']}': {self.query}")
-
-        filtered_df = self.data.query(combined_query) if combined_query else self.data
+        # Handle global queries
+        # Test-specific queries are handled by the estimator as not all estimators support them
+        filtered_df = self.data
+        if self.query:
+            filtered_df = self.data.query(self.query)
 
         # Create the estimator with correct parameters
         estimator_class = estimator_map.get(test["estimator"]).load()
+        estimator_kwargs = test.get("estimator_kwargs", {})
+        if "query" in test:
+            estimator_kwargs["query"] = test["query"]
         estimator = estimator_class(
             base_test_case=base_test,
             treatment_value=test.get("treatment_value"),
@@ -303,11 +293,8 @@ class CausalTestingFramework:
                 self.dag.identification(base_test, self.scenario.hidden_variables()),
             ),
             df=filtered_df,
-            effect_modifiers=None,
-            formula=test.get("formula"),
             alpha=test.get("alpha", 0.05),
-            query=combined_query,
-            **test.get("estimator_kwargs", {}),
+            **estimator_kwargs,
         )
 
         # Get effect type and create expected effect
@@ -318,7 +305,7 @@ class CausalTestingFramework:
                 "If you have implemented a custom causal effect, you will need to add this to your entrypoints via your "
                 "pyproject.toml file."
             )
-        expected_effect = effect_map[effect_type].load()()
+        expected_effect = effect_map[effect_type].load()(**test.get("effect_kwargs", {}))
 
         return CausalTestCase(
             base_test_case=base_test,
@@ -326,7 +313,6 @@ class CausalTestingFramework:
             estimate_type=test.get("estimate_type", "ate"),
             estimate_params=test.get("estimate_params"),
             estimator=estimator,
-            **test.get("effect_kwargs", {}),
         )
 
     def run_tests_in_batches(
