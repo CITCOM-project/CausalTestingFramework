@@ -2,6 +2,7 @@ import os
 import logging
 
 import pandas as pd
+from scipy.stats import bootstrap
 
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
@@ -19,6 +20,10 @@ logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 
 class EmpiricalMeanEstimator(Estimator):
+    """
+    Custom estimator class to estimate the causal effect based on the empirical mean.
+    """
+
     def add_modelling_assumptions(self):
         """
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
@@ -26,29 +31,28 @@ class EmpiricalMeanEstimator(Estimator):
         """
         self.modelling_assumptions += "The data must contain runs with the exact configuration of interest."
 
-    def estimate_ate(self) -> EffectEstimate:
+    def estimate_risk_ratio(self) -> EffectEstimate:
         """Estimate the outcomes under control and treatment.
         :return: The empirical average treatment effect.
         """
-        control_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.control_value)[
-            self.base_test_case.outcome_variable.name
-        ].dropna()
-        treatment_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.treatment_value)[
-            self.base_test_case.outcome_variable.name
-        ].dropna()
-        return EffectEstimate("ate", treatment_results.mean() - control_results.mean())
+        treatment_variable = self.base_test_case.treatment_variable.name
+        outcome_variable = self.base_test_case.outcome_variable.name
 
-    def estimate_risk_ratio(self) -> float:
-        """Estimate the outcomes under control and treatment.
-        :return: The empirical average treatment effect.
-        """
-        control_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.control_value)[
-            self.base_test_case.outcome_variable.name
+        control_results = self.df.where(self.df[treatment_variable] == self.control_value)[outcome_variable].dropna()
+        treatment_results = self.df.where(self.df[treatment_variable] == self.treatment_value)[
+            outcome_variable
         ].dropna()
-        treatment_results = self.df.where(self.df[self.base_test_case.treatment_variable.name] == self.treatment_value)[
-            self.base_test_case.outcome_variable.name
-        ].dropna()
-        return EffectEstimate("risk_ratio", treatment_results.mean() / control_results.mean())
+
+        def risk_ratio(sample1, sample2):
+            return sample1.mean() / sample2.mean()
+
+        bootstraps = bootstrap((treatment_results, control_results), risk_ratio, confidence_level=self.alpha)
+        return EffectEstimate(
+            type="risk_ratio",
+            value=risk_ratio(treatment_results, control_results),
+            ci_low=bootstraps.confidence_interval.low,
+            ci_high=bootstraps.confidence_interval.high,
+        )
 
 
 # 1. Read in the Causal DAG
