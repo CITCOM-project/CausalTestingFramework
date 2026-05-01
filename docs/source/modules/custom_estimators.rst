@@ -46,8 +46,11 @@ The code for the :code:`EmpiricalMeanEstimator` is shown below.
               ci_high=bootstraps.confidence_interval.high,
           )
 
-Once you have implemented your estimator, you will need to register it as an extra entry point in your :code:`pyproject.toml` file so that the Causal Testing Framework can find it.
+Once you have implemented your estimator, you will need to register it as an extra entry point in your project's :code:`pyproject.toml` file so that the Causal Testing Framework can find it.
 For example, if you had defined your :code:`EmpiricalMeanEstimator` class in a module called :code:`empirical_mean_estimator` in a folder called :code:`custom_estimators`, you would register it as follows.
+You will also need to reinstall your project, e.g. with :code:`pip install -e .` each time you add a new estimator to your :code:`pyproject.toml`.
+You do not need to reinstall each time you edit your project for source code edits.
+
 
 ..  code-block:: ini
 
