@@ -27,7 +27,7 @@ a deliberate modification to the input configuration expected to produce a corre
 ## Installation
 
 ### Requirements
-- Python 3.10, 3.11, 3.12 and 3.13
+- Python 3.11, 3.12 and 3.13
 
 ### Recommended: Install from conda-forge
 

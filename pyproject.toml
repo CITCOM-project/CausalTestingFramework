@@ -11,18 +11,16 @@ name = "causal_testing_framework"
 authors = [{ name = "The CITCOM team" }]
 description = "A framework for causal testing using causal directed acyclic graphs."
 readme = "README.md"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
 keywords = ["causal inference","verification"]
 dependencies = [
-"lifelines<=0.28.0; python_version <= '3.10'",
-"lifelines; python_version > '3.10'",
+"lifelines",
 "networkx>=3.4,<3.5",
 "numpy>=1.26.0,<=2.2.0",
-"pandas>=2.1,<3",
+"pandas>=2.1",
 "scikit_learn~=1.4",
-"scipy>=1.12.0,<1.14; python_version <= '3.10'",
-"scipy>=1.12.0,<=1.16.2; python_version > '3.10'",
+"scipy>=1.12.0,<=1.16.2",
 "statsmodels~=0.14",
 "tabulate~=0.9",
 "pydot~=2.0",
@@ -74,7 +72,7 @@ write_to = "causal_testing/_version.py"
 [tool.black]
 # https://github.com/psf/black
 line-length = 120
-target-version = ["py310"]
+target-version = ["py311"]
 
 [tool.isort]
 profile = "black"
@@ -94,7 +92,7 @@ python_files = [
 
 [tool.tox]
 requires = ["tox>=4.19"]
-env_list = ["3.10","3.11","3.12","3.13"]
+env_list = ["3.11","3.12","3.13"]
 skip_missing_interpreters = false # fail if devs don’t have all required Python versions
 
 # Base configuration for all test environments
