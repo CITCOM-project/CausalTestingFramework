@@ -106,7 +106,7 @@ class LinearRegressionEstimator(RegressionEstimator):
 
         if any(
             (
-                self.df.dtypes[factor.name()] == "object"
+                not pd.api.types.is_numeric_dtype(self.df.dtypes[factor.name()])
                 for factor in patsy_md.rhs_termlist[1].factors
                 # We want to remove this long term as it prevents us from discovering categoricals within I(...) blocks
                 if factor.name() in self.df.dtypes

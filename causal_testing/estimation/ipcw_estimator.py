@@ -115,7 +115,7 @@ class IPCWEstimator(Estimator):
             pd.Series(strategy_assigned, index=individual.index) != pd.Series(strategy_followed, index=individual.index)
         ).astype("boolean")
         mask = mask | ~individual["eligible"]
-        mask.reset_index(inplace=True, drop=True)
+        mask = mask.reset_index(drop=True)
         false = mask.loc[mask]
         if false.empty:
             return pd.DataFrame(
