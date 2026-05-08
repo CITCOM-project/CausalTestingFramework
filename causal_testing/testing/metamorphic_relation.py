@@ -49,18 +49,26 @@ class MetamorphicRelation:
         :param estimator: The name of the estimator class to use when evaluating the test
         :param alpha: The significance level to use when calculating the confidence intervals
         """
+        if estimator not in ["LinearRegressionEstimator", "LogisticRegressionEstimator"]:
+            raise ValueError(
+                f"Unsupported estimator {estimator}. "
+                "We only support autogeneration using LinearRegressionEstimator or LogisticRegressionEstimator."
+                "More advanced estimators require careful thought that cannot be easily automated."
+            )
         return {
             "name": str(self),
             "estimator": estimator,
             "estimate_type": estimate_type,
             "effect": effect_type,
             "treatment_variable": self.base_test_case.treatment_variable,
-            "formula": (
-                f"{self.base_test_case.outcome_variable} ~ "
-                f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
-            ),
             "alpha": alpha,
             "skip": skip,
+            "estimator_kwargs": {
+                "formula": (
+                    f"{self.base_test_case.outcome_variable} ~ "
+                    f"{' + '.join([self.base_test_case.treatment_variable] + self.adjustment_vars)}"
+                ),
+            },
         }
 
 
@@ -271,7 +279,7 @@ def generate_causal_tests(
 
     logger.warning(
         "The skip parameter is hard-coded to False during test generation for better integration with the "
-        "causal testing component (python -m causal_testing test ...)"
+        "causal testing component (causal-testing test ...)"
         "Please carefully review the generated tests and decide which to skip."
     )
 

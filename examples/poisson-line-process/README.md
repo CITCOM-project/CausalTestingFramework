@@ -14,5 +14,5 @@ This should print a series of causal test results and produce two CSV files. `in
 You should be able to run the main entrypoint by simply running the following command from within this directory:
 
 ```
-python -m causal_testing --dag_path dag.dot --data_paths data/random/data_random_1000.csv --test_config causal_tests.json --output results/test_results.json
+causal-testing --dag_path dag.dot --data_paths data/random/data_random_1000.csv --test_config causal_tests.json --output results/test_results.json
 ```
