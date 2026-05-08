@@ -112,12 +112,67 @@ class TestCausalTestingFramework(unittest.TestCase):
             framework.create_causal_test({}, None)
         self.assertEqual("Test configuration must specify an estimator", str(e.exception))
 
-    def test_create_base_test_case_invalid_estimator(self):
+    def test_create_test_case_invalid_estimator(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
         with self.assertRaises(ValueError) as e:
             framework.create_causal_test({"estimator": "InvalidEstimator"}, None)
-        self.assertEqual("Unknown estimator: InvalidEstimator", str(e.exception))
+        self.assertEqual(
+            f"Unsupported estimator InvalidEstimator. Supported: ['CubicSplineEstimator', 'IPCWEstimator', 'InstrumentalVariableEstimator', 'LinearRegressionEstimator', 'LogisticRegressionEstimator']. "
+            "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
+            "pyproject.toml file.",
+            str(e.exception),
+        )
+
+    def test_create_test_case_invalid_effect(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        test = {
+            "name": "test1",
+            "treatment_variable": "test_input",
+            "estimator": "LinearRegressionEstimator",
+            "estimate_type": "coefficient",
+            "expected_effect": {"test_output": "InvalidEffect"},
+        }
+        base_test_case = framework.create_base_test(test)
+        with self.assertRaises(ValueError) as e:
+            framework.create_causal_test(test, base_test_case)
+        self.assertEqual(
+            f"Unsupported causal effect InvalidEffect. Supported: ['ExactValue', 'Negative', 'NoEffect', 'Positive', 'SomeEffect']. "
+            "If you have implemented a custom causal effect, you will need to add this to your entrypoints via your "
+            "pyproject.toml file.",
+            str(e.exception),
+        )
+
+    def test_create_test_case_effect_kwargs(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        test = {
+            "name": "test1",
+            "treatment_variable": "test_input",
+            "estimator": "LinearRegressionEstimator",
+            "estimate_type": "coefficient",
+            "expected_effect": {"test_output": "ExactValue"},
+            "effect_kwargs": {"value": 4},
+        }
+        base_test_case = framework.create_base_test(test)
+        test_case = framework.create_causal_test(test, base_test_case)
+        self.assertEqual(test_case.expected_causal_effect.value, 4)
+
+    def test_create_test_case_estimator_kwargs(self):
+        framework = CausalTestingFramework(self.paths)
+        framework.setup()
+        test = {
+            "name": "test1",
+            "treatment_variable": "test_input",
+            "estimator": "InstrumentalVariableEstimator",
+            "estimate_type": "coefficient",
+            "expected_effect": {"test_output": "SomeEffect"},
+            "estimator_kwargs": {"instrument": "instrumental_variable"},
+        }
+        base_test_case = framework.create_base_test(test)
+        test_case = framework.create_causal_test(test, base_test_case)
+        self.assertEqual(test_case.estimator.instrument, "instrumental_variable")
 
     def test_create_base_test_case_missing_outcome(self):
         framework = CausalTestingFramework(self.paths)
@@ -166,7 +221,8 @@ class TestCausalTestingFramework(unittest.TestCase):
 
                     test_passed = (
                         test_case.expected_causal_effect.apply(framework_result)
-                        if framework_result.effect_estimate is not None else False
+                        if framework_result.effect_estimate is not None
+                        else False
                     )
                     self.assertEqual(result["passed"], test_passed)
 

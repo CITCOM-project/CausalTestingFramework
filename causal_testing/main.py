@@ -7,18 +7,16 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
+from importlib.metadata import entry_points
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.causal_effect import Negative, NoEffect, Positive, SomeEffect
 from causal_testing.testing.causal_test_adequacy import DataAdequacy
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
@@ -259,48 +257,30 @@ class CausalTestingFramework:
         :return: CausalTestCase object
         :raises: ValueError if invalid estimator or configuration is provided
         """
-        # Map effect string to effect class
-        effect_map = {
-            "NoEffect": NoEffect(),
-            "SomeEffect": SomeEffect(),
-            "Positive": Positive(),
-            "Negative": Negative(),
-        }
-
-        # Map estimator string to estimator class
-        estimator_map = {
-            "LinearRegressionEstimator": LinearRegressionEstimator,
-            "LogisticRegressionEstimator": LogisticRegressionEstimator,
-        }
+        estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
+        effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
 
         if "estimator" not in test:
             raise ValueError("Test configuration must specify an estimator")
 
-        # Get the estimator class
-        estimator_class = estimator_map.get(test["estimator"])
-        if estimator_class is None:
-            raise ValueError(f"Unknown estimator: {test['estimator']}")
-
-        # Handle combined queries (global and test-specific)
-        test_query = test.get("query")
-        combined_query = None
-
-        if self.query and test_query:
-            combined_query = f"({self.query}) and ({test_query})"
-            logger.info(
-                f"Combining global query '{self.query}' with test-specific query "
-                f"'{test_query}' for test '{test['name']}'"
+        if test["estimator"] not in estimator_map:
+            raise ValueError(
+                f"Unsupported estimator {test['estimator']}. Supported: {sorted(estimator_map)}. "
+                "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
+                "pyproject.toml file."
             )
-        elif test_query:
-            combined_query = test_query
-            logger.info(f"Using test-specific query for '{test['name']}': {test_query}")
-        elif self.query:
-            combined_query = self.query
-            logger.info(f"Using global query for '{test['name']}': {self.query}")
 
-        filtered_df = self.data.query(combined_query) if combined_query else self.data
+        # Handle global queries
+        # Test-specific queries are handled by the estimator as not all estimators support them
+        filtered_df = self.data
+        if self.query:
+            filtered_df = self.data.query(self.query)
 
         # Create the estimator with correct parameters
+        estimator_class = estimator_map.get(test["estimator"]).load()
+        estimator_kwargs = test.get("estimator_kwargs", {})
+        if "query" in test:
+            estimator_kwargs["query"] = test["query"]
         estimator = estimator_class(
             base_test_case=base_test,
             treatment_value=test.get("treatment_value"),
@@ -310,15 +290,19 @@ class CausalTestingFramework:
                 self.dag.identification(base_test, self.scenario.hidden_variables()),
             ),
             df=filtered_df,
-            effect_modifiers=None,
-            formula=test.get("formula"),
             alpha=test.get("alpha", 0.05),
-            query=combined_query,
+            **estimator_kwargs,
         )
 
         # Get effect type and create expected effect
         effect_type = test["expected_effect"][base_test.outcome_variable.name]
-        expected_effect = effect_map[effect_type]
+        if effect_type not in effect_map:
+            raise ValueError(
+                f"Unsupported causal effect {effect_type}. Supported: {sorted(effect_map)}. "
+                "If you have implemented a custom causal effect, you will need to add this to your entrypoints via "
+                "your pyproject.toml file."
+            )
+        expected_effect = effect_map[effect_type].load()(**test.get("effect_kwargs", {}))
 
         return CausalTestCase(
             base_test_case=base_test,

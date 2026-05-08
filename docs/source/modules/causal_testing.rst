@@ -34,7 +34,7 @@ In the following sections, we describe the end-to-end process of ``causal testin
 In particular, suppose we're interested in how various precautions, such as hand-washing and mask-wearing, can prevent the spread of a virus within a classroom.
 
 1. Modelling Scenario
-----------------
+---------------------
 
 For our modelling scenario, suppose we define the scenario with the following constraints:
 

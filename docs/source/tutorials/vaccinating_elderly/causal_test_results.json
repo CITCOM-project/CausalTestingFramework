@@ -176,7 +176,7 @@
       "cum_vaccinated": "NoEffect"
     },
     "alpha": 0.05,
-    "formula": "cum_vaccinated ~ cum_vaccinations + vaccine",
+    "formula": "cum_vaccinated ~ cum_vaccinations+vaccine",
     "skip": false,
     "passed": false,
     "result": {
@@ -206,7 +206,7 @@
       "cum_infections": "NoEffect"
     },
     "alpha": 0.05,
-    "formula": "cum_infections ~ cum_vaccinations + vaccine",
+    "formula": "cum_infections ~ cum_vaccinations+vaccine",
     "skip": false,
     "passed": true,
     "result": {
@@ -236,7 +236,7 @@
       "cum_infections": "NoEffect"
     },
     "alpha": 0.05,
-    "formula": "cum_infections ~ cum_vaccinated + vaccine",
+    "formula": "cum_infections ~ cum_vaccinated+vaccine",
     "skip": false,
     "passed": true,
     "result": {

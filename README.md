@@ -89,12 +89,12 @@ For more information on how to use the Causal Testing Framework, please refer to
 
 2. If you do not already have causal test cases, you can convert your causal DAG to causal tests by running the following command.
 ```
-python -m causal_testing generate --dag-path $PATH_TO_DAG --output $PATH_TO_TESTS
+causal-testing generate --dag-path $PATH_TO_DAG --output $PATH_TO_TESTS
 ```
 
 3. You can now execute your tests by running the following command.
 ```
-python -m causal_testing test --dag-path $PATH_TO_DAG --data-paths $PATH_TO_DATA --test-config $PATH_TO_TESTS --output $OUTPUT
+causal-testing test --dag-path $PATH_TO_DAG --data-paths $PATH_TO_DATA --test-config $PATH_TO_TESTS --output $OUTPUT
 ```
 The results will be saved for inspection in a JSON file located at `$OUTPUT`.
 In the future, we hope to add a visualisation tool to assist with this.

@@ -95,11 +95,11 @@ Next Steps
 * Read about :doc:`modules/causal_specification` to understand causal specifications and :doc:`modules/causal_testing` for the end-to-end causal testing process.
 * Run the command for guidance on how to generate your causal tests directly from your input DAG::
 
-    python -m causal_testing generate --help
+    causal-testing generate --help
 
 * and the command on guidance on how to execute your causal tests::
 
-    python -m causal_testing test --help
+    causal-testing test --help
 
 
 Using the CTF on DAFNI

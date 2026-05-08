@@ -4,19 +4,23 @@
     "treatment_variable": "test_input",
     "estimator": "LinearRegressionEstimator",
     "estimate_type": "coefficient",
-    "effect_modifiers": [],
-    "query": "test_input > 0",
     "expected_effect": {"test_output": "NoEffect"},
-    "skip": false
+    "skip": false,
+    "estimator_kwargs": {
+      "query": "test_input > 0",
+      "effect_modifiers": []
+    }
   },
   {
     "name": "test2",
     "treatment_variable": "test_input",
     "estimator": "LinearRegressionEstimator",
     "estimate_type": "coefficient",
-    "effect_modifiers": [],
-    "query": "test_input <= 5",
     "expected_effect": {"test_output": "NoEffect"},
-    "skip": true
+    "skip": true,
+    "estimator_kwargs": {
+      "effect_modifiers": [],
+      "query": "test_input <= 5"
+    }
   }]
 }

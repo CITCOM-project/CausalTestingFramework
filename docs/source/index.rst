@@ -41,6 +41,7 @@ If you have any questions about our framework, you can also reach us by `email <
 
    /modules/causal_specification
    /modules/estimators
+   /modules/custom_estimators
    /modules/causal_testing
 
 .. toctree::
