@@ -4,9 +4,11 @@ import json
 import logging
 import os
 import tempfile
+import pandas as pd
 from pathlib import Path
 
 from causal_testing.testing.metamorphic_relation import generate_causal_tests
+from causal_testing.discovery.hill_climber import evolve_dag
 
 from .main import CausalTestingFramework, CausalTestingPaths, Command, parse_args, setup_logging
 
@@ -38,6 +40,17 @@ def main() -> None:
 
     # Setup logging
     setup_logging(args.verbose)
+
+    if args.command == Command.DISCOVER:
+        logging.info("Discovering causal structures")
+        evolve_dag(
+            df=pd.read_csv(args.data_path),
+            output_file=args.output_dag_path,
+            include_edges_file=args.include_edges,
+            exclude_edges_file=args.exclude_edges,
+        )
+        logging.info("Causal structure discovery completed successfully")
+        return
 
     # Create paths object
     paths = CausalTestingPaths(
