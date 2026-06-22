@@ -26,24 +26,31 @@ warnings.simplefilter("ignore")
 # lexicographical order (max pass, minimise failure, minimise unknown)
 #  e.g. (X pass, Y fail, Z+1 unknown) is better than (X pass, Y+1 fail, Z unknown)
 
-def remove_cycles(causal_dag: CausalDAG, included_edges: set[tuple[str, str]] = set()):
+def simple_cycle(causal_dag: CausalDAG):
+    """
+    Find a cycle in the given CausalDAG, if one exists, returns the first found.
+    
+    :param causal_dag: The CausalDAG to check for cycles.
+    :returns: A list of edges in the cycle, or an empty list if there are no cycles.
+    """
+    rx_graph = rx.networkx_converter(causal_dag)
+    return [(rx_graph[i], rx_graph[j]) for i, j in rx.digraph_find_cycle(rx_graph)]
+
+
+def remove_cycles(causal_dag: CausalDAG, included_edges: set):
     """
     Remove cycles from individuals by iteratively deleting a random edge from each cycle until there are no more cycles.
-    JN Note: This may be updated using one of the methods discussed (i.e. rustworkx)
 
     :param causal_dag: The CausalDAG to be repaired.
     :param included_edges: A set of edges that must be included in the repaired DAG.
     """
     nodes = causal_dag.nodes
-    cycle = next(nx.algorithms.simple_cycles(causal_dag), False)
+    cycle = simple_cycle(causal_dag)
     while cycle:
-        inx1 = random.choice(range(len(cycle)))
-        inx2 = (inx1 + 1) % len(cycle)
-        while (cycle[inx1], cycle[inx2]) in included_edges:
-            inx1 = inx2
-            inx2 = (inx1 + 1) % len(cycle)
-        causal_dag.remove_edge(cycle[inx1], cycle[inx2])
-        cycle = next(nx.algorithms.simple_cycles(causal_dag), False)
+        idx = random.choice(range(len(cycle)))
+        while cycle[idx] in included_edges: idx = (idx + 1) % len(cycle)
+        causal_dag.remove_edge(cycle[idx][0], cycle[idx][1])
+        cycle = simple_cycle(causal_dag)
     causal_dag.add_nodes_from(nodes)
 
 
@@ -226,11 +233,3 @@ def evolve_dag(
             output_file,
         )
     return individual
-
-
-if __name__ == "__main__":
-    evolve_dag(
-        df=pd.read_csv("test_data.csv"),
-        random_seed=1,
-        output_file=f"tmp/test_dag.dot",
-    )
