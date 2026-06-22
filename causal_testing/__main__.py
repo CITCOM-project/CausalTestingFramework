@@ -42,7 +42,7 @@ def main() -> None:
     setup_logging(args.verbose)
 
     if args.command == Command.DISCOVER:
-        logging.info("Discovering causal structures")
+        logging.info("Discovering causal structure")
         evolve_dag(
             df=pd.read_csv(args.data_path),
             output_file=args.output_dag_path,
