@@ -49,10 +49,8 @@ class CausalTestingPaths:
     data_paths: List[Path]
     test_config_path: Path
     output_path: Path
-    discovery_data_path: Path
-    discovery_output_dag_path: Path
-    discovery_include_edges_path: Optional[Path] = None
-    discovery_exclude_edges_path: Optional[Path] = None
+    include_edges_path: Optional[Path] = None
+    exclude_edges_path: Optional[Path] = None
 
     def __init__(
         self,
@@ -60,8 +58,6 @@ class CausalTestingPaths:
         data_paths: List[Union[str, Path]],
         test_config_path: Union[str, Path],
         output_path: Union[str, Path],
-        discovery_data_path: Union[str, Path],
-        output_dag_path: Union[str, Path],
         include_edges_path: Optional[Union[str, Path]] = None,
         exclude_edges_path: Optional[Union[str, Path]] = None,
     ):
@@ -69,8 +65,6 @@ class CausalTestingPaths:
         self.data_paths = [Path(p) for p in data_paths]
         self.test_config_path = Path(test_config_path)
         self.output_path = Path(output_path)
-        self.discovery_data_path = Path(discovery_data_path)
-        self.output_dag_path = Path(output_dag_path)
         self.include_edges_path = Path(include_edges_path) if include_edges_path else None
         self.exclude_edges_path = Path(exclude_edges_path) if exclude_edges_path else None
 
@@ -94,12 +88,6 @@ class CausalTestingPaths:
 
         if not self.output_path.parent.exists():
             self.output_path.parent.mkdir(parents=True)
-
-        if not self.discovery_data_path.exists():
-            raise FileNotFoundError(f"Data file not found: {self.discovery_data_path}")
-        
-        if not self.output_dag_path.parent.exists():
-            self.output_dag_path.parent.mkdir(parents=True)
 
         if self.include_edges_path and not self.include_edges_path.exists():
                 raise FileNotFoundError(f"Data file not found: {self.include_edges_path}")
@@ -596,7 +584,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     #Discovery
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
     parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
-    parser_discover.add_argument("-o", "--output-dag-path", help="Path for output DAG file (.dot)", required=True)
+    parser_discover.add_argument("-o", "--output", help="Path for output DAG file (.dot)", required=True)
     parser_discover.add_argument("-i", "--include-edges", help="Path to file containing edges to include", required=False)
     parser_discover.add_argument("-e", "--exclude-edges", help="Path to file containing edges to exclude", required=False)
     parser_discover.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)

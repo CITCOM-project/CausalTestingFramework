@@ -44,8 +44,8 @@ def main() -> None:
     if args.command == Command.DISCOVER:
         logging.info("Discovering causal structure")
         evolve_dag(
-            df=pd.read_csv(args.data_path),
-            output_file=args.output_dag_path,
+            df=pd.concat([pd.read_csv(path) for path in args.data_paths]),
+            output_file=args.output,
             include_edges_file=args.include_edges,
             exclude_edges_file=args.exclude_edges,
         )
