@@ -595,7 +595,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
     #Discovery
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
-    parser_discover.add_argument("-d", "--data-path", help="Path to data file (.csv)", required=True)
+    parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
     parser_discover.add_argument("-o", "--output-dag-path", help="Path for output DAG file (.dot)", required=True)
     parser_discover.add_argument("-i", "--include-edges", help="Path to file containing edges to include", required=False)
     parser_discover.add_argument("-e", "--exclude-edges", help="Path to file containing edges to exclude", required=False)
