@@ -587,6 +587,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_discover.add_argument("-o", "--output", help="Path for output DAG file (.dot)", required=True)
     parser_discover.add_argument("-i", "--include-edges", help="Path to file containing edges to include", required=False)
     parser_discover.add_argument("-e", "--exclude-edges", help="Path to file containing edges to exclude", required=False)
+    parser_discover.add_argument("-s", "--fitness-score", help="Use fitness score instead of tiered fitness", action="store_true", default=False)
     parser_discover.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
 
     args = main_parser.parse_args(args)

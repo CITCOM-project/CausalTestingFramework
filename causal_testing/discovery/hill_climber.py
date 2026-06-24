@@ -15,6 +15,7 @@ import networkx as nx
 import rustworkx as rx
 import numpy as np
 import pandas as pd
+
 from causal_testing.main import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
@@ -144,25 +145,55 @@ def normalised_counts(test_results: pd.DataFrame) -> dict:
     return counts.sum(axis=0).to_dict()
 
 
-def evaluate_fitness(
-    individual: CausalDAG, df: pd.DataFrame
+def evaluate_fitness_tier(
+    individual: CausalDAG, df: pd.DataFrame,
 ) -> tuple[tuple[float, float, float], list[tuple[str, str]]]:
     """
-    Evaluate the fitness of a given causal DAG by evaluating the corresponding test cases.
+    Evaluate the fitness of a given causal DAG by evaluating the corresponding test cases using a tier based 
+    fitness metric.
+    
     :param individual: The candidate individual to evaluate.
     :param df: The data with which to evaluate the causal tests.
-    :returns: Tuple of the form (X, Y), where X is a triple containing the number of passing, inestimable, and failing
+    :returns: Tuple of the form (X, Y), where X is a triple containing the number of passing, failing, and error
               tests respectively, and Y is a list of failing edges.
     """
     test_results = evaluate_tests(individual, df)
     counts = normalised_counts(test_results)
+
     problem_tests = test_results.query("result != 'pass'")
     problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
     problem_edges.extend(
         problem_tests.query("expected_effect == 'NoEffect'")[["outcome", "treatment"]].apply(tuple, axis=1).tolist()
     )
 
-    return (counts.get("pass", 0), counts.get("error", 0), counts.get("failure", 0)), problem_edges
+    fitness_values = (counts.get("pass", 0), -counts.get("failure", 0), -counts.get("error", 0))
+    print(f"({fitness_values[0]}, {-fitness_values[1]}, {-fitness_values[2]})")
+    return fitness_values, problem_edges
+
+
+def evaluate_fitness_score(
+    individual: CausalDAG, df: pd.DataFrame
+) -> tuple[tuple[float, float, float], list[tuple[str, str]]]:
+    """
+    Evaluate the fitness of a given causal DAG by evaluating the corresponding test cases using a score based
+    fitness metric.
+
+    :param individual: The candidate individual to evaluate.
+    :param df: The data with which to evaluate the causal tests.
+    :returns: Tuple of the form (X, Y), where X is the fitness score, and Y is a list of failing edges.
+    """
+    test_results = evaluate_tests(individual, df)
+    counts = normalised_counts(test_results)
+
+    problem_tests = test_results.query("result != 'pass'")
+    problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
+    problem_edges.extend(
+        problem_tests.query("expected_effect == 'NoEffect'")[["outcome", "treatment"]].apply(tuple, axis=1).tolist()
+    )
+
+    new_fitness_values = counts.get("pass", 0) * 2 + counts.get("inestimable", 0) * 1
+    print(" ", f"{new_fitness_values} / {sum(counts.values()) * 2}")
+    return new_fitness_values, problem_edges
 
 
 def evolve_dag(
@@ -171,6 +202,7 @@ def evolve_dag(
     output_file: str = None, 
     include_edges_file: str = None, 
     exclude_edges_file: str = None,
+    fitness_function: callable = evaluate_fitness_tier,
 ) -> CausalDAG:
     """
     Evolve a causal DAG for a given dataset.
@@ -192,14 +224,17 @@ def evolve_dag(
     individual.add_nodes_from(df.columns)
     individual.add_edges_from(possible_edges)
     remove_cycles(individual, included_edges)
-    fitness_values, problem_edges = evaluate_fitness(individual, df)
+    fitness_values, problem_edges = fitness_function(individual, df)
 
     iterations = 100
     iterations_without_improvement = 0
 
     while problem_edges and iterations:
         iterations -= 1
-        print(iterations, fitness_values, iterations_without_improvement)
+        if fitness_function == evaluate_fitness_tier:
+            print(iterations, f"({fitness_values[0]}, {-fitness_values[1]}, {-fitness_values[2]})", iterations_without_improvement)
+        else:
+            print(iterations, f"({fitness_values})", iterations_without_improvement)
 
         new_individual = individual.copy()
         for origin, dest in random.sample(
@@ -212,9 +247,7 @@ def evolve_dag(
                 # Want to bypass the cycle check of CausalDAG as we remove the cycles afterwards
                 super(CausalDAG, new_individual).add_edge(origin, dest)
         remove_cycles(new_individual, included_edges)
-        new_fitness_values, new_problem_edges = evaluate_fitness(new_individual, df)
-        # assert sum(new_fitness_values) == sum(fitness_values)
-        print(" ", new_fitness_values)
+        new_fitness_values, new_problem_edges = fitness_function(new_individual, df)
 
         if new_fitness_values > fitness_values:
             fitness_values = new_fitness_values

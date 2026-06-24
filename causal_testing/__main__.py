@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 
 from causal_testing.testing.metamorphic_relation import generate_causal_tests
-from causal_testing.discovery.hill_climber import evolve_dag
+from causal_testing.discovery.hill_climber import evolve_dag, evaluate_fitness_tier, evaluate_fitness_score
 
 from .main import CausalTestingFramework, CausalTestingPaths, Command, parse_args, setup_logging
 
@@ -48,6 +48,7 @@ def main() -> None:
             output_file=args.output,
             include_edges_file=args.include_edges,
             exclude_edges_file=args.exclude_edges,
+            fitness_function=evaluate_fitness_score if args.fitness_score else evaluate_fitness_tier,
         )
         logging.info("Causal structure discovery completed successfully")
         return
