@@ -585,9 +585,27 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
     parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
     parser_discover.add_argument("-o", "--output", help="Path for output DAG file (.dot)", required=True)
-    parser_discover.add_argument("-i", "--include-edges", help="Path to file containing edges to include", required=False)
-    parser_discover.add_argument("-e", "--exclude-edges", help="Path to file containing edges to exclude", required=False)
-    parser_discover.add_argument("-s", "--fitness-score", help="Use fitness score instead of tiered fitness", action="store_true", default=False)
+    parser_discover.add_argument(
+        "-i", "--include-edges", help="Path to file containing edges to include", required=False
+    )
+    parser_discover.add_argument(
+        "-e", "--exclude-edges", help="Path to file containing edges to exclude", required=False
+    )
+    parser_discover.add_argument(
+        "-s", "--fitness-score", help="Use fitness score instead of tiered fitness", action="store_true", default=False
+    )
+    parser_discover.add_argument(
+        "-m", "--max-iterations", 
+        help="Maximum number of iterations the causal discovery will perform", 
+        type=int, 
+        required=False
+    )
+    parser_discover.add_argument(
+        "-M", "--max-iterations-without-improvement", 
+        help="Maximum number of iterations the causal discovery will perform without improvement", 
+        type=int, 
+        required=False
+    )
     parser_discover.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
 
     args = main_parser.parse_args(args)

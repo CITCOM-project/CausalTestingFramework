@@ -1,5 +1,4 @@
 import unittest
-from unittest.mock import patch, MagicMock
 
 from causal_testing.discovery.hill_climber import simple_cycle, remove_cycles
 from causal_testing.specification.causal_dag import CausalDAG
@@ -24,54 +23,44 @@ class TestHillClimber(unittest.TestCase):
         cycle = simple_cycle(dag)
         self.assertEqual(set(cycle), set())
 
-    @patch('causal_testing.discovery.hill_climber.simple_cycle')
-    def test_remove_cycles_normal(self, mock_simple_cycle):
-        mock_dag = MagicMock()
-        mock_dag.nodes = ['A', 'B', 'C']
+    def test_remove_cycles_normal(self):
+        dag = CausalDAG()
+        dag.add_nodes_from(['A', 'B', 'C'])
+        dag.add_edges_from([("A", "B"), ("B", "C")])
+        super(CausalDAG, dag).add_edge("C", "A")
 
-        cycle_edges = [('A', 'B'), ('B', 'C'), ('C', 'A')]
-        mock_simple_cycle.side_effect = [cycle_edges, []]
-        
-        remove_cycles(mock_dag, included_edges=set())
-        assert mock_dag.remove_edge.call_count == 1
-        call_args = mock_dag.remove_edge.call_args[0]
-        assert call_args in cycle_edges
-        mock_dag.add_nodes_from.assert_called_once_with(['A', 'B', 'C'])
+        remove_cycles(dag, included_edges=set())
+        self.assertEqual(len(dag.edges()), 2)
 
-    @patch('causal_testing.discovery.hill_climber.simple_cycle')
-    def test_remove_cycles_respects_included_edges(self, mock_simple_cycle):
-        mock_dag = MagicMock()
-        mock_dag.nodes = ['A', 'B', 'C']
+    def test_remove_cycles_respects_included_edges(self):
+        dag = CausalDAG()
+        dag.add_nodes_from(['A', 'B', 'C'])
+        dag.add_edges_from([("A", "B"), ("B", "C")])
+        super(CausalDAG, dag).add_edge("C", "A")
         
-        cycle_edges = [('A', 'B'), ('B', 'C'), ('C', 'A')]
-        mock_simple_cycle.side_effect = [cycle_edges, []]
         included_edges = {('A', 'B'), ('B', 'C')}        
-        
-        remove_cycles(mock_dag, included_edges)
-        mock_dag.remove_edge.assert_called_once_with('C', 'A')
+        remove_cycles(dag, included_edges)
+        self.assertFalse(dag.has_edge("C", "A"))
 
-    @patch('causal_testing.discovery.hill_climber.simple_cycle')
-    def test_remove_cycles_no_cycles_present(self, mock_simple_cycle):
-        mock_dag = MagicMock()
-        mock_dag.nodes = ['A', 'B']
-        mock_simple_cycle.return_value = []
+    def test_remove_cycles_no_cycles_present(self):
+        dag = CausalDAG()
+        dag.add_nodes_from(['A', 'B'])
+        dag.add_edges_from([("A", "B")])
         
-        remove_cycles(mock_dag, included_edges=set())        
-        mock_dag.remove_edge.assert_not_called()
-        mock_dag.add_nodes_from.assert_called_once_with(['A', 'B'])
+        remove_cycles(dag, included_edges=set())        
+        self.assertEqual(len(dag.edges()), 1)
 
-    @patch('causal_testing.discovery.hill_climber.simple_cycle')
-    def test_remove_cycles_multiple_cycles(self, mock_simple_cycle):
-        mock_dag = MagicMock()
-        mock_dag.nodes = ['A', 'B', 'C', 'D']
-        
-        cycle_1 = [('A', 'B'), ('B', 'A')]
-        cycle_2 = [('C', 'D'), ('D', 'C')]
-        mock_simple_cycle.side_effect = [cycle_1, cycle_2, []]
-        
-        remove_cycles(mock_dag, included_edges=set())        
-        assert mock_dag.remove_edge.call_count == 2
-        mock_dag.add_nodes_from.assert_called_once_with(['A', 'B', 'C', 'D'])
+    def test_remove_cycles_multiple_cycles(self):
+        dag = CausalDAG()
+        dag.add_nodes_from(['A', 'B', 'C', 'D'])
+        dag.add_edges_from([("A", "B"), ("C", "D")])
+        super(CausalDAG, dag).add_edge("B", "A")
+        super(CausalDAG, dag).add_edge("D", "C")
+                
+        remove_cycles(dag, included_edges=set())        
+        self.assertEqual(len(dag.edges()), 2)
+        self.assertTrue(dag.has_edge("A", "B") or dag.has_edge("B", "A"))
+        self.assertTrue(dag.has_edge("C", "D") or dag.has_edge("D", "C"))
 
     def test_estimate_effect(self):
         # Test the estimate_effect function

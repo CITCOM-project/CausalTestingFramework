@@ -49,6 +49,8 @@ def main() -> None:
             include_edges_file=args.include_edges,
             exclude_edges_file=args.exclude_edges,
             fitness_function=evaluate_fitness_score if args.fitness_score else evaluate_fitness_tier,
+            max_iterations=args.max_iterations,
+            max_iterations_without_improvement=args.max_iterations_without_improvement
         )
         logging.info("Causal structure discovery completed successfully")
         return

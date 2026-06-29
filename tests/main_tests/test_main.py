@@ -618,6 +618,11 @@ class TestCausalTestingFramework(unittest.TestCase):
                     self.include_edges_path,
                     "--exclude-edges",
                     self.exclude_edges_path,
+                    "-s",
+                    "-m",
+                    "200",
+                    "-M",
+                    "15",
                 ],
             ):
                 main()
