@@ -266,7 +266,7 @@ def evolve_dag(
     individual.graph["fitness"] = fitness_values
     individual.graph["time"] = round(end_time - start_time)
     if output_file is not None:
-        nx.drawing.nx_agraph.write_dot(
+        nx.drawing.nx_pydot.write_dot(
             individual,
             output_file,
         )
