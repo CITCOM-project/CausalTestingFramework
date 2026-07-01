@@ -37,7 +37,7 @@ class LogisticRegressionEstimator(RegressionEstimator):
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
         coefficient of the treatment of interest.
 
-        :return: The odds ratio. Confidence intervals are not yet supported.
+        :return: The odds ratio with confidence intervals.
         """
         model = self.fit_model(self.df)
 

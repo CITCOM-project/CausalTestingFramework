@@ -16,6 +16,7 @@ from causal_testing.main import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.testing.causal_effect import Positive, Negative
 from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
 
 warnings.simplefilter("ignore")
@@ -53,18 +54,20 @@ def remove_cycles(causal_dag: CausalDAG, included_edges: set):
     causal_dag.add_nodes_from(nodes)
 
 
-def estimated_effect(result: CausalTestResult, treatment_variable: str):
+def effect_direction(result: CausalTestResult) -> str:
     """
     Check whether the estimated causal effect is negative or positive.
     :param result: The causal test result object.
-    :param treatment_variable: The name of the treatment variable of the causal test.
     :returns: Whether the estimated causal test is positive or negative (or no effect).
     """
-    if result.ci_low[treatment_variable] < result.ci_high[treatment_variable] < 1:
-        return "negative"
-    if 1 < result.ci_low[treatment_variable] < result.ci_high[treatment_variable]:
-        return "positive"
-    return "no effect"
+    if pd.api.types.is_numeric_dtype(
+        result.estimator.df[result.estimator.base_test_case.treatment_variable.name]
+    ) and pd.api.types.is_numeric_dtype(result.estimator.df[result.estimator.base_test_case.outcome_variable.name]):
+        if Negative().apply(result):
+            return "negative"
+        if Positive().apply(result):
+            return "positive"
+    return None
 
 
 def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame) -> list[tuple[str, str]]:
@@ -110,9 +113,7 @@ def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame) -> list[tuple[str, s
                     "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                     "treatment": test_case.base_test_case.treatment_variable.name,
                     "outcome": test_case.base_test_case.outcome_variable.name,
-                    "effect": estimated_effect(
-                        result.effect_estimate, test_case.base_test_case.treatment_variable.name
-                    ),
+                    "effect": effect_direction(result),
                 }
             )
 
@@ -203,7 +204,7 @@ def evolve_dag(
     exclude_edges_file: str = None,
     fitness_function: callable = evaluate_fitness_tier,
     max_iterations: int = None,
-    max_iterations_without_improvement: int = None
+    max_iterations_without_improvement: int = None,
 ) -> CausalDAG:
     """
     Evolve a causal DAG for a given dataset.
