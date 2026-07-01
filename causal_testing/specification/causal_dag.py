@@ -172,17 +172,18 @@ class CausalDAG(nx.DiGraph):
                 raise ValueError(f"Instrument {instrument} and outcome {outcome} share common causes")
         return True
 
-    def add_edge(self, u_of_edge: Node, v_of_edge: Node, **attr):
+    def add_edge(self, u_of_edge: Node, v_of_edge: Node, ignore_cycles: bool = False, **attr):
         """Add an edge to the causal DAG.
 
         Overrides the default networkx method to prevent users from adding a cycle.
 
-        :param u_of_edge: From node
-        :param v_of_edge: To node
+        :param u_of_edge: Origin node
+        :param v_of_edge: Destination node
+        :param ignore_cycles: Whether to ignore cycles that adding the new edge may have introduced.
         :param attr: Attributes
         """
         super().add_edge(u_of_edge, v_of_edge, **attr)
-        if not self.is_acyclic():
+        if not ignore_cycles and not self.is_acyclic():
             raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
 
     def cycle_nodes(self) -> list:
