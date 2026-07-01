@@ -70,10 +70,11 @@ def effect_direction(result: CausalTestResult) -> str:
     return None
 
 
-def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame) -> list[tuple[str, str]]:
+def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame):
     """
     Generate and evaluate causal test cases from the supplied CausalDAG and return a list of edges for which the
     corresponding causal test case failed.
+    These results are then assigned to a new attribute `test_results` within the individual for later reuse.
 
     :param causal_dag: The CausalDAG to evaluate.
     :param df: The data with which to evaluate the causal test cases.
@@ -117,10 +118,10 @@ def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame) -> list[tuple[str, s
                 }
             )
 
-    return pd.DataFrame(results)
+    causal_dag.test_results = pd.DataFrame(results)
 
 
-# TODO: Double check whether this method is actually necessary.
+# MF TODO: Double check whether this method is actually necessary.
 def normalised_counts(test_results: pd.DataFrame) -> dict:
     """
     Normalise the absolute numbers of pass/fail/error test outcomes.
@@ -157,10 +158,10 @@ def evaluate_fitness_tier(
     :returns: Tuple of the form (X, Y), where X is a triple containing the number of passing, failing, and error
               tests respectively, and Y is a list of failing edges.
     """
-    test_results = evaluate_tests(individual, df)
-    counts = normalised_counts(test_results)
+    evaluate_tests(individual, df)
+    counts = normalised_counts(individual.test_results)
 
-    problem_tests = test_results.query("result != 'pass'")
+    problem_tests = individual.test_results.query("result != 'pass'")
     problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
     problem_edges.extend(
         problem_tests.query("expected_effect == 'NoEffect'")[["outcome", "treatment"]].apply(tuple, axis=1).tolist()
@@ -182,10 +183,10 @@ def evaluate_fitness_score(
     :param df: The data with which to evaluate the causal tests.
     :returns: Tuple of the form (X, Y), where X is the fitness score, and Y is a list of failing edges.
     """
-    test_results = evaluate_tests(individual, df)
-    counts = normalised_counts(test_results)
+    evaluate_tests(individual, df)
+    counts = normalised_counts(individual.test_results)
 
-    problem_tests = test_results.query("result != 'pass'")
+    problem_tests = individual.test_results.query("result != 'pass'")
     problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
     problem_edges.extend(
         problem_tests.query("expected_effect == 'NoEffect'")[["outcome", "treatment"]].apply(tuple, axis=1).tolist()
@@ -194,6 +195,27 @@ def evaluate_fitness_score(
     new_fitness_values = counts.get("pass", 0) * 2 + counts.get("inestimable", 0) * 1
     print(" ", f"{new_fitness_values} / {sum(counts.values()) * 2}")
     return new_fitness_values, problem_edges
+
+
+def write_dot(individual: CausalDAG, output_file: str):
+    """
+    Write the given individual to the given output file.
+    :param individual: The causal DAG to output.
+    :param output_file: The name of the file to write to.
+    """
+    if hasattr(individual, "test_results"):
+        for _, test in individual.test_results.iterrows():
+            # TODO: Add failed independences as dotted?
+            if (test["treatment"], test["outcome"]) in individual.edges:
+                if test["result"] == "pass":
+                    individual[test["treatment"]][test["outcome"]]["color"] = "green"
+                elif test["result"] == "error":
+                    individual[test["treatment"]][test["outcome"]]["color"] = "yellow"
+                elif test["result"] == "failure":
+                    individual[test["treatment"]][test["outcome"]]["color"] = "red"
+                else:
+                    raise ValueError(f"Invalid test outcome {test['result']}")
+    nx.drawing.nx_pydot.write_dot(individual, output_file)
 
 
 def evolve_dag(
@@ -271,9 +293,7 @@ def evolve_dag(
     end_time = time.time()
     individual.graph["fitness"] = fitness_values
     individual.graph["time"] = round(end_time - start_time)
+
     if output_file is not None:
-        nx.drawing.nx_pydot.write_dot(
-            individual,
-            output_file,
-        )
+        write_dot(individual, output_file)
     return individual
