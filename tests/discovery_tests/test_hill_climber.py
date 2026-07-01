@@ -3,6 +3,7 @@ import unittest
 from causal_testing.discovery.hill_climber import simple_cycle, remove_cycles
 from causal_testing.specification.causal_dag import CausalDAG
 
+
 class TestHillClimber(unittest.TestCase):
 
     def setUp(self):
@@ -11,53 +12,53 @@ class TestHillClimber(unittest.TestCase):
     def test_simple_cycle_normal(self):
         dag = CausalDAG()
         dag.add_edges_from([("A", "B"), ("B", "C")])
-        super(CausalDAG, dag).add_edge("C", "A")
-        
+        dag.add_edge("C", "A", ignore_cycles=True)
+
         cycle = simple_cycle(dag)
         self.assertEqual(set(cycle), {("A", "B"), ("B", "C"), ("C", "A")})
 
     def test_simple_cycle_no_cycles(self):
         dag = CausalDAG()
         dag.add_edges_from([("A", "B"), ("B", "C")])
-        
+
         cycle = simple_cycle(dag)
         self.assertEqual(set(cycle), set())
 
     def test_remove_cycles_normal(self):
         dag = CausalDAG()
-        dag.add_nodes_from(['A', 'B', 'C'])
+        dag.add_nodes_from(["A", "B", "C"])
         dag.add_edges_from([("A", "B"), ("B", "C")])
-        super(CausalDAG, dag).add_edge("C", "A")
+        dag.add_edge("C", "A", ignore_cycles=True)
 
         remove_cycles(dag, included_edges=set())
         self.assertEqual(len(dag.edges()), 2)
 
     def test_remove_cycles_respects_included_edges(self):
         dag = CausalDAG()
-        dag.add_nodes_from(['A', 'B', 'C'])
+        dag.add_nodes_from(["A", "B", "C"])
         dag.add_edges_from([("A", "B"), ("B", "C")])
-        super(CausalDAG, dag).add_edge("C", "A")
-        
-        included_edges = {('A', 'B'), ('B', 'C')}        
+        dag.add_edge("C", "A", ignore_cycles=True)
+
+        included_edges = {("A", "B"), ("B", "C")}
         remove_cycles(dag, included_edges)
         self.assertFalse(dag.has_edge("C", "A"))
 
     def test_remove_cycles_no_cycles_present(self):
         dag = CausalDAG()
-        dag.add_nodes_from(['A', 'B'])
+        dag.add_nodes_from(["A", "B"])
         dag.add_edges_from([("A", "B")])
-        
-        remove_cycles(dag, included_edges=set())        
+
+        remove_cycles(dag, included_edges=set())
         self.assertEqual(len(dag.edges()), 1)
 
     def test_remove_cycles_multiple_cycles(self):
         dag = CausalDAG()
-        dag.add_nodes_from(['A', 'B', 'C', 'D'])
+        dag.add_nodes_from(["A", "B", "C", "D"])
         dag.add_edges_from([("A", "B"), ("C", "D")])
-        super(CausalDAG, dag).add_edge("B", "A")
-        super(CausalDAG, dag).add_edge("D", "C")
-                
-        remove_cycles(dag, included_edges=set())        
+        dag.add_edge("B", "A", ignore_cycles=True)
+        dag.add_edge("D", "C", ignore_cycles=True)
+
+        remove_cycles(dag, included_edges=set())
         self.assertEqual(len(dag.edges()), 2)
         self.assertTrue(dag.has_edge("A", "B") or dag.has_edge("B", "A"))
         self.assertTrue(dag.has_edge("C", "D") or dag.has_edge("D", "C"))

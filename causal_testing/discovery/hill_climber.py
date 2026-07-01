@@ -2,13 +2,9 @@
 This module implements a hill climbing algorithm to optimise causal DAGs based on the tests that pass/fail.
 """
 
-import json
-import os
 import random
-import sys
 import time
 import warnings
-from collections import Counter
 from itertools import permutations
 
 import networkx as nx
@@ -27,10 +23,11 @@ warnings.simplefilter("ignore")
 # lexicographical order (max pass, minimise failure, minimise unknown)
 #  e.g. (X pass, Y fail, Z+1 unknown) is better than (X pass, Y+1 fail, Z unknown)
 
+
 def simple_cycle(causal_dag: CausalDAG):
     """
     Find a cycle in the given CausalDAG, if one exists, returns the first found.
-    
+
     :param causal_dag: The CausalDAG to check for cycles.
     :returns: A list of edges in the cycle, or an empty list if there are no cycles.
     """
@@ -49,7 +46,8 @@ def remove_cycles(causal_dag: CausalDAG, included_edges: set):
     cycle = simple_cycle(causal_dag)
     while cycle:
         idx = random.choice(range(len(cycle)))
-        while cycle[idx] in included_edges: idx = (idx + 1) % len(cycle)
+        while cycle[idx] in included_edges:
+            idx = (idx + 1) % len(cycle)
         causal_dag.remove_edge(cycle[idx][0], cycle[idx][1])
         cycle = simple_cycle(causal_dag)
     causal_dag.add_nodes_from(nodes)
@@ -146,12 +144,13 @@ def normalised_counts(test_results: pd.DataFrame) -> dict:
 
 
 def evaluate_fitness_tier(
-    individual: CausalDAG, df: pd.DataFrame,
+    individual: CausalDAG,
+    df: pd.DataFrame,
 ) -> tuple[tuple[float, float, float], list[tuple[str, str]]]:
     """
-    Evaluate the fitness of a given causal DAG by evaluating the corresponding test cases using a tier based 
+    Evaluate the fitness of a given causal DAG by evaluating the corresponding test cases using a tier based
     fitness metric.
-    
+
     :param individual: The candidate individual to evaluate.
     :param df: The data with which to evaluate the causal tests.
     :returns: Tuple of the form (X, Y), where X is a triple containing the number of passing, failing, and error
@@ -197,10 +196,10 @@ def evaluate_fitness_score(
 
 
 def evolve_dag(
-    df: pd.DataFrame, 
-    random_seed: int = 0, 
-    output_file: str = None, 
-    include_edges_file: str = None, 
+    df: pd.DataFrame,
+    random_seed: int = 0,
+    output_file: str = None,
+    include_edges_file: str = None,
     exclude_edges_file: str = None,
     fitness_function: callable = evaluate_fitness_tier,
     max_iterations: int = None,
@@ -240,8 +239,9 @@ def evolve_dag(
         iterations -= 1
         if fitness_function == evaluate_fitness_tier:
             print(
-                iterations, f"({fitness_values[0]}, {-fitness_values[1]}, {-fitness_values[2]})", 
-                iterations_without_improvement
+                iterations,
+                f"({fitness_values[0]}, {-fitness_values[1]}, {-fitness_values[2]})",
+                iterations_without_improvement,
             )
         else:
             print(iterations, f"({fitness_values})", iterations_without_improvement)
@@ -255,7 +255,7 @@ def evolve_dag(
                 new_individual.remove_edge(origin, dest)
             elif not new_individual.has_edge(origin, dest) and (origin, dest) not in excluded_edges:
                 # Want to bypass the cycle check of CausalDAG as we remove the cycles afterwards
-                super(CausalDAG, new_individual).add_edge(origin, dest)
+                new_individual.add_edge(origin, dest, ignore_cycles=True)
         remove_cycles(new_individual, included_edges)
         new_fitness_values, new_problem_edges = fitness_function(new_individual, df)
 
