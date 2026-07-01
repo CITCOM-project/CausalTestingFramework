@@ -202,8 +202,8 @@ def evolve_dag(
     include_edges_file: str = None,
     exclude_edges_file: str = None,
     fitness_function: callable = evaluate_fitness_tier,
-    max_iterations: int = 100,
-    max_iterations_without_improvement: int = 10,
+    max_iterations: int = None,
+    max_iterations_without_improvement: int = None
 ) -> CausalDAG:
     """
     Evolve a causal DAG for a given dataset.
@@ -226,6 +226,11 @@ def evolve_dag(
     individual.add_edges_from(possible_edges)
     remove_cycles(individual, included_edges)
     fitness_values, problem_edges = fitness_function(individual, df)
+
+    if max_iterations is None:
+        max_iterations = 100
+    if max_iterations_without_improvement is None:
+        max_iterations_without_improvement = 20
 
     iterations = max_iterations
     iterations_without_improvement = 0
