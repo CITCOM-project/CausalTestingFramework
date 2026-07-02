@@ -193,7 +193,7 @@ def evaluate_fitness_score(
     evaluate_tests(individual, df)
     counts = normalised_counts(individual.test_results)
 
-    problem_tests = individual.test_results.query("result != TestResult.PASS")
+    problem_tests = individual.test_results.loc[individual.test_results["result"] != TestResult.PASS]
     problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
     problem_edges.extend(
         problem_tests.query("expected_effect == 'NoEffect'")[["outcome", "treatment"]].apply(tuple, axis=1).tolist()
