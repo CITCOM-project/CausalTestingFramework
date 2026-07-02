@@ -4,6 +4,7 @@ This module implements a hill climbing algorithm to optimise causal DAGs based o
 
 import random
 import time
+import re
 import warnings
 from itertools import permutations
 from enum import Enum
@@ -240,6 +241,35 @@ def write_dot(individual: CausalDAG, output_file: str):
     nx.drawing.nx_pydot.write_dot(individual, output_file)
 
 
+def match_node(node_name: str, pattern: str) -> bool:
+    """
+    Check whether a given node name matches a given pattern.
+    :param node_name: The name of the node to check.
+    :param pattern: The pattern to check against.
+    :returns: True if the node name matches the pattern, False otherwise.
+    """
+    clean_pattern = pattern.strip('\'"')
+
+    try:
+        return bool(re.fullmatch(clean_pattern, node_name))
+    except re.error:
+        return False
+
+
+def is_match(u, v, patterns):
+    """
+    Check whether a given edge matches a given pattern.
+    :param u: The origin node of the edge.
+    :param v: The destination node of the edge.
+    :param patterns: A list of tuples containing the patterns to check against.
+    :returns: True if the edge matches the pattern, False otherwise.
+    """    
+    for pat_u, pat_v in patterns:
+        if match_node(u, pat_u) and match_node(v, pat_v):
+            return True
+    return False 
+
+
 def evolve_dag(
     df: pd.DataFrame,
     random_seed: int = 0,
@@ -260,10 +290,25 @@ def evolve_dag(
     :returns: The inferred causal DAG.
     """
     random.seed(random_seed)
+        
+    excluded_ptns = list(nx.nx_pydot.read_dot(exclude_edges_file).edges()) if exclude_edges_file is not None else []
+    included_ptns = list(nx.nx_pydot.read_dot(include_edges_file).edges()) if include_edges_file is not None else []
+    possible_edges = []
+    included_edges = []
+    excluded_edges = []
 
-    included_edges = set(nx.nx_pydot.read_dot(include_edges_file).edges()) if include_edges_file is not None else set()
-    excluded_edges = set(nx.nx_pydot.read_dot(exclude_edges_file).edges()) if exclude_edges_file is not None else set()
-    possible_edges = sorted(list((u, v) for u, v in permutations(df.columns, 2) if (u, v) not in excluded_edges))
+    for u, v in permutations(df.columns, 2):
+        if is_match(u, v, excluded_ptns):
+            excluded_edges.append((u, v))
+        else:
+            possible_edges.append((u, v))
+            
+        if included_ptns and is_match(u, v, included_ptns):
+            included_edges.append((u, v))
+
+    possible_edges.sort()
+    included_edges.sort()
+    excluded_edges.sort()
 
     start_time = time.time()
     individual = CausalDAG()
@@ -311,6 +356,11 @@ def evolve_dag(
             iterations_without_improvement = 0
         else:
             iterations_without_improvement += 1
+
+    if iterations == 0:
+        print("Causal discovery finished early due to reaching maximum iterations.")
+    elif iterations_without_improvement >= max_iterations_without_improvement:
+        print("Causal discovery finished early due to reaching maximum iterations without improvement.")
 
     end_time = time.time()
     individual.graph["fitness"] = fitness_values
