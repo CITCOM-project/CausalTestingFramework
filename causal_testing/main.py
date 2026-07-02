@@ -68,7 +68,6 @@ class CausalTestingPaths:
         self.include_edges_path = Path(include_edges_path) if include_edges_path else None
         self.exclude_edges_path = Path(exclude_edges_path) if exclude_edges_path else None
 
-
     def validate_paths(self) -> None:
         """
         Validate existence of all input paths and writability of output path.
@@ -90,10 +89,10 @@ class CausalTestingPaths:
             self.output_path.parent.mkdir(parents=True)
 
         if self.include_edges_path and not self.include_edges_path.exists():
-                raise FileNotFoundError(f"Data file not found: {self.include_edges_path}")
+            raise FileNotFoundError(f"Data file not found: {self.include_edges_path}")
 
         if self.exclude_edges_path and not self.exclude_edges_path.exists():
-                raise FileNotFoundError(f"Data file not found: {self.exclude_edges_path}")
+            raise FileNotFoundError(f"Data file not found: {self.exclude_edges_path}")
 
 
 class CausalTestingFramework:
@@ -581,9 +580,16 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         help="Run tests in batches of the specified size (default: 0, which means no batching)",
     )
 
-    #Discovery
+    # Discovery
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
     parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
+    parser_discover.add_argument(
+        "-V",
+        "--variables",
+        help="The subset of variables from the data to consider. Defaults to all.",
+        nargs="*",
+        default=[],
+    )
     parser_discover.add_argument("-o", "--output", help="Path for output DAG file (.dot)", required=True)
     parser_discover.add_argument(
         "-i", "--include-edges", help="Path to file containing edges to include", required=False
@@ -595,16 +601,18 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "-s", "--fitness-score", help="Use fitness score instead of tiered fitness", action="store_true", default=False
     )
     parser_discover.add_argument(
-        "-m", "--max-iterations", 
-        help="Maximum number of iterations the causal discovery will perform", 
-        type=int, 
-        required=False
+        "-m",
+        "--max-iterations",
+        help="Maximum number of iterations the causal discovery will perform",
+        type=int,
+        required=False,
     )
     parser_discover.add_argument(
-        "-M", "--max-iterations-without-improvement", 
-        help="Maximum number of iterations the causal discovery will perform without improvement", 
-        type=int, 
-        required=False
+        "-M",
+        "--max-iterations-without-improvement",
+        help="Maximum number of iterations the causal discovery will perform without improvement",
+        type=int,
+        required=False,
     )
     parser_discover.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
 
