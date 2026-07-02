@@ -43,7 +43,9 @@ def main() -> None:
 
     if args.command == Command.DISCOVER:
         logging.info("Discovering causal structure")
-        df = pd.concat([pd.read_csv(path) for path in args.data_paths])
+        # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
+        # Otherwise you end up with duplicate indices, which causes problems further down the line
+        df = pd.concat([pd.read_csv(path) for path in args.data_paths]).reset_index()
         if args.variables:
             df = df[args.variables]
         evolve_dag(
