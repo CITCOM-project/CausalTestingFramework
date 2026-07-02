@@ -17,7 +17,7 @@ import nbformat
 from nbclient.client import NotebookClient
 
 NOTEBOOK_DIR = pathlib.Path(__file__).parent.parent.parent / "docs" / "source" / "tutorials"
-NOTEBOOK_FILES = list(NOTEBOOK_DIR.rglob("[!.]*/*.ipynb"))
+NOTEBOOK_FILES = sorted(list(NOTEBOOK_DIR.rglob("[!.]*/*.ipynb")))
 
 
 @pytest.mark.parametrize("notebook_path", NOTEBOOK_FILES, ids=lambda p: p.name)

@@ -67,3 +67,5 @@ temp/
 
 # log files
 *.log
+
+causal_test_results.json
