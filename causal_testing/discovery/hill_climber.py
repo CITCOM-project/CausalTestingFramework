@@ -6,6 +6,7 @@ import random
 import time
 import warnings
 from itertools import permutations
+from enum import Enum
 
 import networkx as nx
 import rustworkx as rx
@@ -18,6 +19,8 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.testing.causal_effect import Positive, Negative
 from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
+
+TestResult = Enum("TestResult", [("PASS", "pass"), ("FAIL", "fail"), ("INESTIMABLE", "inestimable")])
 
 warnings.simplefilter("ignore")
 
@@ -101,7 +104,7 @@ def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame):
         if result.effect_estimate is None:
             results.append(
                 {
-                    "result": "error",
+                    "result": TestResult.INESTIMABLE,
                     "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                     "treatment": test_case.base_test_case.treatment_variable.name,
                     "outcome": test_case.base_test_case.outcome_variable.name,
@@ -110,7 +113,7 @@ def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame):
         else:
             results.append(
                 {
-                    "result": "pass" if test_case.expected_causal_effect.apply(result) else "failure",
+                    "result": TestResult.PASS if test_case.expected_causal_effect.apply(result) else TestResult.FAIL,
                     "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                     "treatment": test_case.base_test_case.treatment_variable.name,
                     "outcome": test_case.base_test_case.outcome_variable.name,
@@ -124,10 +127,10 @@ def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame):
 # MF TODO: Double check whether this method is actually necessary.
 def normalised_counts(test_results: pd.DataFrame) -> dict:
     """
-    Normalise the absolute numbers of pass/fail/error test outcomes.
+    Normalise the absolute numbers of pass/fail/inestimable test outcomes.
     MF Note 2026-06-15: I can't actually remember what this method was supposed to do. I need to double check it.
-    :param test_results: Dataframe containing the raw pass/fail/error outcome of each test case.
-    :returns: Dictionary containing the number of pass/fail/error outcomes, normalised by dividing by the total number
+    :param test_results: Dataframe containing the raw pass/fail/inestimable outcome of each test case.
+    :returns: Dictionary containing the number of pass/fail/inestimable outcomes, normalised by dividing by the total number
               of each.
     """
     counts = pd.concat(
@@ -137,10 +140,10 @@ def normalised_counts(test_results: pd.DataFrame) -> dict:
         ],
         axis=1,
     )
-    for col in ["pass", "failure", "error"]:
+    for col in TestResult:
         if col not in counts.columns:
             counts[col] = 0
-    counts = counts.groupby(["treatment", "outcome"]).sum().reset_index()[["pass", "failure", "error"]]
+    counts = counts.groupby(["treatment", "outcome"]).sum().reset_index()[list(TestResult)]
     counts = counts.apply(lambda col: col / counts.sum(axis=1))
     return counts.sum(axis=0).to_dict()
 
@@ -155,19 +158,23 @@ def evaluate_fitness_tier(
 
     :param individual: The candidate individual to evaluate.
     :param df: The data with which to evaluate the causal tests.
-    :returns: Tuple of the form (X, Y), where X is a triple containing the number of passing, failing, and error
+    :returns: Tuple of the form (X, Y), where X is a triple containing the number of passing, failing, and inestimable
               tests respectively, and Y is a list of failing edges.
     """
     evaluate_tests(individual, df)
     counts = normalised_counts(individual.test_results)
 
-    problem_tests = individual.test_results.query("result != 'pass'")
+    problem_tests = individual.test_results.loc[individual.test_results["result"] != TestResult.PASS]
     problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
     problem_edges.extend(
         problem_tests.query("expected_effect == 'NoEffect'")[["outcome", "treatment"]].apply(tuple, axis=1).tolist()
     )
 
-    fitness_values = (counts.get("pass", 0), -counts.get("failure", 0), -counts.get("error", 0))
+    fitness_values = (
+        counts.get(TestResult.PASS, 0),
+        -counts.get(TestResult.FAIL, 0),
+        -counts.get(TestResult.INESTIMABLE, 0),
+    )
     print(f"({fitness_values[0]}, {-fitness_values[1]}, {-fitness_values[2]})")
     return fitness_values, problem_edges
 
@@ -186,13 +193,13 @@ def evaluate_fitness_score(
     evaluate_tests(individual, df)
     counts = normalised_counts(individual.test_results)
 
-    problem_tests = individual.test_results.query("result != 'pass'")
+    problem_tests = individual.test_results.query("result != TestResult.PASS")
     problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
     problem_edges.extend(
         problem_tests.query("expected_effect == 'NoEffect'")[["outcome", "treatment"]].apply(tuple, axis=1).tolist()
     )
 
-    new_fitness_values = counts.get("pass", 0) * 2 + counts.get("inestimable", 0) * 1
+    new_fitness_values = counts.get(TestResult.PASS, 0) * 2 + counts.get(TestResult.INESTIMABLE, 0) * 1
     print(" ", f"{new_fitness_values} / {sum(counts.values()) * 2}")
     return new_fitness_values, problem_edges
 
@@ -204,17 +211,30 @@ def write_dot(individual: CausalDAG, output_file: str):
     :param output_file: The name of the file to write to.
     """
     if hasattr(individual, "test_results"):
+        print(individual.test_results)
         for _, test in individual.test_results.iterrows():
-            # TODO: Add failed independences as dotted?
             if (test["treatment"], test["outcome"]) in individual.edges:
-                if test["result"] == "pass":
+                if test["result"] == TestResult.PASS:
                     individual[test["treatment"]][test["outcome"]]["color"] = "green"
-                elif test["result"] == "error":
-                    individual[test["treatment"]][test["outcome"]]["color"] = "yellow"
-                elif test["result"] == "failure":
+                elif test["result"] == TestResult.INESTIMABLE:
+                    individual[test["treatment"]][test["outcome"]]["color"] = "orange"
+                elif test["result"] == TestResult.FAIL:
                     individual[test["treatment"]][test["outcome"]]["color"] = "red"
                 else:
                     raise ValueError(f"Invalid test outcome {test['result']}")
+            else:
+                individual.add_edge(test["treatment"], test["outcome"], ignore_cycles=True)
+                individual[test["treatment"]][test["outcome"]]["style"] = "dashed"
+                if test["result"] == TestResult.PASS:
+                    individual[test["treatment"]][test["outcome"]]["style"] = "invis"
+                    individual[test["treatment"]][test["outcome"]]["constraint"] = False
+                elif test["result"] == TestResult.INESTIMABLE:
+                    individual[test["treatment"]][test["outcome"]]["color"] = "orange"
+                elif test["result"] == TestResult.FAIL:
+                    individual[test["treatment"]][test["outcome"]]["color"] = "red"
+                else:
+                    raise ValueError(f"Invalid test outcome {test['result']}")
+
     nx.drawing.nx_pydot.write_dot(individual, output_file)
 
 

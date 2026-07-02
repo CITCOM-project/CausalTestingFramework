@@ -43,14 +43,17 @@ def main() -> None:
 
     if args.command == Command.DISCOVER:
         logging.info("Discovering causal structure")
+        df = pd.concat([pd.read_csv(path) for path in args.data_paths])
+        if args.variables:
+            df = df[args.variables]
         evolve_dag(
-            df=pd.concat([pd.read_csv(path) for path in args.data_paths]),
+            df=df,
             output_file=args.output,
             include_edges_file=args.include_edges,
             exclude_edges_file=args.exclude_edges,
             fitness_function=evaluate_fitness_score if args.fitness_score else evaluate_fitness_tier,
             max_iterations=args.max_iterations,
-            max_iterations_without_improvement=args.max_iterations_without_improvement
+            max_iterations_without_improvement=args.max_iterations_without_improvement,
         )
         logging.info("Causal structure discovery completed successfully")
         return
