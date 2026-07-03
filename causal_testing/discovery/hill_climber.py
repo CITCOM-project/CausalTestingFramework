@@ -21,7 +21,7 @@ from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.testing.causal_effect import Positive, Negative
 from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
 
-TestResult = Enum("TestResult", [("PASS", "pass"), ("FAIL", "fail"), ("INESTIMABLE", "inestimable")])
+TestResult = Enum("TestResult", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
 
 warnings.simplefilter("ignore")
 
@@ -125,14 +125,11 @@ def evaluate_tests(causal_dag: CausalDAG, df: pd.DataFrame):
     causal_dag.test_results = pd.DataFrame(results)
 
 
-# MF TODO: Double check whether this method is actually necessary.
-def normalised_counts(test_results: pd.DataFrame) -> dict:
+def sum_test_outcomes(test_results: pd.DataFrame) -> dict:
     """
-    Normalise the absolute numbers of pass/fail/inestimable test outcomes.
-    MF Note 2026-06-15: I can't actually remember what this method was supposed to do. I need to double check it.
+    Aggregate the number of passing, failing, and inestimable tests
     :param test_results: Dataframe containing the raw pass/fail/inestimable outcome of each test case.
-    :returns: Dictionary containing the number of pass/fail/inestimable outcomes, normalised by dividing by the total number
-              of each.
+    :returns: Dictionary containing the number of pass/fail/inestimable outcomes.
     """
     counts = pd.concat(
         [
@@ -141,10 +138,15 @@ def normalised_counts(test_results: pd.DataFrame) -> dict:
         ],
         axis=1,
     )
+    # Ensure every column is initialised - Test outcomes that never occurred won't be in the dataframe otherwise
     for col in TestResult:
         if col not in counts.columns:
             counts[col] = 0
     counts = counts.groupby(["treatment", "outcome"]).sum().reset_index()[list(TestResult)]
+    # The below line normalises by the number of tests *for each edge*
+    # Independence tests X _||_ Y get two tests (X _||_ Y and Y _||_ X) because we don't know which way the causality
+    # flows. We need to normalise this (e.g. if X _||_ Y and Y _||_ X both pass, then the score should be 1)
+    # otherwise we end up unintentionally optimising for more independences.
     counts = counts.apply(lambda col: col / counts.sum(axis=1))
     return counts.sum(axis=0).to_dict()
 
@@ -163,7 +165,7 @@ def evaluate_fitness_tier(
               tests respectively, and Y is a list of failing edges.
     """
     evaluate_tests(individual, df)
-    counts = normalised_counts(individual.test_results)
+    counts = sum_test_outcomes(individual.test_results)
 
     problem_tests = individual.test_results.loc[individual.test_results["result"] != TestResult.PASS]
     problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
@@ -192,7 +194,7 @@ def evaluate_fitness_score(
     :returns: Tuple of the form (X, Y), where X is the fitness score, and Y is a list of failing edges.
     """
     evaluate_tests(individual, df)
-    counts = normalised_counts(individual.test_results)
+    counts = sum_test_outcomes(individual.test_results)
 
     problem_tests = individual.test_results.loc[individual.test_results["result"] != TestResult.PASS]
     problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
