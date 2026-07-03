@@ -81,6 +81,10 @@ Positive = "causal_testing.testing.causal_effect:Positive"
 Negative = "causal_testing.testing.causal_effect:Negative"
 ExactValue = "causal_testing.testing.causal_effect:ExactValue"
 
+[project.entry-points."discovery"]
+HillClimberDiscovery = "causal_testing.discovery.hill_climber_discovery:HillClimberDiscovery"
+NSGADiscovery = "causal_testing.discovery.nsga_discovery:NSGADiscovery"
+
 [tool.setuptools.packages]
 find = {}
 

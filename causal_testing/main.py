@@ -584,6 +584,12 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
     parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
     parser_discover.add_argument(
+        "-t",
+        "--technique",
+        help="The name of the technique to use. Currently supported are 'HillClimberDiscovery' and 'NSGADiscovery'",
+        required=True,
+    )
+    parser_discover.add_argument(
         "-V",
         "--variables",
         help="The subset of variables from the data to consider. Defaults to all.",
@@ -601,18 +607,10 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "-s", "--fitness-score", help="Use fitness score instead of tiered fitness", action="store_true", default=False
     )
     parser_discover.add_argument(
-        "-m",
-        "--max-iterations",
-        help="Maximum number of iterations the causal discovery will perform",
-        type=int,
-        required=False,
-    )
-    parser_discover.add_argument(
-        "-M",
-        "--max-iterations-without-improvement",
-        help="Maximum number of iterations the causal discovery will perform without improvement",
-        type=int,
-        required=False,
+        "--technique-kwargs",
+        help="Keywords for the discovery technique. These should be specified as `arg1=value1 arg2=value2...`.",
+        nargs="*",
+        default=[],
     )
     parser_discover.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
 
