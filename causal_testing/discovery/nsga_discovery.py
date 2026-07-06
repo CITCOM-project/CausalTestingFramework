@@ -16,13 +16,13 @@ class NSGADiscovery(Discovery):
         self,
         df: pd.DataFrame,
         random_seed: int = 0,
-        include_edges: str = None,
-        exclude_edges: str = None,
+        included_edges: str = None,
+        excluded_edges: str = None,
         max_iterations: int = 100,
         num_parents_mating=2,
         population_size=5,  # Population size
     ):
-        super().__init__(df, random_seed, include_edges, exclude_edges)
+        super().__init__(df=df, random_seed=random_seed, included_edges=included_edges, excluded_edges=excluded_edges)
         self.max_iterations = int(max_iterations)
         self.num_parents_mating = num_parents_mating
         self.sol_per_pop = population_size
