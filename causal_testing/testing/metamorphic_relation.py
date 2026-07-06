@@ -171,11 +171,13 @@ def generate_metamorphic_relation(
                 metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), list(adj_sets[0])))
 
         # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
-        # Only make one MR since V _||_ U == U _||_ V
         else:
-            adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
-            if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0])))
+            adj_sets1 = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
+            adj_sets2 = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
+            if adj_sets1:
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets1[0])))
+            if adj_sets2:
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), list(adj_sets2[0])))
 
     # Create a ShouldCause relation for each edge (u, v) or (v, u)
     elif (u, v) in dag.edges:

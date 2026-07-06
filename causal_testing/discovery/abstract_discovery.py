@@ -63,7 +63,7 @@ def is_match(u: str, v: str, patterns: list[str]):
     :param patterns: A list of tuples containing the patterns to check against.
     :returns: True if the edge matches the pattern, False otherwise.
     """
-    return any(re.fullmatch(u, pat_u) and re.fullmatch(v, pat_v) for pat_u, pat_v in patterns)
+    return any(re.fullmatch(pat_u, u) and re.fullmatch(pat_v, v) for pat_u, pat_v in patterns)
 
 
 class Discovery(ABC):
@@ -75,37 +75,37 @@ class Discovery(ABC):
         self,
         df: pd.DataFrame,
         random_seed: int = 0,
-        excluded_ptns: str = None,
-        included_ptns: str = None,
+        excluded_edges: str = None,
+        included_edges: str = None,
     ):
+
         random.seed(random_seed)
         self.df = df
         self.random_seed = random_seed
 
-        possible_edges = []
-        included_edges = []
-        excluded_edges = []
+        self.possible_edges = []
+        self.included_edges = []
+        self.excluded_edges = []
 
         for u, v in permutations(df.columns, 2):
-            if is_match(u, v, excluded_ptns):
-                excluded_edges.append((u, v))
+            if excluded_edges and is_match(u, v, excluded_edges):
+                self.excluded_edges.append((u, v))
             else:
-                possible_edges.append((u, v))
+                self.possible_edges.append((u, v))
 
-            if included_ptns and is_match(u, v, included_ptns):
-                included_edges.append((u, v))
+            if included_edges and is_match(u, v, included_edges):
+                self.included_edges.append((u, v))
 
-        initial_dag = CausalDAG()
-        initial_dag.add_edges_from(included_edges)
-        if not initial_dag.is_acyclic():
-            raise ValueError(
-                "Specified included edges include a cycle, making it impossible to infer a DAG. "
-                "Please resolve this and try again."
-            )
+        if self.included_edges:
+            # Check to make sure that the included edges don't specify a cycle
+            initial_dag = CausalDAG()
+            initial_dag.add_edges_from(self.included_edges)
 
-        self.possible_edges = sorted(possible_edges)
-        self.included_edges = sorted(included_edges)
-        self.excluded_edges = sorted(excluded_edges)
+            if not initial_dag.is_acyclic():
+                raise ValueError(
+                    "Specified included edges include a cycle, making it impossible to infer a DAG. "
+                    "Please resolve this and try again."
+                )
 
     @abstractmethod
     def discover(self) -> CausalDAG:
@@ -140,7 +140,6 @@ class Discovery(ABC):
         :param output_file: The name of the file to write to.
         """
         if hasattr(individual, "test_results"):
-            print(individual.test_results)
             for _, test in individual.test_results.iterrows():
                 if (test["treatment"], test["outcome"]) in individual.edges:
                     if test["result"] == TestResult.PASS:
@@ -192,6 +191,9 @@ class Discovery(ABC):
                 ]
             }
         )
+        for test_case in ctf.test_cases:
+            print(test_case)
+
         results = []
 
         for test_case, result in zip(ctf.test_cases, ctf.run_tests(silent=True)):
