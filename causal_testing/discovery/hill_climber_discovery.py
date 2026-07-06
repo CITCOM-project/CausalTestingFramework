@@ -8,8 +8,8 @@ import time
 import numpy as np
 import pandas as pd
 
-from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.discovery.abstract_discovery import Discovery, TestResult
+from causal_testing.specification.causal_dag import CausalDAG
 
 
 class HillClimberDiscovery(Discovery):
@@ -18,7 +18,7 @@ class HillClimberDiscovery(Discovery):
     Attempts to maximise the number of passing tests and minimise the number of failing tests.
     """
 
-    def __init__(  # pylint: disable=R0917
+    def __init__(
         self,
         df: pd.DataFrame,
         random_seed: int = 0,

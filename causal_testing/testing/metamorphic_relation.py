@@ -136,11 +136,16 @@ class ShouldNotCause(MetamorphicRelation):
         return formatted_str
 
 
-def min_adj_set(adj_sets):
+def min_adj_set(adj_sets: set[set[str]]) -> set[str]:
+    """
+    Given a nonempty set of adjustment sets, return the minimal one.
+    :param adj_sets: A nonempty set of adjustment sets.
+    :return: The minimal adjustment set (by alphabetical order if there are multiple sets of the same size).
+    """
     return sorted(list(map(lambda s: sorted(list(s)), adj_sets)))[0]
 
 
-def generate_metamorphic_relation(
+def generate_metamorphic_relation(  # pylint: disable=R0912
     node_pair: tuple[str, str], dag: CausalDAG, nodes_to_ignore: set = None
 ) -> MetamorphicRelation:
     """
@@ -260,7 +265,9 @@ def generate_causal_tests(
     causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)
 
     dag_nodes_to_test = [
-        node for node in causal_dag.nodes if nx.get_node_attributes(causal_dag, "test", default=True)[node]
+        node
+        for node in causal_dag.nodes
+        if nx.get_node_attributes(causal_dag, "test", default=True)[node]  # pylint: disable=E1123
     ]
 
     if not causal_dag.is_acyclic() and ignore_cycles:
