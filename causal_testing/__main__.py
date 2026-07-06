@@ -4,10 +4,11 @@ import json
 import logging
 import os
 import tempfile
-import pandas as pd
-from pathlib import Path
 from importlib.metadata import entry_points
+from pathlib import Path
+
 import networkx as nx
+import pandas as pd
 
 from causal_testing.testing.metamorphic_relation import generate_causal_tests
 
@@ -46,8 +47,8 @@ def main() -> None:
             if args.technique not in discover_map:
                 raise ValueError(
                     f"Unsupported technique {args.technique}. Supported: {sorted(discover_map)}. "
-                    "If you have implemented a custom technique, you will need to add this to your entrypoints via your "
-                    "pyproject.toml file."
+                    "If you have implemented a custom technique, you will need to add this to your entrypoints via "
+                    "your pyproject.toml file."
                 )
             kwargs = {}
             for argument in args.technique_kwargs:

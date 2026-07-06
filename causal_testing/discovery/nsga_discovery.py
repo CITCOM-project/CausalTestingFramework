@@ -1,9 +1,13 @@
-import numpy as np
-import pygad
-import pandas as pd
+"""
+This module implements a multiobjective discovery algorithm in terms of test outcomes.
+"""
 
-from causal_testing.specification.causal_dag import CausalDAG
+import numpy as np
+import pandas as pd
+import pygad
+
 from causal_testing.discovery.abstract_discovery import Discovery
+from causal_testing.specification.causal_dag import CausalDAG
 
 
 class NSGADiscovery(Discovery):
@@ -12,7 +16,7 @@ class NSGADiscovery(Discovery):
     Attempts to optimise the number of passing tests, where each possible relationship is a "feature".
     """
 
-    def __init__(  # pylint: disable=R0917
+    def __init__(
         self,
         df: pd.DataFrame,
         random_seed: int = 0,

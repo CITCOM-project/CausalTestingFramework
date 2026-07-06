@@ -1,3 +1,7 @@
+"""
+This module tests the Hill Climber Discovery algorithm.
+"""
+
 import unittest
 import pandas as pd
 from causal_testing.discovery.hill_climber_discovery import HillClimberDiscovery
