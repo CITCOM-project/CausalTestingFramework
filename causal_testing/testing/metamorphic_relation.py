@@ -136,6 +136,10 @@ class ShouldNotCause(MetamorphicRelation):
         return formatted_str
 
 
+def min_adj_set(adj_sets):
+    return sorted(list(map(lambda s: sorted(list(s)), adj_sets)))[0]
+
+
 def generate_metamorphic_relation(
     node_pair: tuple[str, str], dag: CausalDAG, nodes_to_ignore: set = None
 ) -> MetamorphicRelation:
@@ -162,13 +166,13 @@ def generate_metamorphic_relation(
         if u in nx.ancestors(dag, v):
             adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0])))
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), min_adj_set(adj_sets)))
 
         # Case 2: V --> ... --> U
         elif v in nx.ancestors(dag, u):
             adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), list(adj_sets[0])))
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), min_adj_set(adj_sets)))
 
         # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
         else:
@@ -183,11 +187,11 @@ def generate_metamorphic_relation(
     elif (u, v) in dag.edges:
         adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
         if adj_sets:
-            metamorphic_relations.append(ShouldCause(BaseTestCase(u, v), list(adj_sets[0])))
+            metamorphic_relations.append(ShouldCause(BaseTestCase(u, v), min_adj_set(adj_sets)))
     else:
         adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
         if adj_sets:
-            metamorphic_relations.append(ShouldCause(BaseTestCase(v, u), list(adj_sets[0])))
+            metamorphic_relations.append(ShouldCause(BaseTestCase(v, u), min_adj_set(adj_sets)))
     return metamorphic_relations
 
 
