@@ -609,6 +609,8 @@ class TestCausalTestingFramework(unittest.TestCase):
                 [
                     "causal_testing",
                     "discover",
+                    "--technique",
+                    "HillClimberDiscovery",
                     "--data-paths",
                     str(self.data_paths[0]),
                     str(self.data_paths[0]),
@@ -618,11 +620,12 @@ class TestCausalTestingFramework(unittest.TestCase):
                     self.include_edges_path,
                     "--exclude-edges",
                     self.exclude_edges_path,
-                    "-s",
-                    "-m",
-                    "200",
-                    "-M",
-                    "15",
+                    "--technique-kwargs",
+                    "max_iterations=10",
+                    "--variables",
+                    "test_input",
+                    "test_output",
+                    "--verbose",
                 ],
             ):
                 main()
