@@ -191,8 +191,6 @@ class Discovery(ABC):
                 ]
             }
         )
-        for test_case in ctf.test_cases:
-            print(test_case)
 
         results = []
 

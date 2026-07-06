@@ -22,12 +22,12 @@ class HillClimberDiscovery(Discovery):
         self,
         df: pd.DataFrame,
         random_seed: int = 0,
-        include_edges: str = None,
-        exclude_edges: str = None,
+        included_edges: str = None,
+        excluded_edges: str = None,
         max_iterations: int = 100,
         max_iterations_without_improvement: int = 10,
     ):
-        super().__init__(df, random_seed, include_edges, exclude_edges)
+        super().__init__(df=df, random_seed=random_seed, included_edges=included_edges, excluded_edges=excluded_edges)
         self.max_iterations = int(max_iterations)
         self.max_iterations_without_improvement = int(max_iterations_without_improvement)
 
@@ -75,11 +75,22 @@ class HillClimberDiscovery(Discovery):
         self.evaluate_tests(individual)
         counts = self.sum_test_outcomes(individual.test_results)
 
-        problem_tests = individual.test_results.loc[individual.test_results["result"] != TestResult.PASS]
-        problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
-        problem_edges.extend(
-            problem_tests.query("expected_effect == 'NoEffect'")[["outcome", "treatment"]].apply(tuple, axis=1).tolist()
+        # Add extra "var1" and "var2" columns to serve as order independent "treatment" and "outcome"
+        query_df = pd.concat(
+            [
+                individual.test_results,
+                pd.DataFrame(
+                    np.sort(individual.test_results[["treatment", "outcome"]], axis=1), columns=["var1", "var2"]
+                ),
+            ],
+            axis=1,
         )
+        problem_tests = query_df.groupby(["var1", "var2"]).filter(
+            # Groups are problematic if at least one test fails or no test passes
+            lambda group: (group["result"] == TestResult.FAIL).any()
+            or ~(group["result"] == TestResult.PASS).any()
+        )
+        problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
 
         fitness_values = (
             counts.get(TestResult.PASS, 0),
