@@ -604,9 +604,6 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "-e", "--exclude-edges", help="Path to file containing edges to exclude", required=False
     )
     parser_discover.add_argument(
-        "-s", "--fitness-score", help="Use fitness score instead of tiered fitness", action="store_true", default=False
-    )
-    parser_discover.add_argument(
         "--technique-kwargs",
         help="Keywords for the discovery technique. These should be specified as `arg1=value1 arg2=value2...`.",
         nargs="*",

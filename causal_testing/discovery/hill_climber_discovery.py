@@ -105,7 +105,7 @@ class HillClimberDiscovery(Discovery):
         iterations = self.max_iterations
         iterations_without_improvement = 0
 
-        while problem_edges and iterations and iterations_without_improvement < self.max_iterations_without_improvement:
+        while problem_edges and iterations:
             iterations -= 1
 
             new_individual = individual.copy()
