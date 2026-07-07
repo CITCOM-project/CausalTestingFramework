@@ -2,22 +2,22 @@
 This module implements the abstract Discovery class to infer causal DAGs from data.
 """
 
-from abc import ABC, abstractmethod
 import random
-from itertools import permutations
-from enum import Enum
 import re
 import warnings
+from abc import ABC, abstractmethod
+from enum import Enum
+from itertools import permutations
 
 import networkx as nx
-import rustworkx as rx
 import pandas as pd
+import rustworkx as rx
 
-from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.testing.causal_test_result import CausalTestResult
-from causal_testing.testing.causal_effect import Positive, Negative
 from causal_testing.main import CausalTestingFramework
+from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
+from causal_testing.testing.causal_effect import Negative, Positive
+from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
 
 TestResult = Enum("TestResult", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
@@ -181,11 +181,18 @@ class Discovery(ABC):
         ctf.data = self.df
         ctf.create_variables()
         ctf.scenario = Scenario(list(ctf.variables["inputs"].values()) + list(ctf.variables["outputs"].values()))
+
         ctf.test_cases = ctf.create_test_cases(
             {
                 "tests": [
                     relation.to_json_stub(
-                        estimator="LogisticRegressionEstimator", estimate_type="unit_odds_ratio", alpha=0.01
+                        estimator=(
+                            "LinearRegressionEstimator"
+                            if pd.api.dtypes.is_numeric_dtype(relation.base_test_case.outcome_variable.name)
+                            else "LogisticRegressionEstimator"
+                        ),
+                        estimate_type="unit_odds_ratio",
+                        alpha=0.01,
                     )
                     for relation in generate_metamorphic_relations(causal_dag)
                 ]
