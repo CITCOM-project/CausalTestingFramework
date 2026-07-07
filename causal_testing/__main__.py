@@ -67,12 +67,13 @@ def main() -> None:
             discover_class = discover_map[args.technique].load()
             discover = discover_class(
                 df=df,
-                excluded_edges=(
-                    list(nx.nx_pydot.read_dot(args.excluded_edges).edges()) if args.excluded_edges is not None else []
+                exclude_edges=(
+                    list(nx.nx_pydot.read_dot(args.exclude_edges).edges()) if args.exclude_edges is not None else []
                 ),
-                included_edges=(
-                    list(nx.nx_pydot.read_dot(args.included_edges).edges()) if args.included_edges is not None else []
+                include_edges=(
+                    list(nx.nx_pydot.read_dot(args.include_edges).edges()) if args.include_edges is not None else []
                 ),
+                alpha=args.alpha,
                 **kwargs,
             )
             evolved_dag = discover.discover()

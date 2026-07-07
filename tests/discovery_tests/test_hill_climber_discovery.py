@@ -121,8 +121,8 @@ class TestHillClimber(unittest.TestCase):
         scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
         hill_climber = HillClimberDiscovery(
             scarf_df,
-            included_edges=[("length_in", "completed")],
-            excluded_edges=[("color", "length_in")],
+            include_edges=[("length_in", "completed")],
+            exclude_edges=[("color", "length_in")],
             max_iterations=10,
         )
         dag = hill_climber.discover()

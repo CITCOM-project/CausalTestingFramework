@@ -18,8 +18,8 @@ class TestCausalTestingPaths(unittest.TestCase):
         self.data_paths = ["tests/resources/data/data.csv"]
         self.test_config_path = "tests/resources/data/tests.json"
         self.output_path = Path("results/results.json")
-        self.included_edges_path = Path("tests/resources/data/included_edges.dot")
-        self.excluded_edges_path = Path("tests/resources/data/excluded_edges.dot")
+        self.include_edges_path = Path("tests/resources/data/include_edges.dot")
+        self.exclude_edges_path = Path("tests/resources/data/exclude_edges.dot")
 
     def test_missing_dag(self):
         with self.assertRaises(FileNotFoundError) as e:
@@ -41,7 +41,7 @@ class TestCausalTestingPaths(unittest.TestCase):
         CausalTestingPaths(self.dag_path, self.data_paths, self.test_config_path, self.output_path).validate_paths()
         self.assertTrue(self.output_path.parent.exists())
 
-    def test_missing_included_edges(self):
+    def test_missing_include_edges(self):
         with self.assertRaises(FileNotFoundError) as e:
             CausalTestingPaths(
                 self.dag_path,
@@ -49,18 +49,18 @@ class TestCausalTestingPaths(unittest.TestCase):
                 self.test_config_path,
                 self.output_path,
                 "missing.dot",
-                self.excluded_edges_path,
+                self.exclude_edges_path,
             ).validate_paths()
         self.assertEqual("Data file not found: missing.dot", str(e.exception))
 
-    def test_missing_excluded_edges(self):
+    def test_missing_exclude_edges(self):
         with self.assertRaises(FileNotFoundError) as e:
             CausalTestingPaths(
                 self.dag_path,
                 self.data_paths,
                 self.test_config_path,
                 self.output_path,
-                self.included_edges_path,
+                self.include_edges_path,
                 "missing.dot",
             ).validate_paths()
         self.assertEqual("Data file not found: missing.dot", str(e.exception))
@@ -76,15 +76,15 @@ class TestCausalTestingFramework(unittest.TestCase):
         self.data_paths = ["tests/resources/data/data.csv"]
         self.test_config_path = "tests/resources/data/tests.json"
         self.output_path = Path("results/results.json")
-        self.included_edges_path = "tests/resources/data/included_edges.dot"
-        self.excluded_edges_path = "tests/resources/data/excluded_edges.dot"
+        self.include_edges_path = "tests/resources/data/include_edges.dot"
+        self.exclude_edges_path = "tests/resources/data/exclude_edges.dot"
         self.paths = CausalTestingPaths(
             dag_path=self.dag_path,
             data_paths=self.data_paths,
             test_config_path=self.test_config_path,
             output_path=self.output_path,
-            included_edges_path=self.included_edges_path,
-            excluded_edges_path=self.excluded_edges_path,
+            include_edges_path=self.include_edges_path,
+            exclude_edges_path=self.exclude_edges_path,
         )
 
     def test_load_data(self):
@@ -616,10 +616,10 @@ class TestCausalTestingFramework(unittest.TestCase):
                     str(self.data_paths[0]),
                     "--output",
                     os.path.join(tmp, "discovered_dag.dot"),
-                    "--included-edges",
-                    self.included_edges_path,
-                    "--excluded-edges",
-                    self.excluded_edges_path,
+                    "--include-edges",
+                    self.include_edges_path,
+                    "--exclude-edges",
+                    self.exclude_edges_path,
                     "--technique-kwargs",
                     "max_iterations=10",
                     "--variables",

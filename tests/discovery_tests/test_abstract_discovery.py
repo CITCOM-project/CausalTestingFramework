@@ -70,26 +70,26 @@ class TestAbstractHillClimber(unittest.TestCase):
         )
         self.assertEqual(effect_direction(ctr), None)
 
-    def test_included_edge_wildcard(self):
+    def test_include_edge_wildcard(self):
         abstract_discovery = AbstractDiscovery(
             df=pd.DataFrame(columns=["x_1", "x_2", "x_3", "y_1", "y_2", "y_3", "z_1", "z_2"]),
-            included_edges=[("x_.*", "y_1")],
+            include_edges=[("x_.*", "y_1")],
         )
-        self.assertEqual(abstract_discovery.included_edges, [(f"x_{n}", "y_1") for n in range(1, 4)])
+        self.assertEqual(abstract_discovery.include_edges, [(f"x_{n}", "y_1") for n in range(1, 4)])
 
-    def test_included_edge_cycle(self):
+    def test_include_edge_cycle(self):
         with self.assertRaises(ValueError):
             AbstractDiscovery(
                 df=pd.DataFrame(columns=["x_1", "x_2", "x_3", "y_1", "y_2", "y_3", "z_1", "z_2"]),
-                included_edges=[("x_1", "y_1"), ("y_1", "x_1")],
+                include_edges=[("x_1", "y_1"), ("y_1", "x_1")],
             )
 
-    def test_excluded_edge_wildcard(self):
+    def test_exclude_edge_wildcard(self):
         abstract_discovery = AbstractDiscovery(
             df=pd.DataFrame(columns=["x_1", "x_2", "x_3", "y_1", "y_2", "y_3", "z_1", "z_2"]),
-            excluded_edges=[("x_.*", "y_1")],
+            exclude_edges=[("x_.*", "y_1")],
         )
-        self.assertEqual(abstract_discovery.excluded_edges, [(f"x_{n}", "y_1") for n in range(1, 4)])
+        self.assertEqual(abstract_discovery.exclude_edges, [(f"x_{n}", "y_1") for n in range(1, 4)])
 
     def test_remove_cycles(self):
         dag = CausalDAG()
@@ -101,17 +101,17 @@ class TestAbstractHillClimber(unittest.TestCase):
         abstract_discovery.remove_cycles(dag)
         self.assertTrue(dag.is_acyclic())
 
-    def test_remove_cycles_respects_included_edges(self):
+    def test_remove_cycles_respects_include_edges(self):
         dag = CausalDAG()
         dag.add_edges_from([("A", "B"), ("B", "C")])
         dag.add_edge("C", "A", ignore_cycles=True)
 
-        included_edges = {("A", "B"), ("B", "C")}
-        abstract_discovery = AbstractDiscovery(pd.DataFrame(columns=dag.nodes), included_edges=included_edges)
+        include_edges = {("A", "B"), ("B", "C")}
+        abstract_discovery = AbstractDiscovery(pd.DataFrame(columns=dag.nodes), include_edges=include_edges)
 
         abstract_discovery.remove_cycles(dag)
         self.assertTrue(dag.is_acyclic())
-        for edge in included_edges:
+        for edge in include_edges:
             self.assertTrue(edge in dag.edges, f"{edge} not in {dag.edges}")
 
     def test_remove_cycles_no_cycles_present(self):

@@ -49,8 +49,8 @@ class CausalTestingPaths:
     data_paths: List[Path]
     test_config_path: Path
     output_path: Path
-    included_edges_path: Optional[Path] = None
-    excluded_edges_path: Optional[Path] = None
+    include_edges_path: Optional[Path] = None
+    exclude_edges_path: Optional[Path] = None
 
     def __init__(
         self,
@@ -58,15 +58,15 @@ class CausalTestingPaths:
         data_paths: List[Union[str, Path]],
         test_config_path: Union[str, Path],
         output_path: Union[str, Path],
-        included_edges_path: Optional[Union[str, Path]] = None,
-        excluded_edges_path: Optional[Union[str, Path]] = None,
+        include_edges_path: Optional[Union[str, Path]] = None,
+        exclude_edges_path: Optional[Union[str, Path]] = None,
     ):
         self.dag_path = Path(dag_path)
         self.data_paths = [Path(p) for p in data_paths]
         self.test_config_path = Path(test_config_path)
         self.output_path = Path(output_path)
-        self.included_edges_path = Path(included_edges_path) if included_edges_path else None
-        self.excluded_edges_path = Path(excluded_edges_path) if excluded_edges_path else None
+        self.include_edges_path = Path(include_edges_path) if include_edges_path else None
+        self.exclude_edges_path = Path(exclude_edges_path) if exclude_edges_path else None
 
     def validate_paths(self) -> None:
         """
@@ -88,11 +88,11 @@ class CausalTestingPaths:
         if not self.output_path.parent.exists():
             self.output_path.parent.mkdir(parents=True)
 
-        if self.included_edges_path and not self.included_edges_path.exists():
-            raise FileNotFoundError(f"Data file not found: {self.included_edges_path}")
+        if self.include_edges_path and not self.include_edges_path.exists():
+            raise FileNotFoundError(f"Data file not found: {self.include_edges_path}")
 
-        if self.excluded_edges_path and not self.excluded_edges_path.exists():
-            raise FileNotFoundError(f"Data file not found: {self.excluded_edges_path}")
+        if self.exclude_edges_path and not self.exclude_edges_path.exists():
+            raise FileNotFoundError(f"Data file not found: {self.exclude_edges_path}")
 
 
 class CausalTestingFramework:
@@ -591,6 +591,13 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
     parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
     parser_discover.add_argument(
+        "-a",
+        "--alpha",
+        help="The significance level of the confidence intervals used to determine causality. "
+        "This should be a value between 0 and 1. Defaults to 0.05 for 95% confidence intervals.",
+        default=0.05,
+    )
+    parser_discover.add_argument(
         "-t",
         "--technique",
         help="The name of the technique to use. Currently supported are 'HillClimberDiscovery' and 'NSGADiscovery'",
@@ -605,10 +612,10 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
     parser_discover.add_argument("-o", "--output", help="Path for output DAG file (.dot)", required=True)
     parser_discover.add_argument(
-        "-i", "--included-edges", help="Path to file containing edges to include", required=False
+        "-i", "--include-edges", help="Path to file containing edges to include", required=False
     )
     parser_discover.add_argument(
-        "-e", "--excluded-edges", help="Path to file containing edges to exclude", required=False
+        "-e", "--exclude-edges", help="Path to file containing edges to exclude", required=False
     )
     parser_discover.add_argument(
         "--technique-kwargs",

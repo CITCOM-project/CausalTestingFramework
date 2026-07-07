@@ -77,11 +77,13 @@ class Discovery(ABC):
         random_seed: int = 0,
         exclude_edges: str = None,
         include_edges: str = None,
+        alpha: float = 0.05,
     ):
 
         random.seed(random_seed)
         self.df = df
         self.random_seed = random_seed
+        self.alpha = alpha
 
         self.possible_edges = []
         self.include_edges = []
@@ -188,11 +190,11 @@ class Discovery(ABC):
                     relation.to_json_stub(
                         estimator=(
                             "LinearRegressionEstimator"
-                            if pd.api.dtypes.is_numeric_dtype(relation.base_test_case.outcome_variable.name)
+                            if pd.api.types.is_numeric_dtype(relation.base_test_case.outcome_variable)
                             else "LogisticRegressionEstimator"
                         ),
                         estimate_type="unit_odds_ratio",
-                        alpha=0.01,
+                        alpha=self.alpha,
                     )
                     for relation in generate_metamorphic_relations(causal_dag)
                 ]

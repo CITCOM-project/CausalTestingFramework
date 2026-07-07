@@ -24,10 +24,13 @@ class HillClimberDiscovery(Discovery):
         random_seed: int = 0,
         include_edges: str = None,
         exclude_edges: str = None,
+        alpha: float = 0.05,
         max_iterations: int = 100,
         max_iterations_without_improvement: int = 10,
     ):
-        super().__init__(df=df, random_seed=random_seed, include_edges=include_edges, exclude_edges=exclude_edges)
+        super().__init__(
+            df=df, random_seed=random_seed, include_edges=include_edges, exclude_edges=exclude_edges, alpha=alpha
+        )
         self.max_iterations = int(max_iterations)
         self.max_iterations_without_improvement = int(max_iterations_without_improvement)
 
