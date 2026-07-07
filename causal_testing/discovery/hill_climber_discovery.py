@@ -22,12 +22,12 @@ class HillClimberDiscovery(Discovery):
         self,
         df: pd.DataFrame,
         random_seed: int = 0,
-        included_edges: str = None,
-        excluded_edges: str = None,
+        include_edges: str = None,
+        exclude_edges: str = None,
         max_iterations: int = 100,
         max_iterations_without_improvement: int = 10,
     ):
-        super().__init__(df=df, random_seed=random_seed, included_edges=included_edges, excluded_edges=excluded_edges)
+        super().__init__(df=df, random_seed=random_seed, include_edges=include_edges, exclude_edges=exclude_edges)
         self.max_iterations = int(max_iterations)
         self.max_iterations_without_improvement = int(max_iterations_without_improvement)
 
@@ -130,9 +130,9 @@ class HillClimberDiscovery(Discovery):
                 ),
                 random.randint(1, len(problem_edges)),
             ):
-                if new_individual.has_edge(origin, dest) and (origin, dest) not in self.included_edges:
+                if new_individual.has_edge(origin, dest) and (origin, dest) not in self.include_edges:
                     new_individual.remove_edge(origin, dest)
-                elif not new_individual.has_edge(origin, dest) and (origin, dest) not in self.excluded_edges:
+                elif not new_individual.has_edge(origin, dest) and (origin, dest) not in self.exclude_edges:
                     # Want to bypass the cycle check of CausalDAG as we remove the cycles afterwards
                     new_individual.add_edge(origin, dest, ignore_cycles=True)
             self.remove_cycles(new_individual)
