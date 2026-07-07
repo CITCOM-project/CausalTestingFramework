@@ -149,95 +149,62 @@ class TestMetamorphicRelation(unittest.TestCase):
 
     def test_all_metamorphic_relations_implied_by_dag(self):
         dag = CausalDAG(self.dag_dot_path)
+        print(dag)
         dag.add_edge("Z", "Y")  # Add a direct path from Z to Y so M becomes a mediator
         metamorphic_relations = generate_metamorphic_relations(dag)
-        should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
-        should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
 
-        # Check all ShouldCause relations are present and no extra
-        expected_should_cause_relations = [
+        expected_relations = [
             ShouldCause(BaseTestCase("X1", "Z"), []),
-            ShouldCause(BaseTestCase("Z", "M"), []),
-            ShouldCause(BaseTestCase("M", "Y"), ["Z"]),
-            ShouldCause(BaseTestCase("Z", "Y"), ["M"]),
-            ShouldCause(BaseTestCase("X2", "Z"), []),
-            ShouldCause(BaseTestCase("X3", "M"), []),
-        ]
-
-        extra_sc_relations = [scr for scr in should_cause_relations if scr not in expected_should_cause_relations]
-        missing_sc_relations = [escr for escr in expected_should_cause_relations if escr not in should_cause_relations]
-
-        self.assertEqual(extra_sc_relations, [])
-        self.assertEqual(missing_sc_relations, [])
-
-        # Check all ShouldNotCause relations are present and no extra
-        expected_should_not_cause_relations = [
-            ShouldNotCause(BaseTestCase("X1", "X2"), []),
-            ShouldNotCause(BaseTestCase("X1", "X3"), []),
             ShouldNotCause(BaseTestCase("X1", "M"), ["Z"]),
             ShouldNotCause(BaseTestCase("X1", "Y"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X2", "X3"), []),
+            ShouldNotCause(BaseTestCase("X1", "X2"), []),
+            ShouldNotCause(BaseTestCase("X2", "X1"), []),
+            ShouldNotCause(BaseTestCase("X1", "X3"), []),
+            ShouldNotCause(BaseTestCase("X3", "X1"), []),
+            ShouldCause(BaseTestCase("Z", "M"), []),
+            ShouldCause(BaseTestCase("Z", "Y"), ["M"]),
+            ShouldCause(BaseTestCase("X2", "Z"), []),
+            ShouldNotCause(BaseTestCase("Z", "X3"), []),
+            ShouldNotCause(BaseTestCase("X3", "Z"), []),
+            ShouldCause(BaseTestCase("M", "Y"), ["Z"]),
             ShouldNotCause(BaseTestCase("X2", "M"), ["Z"]),
+            ShouldCause(BaseTestCase("X3", "M"), []),
             ShouldNotCause(BaseTestCase("X2", "Y"), ["Z"]),
             ShouldNotCause(BaseTestCase("X3", "Y"), ["M", "Z"]),
-            ShouldNotCause(BaseTestCase("Z", "X3"), []),
+            ShouldNotCause(BaseTestCase("X2", "X3"), []),
+            ShouldNotCause(BaseTestCase("X3", "X2"), []),
         ]
 
-        extra_snc_relations = [
-            sncr for sncr in should_not_cause_relations if sncr not in expected_should_not_cause_relations
-        ]
-        missing_snc_relations = [
-            esncr for esncr in expected_should_not_cause_relations if esncr not in should_not_cause_relations
-        ]
-
-        self.assertEqual(extra_snc_relations, [])
-        self.assertEqual(missing_snc_relations, [])
+        self.assertEqual(expected_relations, metamorphic_relations)
 
     def test_all_metamorphic_relations_implied_by_dag_parallel(self):
         dag = CausalDAG(self.dag_dot_path)
         dag.add_edge("Z", "Y")  # Add a direct path from Z to Y so M becomes a mediator
         metamorphic_relations = generate_metamorphic_relations(dag, threads=2)
-        should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
-        should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
 
-        # Check all ShouldCause relations are present and no extra
-        expected_should_cause_relations = [
+        expected_relations = [
             ShouldCause(BaseTestCase("X1", "Z"), []),
-            ShouldCause(BaseTestCase("Z", "M"), []),
-            ShouldCause(BaseTestCase("M", "Y"), ["Z"]),
-            ShouldCause(BaseTestCase("Z", "Y"), ["M"]),
-            ShouldCause(BaseTestCase("X2", "Z"), []),
-            ShouldCause(BaseTestCase("X3", "M"), []),
-        ]
-
-        extra_sc_relations = [scr for scr in should_cause_relations if scr not in expected_should_cause_relations]
-        missing_sc_relations = [escr for escr in expected_should_cause_relations if escr not in should_cause_relations]
-
-        self.assertEqual(extra_sc_relations, [])
-        self.assertEqual(missing_sc_relations, [])
-
-        # Check all ShouldNotCause relations are present and no extra
-        expected_should_not_cause_relations = [
-            ShouldNotCause(BaseTestCase("X1", "X2"), []),
-            ShouldNotCause(BaseTestCase("X1", "X3"), []),
             ShouldNotCause(BaseTestCase("X1", "M"), ["Z"]),
             ShouldNotCause(BaseTestCase("X1", "Y"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X2", "X3"), []),
+            ShouldNotCause(BaseTestCase("X1", "X2"), []),
+            ShouldNotCause(BaseTestCase("X2", "X1"), []),
+            ShouldNotCause(BaseTestCase("X1", "X3"), []),
+            ShouldNotCause(BaseTestCase("X3", "X1"), []),
+            ShouldCause(BaseTestCase("Z", "M"), []),
+            ShouldCause(BaseTestCase("Z", "Y"), ["M"]),
+            ShouldCause(BaseTestCase("X2", "Z"), []),
+            ShouldNotCause(BaseTestCase("Z", "X3"), []),
+            ShouldNotCause(BaseTestCase("X3", "Z"), []),
+            ShouldCause(BaseTestCase("M", "Y"), ["Z"]),
             ShouldNotCause(BaseTestCase("X2", "M"), ["Z"]),
+            ShouldCause(BaseTestCase("X3", "M"), []),
             ShouldNotCause(BaseTestCase("X2", "Y"), ["Z"]),
             ShouldNotCause(BaseTestCase("X3", "Y"), ["M", "Z"]),
-            ShouldNotCause(BaseTestCase("Z", "X3"), []),
+            ShouldNotCause(BaseTestCase("X2", "X3"), []),
+            ShouldNotCause(BaseTestCase("X3", "X2"), []),
         ]
 
-        extra_snc_relations = [
-            sncr for sncr in should_not_cause_relations if sncr not in expected_should_not_cause_relations
-        ]
-        missing_snc_relations = [
-            esncr for esncr in expected_should_not_cause_relations if esncr not in should_not_cause_relations
-        ]
-
-        self.assertEqual(extra_snc_relations, [])
-        self.assertEqual(missing_snc_relations, [])
+        self.assertEqual(expected_relations, metamorphic_relations)
 
     def test_all_metamorphic_relations_implied_by_dag_ignore_cycles(self):
         dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True)
