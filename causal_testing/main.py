@@ -5,9 +5,9 @@ import json
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
-from importlib.metadata import entry_points
 
 import numpy as np
 import pandas as pd
@@ -49,8 +49,8 @@ class CausalTestingPaths:
     data_paths: List[Path]
     test_config_path: Path
     output_path: Path
-    include_edges_path: Optional[Path] = None
-    exclude_edges_path: Optional[Path] = None
+    included_edges_path: Optional[Path] = None
+    excluded_edges_path: Optional[Path] = None
 
     def __init__(
         self,
@@ -58,15 +58,15 @@ class CausalTestingPaths:
         data_paths: List[Union[str, Path]],
         test_config_path: Union[str, Path],
         output_path: Union[str, Path],
-        include_edges_path: Optional[Union[str, Path]] = None,
-        exclude_edges_path: Optional[Union[str, Path]] = None,
+        included_edges_path: Optional[Union[str, Path]] = None,
+        excluded_edges_path: Optional[Union[str, Path]] = None,
     ):
         self.dag_path = Path(dag_path)
         self.data_paths = [Path(p) for p in data_paths]
         self.test_config_path = Path(test_config_path)
         self.output_path = Path(output_path)
-        self.include_edges_path = Path(include_edges_path) if include_edges_path else None
-        self.exclude_edges_path = Path(exclude_edges_path) if exclude_edges_path else None
+        self.included_edges_path = Path(included_edges_path) if included_edges_path else None
+        self.excluded_edges_path = Path(excluded_edges_path) if excluded_edges_path else None
 
     def validate_paths(self) -> None:
         """
@@ -88,11 +88,11 @@ class CausalTestingPaths:
         if not self.output_path.parent.exists():
             self.output_path.parent.mkdir(parents=True)
 
-        if self.include_edges_path and not self.include_edges_path.exists():
-            raise FileNotFoundError(f"Data file not found: {self.include_edges_path}")
+        if self.included_edges_path and not self.included_edges_path.exists():
+            raise FileNotFoundError(f"Data file not found: {self.included_edges_path}")
 
-        if self.exclude_edges_path and not self.exclude_edges_path.exists():
-            raise FileNotFoundError(f"Data file not found: {self.exclude_edges_path}")
+        if self.excluded_edges_path and not self.excluded_edges_path.exists():
+            raise FileNotFoundError(f"Data file not found: {self.excluded_edges_path}")
 
 
 class CausalTestingFramework:
@@ -498,9 +498,8 @@ class CausalTestingFramework:
         return json_results
 
 
-def setup_logging(verbose: bool = False) -> None:
+def setup_logging(level: str) -> None:
     """Set up logging configuration."""
-    level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
         level=level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
@@ -512,6 +511,15 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         add_help=True,
         description="Causal Testing Framework - "
         "A causal inference-driven framework for functional black-box testing of complex software.",
+    )
+
+    main_parser.add_argument(
+        "-l",
+        "--log_level",
+        default="WARNING",
+        type=str.upper,
+        choices=["NONE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set the logging level (default: WARNING).",
     )
 
     subparsers = main_parser.add_subparsers(
@@ -554,7 +562,6 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_test.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
     parser_test.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
     parser_test.add_argument("-t", "--test-config", help="Path to test configuration file (.json)", required=True)
-    parser_test.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
     parser_test.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
     parser_test.add_argument(
         "-a", "--adequacy", help="Calculate causal test adequacy for each test case", action="store_true", default=False
@@ -598,10 +605,10 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
     parser_discover.add_argument("-o", "--output", help="Path for output DAG file (.dot)", required=True)
     parser_discover.add_argument(
-        "-i", "--include-edges", help="Path to file containing edges to include", required=False
+        "-i", "--included-edges", help="Path to file containing edges to include", required=False
     )
     parser_discover.add_argument(
-        "-e", "--exclude-edges", help="Path to file containing edges to exclude", required=False
+        "-e", "--excluded-edges", help="Path to file containing edges to exclude", required=False
     )
     parser_discover.add_argument(
         "--technique-kwargs",
@@ -609,7 +616,6 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         nargs="*",
         default=[],
     )
-    parser_discover.add_argument("-v", "--verbose", help="Enable verbose logging", action="store_true", default=False)
 
     args = main_parser.parse_args(args)
 
