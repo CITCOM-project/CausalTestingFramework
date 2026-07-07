@@ -20,13 +20,13 @@ class NSGADiscovery(Discovery):
         self,
         df: pd.DataFrame,
         random_seed: int = 0,
-        included_edges: str = None,
-        excluded_edges: str = None,
+        include_edges: str = None,
+        exclude_edges: str = None,
         max_iterations: int = 100,
         num_parents_mating=2,
         population_size=5,  # Population size
     ):
-        super().__init__(df=df, random_seed=random_seed, included_edges=included_edges, excluded_edges=excluded_edges)
+        super().__init__(df=df, random_seed=random_seed, include_edges=include_edges, exclude_edges=exclude_edges)
         self.max_iterations = int(max_iterations)
         self.num_parents_mating = num_parents_mating
         self.sol_per_pop = population_size
@@ -101,7 +101,7 @@ class NSGADiscovery(Discovery):
         gene_space = []
         for edge in self.possible_edges:
             # Excluded edges are not in possible_edges, so no need to explicitly test for this
-            if edge in self.included_edges:
+            if edge in self.include_edges:
                 # Must be included
                 gene_space.append([1])
             else:

@@ -75,8 +75,8 @@ class Discovery(ABC):
         self,
         df: pd.DataFrame,
         random_seed: int = 0,
-        excluded_edges: str = None,
-        included_edges: str = None,
+        exclude_edges: str = None,
+        include_edges: str = None,
     ):
 
         random.seed(random_seed)
@@ -84,26 +84,26 @@ class Discovery(ABC):
         self.random_seed = random_seed
 
         self.possible_edges = []
-        self.included_edges = []
-        self.excluded_edges = []
+        self.include_edges = []
+        self.exclude_edges = []
 
         for u, v in permutations(df.columns, 2):
-            if excluded_edges and is_match(u, v, excluded_edges):
-                self.excluded_edges.append((u, v))
+            if exclude_edges and is_match(u, v, exclude_edges):
+                self.exclude_edges.append((u, v))
             else:
                 self.possible_edges.append((u, v))
 
-            if included_edges and is_match(u, v, included_edges):
-                self.included_edges.append((u, v))
+            if include_edges and is_match(u, v, include_edges):
+                self.include_edges.append((u, v))
 
-        if self.included_edges:
-            # Check to make sure that the included edges don't specify a cycle
+        if self.include_edges:
+            # Check to make sure that the include edges don't specify a cycle
             initial_dag = CausalDAG()
-            initial_dag.add_edges_from(self.included_edges)
+            initial_dag.add_edges_from(self.include_edges)
 
             if not initial_dag.is_acyclic():
                 raise ValueError(
-                    "Specified included edges include a cycle, making it impossible to infer a DAG. "
+                    "Specified include edges include a cycle, making it impossible to infer a DAG. "
                     "Please resolve this and try again."
                 )
 
@@ -126,7 +126,7 @@ class Discovery(ABC):
         cycle = simple_cycle(causal_dag)
         while cycle:
             idx = random.choice(range(len(cycle)))
-            while cycle[idx] in self.included_edges:
+            while cycle[idx] in self.include_edges:
                 idx = (idx + 1) % len(cycle)
             causal_dag.remove_edge(cycle[idx][0], cycle[idx][1])
             cycle = simple_cycle(causal_dag)
