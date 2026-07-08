@@ -73,6 +73,7 @@ LogisticRegressionEstimator = "causal_testing.estimation.logistic_regression_est
 CubicSplineEstimator = "causal_testing.estimation.cubic_spline_estimator:CubicSplineEstimator"
 InstrumentalVariableEstimator = "causal_testing.estimation.instrumental_variable_estimator:InstrumentalVariableEstimator"
 IPCWEstimator = "causal_testing.estimation.ipcw_estimator:IPCWEstimator"
+MultinomialRegressionEstimator = "causal_testing.estimation.multinomial_regression_estimator:MultinomialRegressionEstimator"
 
 [project.entry-points."causal_effects"]
 NoEffect = "causal_testing.testing.causal_effect:NoEffect"

@@ -167,6 +167,15 @@ class Discovery(ABC):
 
         nx.drawing.nx_pydot.write_dot(individual, output_file)
 
+    def _json_stub_params(self, outcome: str) -> str:
+        if pd.api.types.is_bool_dtype(self.df[outcome]):
+            return {"estimator": "LogisticRegressionEstimator", "estimate_type": "unit_odds_ratio"}
+        if pd.api.types.is_categorical_dtype(self.df[outcome]) or pd.api.types.is_object_dtype(self.df[outcome]):
+            return {"estimator": "MultinomialRegressionEstimator", "estimate_type": "unit_odds_ratio"}
+        if pd.api.types.is_numeric_dtype(self.df[outcome]):
+            return {"estimator": "LinearRegressionEstimator", "estimate_type": "coefficient"}
+        raise ValueError(f"Invalid datatype {self.df.dtypes[outcome]}")
+
     def evaluate_tests(self, causal_dag: CausalDAG) -> pd.DataFrame:
         """
         Generate and evaluate causal test cases from the supplied CausalDAG and return a list of edges for which the
@@ -188,13 +197,8 @@ class Discovery(ABC):
             {
                 "tests": [
                     relation.to_json_stub(
-                        estimator=(
-                            "LinearRegressionEstimator"
-                            if pd.api.types.is_numeric_dtype(relation.base_test_case.outcome_variable)
-                            else "LogisticRegressionEstimator"
-                        ),
-                        estimate_type="unit_odds_ratio",
                         alpha=self.alpha,
+                        **self._json_stub_params(relation.base_test_case.outcome_variable),
                     )
                     for relation in generate_metamorphic_relations(causal_dag)
                 ]
@@ -203,7 +207,9 @@ class Discovery(ABC):
 
         results = []
 
-        for test_case, result in zip(ctf.test_cases, ctf.run_tests(silent=True)):
+        # We use "silent=False" here to allow for inestimable edges, but it'd be good to have a more stringent
+        # error catching strategy to catch "genuine" problems (e.g. to do with the structure of the data)
+        for test_case, result in zip(ctf.test_cases, ctf.run_tests(silent=False)):
             if result.effect_estimate is None:
                 results.append(
                     {
