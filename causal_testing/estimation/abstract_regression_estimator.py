@@ -5,7 +5,7 @@ from abc import abstractmethod
 from typing import Any
 
 import pandas as pd
-from patsy import dmatrix, dmatrices  # pylint: disable = no-name-in-module
+from patsy import dmatrices, dmatrix  # pylint: disable = no-name-in-module
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from causal_testing.estimation.abstract_estimator import Estimator
@@ -112,6 +112,20 @@ class RegressionEstimator(Estimator):
             data = data.dropna(subset=self.covariates)
             model = self.regressor(data[self.base_test_case.outcome_variable.name], data[self.covariates]).fit(disp=0)
         return model
+
+    def treatment_columns(self, model: RegressionResultsWrapper):
+        """
+        Get the names of the treatment columns from the model.
+        This is a workaround for statsmodels mangling the names of categorical variables to include the values.
+
+        :param model: The fitted model from which to extract the variable names.
+        """
+        return [
+            param
+            for param in model.params.index
+            if param == self.base_test_case.treatment_variable.name
+            or param.startswith(self.base_test_case.treatment_variable.name + "[")
+        ]
 
     def _predict(self, data=None, adjustment_config: dict = None) -> pd.DataFrame:
         """Estimate the outcomes under control and treatment.

@@ -36,16 +36,9 @@ class MultinomialRegressionEstimator(RegressionEstimator):
         """
         model = self.fit_model(self.df)
 
-        treatment_columns = [
-            param
-            for param in model.params.index
-            if param == self.base_test_case.treatment_variable.name
-            or param.startswith(self.base_test_case.treatment_variable.name + "[")
-        ]
-
         conf_int = model.conf_int(self.alpha)
         levels_of_interest = [
-            (level, covariate) for level, covariate in conf_int.index if covariate in treatment_columns
+            (level, covariate) for level, covariate in conf_int.index if covariate in self.treatment_columns(model)
         ]
         confidence_intervals = np.exp(conf_int.loc[levels_of_interest])
 

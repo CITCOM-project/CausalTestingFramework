@@ -41,13 +41,7 @@ class LogisticRegressionEstimator(RegressionEstimator):
         """
         model = self.fit_model(self.df)
 
-        treatment_columns = [
-            param
-            for param in model.params.index
-            if param == self.base_test_case.treatment_variable.name
-            or param.startswith(self.base_test_case.treatment_variable.name + "[")
-        ]
-
+        treatment_columns = self.treatment_columns(model)
         confidence_intervals = np.exp(model.conf_int(self.alpha).loc[treatment_columns])
 
         result = EffectEstimate(
