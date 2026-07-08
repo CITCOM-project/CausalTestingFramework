@@ -148,7 +148,7 @@ class TestCausalTestingFramework(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             framework.create_causal_test({"estimator": "InvalidEstimator"}, None)
         self.assertEqual(
-            f"Unsupported estimator InvalidEstimator. Supported: ['CubicSplineEstimator', 'IPCWEstimator', 'InstrumentalVariableEstimator', 'LinearRegressionEstimator', 'LogisticRegressionEstimator']. "
+            f"Unsupported estimator InvalidEstimator. Supported: ['CubicSplineEstimator', 'IPCWEstimator', 'InstrumentalVariableEstimator', 'LinearRegressionEstimator', 'LogisticRegressionEstimator', 'MultinomialRegressionEstimator']. "
             "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
             "pyproject.toml file.",
             str(e.exception),

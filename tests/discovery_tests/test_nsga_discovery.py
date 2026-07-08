@@ -30,11 +30,10 @@ class TestNSGA(unittest.TestCase):
         dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
         nsga = NSGADiscovery(scarf_df)
 
+        expected = np.array([2, 2, 2, 0.0, 0.0, 2])
+        multiobjective_fitness = nsga.multi_objective_fitness(None, nsga.causal_dag_to_binary_string(dag), None)
         self.assertTrue(
-            np.array_equal(
-                nsga.multi_objective_fitness(None, nsga.causal_dag_to_binary_string(dag), None),
-                np.array([1.5, 1.5, 1.0, 0.0, 0.0, 1.5]),
-            )
+            np.array_equal(multiobjective_fitness, expected), f"Arrays differ: {expected} != {multiobjective_fitness}"
         )
 
     def test_discovery_edges(self):

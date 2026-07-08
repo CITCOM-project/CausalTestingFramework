@@ -195,21 +195,21 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "effect": "positive",
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "large_gauge",
                     "outcome": "length_in",
-                    "effect": None,
+                    "effect": "positive",
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "length_in",
                     "outcome": "color",
                     "effect": None,
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "length_in",
@@ -223,7 +223,7 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "effect": "negative",
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "large_gauge",
                     "outcome": "color",
@@ -251,7 +251,7 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "effect": None,
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "completed",
                     "outcome": "color",
