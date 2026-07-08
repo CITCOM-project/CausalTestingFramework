@@ -68,8 +68,7 @@ class HillClimberDiscovery(Discovery):
         Evaluate the fitness of a given causal DAG by evaluating the corresponding test cases using a tier based
         fitness metric.
         lexicographical order (max pass, minimise failure, minimise unknown)
-         e.g. (X pass, Y fail, Z+1 unknown) is better than (X pass, Y+1 fail, Z unknown)
-
+        e.g. (X pass, Y fail, Z+1 unknown) is better than (X pass, Y+1 fail, Z unknown)
 
         :param individual: The candidate individual to evaluate.
         :returns: Tuple of the form (X, Y), where X is a triple containing the number of passing, failing, and
