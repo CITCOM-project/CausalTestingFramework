@@ -25,13 +25,8 @@ class MultinomialRegressionEstimator(RegressionEstimator):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions.append(
-            "The variables in the data must fit a shape which can be expressed as a linear"
-            "combination of parameters and functions of variables. Note that these functions"
-            "do not need to be linear."
-        )
-        self.modelling_assumptions.append("The outcome must be binary.")
-        self.modelling_assumptions.append("Independently and identically distributed errors.")
+        super().add_modelling_assumptions()
+        self.modelling_assumptions.append("Outcome is categorical.")
 
     def estimate_unit_odds_ratio(self) -> EffectEstimate:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
