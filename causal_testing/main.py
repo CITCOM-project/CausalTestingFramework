@@ -593,8 +593,10 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_discover.add_argument(
         "-a",
         "--alpha",
-        help="The significance level of the confidence intervals used to determine causality. "
-        "This should be a value between 0 and 1. Defaults to 0.05 for 95% confidence intervals.",
+        help=(
+            "The significance level of the confidence intervals used to determine causality. "
+            "This should be a value between 0 and 1. Defaults to 0.05 for 95%% confidence intervals."
+        ),
         default=0.05,
     )
     parser_discover.add_argument(
