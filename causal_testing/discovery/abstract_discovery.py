@@ -82,8 +82,8 @@ class Discovery(ABC):
 
         random.seed(random_seed)
         self.df = df
-        self.random_seed = random_seed
-        self.alpha = alpha
+        self.random_seed = int(random_seed)
+        self.alpha = float(alpha)
 
         self.possible_edges = []
         self.include_edges = []
