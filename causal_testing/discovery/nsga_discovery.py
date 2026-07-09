@@ -24,15 +24,15 @@ class NSGADiscovery(Discovery):
         exclude_edges: str = None,
         alpha: float = 0.05,
         max_iterations: int = 100,
-        num_parents_mating=2,
-        population_size=5,  # Population size
+        num_parents_mating: int = 2,
+        population_size: int = 5,  # Population size
     ):
         super().__init__(
             df=df, random_seed=random_seed, include_edges=include_edges, exclude_edges=exclude_edges, alpha=alpha
         )
         self.max_iterations = int(max_iterations)
-        self.num_parents_mating = num_parents_mating
-        self.sol_per_pop = population_size
+        self.num_parents_mating = int(num_parents_mating)
+        self.sol_per_pop = int(population_size)
 
     def binary_string_to_causal_dag(self, individual: np.array) -> CausalDAG:
         """
