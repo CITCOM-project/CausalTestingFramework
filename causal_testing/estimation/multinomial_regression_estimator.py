@@ -12,26 +12,21 @@ from causal_testing.estimation.effect_estimate import EffectEstimate
 logger = logging.getLogger(__name__)
 
 
-class LogisticRegressionEstimator(RegressionEstimator):
+class MultinomialRegressionEstimator(RegressionEstimator):
     """A Logistic Regression Estimator is a parametric estimator which restricts the variables in the data to a linear
     combination of parameters and functions of the variables (note these functions need not be linear). It is designed
     for estimating categorical outcomes.
     """
 
-    regressor = sm.Logit
+    regressor = sm.MNLogit
 
     def add_modelling_assumptions(self):
         """
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions.append(
-            "The variables in the data must fit a shape which can be expressed as a linear"
-            "combination of parameters and functions of variables. Note that these functions"
-            "do not need to be linear."
-        )
-        self.modelling_assumptions.append("The outcome must be binary.")
-        self.modelling_assumptions.append("Independently and identically distributed errors.")
+        super().add_modelling_assumptions()
+        self.modelling_assumptions.append("Outcome is categorical.")
 
     def estimate_unit_odds_ratio(self) -> EffectEstimate:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
@@ -41,13 +36,21 @@ class LogisticRegressionEstimator(RegressionEstimator):
         """
         model = self.fit_model(self.df)
 
-        treatment_columns = self.treatment_columns(model)
-        confidence_intervals = np.exp(model.conf_int(self.alpha).loc[treatment_columns])
+        conf_int = model.conf_int(self.alpha)
+        levels_of_interest = [
+            (level, covariate) for level, covariate in conf_int.index if covariate in self.treatment_columns(model)
+        ]
+        confidence_intervals = np.exp(conf_int.loc[levels_of_interest])
+
+        # Format the params to a MultiIndexed Series like the confidence intervals for consistent indexing
+        stacked_params = model.params.stack(dropna=False)
+        multi_indexed_params = stacked_params.swaplevel(0, 1).sort_index()
+        multi_indexed_params.index = conf_int.index
 
         result = EffectEstimate(
             "unit_odds_ratio",
-            pd.Series(np.exp(model.params[treatment_columns])),
-            pd.Series(confidence_intervals[0]),
-            pd.Series(confidence_intervals[1]),
+            pd.Series(np.exp(multi_indexed_params[levels_of_interest])),
+            pd.Series(confidence_intervals["lower"]),
+            pd.Series(confidence_intervals["upper"]),
         )
         return result

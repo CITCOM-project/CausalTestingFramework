@@ -30,6 +30,18 @@ LogisticRegressionEstimator
    :show-inheritance:
    :noindex:
 
+MultinomialRegressionEstimator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Recommended use:** For categorical outcomes (e.g. colurs: Red, Green, Blue).
+
+.. autoclass:: causal_testing.estimation.multinomial_regression_estimator.MultinomialRegressionEstimator
+   :members:
+   :exclude-members: from_formula, regressor
+   :undoc-members:
+   :show-inheritance:
+   :noindex:
+
 CubicSplineRegressionEstimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

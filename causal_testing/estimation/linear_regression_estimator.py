@@ -98,7 +98,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
         caused by a unit change in treatment.
 
-        :return: The unit average treatment effect and the 95% Wald confidence intervals.
+        :return: The unit average treatment effect and the Wald confidence intervals.
         """
         model = self.fit_model()
         newline = "\n"
@@ -129,7 +129,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
-        :return: The average treatment effect and the 95% Wald confidence intervals.
+        :return: The average treatment effect and the Wald confidence intervals.
         """
         model = self.fit_model()
 
@@ -155,7 +155,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
-        :return: The average treatment effect and the 95% Wald confidence intervals.
+        :return: The average treatment effect and the Wald confidence intervals.
         """
         prediction = self._predict(adjustment_config=adjustment_config)
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
@@ -175,7 +175,7 @@ class LinearRegressionEstimator(RegressionEstimator):
                                    their values. N.B. Every variable in the adjustment set MUST have a value in
                                    order to estimate the outcome under control and treatment.
 
-        :return: The average treatment effect and the 95% Wald confidence intervals.
+        :return: The average treatment effect and the Wald confidence intervals.
         """
         prediction = self._predict(adjustment_config=adjustment_config)
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]

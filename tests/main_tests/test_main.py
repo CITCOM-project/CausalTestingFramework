@@ -18,6 +18,8 @@ class TestCausalTestingPaths(unittest.TestCase):
         self.data_paths = ["tests/resources/data/data.csv"]
         self.test_config_path = "tests/resources/data/tests.json"
         self.output_path = Path("results/results.json")
+        self.include_edges_path = Path("tests/resources/data/include_edges.dot")
+        self.exclude_edges_path = Path("tests/resources/data/exclude_edges.dot")
 
     def test_missing_dag(self):
         with self.assertRaises(FileNotFoundError) as e:
@@ -39,6 +41,30 @@ class TestCausalTestingPaths(unittest.TestCase):
         CausalTestingPaths(self.dag_path, self.data_paths, self.test_config_path, self.output_path).validate_paths()
         self.assertTrue(self.output_path.parent.exists())
 
+    def test_missing_include_edges(self):
+        with self.assertRaises(FileNotFoundError) as e:
+            CausalTestingPaths(
+                self.dag_path,
+                self.data_paths,
+                self.test_config_path,
+                self.output_path,
+                "missing.dot",
+                self.exclude_edges_path,
+            ).validate_paths()
+        self.assertEqual("Data file not found: missing.dot", str(e.exception))
+
+    def test_missing_exclude_edges(self):
+        with self.assertRaises(FileNotFoundError) as e:
+            CausalTestingPaths(
+                self.dag_path,
+                self.data_paths,
+                self.test_config_path,
+                self.output_path,
+                self.include_edges_path,
+                "missing.dot",
+            ).validate_paths()
+        self.assertEqual("Data file not found: missing.dot", str(e.exception))
+
     def tearDown(self):
         if self.output_path.parent.exists():
             shutil.rmtree(self.output_path.parent)
@@ -50,11 +76,15 @@ class TestCausalTestingFramework(unittest.TestCase):
         self.data_paths = ["tests/resources/data/data.csv"]
         self.test_config_path = "tests/resources/data/tests.json"
         self.output_path = Path("results/results.json")
+        self.include_edges_path = "tests/resources/data/include_edges.dot"
+        self.exclude_edges_path = "tests/resources/data/exclude_edges.dot"
         self.paths = CausalTestingPaths(
             dag_path=self.dag_path,
             data_paths=self.data_paths,
             test_config_path=self.test_config_path,
             output_path=self.output_path,
+            include_edges_path=self.include_edges_path,
+            exclude_edges_path=self.exclude_edges_path,
         )
 
     def test_load_data(self):
@@ -118,7 +148,7 @@ class TestCausalTestingFramework(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             framework.create_causal_test({"estimator": "InvalidEstimator"}, None)
         self.assertEqual(
-            f"Unsupported estimator InvalidEstimator. Supported: ['CubicSplineEstimator', 'IPCWEstimator', 'InstrumentalVariableEstimator', 'LinearRegressionEstimator', 'LogisticRegressionEstimator']. "
+            f"Unsupported estimator InvalidEstimator. Supported: ['CubicSplineEstimator', 'IPCWEstimator', 'InstrumentalVariableEstimator', 'LinearRegressionEstimator', 'LogisticRegressionEstimator', 'MultinomialRegressionEstimator']. "
             "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
             "pyproject.toml file.",
             str(e.exception),
@@ -571,6 +601,34 @@ class TestCausalTestingFramework(unittest.TestCase):
             ):
                 main()
                 self.assertTrue(os.path.exists(os.path.join(tmp, "tests_non_default.json")))
+
+    def test_parse_args_discover(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "discover",
+                    "--technique",
+                    "HillClimberDiscovery",
+                    "--data-paths",
+                    str(self.data_paths[0]),
+                    str(self.data_paths[0]),
+                    "--output",
+                    os.path.join(tmp, "discovered_dag.dot"),
+                    "--include-edges",
+                    self.include_edges_path,
+                    "--exclude-edges",
+                    self.exclude_edges_path,
+                    "--technique-kwargs",
+                    "max_iterations=10",
+                    "--variables",
+                    "test_input",
+                    "test_output",
+                ],
+            ):
+                main()
+                self.assertTrue(os.path.exists(os.path.join(tmp, "discovered_dag.dot")))
 
     def tearDown(self):
         if self.output_path.parent.exists():

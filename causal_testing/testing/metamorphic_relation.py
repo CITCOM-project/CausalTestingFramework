@@ -49,7 +49,11 @@ class MetamorphicRelation:
         :param estimator: The name of the estimator class to use when evaluating the test
         :param alpha: The significance level to use when calculating the confidence intervals
         """
-        if estimator not in ["LinearRegressionEstimator", "LogisticRegressionEstimator"]:
+        if estimator not in [
+            "LinearRegressionEstimator",
+            "LogisticRegressionEstimator",
+            "MultinomialRegressionEstimator",
+        ]:
             raise ValueError(
                 f"Unsupported estimator {estimator}. "
                 "We only support autogeneration using LinearRegressionEstimator or LogisticRegressionEstimator."
@@ -136,7 +140,16 @@ class ShouldNotCause(MetamorphicRelation):
         return formatted_str
 
 
-def generate_metamorphic_relation(
+def min_adj_set(adj_sets: set[set[str]]) -> set[str]:
+    """
+    Given a nonempty set of adjustment sets, return the minimal one.
+    :param adj_sets: A nonempty set of adjustment sets.
+    :return: The minimal adjustment set (by alphabetical order if there are multiple sets of the same size).
+    """
+    return sorted(list(map(lambda s: sorted(list(s)), adj_sets)))[0]
+
+
+def generate_metamorphic_relation(  # pylint: disable=R0912
     node_pair: tuple[str, str], dag: CausalDAG, nodes_to_ignore: set = None
 ) -> MetamorphicRelation:
     """
@@ -162,30 +175,32 @@ def generate_metamorphic_relation(
         if u in nx.ancestors(dag, v):
             adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0])))
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), min_adj_set(adj_sets)))
 
         # Case 2: V --> ... --> U
         elif v in nx.ancestors(dag, u):
             adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
             if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), list(adj_sets[0])))
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), min_adj_set(adj_sets)))
 
         # Case 3: V _||_ U (No directed walk from V to U but there may be a back-door path e.g. U <-- Z --> V).
-        # Only make one MR since V _||_ U == U _||_ V
         else:
-            adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
-            if adj_sets:
-                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets[0])))
+            adj_sets1 = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
+            adj_sets2 = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
+            if adj_sets1:
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(u, v), list(adj_sets1[0])))
+            if adj_sets2:
+                metamorphic_relations.append(ShouldNotCause(BaseTestCase(v, u), list(adj_sets2[0])))
 
     # Create a ShouldCause relation for each edge (u, v) or (v, u)
     elif (u, v) in dag.edges:
         adj_sets = dag.direct_effect_adjustment_sets([u], [v], nodes_to_ignore=nodes_to_ignore)
         if adj_sets:
-            metamorphic_relations.append(ShouldCause(BaseTestCase(u, v), list(adj_sets[0])))
+            metamorphic_relations.append(ShouldCause(BaseTestCase(u, v), min_adj_set(adj_sets)))
     else:
         adj_sets = dag.direct_effect_adjustment_sets([v], [u], nodes_to_ignore=nodes_to_ignore)
         if adj_sets:
-            metamorphic_relations.append(ShouldCause(BaseTestCase(v, u), list(adj_sets[0])))
+            metamorphic_relations.append(ShouldCause(BaseTestCase(v, u), min_adj_set(adj_sets)))
     return metamorphic_relations
 
 
@@ -254,7 +269,9 @@ def generate_causal_tests(
     causal_dag = CausalDAG(dag_path, ignore_cycles=ignore_cycles)
 
     dag_nodes_to_test = [
-        node for node in causal_dag.nodes if nx.get_node_attributes(causal_dag, "test", default=True)[node]
+        node
+        for node in causal_dag.nodes
+        if nx.get_node_attributes(causal_dag, "test", default=True)[node]  # pylint: disable=E1123
     ]
 
     if not causal_dag.is_acyclic() and ignore_cycles:
