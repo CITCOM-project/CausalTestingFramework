@@ -91,8 +91,8 @@ class CausalSurrogateAssistedTestCase:
         :return: tuple containing SimulationResult or str, execution number and dataframe"""
 
         for i in range(max_executions):
-            surrogate_models = self.generate_surrogates(df)
-            candidate_test_case, _, surrogate_model = self.search_algorithm.search(surrogate_models, self.scenario)
+            surrogate_models = self.generate_surrogates()
+            candidate_test_case, _, surrogate_model = self.search_algorithm.search(surrogate_models, self.scenario, df)
 
             self.simulator.startup()
             test_result = self.simulator.run_with_config(candidate_test_case)
@@ -120,9 +120,8 @@ class CausalSurrogateAssistedTestCase:
         logger.info("No fault found")
         return "No fault found", i + 1, df
 
-    def generate_surrogates(self, df: pd.DataFrame) -> list[CubicSplineRegressionEstimator]:
+    def generate_surrogates(self) -> list[CubicSplineRegressionEstimator]:
         """Generate a surrogate model for each edge of the DAG that specifies it is included in the DAG metadata.
-        :param df: An dataframe which contains data relevant to the specified scenario
         :return: A list of surrogate models
         """
         surrogate_models = []
@@ -144,7 +143,6 @@ class CausalSurrogateAssistedTestCase:
                     0,
                     minimal_adjustment_set,
                     4,
-                    df=df,
                     expected_relationship=edge_metadata["expected"],
                 )
                 surrogate_models.append(surrogate)

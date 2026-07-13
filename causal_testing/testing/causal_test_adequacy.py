@@ -87,25 +87,31 @@ class DataAdequacy:
         self.bootstrap_size = bootstrap_size
         self.group_by = group_by
 
-    def measure_adequacy(self):
+    def measure_adequacy(self, df: pd.DataFrame):
         """
         Calculate the adequacy measurement, and populate the data_adequacy field.
+        :param df: The original dataset to use.
         """
         results = []
         outcomes = []
         for i in range(self.bootstrap_size):
-            estimator = deepcopy(self.test_case.estimator)
-
             if self.group_by is not None:
-                ids = pd.Series(estimator.df[self.group_by].unique())
+                ids = pd.Series(df[self.group_by].unique())
                 ids = ids.sample(len(ids), replace=True, random_state=i)
-                estimator.df = estimator.df[estimator.df[self.group_by].isin(ids)]
+                df = df[df[self.group_by].isin(ids)]
             else:
-                estimator.df = estimator.df.sample(len(estimator.df), replace=True, random_state=i)
-            result = self.test_case.execute_test(estimator)
-            outcomes.append(self.test_case.expected_causal_effect.apply(result))
-            results.append(result.effect_estimate.to_df())
+                df = df.sample(len(df), replace=True, random_state=i)
+            try:
+                result = self.test_case.execute_test(df)
+                outcomes.append(self.test_case.expected_causal_effect.apply(result))
+                results.append(result.effect_estimate.to_df())
+            # Could get a variety of exceptions here due to insufficient/badly formed data
+            # We don't want these to stop execution
+            except Exception:  # pylint: disable=W0718
+                pass
+
         results = pd.concat(results)
+
         results["var"] = results.index
         results["passed"] = outcomes
 

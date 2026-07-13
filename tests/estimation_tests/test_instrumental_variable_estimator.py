@@ -24,14 +24,13 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         Test we get the correct coefficient.
         """
         iv_estimator = InstrumentalVariableEstimator(
-            df=self.df,
             base_test_case=BaseTestCase(Input("X", float), Output("Y", float)),
             treatment_value=None,
             control_value=None,
             adjustment_set=set(),
             instrument="Z",
         )
-        effect_estimate = iv_estimator.estimate_coefficient()
+        effect_estimate = iv_estimator.estimate_coefficient(self.df)
         self.assertEqual(effect_estimate.value[0], 2)
         self.assertEqual(effect_estimate.ci_low[0], 2)
         self.assertEqual(effect_estimate.ci_high[0], 2)

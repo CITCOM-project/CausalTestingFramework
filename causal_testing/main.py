@@ -95,6 +95,7 @@ class CausalTestingPaths:
             raise FileNotFoundError(f"Data file not found: {self.exclude_edges_path}")
 
 
+# TODO: move this into its own class file for better API interaction
 class CausalTestingFramework:
     # pylint: disable=too-many-instance-attributes
     """
@@ -106,14 +107,20 @@ class CausalTestingFramework:
 
     """
 
-    def __init__(self, paths: CausalTestingPaths, ignore_cycles: bool = False, query: Optional[str] = None):
+    def __init__(
+        self,
+        paths: CausalTestingPaths,
+        df: pd.DataFrame = None,
+        ignore_cycles: bool = False,
+        query: Optional[str] = None,
+    ):
         self.paths = paths
         self.ignore_cycles = ignore_cycles
         self.query = query
 
         # These will be populated during setup
         self.dag: Optional[CausalDAG] = None
-        self.data: Optional[pd.DataFrame] = None
+        self.df: Optional[pd.DataFrame] = df
         self.variables: Dict[str, Any] = {"inputs": {}, "outputs": {}, "metas": {}}
         self.scenario: Optional[Scenario] = None
         self.test_cases: Optional[List[CausalTestCase]] = None
@@ -134,7 +141,7 @@ class CausalTestingFramework:
         self.dag = self.load_dag()
 
         # Load data
-        self.data = self.load_data(self.query)
+        self.df = self.load_data(self.query)
 
         # Create variables from DAG
         self.create_variables()
@@ -186,10 +193,10 @@ class CausalTestingFramework:
         Create variable objects from DAG nodes based on their connectivity.
         """
         for node_name, node_data in self.dag.nodes(data=True):
-            if node_name not in self.data.columns and not node_data.get("hidden", False):
+            if node_name not in self.df.columns and not node_data.get("hidden", False):
                 raise ValueError(f"Node {node_name} missing from data. Should it be marked as hidden?")
 
-            dtype = self.data.dtypes.get(node_name)
+            dtype = self.df.dtypes.get(node_name)
 
             # If node has no incoming edges, it's an input
             if self.dag.in_degree(node_name) == 0:
@@ -285,15 +292,16 @@ class CausalTestingFramework:
 
         # Handle global queries
         # Test-specific queries are handled by the estimator as not all estimators support them
-        filtered_df = self.data
+        # TODO: Make sure this goes into the test case evaluation
+        filtered_df = self.df
         if self.query:
-            filtered_df = self.data.query(self.query)
+            filtered_df = self.df.query(self.query)
+        if "query" in test:
+            filtered_df = filtered_df.query(test["query"])
 
         # Create the estimator with correct parameters
         estimator_class = estimator_map.get(test["estimator"]).load()
         estimator_kwargs = test.get("estimator_kwargs", {})
-        if "query" in test:
-            estimator_kwargs["query"] = test["query"]
         estimator = estimator_class(
             base_test_case=base_test,
             treatment_value=test.get("treatment_value"),
@@ -302,7 +310,6 @@ class CausalTestingFramework:
                 "adjustment_set",
                 self.dag.identification(base_test, self.scenario.hidden_variables()),
             ),
-            df=filtered_df,
             alpha=test.get("alpha", 0.05),
             **estimator_kwargs,
         )
@@ -324,64 +331,6 @@ class CausalTestingFramework:
             estimate_params=test.get("estimate_params"),
             estimator=estimator,
         )
-
-    def run_tests_in_batches(
-        self, batch_size: int = 100, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100
-    ) -> List[CausalTestResult]:
-        """
-        Run tests in batches to reduce memory usage.
-
-        :param batch_size: Number of tests to run in each batch
-        :param silent: Whether to suppress errors
-        :param adequacy: Whether to calculate causal test adequacy (defaults to False)
-        :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
-                               (defaults to 100)
-        :return: List of all test results
-        :raises: ValueError if no tests are loaded
-        """
-        logger.info("Running causal tests in batches...")
-
-        if not self.test_cases:
-            raise ValueError("No tests loaded. Call load_tests() first.")
-
-        num_tests = len(self.test_cases)
-        num_batches = int(np.ceil(num_tests / batch_size))
-
-        logger.info(f"Processing {num_tests} tests in {num_batches} batches of up to {batch_size} tests each")
-        with tqdm(total=num_tests, desc="Overall progress", mininterval=0.1) as progress:
-            # Process each batch
-            for batch_idx in range(num_batches):
-                start_idx = batch_idx * batch_size
-                end_idx = min(start_idx + batch_size, num_tests)
-
-                logger.info(f"Processing batch {batch_idx + 1} of {num_batches} (tests {start_idx} to {end_idx - 1})")
-
-                # Get current batch of tests
-                current_batch = self.test_cases[start_idx:end_idx]
-
-                # Process the current batch
-                batch_results = []
-                for test_case in current_batch:
-                    try:
-                        result = test_case.execute_test()
-                        if adequacy:
-                            result.adequacy = DataAdequacy(test_case=test_case, bootstrap_size=bootstrap_size)
-                            result.adequacy.measure_adequacy()
-
-                        batch_results.append(result)
-                    # pylint: disable=broad-exception-caught
-                    except Exception as e:
-                        if not silent:
-                            logger.error(f"Type or attribute error in test: {str(e)}")
-                            raise
-                        batch_results.append(
-                            CausalTestResult(effect_estimate=None, estimator=test_case.estimator, error_message=str(e))
-                        )
-
-                    progress.update(1)
-
-                yield batch_results
-        logger.info(f"Completed processing in {num_batches} batches")
 
     def run_tests(
         self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100
@@ -406,10 +355,10 @@ class CausalTestingFramework:
         results = []
         for test_case in tqdm(self.test_cases):
             try:
-                result = test_case.execute_test()
+                result = test_case.execute_test(self.df)
                 if adequacy:
                     result.adequacy = DataAdequacy(test_case=test_case, bootstrap_size=bootstrap_size)
-                    result.adequacy.measure_adequacy()
+                    result.adequacy.measure_adequacy(self.df)
                 results.append(result)
             # pylint: disable=broad-exception-caught
             except Exception as e:
@@ -579,12 +528,6 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="Do not crash on error. If set to true, errors are recorded as test results.",
         default=False,
-    )
-    parser_test.add_argument(
-        "--batch-size",
-        type=int,
-        default=0,
-        help="Run tests in batches of the specified size (default: 0, which means no batching)",
     )
 
     # Discovery

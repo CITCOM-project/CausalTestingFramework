@@ -2,6 +2,8 @@
 
 import logging
 
+import pandas as pd
+
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import CausalEffect
@@ -44,25 +46,24 @@ class CausalTestCase:
             self.estimate_params = estimate_params
         self.effect = base_test_case.effect
 
-    def execute_test(self, estimator: type(Estimator) = None) -> CausalTestResult:
+    # TODO: Make `estimate_params` an arg here
+    def execute_test(self, df: pd.DataFrame) -> CausalTestResult:
         """
         Execute a causal test case and return the causal test result.
         :param estimator: An alternative estimator. Defaults to `self.estimator`. This parameter is useful when you want
         to execute a test with different data or a different equational form, but don't want to redefine the whole test
         case.
 
+        :param df: The data to use.
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
 
-        if estimator is None:
-            estimator = self.estimator
-
-        if not hasattr(estimator, f"estimate_{self.estimate_type}"):
-            raise AttributeError(f"{estimator.__class__} has no {self.estimate_type} method.")
-        estimate_effect = getattr(estimator, f"estimate_{self.estimate_type}")
-        effect_estimate = estimate_effect(**self.estimate_params)
+        if not hasattr(self.estimator, f"estimate_{self.estimate_type}"):
+            raise AttributeError(f"{self.estimator.__class__} has no {self.estimate_type} method.")
+        estimate_effect = getattr(self.estimator, f"estimate_{self.estimate_type}")
+        effect_estimate = estimate_effect(df, **self.estimate_params)
         return CausalTestResult(
-            estimator=estimator,
+            estimator=self.estimator,
             effect_estimate=effect_estimate,
         )
 

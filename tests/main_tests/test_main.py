@@ -217,12 +217,6 @@ class TestCausalTestingFramework(unittest.TestCase):
             framework.run_tests()
         self.assertEqual("No tests loaded. Call load_tests() first.", str(e.exception))
 
-    def test_unloaded_tests_batches(self):
-        framework = CausalTestingFramework(self.paths)
-        with self.assertRaises(ValueError) as e:
-            next(framework.run_tests_in_batches())
-        self.assertEqual("No tests loaded. Call load_tests() first.", str(e.exception))
-
     def test_ctf(self):
         framework = CausalTestingFramework(self.paths)
         framework.setup()
@@ -256,28 +250,6 @@ class TestCausalTestingFramework(unittest.TestCase):
                     )
                     self.assertEqual(result["passed"], test_passed)
 
-    def test_ctf_batches(self):
-        framework = CausalTestingFramework(self.paths)
-        framework.setup()
-
-        framework.load_tests()
-
-        output_files = []
-        with tempfile.TemporaryDirectory() as tmpdir:
-            for i, results in enumerate(framework.run_tests_in_batches()):
-                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
-                framework.save_results(results, temp_file_path)
-                output_files.append(temp_file_path)
-                del results
-
-            all_results = []
-            for file_path in output_files:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    all_results.extend(json.load(f))
-
-        executed_results = [result for result in all_results if not result.get("skip", False)]
-        self.assertEqual([result["passed"] for result in executed_results], [True])
-
     def test_ctf_exception(self):
         framework = CausalTestingFramework(self.paths, query="test_input < 0")
         framework.setup()
@@ -285,29 +257,6 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.load_tests()
         with self.assertRaises(ValueError):
             framework.run_tests()
-
-    def test_ctf_batches_exception_silent(self):
-        framework = CausalTestingFramework(self.paths, query="test_input < 0")
-        framework.setup()
-
-        framework.load_tests()
-
-        output_files = []
-        with tempfile.TemporaryDirectory() as tmpdir:
-            for i, results in enumerate(framework.run_tests_in_batches(silent=True)):
-                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
-                framework.save_results(results, temp_file_path)
-                output_files.append(temp_file_path)
-                del results
-
-            all_results = []
-            for file_path in output_files:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    all_results.extend(json.load(f))
-
-        executed_results = [result for result in all_results if not result.get("skip", False)]
-        self.assertEqual([result["passed"] for result in executed_results], [False])
-        self.assertIsNotNone([result.get("error") for result in executed_results])
 
     def test_ctf_exception_silent(self):
         framework = CausalTestingFramework(self.paths, query="test_input < 0")
@@ -327,105 +276,6 @@ class TestCausalTestingFramework(unittest.TestCase):
 
             for result in non_skipped_results:
                 self.assertEqual(result["passed"], False)
-
-    def test_ctf_batches_exception(self):
-        framework = CausalTestingFramework(self.paths, query="test_input < 0")
-        framework.setup()
-
-        framework.load_tests()
-        with self.assertRaises(ValueError):
-            next(framework.run_tests_in_batches())
-
-    def test_ctf_batches_matches_run_tests(self):
-        framework = CausalTestingFramework(self.paths)
-        framework.setup()
-        framework.load_tests()
-        normal_results = framework.run_tests()
-
-        output_files = []
-        with tempfile.TemporaryDirectory() as tmpdir:
-            for i, results in enumerate(framework.run_tests_in_batches()):
-                temp_file_path = os.path.join(tmpdir, f"output_{i}.json")
-                framework.save_results(results, temp_file_path)
-                output_files.append(temp_file_path)
-                del results
-
-            all_results = []
-            for file_path in output_files:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    all_results.extend(json.load(f))
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            normal_output = os.path.join(tmpdir, "normal.json")
-            framework.save_results(normal_results, normal_output)
-            with open(normal_output) as f:
-                normal_json = json.load(f)
-
-            batch_output = os.path.join(tmpdir, "batch.json")
-            with open(batch_output, "w") as f:
-                json.dump(all_results, f)
-            with open(batch_output) as f:
-                batch_json = json.load(f)
-
-            self.assertEqual(normal_json, batch_json)
-
-    def test_global_query(self):
-        framework = CausalTestingFramework(self.paths)
-        framework.setup()
-
-        query_framework = CausalTestingFramework(self.paths, query="test_input > 0")
-        query_framework.setup()
-
-        self.assertTrue(len(query_framework.data) > 0)
-        self.assertTrue((query_framework.data["test_input"] > 0).all())
-
-        with open(self.test_config_path, "r", encoding="utf-8") as f:
-            test_configs = json.load(f)
-
-        test_config = test_configs["tests"][0].copy()
-        if "query" in test_config:
-            del test_config["query"]
-
-        base_test = query_framework.create_base_test(test_config)
-        causal_test = query_framework.create_causal_test(test_config, base_test)
-
-        self.assertTrue((causal_test.estimator.df["test_input"] > 0).all())
-
-        query_framework.create_variables()
-        self.assertIsNotNone(query_framework.scenario)
-
-    def test_test_specific_query(self):
-        framework = CausalTestingFramework(self.paths)
-        framework.setup()
-
-        with open(self.test_config_path, "r", encoding="utf-8") as f:
-            test_configs = json.load(f)
-
-        test_config = test_configs["tests"][0].copy()
-        test_config["query"] = "test_input > 0"
-
-        base_test = framework.create_base_test(test_config)
-        causal_test = framework.create_causal_test(test_config, base_test)
-
-        self.assertTrue(len(causal_test.estimator.df) > 0)
-        self.assertTrue((causal_test.estimator.df["test_input"] > 0).all())
-
-    def test_combined_queries(self):
-        global_framework = CausalTestingFramework(self.paths, query="test_input > 0")
-        global_framework.setup()
-
-        with open(self.test_config_path, "r", encoding="utf-8") as f:
-            test_configs = json.load(f)
-
-        test_config = test_configs["tests"][0].copy()
-        test_config["query"] = "test_output > 0"
-
-        base_test = global_framework.create_base_test(test_config)
-        causal_test = global_framework.create_causal_test(test_config, base_test)
-
-        self.assertTrue(len(causal_test.estimator.df) > 0)
-        self.assertTrue((causal_test.estimator.df["test_input"] > 0).all())
-        self.assertTrue((causal_test.estimator.df["test_output"] > 0).all())
 
     def test_parse_args(self):
         with patch(
@@ -461,31 +311,6 @@ class TestCausalTestingFramework(unittest.TestCase):
                 "--output",
                 str(self.output_path.parent / "main.json"),
                 "-a",
-            ],
-        ):
-            main()
-            with open(self.output_path.parent / "main.json") as f:
-                log = json.load(f)
-            executed_tests = [test for test in log if not test.get("skip", False)]
-            assert all(test["result"].get("bootstrap_size", 100) == 100 for test in executed_tests)
-
-    def test_parse_args_adequacy_batches(self):
-        with patch(
-            "sys.argv",
-            [
-                "causal_testing",
-                "test",
-                "--dag-path",
-                str(self.dag_path),
-                "--data-paths",
-                str(self.data_paths[0]),
-                "--test-config",
-                str(self.test_config_path),
-                "--output",
-                str(self.output_path.parent / "main.json"),
-                "-a",
-                "--batch-size",
-                "5",
             ],
         ):
             main()
@@ -542,27 +367,6 @@ class TestCausalTestingFramework(unittest.TestCase):
                 log = json.load(f)
             executed_tests = [test for test in log if not test.get("skip", False)]
             assert all(test["result"].get("bootstrap_size", 50) == 50 for test in executed_tests)
-
-    def test_parse_args_batches(self):
-        with patch(
-            "sys.argv",
-            [
-                "causal_testing",
-                "test",
-                "--dag-path",
-                str(self.dag_path),
-                "--data-paths",
-                str(self.data_paths[0]),
-                "--test-config",
-                str(self.test_config_path),
-                "--output",
-                str(self.output_path.parent / "main_batch.json"),
-                "--batch-size",
-                "5",
-            ],
-        ):
-            main()
-            self.assertTrue((self.output_path.parent / "main_batch.json").exists())
 
     def test_parse_args_generation(self):
         with tempfile.TemporaryDirectory() as tmp:

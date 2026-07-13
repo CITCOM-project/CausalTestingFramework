@@ -29,22 +29,20 @@ class InstrumentalVariableEstimator(Estimator):
         control_value: float,
         adjustment_set: set,
         instrument: str,
-        df: pd.DataFrame = None,
         alpha: float = 0.05,
-        query: str = "",
+        bootstrap_size=100,
     ):
         super().__init__(
             base_test_case=base_test_case,
             treatment_value=treatment_value,
             control_value=control_value,
             adjustment_set=adjustment_set,
-            df=df,
             effect_modifiers=None,
             alpha=alpha,
-            query=query,
         )
 
         self.instrument = instrument
+        self.bootstrap_size = bootstrap_size
 
     def add_modelling_assumptions(self):
         """
@@ -77,16 +75,15 @@ class InstrumentalVariableEstimator(Estimator):
         # Estimate the coefficient of I on X by cancelling
         return ab / a
 
-    def estimate_coefficient(self, bootstrap_size=100) -> EffectEstimate:
+    def estimate_coefficient(self, df: pd.DataFrame) -> EffectEstimate:
         """
-        Estimate the unit ate (i.e. coefficient) of the treatment on the
-        outcome.
-        """
-        bootstraps = sorted(
-            [self.iv_coefficient(self.df.sample(len(self.df), replace=True)) for _ in range(bootstrap_size)]
-        )
-        bound = ceil((bootstrap_size * self.alpha) / 2)
-        ci_low = pd.Series(bootstraps[bound])
-        ci_high = pd.Series(bootstraps[bootstrap_size - bound])
+        Estimate the unit ate (i.e. coefficient) of the treatment on the outcome.
 
-        return EffectEstimate("coefficient", pd.Series(self.iv_coefficient(self.df)), ci_low, ci_high)
+        :param df: The data to use.
+        """
+        bootstraps = sorted([self.iv_coefficient(df.sample(len(df), replace=True)) for _ in range(self.bootstrap_size)])
+        bound = ceil((self.bootstrap_size * self.alpha) / 2)
+        ci_low = pd.Series(bootstraps[bound])
+        ci_high = pd.Series(bootstraps[self.bootstrap_size - bound])
+
+        return EffectEstimate("coefficient", pd.Series(self.iv_coefficient(df)), ci_low, ci_high)

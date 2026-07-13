@@ -38,23 +38,6 @@ def simple_cycle(causal_dag: CausalDAG):
     return [(rx_graph[i], rx_graph[j]) for i, j in rx.digraph_find_cycle(rx_graph)]
 
 
-def effect_direction(result: CausalTestResult) -> str:
-    """
-    Check whether the estimated causal effect is negative or positive.
-
-    :param result: The causal test result object.
-    :returns: Whether the estimated causal test is positive or negative (or no effect).
-    """
-    if pd.api.types.is_numeric_dtype(
-        result.estimator.df[result.estimator.base_test_case.treatment_variable.name]
-    ) and pd.api.types.is_numeric_dtype(result.estimator.df[result.estimator.base_test_case.outcome_variable.name]):
-        if Negative().apply(result):
-            return "negative"
-        if Positive().apply(result):
-            return "positive"
-    return None
-
-
 def is_match(u: str, v: str, patterns: list[str]):
     """
     Check whether a given edge matches a given pattern.
@@ -117,6 +100,22 @@ class Discovery(ABC):
 
         :returns: The inferred causal DAG.
         """
+
+    def effect_direction(self, result: CausalTestResult) -> str:
+        """
+        Check whether the estimated causal effect is negative or positive.
+
+        :param result: The causal test result object.
+        :returns: Whether the estimated causal test is positive or negative (or no effect).
+        """
+        if pd.api.types.is_numeric_dtype(
+            self.df[result.estimator.base_test_case.treatment_variable.name]
+        ) and pd.api.types.is_numeric_dtype(self.df[result.estimator.base_test_case.outcome_variable.name]):
+            if Negative().apply(result):
+                return "negative"
+            if Positive().apply(result):
+                return "positive"
+        return None
 
     def remove_cycles(self, causal_dag: CausalDAG):
         """
@@ -188,9 +187,8 @@ class Discovery(ABC):
                   (result, expected effect, treatment, outcome, effect direction).
         """
 
-        ctf = CausalTestingFramework(None)
+        ctf = CausalTestingFramework(None, df=self.df)
         ctf.dag = causal_dag
-        ctf.data = self.df
         ctf.create_variables()
         ctf.scenario = Scenario(list(ctf.variables["inputs"].values()) + list(ctf.variables["outputs"].values()))
 
@@ -210,7 +208,8 @@ class Discovery(ABC):
 
         for test_case, result in zip(ctf.test_cases, ctf.test_cases):
             try:
-                result = test_case.execute_test()
+
+                result = test_case.execute_test(self.df)
                 results.append(
                     {
                         "result": (
@@ -219,7 +218,7 @@ class Discovery(ABC):
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                         "treatment": test_case.base_test_case.treatment_variable.name,
                         "outcome": test_case.base_test_case.outcome_variable.name,
-                        "effect": effect_direction(result),
+                        "effect": self.effect_direction(result),
                     }
                 )
             except np.linalg.LinAlgError:

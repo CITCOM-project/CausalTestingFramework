@@ -4,6 +4,7 @@
 
 from operator import itemgetter
 
+import pandas as pd
 from pygad import GA
 
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
@@ -27,7 +28,9 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
         }
 
     # pylint: disable=too-many-locals
-    def search(self, surrogate_models: list[CubicSplineRegressionEstimator], scenario: Scenario) -> list:
+    def search(
+        self, surrogate_models: list[CubicSplineRegressionEstimator], scenario: Scenario, df: pd.DataFrame
+    ) -> list:
         solutions = []
 
         for surrogate_model in surrogate_models:
@@ -44,7 +47,7 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                 for i, adjustment in enumerate(surrogate_model.adjustment_set):
                     adjustment_dict[adjustment] = solution[i + 1]
 
-                ate = surrogate_model.estimate_ate_calculated(adjustment_dict).value
+                ate = surrogate_model.estimate_ate_calculated(df, adjustment_dict).value
                 if len(ate) > 1:
                     raise ValueError(
                         "Multiple ate values provided but currently only single values supported in this method"
@@ -96,7 +99,6 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
             var_space[adj] = {}
 
         for relationship in list(scenario.constraints):
-            print(relationship)
             rel_split = str(relationship).split(" ")
 
             if rel_split[0] in var_space:

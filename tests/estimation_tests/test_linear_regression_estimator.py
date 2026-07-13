@@ -65,27 +65,20 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         cls.base_test_case = BaseTestCase(Input("treatments", float), Output("outcomes", float))
         cls.program_15_base_test_case = BaseTestCase(Input("qsmk", float), Output("wt82_71", float))
 
-    def test_query(self):
-        df = self.nhefs_df
-        linear_regression_estimator = LinearRegressionEstimator(
-            self.program_15_base_test_case, None, None, set(), df, query="sex==1"
-        )
-        self.assertTrue(linear_regression_estimator.df.sex.all())
-
     def test_linear_regression_categorical_ate(self):
         df = self.scarf_df.copy()
         base_test_case = BaseTestCase(Input("color", float), Output("completed", float))
-        linear_regression_estimator = LinearRegressionEstimator(base_test_case, None, None, set(), df)
-        effect_estimate = linear_regression_estimator.estimate_coefficient()
+        linear_regression_estimator = LinearRegressionEstimator(base_test_case=base_test_case, adjustment_set=set())
+        effect_estimate = linear_regression_estimator.estimate_coefficient(df)
         self.assertTrue(
-            all([ci_low < 0 < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high)])
+            all(ci_low < 0 < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
         )
 
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator(self.base_test_case, None, None, set(), df)
-        effect_estimate = linear_regression_estimator.estimate_coefficient()
+        linear_regression_estimator = LinearRegressionEstimator(self.base_test_case, adjustment_set=set())
+        effect_estimate = linear_regression_estimator.estimate_coefficient(df)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
         self.assertTrue(
@@ -99,9 +92,11 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator(
-            self.base_test_case, None, None, set(), df, formula="outcomes ~ treatments + I(treatments ** 2)"
+            base_test_case=self.base_test_case,
+            adjustment_set=set(),
+            formula="outcomes ~ treatments + I(treatments ** 2)",
         )
-        effect_estimate = linear_regression_estimator.estimate_coefficient()
+        effect_estimate = linear_regression_estimator.estimate_coefficient(df)
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
         self.assertTrue(
             all(
@@ -130,11 +125,10 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            self.program_15_base_test_case,
-            1,
-            0,
-            covariates,
-            df,
+            base_test_case=self.program_15_base_test_case,
+            treatment_value=1,
+            control_value=0,
+            adjustment_set=covariates,
             formula=f"""wt82_71 ~ qsmk +
                              {'+'.join(sorted(list(covariates)))} +
                              I(age ** 2) +
@@ -144,7 +138,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
                              (qsmk * smokeintensity)""",
         )
 
-        effect_estimate = linear_regression_estimator.estimate_coefficient()
+        effect_estimate = linear_regression_estimator.estimate_coefficient(df)
         self.assertEqual(round(effect_estimate.value["qsmk"], 1), 2.6)
 
     def test_program_15_no_interaction(self):
@@ -168,16 +162,15 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            self.program_15_base_test_case,
-            1,
-            0,
-            covariates,
-            df,
+            base_test_case=self.program_15_base_test_case,
+            treatment_value=1,
+            control_value=0,
+            adjustment_set=covariates,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
-        effect_estimate = linear_regression_estimator.estimate_coefficient()
+        effect_estimate = linear_regression_estimator.estimate_coefficient(df)
 
         self.assertEqual(round(effect_estimate.value.iloc[0], 1), 3.5)
         self.assertEqual(round(effect_estimate.ci_low.iloc[0], 1), 2.6)
@@ -204,23 +197,21 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            self.program_15_base_test_case,
-            1,
-            0,
-            covariates,
-            df,
+            base_test_case=self.program_15_base_test_case,
+            treatment_value=1,
+            control_value=0,
+            adjustment_set=covariates,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
-        effect_estimate = linear_regression_estimator.estimate_ate()
+        effect_estimate = linear_regression_estimator.estimate_ate(df)
         self.assertEqual(round(effect_estimate.value[0], 1), 3.5)
         self.assertEqual([round(effect_estimate.ci_low[0], 1), round(effect_estimate.ci_high[0], 1)], [2.6, 4.3])
 
     def test_program_15_no_interaction_ate_calculated(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
         without product parameter."""
-        df = self.nhefs_df
         covariates = {
             "sex",
             "race",
@@ -238,18 +229,17 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            self.program_15_base_test_case,
-            1,
-            0,
-            covariates,
-            df,
+            base_test_case=self.program_15_base_test_case,
+            treatment_value=1,
+            control_value=0,
+            adjustment_set=covariates,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
 
         effect_estimate = linear_regression_estimator.estimate_ate_calculated(
-            adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates}
+            df=self.nhefs_df, adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates}
         )
         self.assertEqual(round(effect_estimate.value[0], 1), 3.5)
         self.assertEqual([round(effect_estimate.ci_low[0], 1), round(effect_estimate.ci_high[0], 1)], [1.9, 5])
@@ -257,22 +247,35 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_2_with_robustness_validation(self):
         """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
         df = self.chapter_11_df.copy()
-        linear_regression_estimator = LinearRegressionEstimator(self.base_test_case, 100, 90, set(), df)
+        linear_regression_estimator = LinearRegressionEstimator(
+            base_test_case=self.base_test_case,
+            treatment_value=100,
+            control_value=90,
+            adjustment_set=set(),
+        )
 
         cv = CausalValidator()
         self.assertEqual(
-            round(cv.estimate_robustness(linear_regression_estimator.fit_model())["treatments"], 4), 0.7353
+            round(cv.estimate_robustness(linear_regression_estimator.fit_model(df))["treatments"], 4), 0.7353
         )
 
     def test_gp(self):
         df = pd.DataFrame()
-        df["X"] = np.arange(10)
+        df["X"] = np.arange(10).astype(float)
         df["Y"] = 1 / (df["X"] + 1)
+        print(df)
         base_test_case = BaseTestCase(Input("X", float), Output("Y", float))
-        linear_regression_estimator = LinearRegressionEstimator(base_test_case, 0, 1, set(), df.astype(float))
-        linear_regression_estimator.gp_formula(seeds=["reciprocal(add(X, 1))"], extra_operators=[(reciprocal, 1)])
+        linear_regression_estimator = LinearRegressionEstimator(
+            base_test_case=base_test_case,
+            treatment_value=0,
+            control_value=1,
+            adjustment_set=set(),
+        )
+        linear_regression_estimator.gp_formula(
+            df=df, seeds=["reciprocal(add(X, 1))"], extra_operators=[(reciprocal, 1)]
+        )
         self.assertEqual(linear_regression_estimator.formula, "Y ~ I(1/(X + 1)) - 1")
-        effect_estimate = linear_regression_estimator.estimate_ate_calculated()
+        effect_estimate = linear_regression_estimator.estimate_ate_calculated(df)
         self.assertEqual(round(effect_estimate.value[0], 2), 0.50)
         self.assertEqual(round(effect_estimate.ci_low[0], 2), 0.50)
         self.assertEqual(round(effect_estimate.ci_high[0], 2), 0.50)
@@ -282,13 +285,20 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         base_test_case = BaseTestCase(Input("X", float), Output("Y", float))
         df["X"] = np.arange(10)
         df["Y"] = 2 * (df["X"] ** 2)
-        linear_regression_estimator = LinearRegressionEstimator(base_test_case, 0, 1, set(), df.astype(float))
-        linear_regression_estimator.gp_formula(seed=1, max_order=2, seeds=["mul(2, power_2(X))"], extra_operators=[])
+        linear_regression_estimator = LinearRegressionEstimator(
+            base_test_case=base_test_case,
+            treatment_value=0,
+            control_value=1,
+            adjustment_set=set(),
+        )
+        linear_regression_estimator.gp_formula(
+            df=df, seed=1, max_order=2, seeds=["mul(2, power_2(X))"], extra_operators=[]
+        )
         self.assertEqual(
             linear_regression_estimator.formula,
             "Y ~ I(2*X**2) - 1",
         )
-        effect_estimate = linear_regression_estimator.estimate_ate_calculated()
+        effect_estimate = linear_regression_estimator.estimate_ate_calculated(df)
         self.assertEqual(round(effect_estimate.value[0], 2), -2.00)
         self.assertEqual(round(effect_estimate.ci_low[0], 2), -2.00)
         self.assertEqual(round(effect_estimate.ci_high[0], 2), -2.00)
@@ -309,9 +319,14 @@ class TestLinearRegressionInteraction(unittest.TestCase):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
         base_test_case = BaseTestCase(Input("X1", float), Output("Y", float))
         lr_model = LinearRegressionEstimator(
-            base_test_case, 1, 0, {"X2"}, effect_modifiers={"x2": 0}, formula="Y ~ X1 + X2 + (X1 * X2)", df=self.df
+            base_test_case=base_test_case,
+            treatment_value=1,
+            control_value=0,
+            adjustment_set={"X2"},
+            effect_modifiers={"x2": 0},
+            formula="Y ~ X1 + X2 + (X1 * X2)",
         )
-        effect_estimate = lr_model.estimate_ate()
+        effect_estimate = lr_model.estimate_ate(self.df)
         self.assertAlmostEqual(effect_estimate.value[0], 2.0)
 
     def test_categorical_confidence_intervals(self):
@@ -321,9 +336,8 @@ class TestLinearRegressionInteraction(unittest.TestCase):
             control_value=None,
             treatment_value=None,
             adjustment_set={},
-            df=self.scarf_df,
         )
-        effect_estimate = lr_model.estimate_coefficient()
+        effect_estimate = lr_model.estimate_coefficient(self.scarf_df)
 
         # The precise values don't really matter. This test is primarily intended to make sure the return type is correct.
         self.assertTrue(

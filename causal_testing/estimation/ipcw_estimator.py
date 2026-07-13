@@ -42,7 +42,6 @@ class IPCWEstimator(Estimator):
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
-        df: pd.DataFrame,
         timesteps_per_observation: int,
         control_strategy: list[tuple[int, str, Any]],
         treatment_strategy: list[tuple[int, str, Any]],
@@ -59,10 +58,8 @@ class IPCWEstimator(Estimator):
             treatment_value=[val for _, _, val in treatment_strategy],
             control_value=[val for _, _, val in control_strategy],
             adjustment_set=None,
-            df=df,
             effect_modifiers=None,
             alpha=alpha,
-            query="",
         )
         self.timesteps_per_observation = timesteps_per_observation
         self.control_strategy = control_strategy
@@ -71,7 +68,6 @@ class IPCWEstimator(Estimator):
         self.fit_bl_switch_formula = fit_bl_switch_formula
         self.fit_bltd_switch_formula = fit_bltd_switch_formula
         self.eligibility = eligibility
-        self.df = df.sort_values(["id", "time"])
         self.len_control_group = None
         self.len_treatment_group = None
 
@@ -80,7 +76,6 @@ class IPCWEstimator(Estimator):
                 max(len(self.control_strategy), len(self.treatment_strategy)) + 1
             ) * self.timesteps_per_observation
         self.total_time = total_time
-        self.preprocess_data()
 
     def add_modelling_assumptions(self):
         self.modelling_assumptions.append("The variables in the data vary over time.")
@@ -173,35 +168,36 @@ class IPCWEstimator(Estimator):
             }
         )
 
-    def preprocess_data(self):
+    def preprocess_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Set up the treatment-specific columns in the data that are needed to estimate the hazard ratio.
+
+        :param df: The data to use.
+        :returns: The preprocessed DataFrame.
         """
 
-        self.df["trtrand"] = None  # treatment/control arm
-        self.df["xo_t_do"] = None  # did the individual deviate from the treatment of interest here?
-        self.df["eligible"] = self.df.eval(self.eligibility) if self.eligibility is not None else True
+        df = df.sort_values(["id", "time"])
+
+        df["trtrand"] = None  # treatment/control arm
+        df["xo_t_do"] = None  # did the individual deviate from the treatment of interest here?
+        df["eligible"] = df.eval(self.eligibility) if self.eligibility is not None else True
 
         # when did a fault occur?
-        fault_time_df = self.df.groupby("id", sort=False)[[self.status_column, "time", "id"]].apply(
-            self.setup_fault_time
-        )
+        fault_time_df = df.groupby("id", sort=False)[[self.status_column, "time", "id"]].apply(self.setup_fault_time)
 
-        assert len(fault_time_df) == len(self.df), "Fault times error"
-        self.df["fault_time"] = fault_time_df["fault_time"].values
+        assert len(fault_time_df) == len(df), "Fault times error"
+        df["fault_time"] = fault_time_df["fault_time"].values
 
         assert (
-            self.df.groupby("id", sort=False)["fault_time"].apply(lambda x: len(set(x)) == 1).all()
+            df.groupby("id", sort=False)["fault_time"].apply(lambda x: len(set(x)) == 1).all()
         ), "Each individual must have a unique fault time."
 
-        fault_t_do_df = self.df.groupby("id", sort=False)[["id", "time", self.status_column]].apply(
-            self.setup_fault_t_do
-        )
-        assert len(fault_t_do_df) == len(self.df), "Fault t_do error"
-        self.df["fault_t_do"] = fault_t_do_df["fault_t_do"].values
+        fault_t_do_df = df.groupby("id", sort=False)[["id", "time", self.status_column]].apply(self.setup_fault_t_do)
+        assert len(fault_t_do_df) == len(df), "Fault t_do error"
+        df["fault_t_do"] = fault_t_do_df["fault_t_do"].values
 
-        living_runs = self.df.query("fault_time > 0").loc[
-            (self.df["time"] % self.timesteps_per_observation == 0) & (self.df["time"] <= self.total_time)
+        living_runs = df.query("fault_time > 0").loc[
+            (df["time"] % self.timesteps_per_observation == 0) & (df["time"] <= self.total_time)
         ]
 
         logging.debug("  Preprocessing groups")
@@ -278,37 +274,31 @@ class IPCWEstimator(Estimator):
             )
         ]
 
-        self.df = individuals.loc[
+        df = individuals.loc[
             individuals["time"]
             < np.ceil(individuals["fault_time"] / self.timesteps_per_observation) * self.timesteps_per_observation
         ].reset_index()
         logger.debug(f"{len(individuals.groupby('id'))} individuals")
+        return df
 
-    def estimate_hazard_ratio(self) -> EffectEstimate:
+    def estimate_hazard_ratio(self, df: pd.DataFrame) -> EffectEstimate:
         """
         Estimate the hazard ratio.
+        :param df: The data to use.
         """
 
-        if self.df["fault_t_do"].sum() == 0:
-            raise ValueError("No recorded faults")
+        df = self.preprocess_data(df)
 
-        preprocessed_data = self.df.copy()
+        if df["fault_t_do"].sum() == 0:
+            raise ValueError("No recorded faults")
 
         # Use logistic regression to predict switching given baseline covariates
         logger.debug("Use logistic regression to predict switching given baseline covariates")
-        fit_bl_switch_c = smf.logit(self.fit_bl_switch_formula, data=self.df.loc[self.df.trtrand == 0]).fit(
-            method="bfgs"
-        )
-        fit_bl_switch_t = smf.logit(self.fit_bl_switch_formula, data=self.df.loc[self.df.trtrand == 1]).fit(
-            method="bfgs"
-        )
+        fit_bl_switch_c = smf.logit(self.fit_bl_switch_formula, data=df.loc[df.trtrand == 0]).fit(method="bfgs")
+        fit_bl_switch_t = smf.logit(self.fit_bl_switch_formula, data=df.loc[df.trtrand == 1]).fit(method="bfgs")
 
-        preprocessed_data.loc[preprocessed_data["trtrand"] == 0, "pxo1"] = fit_bl_switch_c.predict(
-            self.df.loc[self.df.trtrand == 0]
-        )
-        preprocessed_data.loc[preprocessed_data["trtrand"] == 1, "pxo1"] = fit_bl_switch_t.predict(
-            self.df.loc[self.df.trtrand == 1]
-        )
+        df.loc[df["trtrand"] == 0, "pxo1"] = fit_bl_switch_c.predict(df.loc[df.trtrand == 0])
+        df.loc[df["trtrand"] == 1, "pxo1"] = fit_bl_switch_t.predict(df.loc[df.trtrand == 1])
 
         # Use logistic regression to predict switching given baseline and time-updated covariates (model S12)
         logger.debug(
@@ -316,20 +306,16 @@ class IPCWEstimator(Estimator):
         )
         fit_bltd_switch_c = smf.logit(
             self.fit_bltd_switch_formula,
-            data=self.df.loc[self.df.trtrand == 0],
+            data=df.loc[df.trtrand == 0],
         ).fit(method="bfgs")
         fit_bltd_switch_t = smf.logit(
             self.fit_bltd_switch_formula,
-            data=self.df.loc[self.df.trtrand == 1],
+            data=df.loc[df.trtrand == 1],
         ).fit(method="bfgs")
 
-        preprocessed_data.loc[preprocessed_data["trtrand"] == 0, "pxo2"] = fit_bltd_switch_c.predict(
-            self.df.loc[self.df.trtrand == 0]
-        )
-        preprocessed_data.loc[preprocessed_data["trtrand"] == 1, "pxo2"] = fit_bltd_switch_t.predict(
-            self.df.loc[self.df.trtrand == 1]
-        )
-        if (preprocessed_data["pxo2"] == 1).any():
+        df.loc[df["trtrand"] == 0, "pxo2"] = fit_bltd_switch_c.predict(df.loc[df.trtrand == 0])
+        df.loc[df["trtrand"] == 1, "pxo2"] = fit_bltd_switch_t.predict(df.loc[df.trtrand == 1])
+        if (df["pxo2"] == 1).any():
             raise ValueError(
                 "Probability of switching given baseline and time-varying confounders (pxo2) cannot be one."
             )
@@ -338,36 +324,30 @@ class IPCWEstimator(Estimator):
         # Estimate the probabilities of remaining 'un-switched' and hence the weights
         logger.debug("Estimate the probabilities of remaining 'un-switched' and hence the weights")
 
-        preprocessed_data["num"] = 1 - preprocessed_data["pxo1"]
-        preprocessed_data["denom"] = 1 - preprocessed_data["pxo2"]
-        preprocessed_data[["num", "denom"]] = (
-            preprocessed_data.sort_values(["id", "time"]).groupby("id")[["num", "denom"]].cumprod()
-        )
+        df["num"] = 1 - df["pxo1"]
+        df["denom"] = 1 - df["pxo2"]
+        df[["num", "denom"]] = df.sort_values(["id", "time"]).groupby("id")[["num", "denom"]].cumprod()
 
-        assert (
-            not preprocessed_data["num"].isnull().any()
-        ), f"{len(preprocessed_data['num'].isnull())} null numerator values"
-        assert (
-            not preprocessed_data["denom"].isnull().any()
-        ), f"{len(preprocessed_data['denom'].isnull())} null denom values"
+        assert not df["num"].isnull().any(), f"{len(df['num'].isnull())} null numerator values"
+        assert not df["denom"].isnull().any(), f"{len(df['denom'].isnull())} null denom values"
 
-        preprocessed_data["weight"] = 1 / preprocessed_data["denom"]
-        preprocessed_data["sweight"] = preprocessed_data["num"] / preprocessed_data["denom"]
+        df["weight"] = 1 / df["denom"]
+        df["sweight"] = df["num"] / df["denom"]
 
-        preprocessed_data["tin"] = preprocessed_data["time"]
-        preprocessed_data["tout"] = pd.concat(
-            [(preprocessed_data["time"] + self.timesteps_per_observation), preprocessed_data["fault_time"]],
+        df["tin"] = df["time"]
+        df["tout"] = pd.concat(
+            [(df["time"] + self.timesteps_per_observation), df["fault_time"]],
             axis=1,
         ).min(axis=1)
 
-        assert (preprocessed_data["tin"] <= preprocessed_data["tout"]).all(), "Individuals left before joining."
+        assert (df["tin"] <= df["tout"]).all(), "Individuals left before joining."
 
         #  IPCW step 4: Use these weights in a weighted analysis of the outcome model
         # Estimate the KM graph and IPCW hazard ratio using Cox regression.
         logger.debug("Estimate the KM graph and IPCW hazard ratio using Cox regression.")
         cox_ph = CoxPHFitter(penalizer=0.2, alpha=self.alpha)
         cox_ph.fit(
-            df=preprocessed_data,
+            df=df,
             duration_col="tout",
             event_col="fault_t_do",
             weights_col="weight",

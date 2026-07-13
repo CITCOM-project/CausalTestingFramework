@@ -28,13 +28,14 @@ class MultinomialRegressionEstimator(RegressionEstimator):
         super().add_modelling_assumptions()
         self.modelling_assumptions.append("Outcome is categorical.")
 
-    def estimate_unit_odds_ratio(self) -> EffectEstimate:
+    def estimate_unit_odds_ratio(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
         coefficient of the treatment of interest.
 
+        :param df: The data to use.
         :return: The odds ratio with confidence intervals.
         """
-        model = self.fit_model(self.df)
+        model = self.fit_model(df)
 
         conf_int = model.conf_int(self.alpha)
         levels_of_interest = [

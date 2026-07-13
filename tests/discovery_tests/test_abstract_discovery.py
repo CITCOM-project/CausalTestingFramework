@@ -7,7 +7,7 @@ import pandas as pd
 from tempfile import TemporaryDirectory
 import os
 
-from causal_testing.discovery.abstract_discovery import TestResult, Discovery, simple_cycle, effect_direction
+from causal_testing.discovery.abstract_discovery import TestResult, Discovery, simple_cycle
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_result import CausalTestResult
 from causal_testing.estimation.effect_estimate import EffectEstimate
@@ -31,8 +31,11 @@ class AbstractDiscovery(Discovery):
 class TestAbstractHillClimber(unittest.TestCase):
     def setUp(self) -> None:
         base_test_case = BaseTestCase(Input("A", float), Output("B", float))
+        self.df = pd.DataFrame({"A": [1, 2], "B": [4, 5]})
+        self.abstract_discovery = AbstractDiscovery(
+            df=self.df,
+        )
         self.estimator = LinearRegressionEstimator(
-            df=pd.DataFrame({"A": [1, 2], "B": [4, 5]}),
             base_test_case=base_test_case,
             treatment_value=1,
             control_value=0,
@@ -54,21 +57,21 @@ class TestAbstractHillClimber(unittest.TestCase):
             estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(5.05)),
         )
-        self.assertEqual(effect_direction(ctr), "positive")
+        self.assertEqual(self.abstract_discovery.effect_direction(ctr), "positive")
 
     def test_effect_direction_negative(self):
         ctr = CausalTestResult(
             estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(-5.05)),
         )
-        self.assertEqual(effect_direction(ctr), "negative")
+        self.assertEqual(self.abstract_discovery.effect_direction(ctr), "negative")
 
     def test_effect_direction_none(self):
         ctr = CausalTestResult(
             estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
         )
-        self.assertEqual(effect_direction(ctr), None)
+        self.assertEqual(self.abstract_discovery.effect_direction(ctr), None)
 
     def test_include_edge_wildcard(self):
         abstract_discovery = AbstractDiscovery(

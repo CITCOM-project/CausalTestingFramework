@@ -27,11 +27,9 @@ class RegressionEstimator(Estimator):
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
-        df: pd.DataFrame = None,
         effect_modifiers: dict[Variable, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
-        query: str = "",
     ):
         # pylint: disable=R0801
         super().__init__(
@@ -39,10 +37,8 @@ class RegressionEstimator(Estimator):
             treatment_value=treatment_value,
             control_value=control_value,
             adjustment_set=adjustment_set,
-            df=df,
             effect_modifiers=effect_modifiers,
             alpha=alpha,
-            query=query,
         )
 
         if effect_modifiers is None:
@@ -56,22 +52,19 @@ class RegressionEstimator(Estimator):
                 [base_test_case.treatment_variable.name] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             )
             self.formula = f"{base_test_case.outcome_variable.name} ~ {'+'.join(terms)}"
-        self.setup_covariates()
 
-    def setup_covariates(self):
+    def _setup_covariates(self, df: pd.DataFrame) -> pd.Series:
         """
         Parse the formula and set up the covariates from the design matrix so we can use them in the statsmodels array
         API. This allows us to only parse the formula once, rather than using the formula API, which parses it every
         time the regression model is fit, which can be a lot if using causal test adequacy.
+        :param df: The data to use.
+        :returns: The data and the covariate columns.
         """
-        if self.df is not None:
-            _, covariate_data = dmatrices(self.formula, self.df, return_type="dataframe")
-            self.covariates = covariate_data.columns
-            self.df = pd.concat(
-                [self.df, covariate_data[[col for col in covariate_data.columns if col not in self.df]]], axis=1
-            )
-        else:
-            self.covariates = None
+        _, covariate_data = dmatrices(self.formula, df, return_type="dataframe")
+        df = pd.concat([df, covariate_data[[col for col in covariate_data.columns if col not in df]]], axis=1)
+        covariates = covariate_data.columns.tolist()
+        return covariates, df.dropna(subset=covariates)
 
     @property
     @abstractmethod
@@ -94,31 +87,25 @@ class RegressionEstimator(Estimator):
             "do not need to be linear."
         )
 
-    def fit_model(self, data=None) -> RegressionResultsWrapper:
+    def fit_model(self, df: pd.DataFrame) -> RegressionResultsWrapper:
         """Run logistic regression of the treatment and adjustment set against the outcome and return the model.
 
+        :param df: The data to use.
         :return: The model after fitting to data.
         """
-        if data is None:
-            data = self.df
-        if self.covariates is None:
-            _, covariate_data = dmatrices(self.formula, data, return_type="dataframe")
-            covariates = covariate_data.columns
-            data = pd.concat(
-                [data, covariate_data[[col for col in covariate_data.columns if col not in data]]], axis=1
-            ).dropna()
-            model = self.regressor(data[self.base_test_case.outcome_variable.name], data[covariates]).fit(disp=0)
-        else:
-            data = data.dropna(subset=self.covariates)
-            model = self.regressor(data[self.base_test_case.outcome_variable.name], data[self.covariates]).fit(disp=0)
+        covariates, df = self._setup_covariates(df)
+        model = self.regressor(df[self.base_test_case.outcome_variable.name], df[covariates]).fit(disp=0)
         return model
 
-    def treatment_columns(self, model: RegressionResultsWrapper):
+    def treatment_columns(self, model: RegressionResultsWrapper) -> list[str]:
         """
         Get the names of the treatment columns from the model.
         This is a workaround for statsmodels mangling the names of categorical variables to include the values.
 
         :param model: The fitted model from which to extract the variable names.
+        :returns: A list of the feature names in the model that represent the treatment. Normally this will just be
+        [treatment_name], but for categorical treatments, you'll have
+        [treatment_name[value_1], treatment_name[value_2]].
         """
         return [
             param
@@ -127,10 +114,10 @@ class RegressionEstimator(Estimator):
             or param.startswith(self.base_test_case.treatment_variable.name + "[")
         ]
 
-    def _predict(self, data=None, adjustment_config: dict = None) -> pd.DataFrame:
+    def _predict(self, df, adjustment_config: dict = None) -> pd.DataFrame:
         """Estimate the outcomes under control and treatment.
 
-        :param data: The data to use, defaults to `self.df`. Controllable for boostrap sampling.
+        :param df: The data to use.
         :param: adjustment_config: The values of the adjustment variables to use.
 
         :return: The estimated outcome under control and treatment, with confidence intervals in the form of a
@@ -139,9 +126,9 @@ class RegressionEstimator(Estimator):
         if adjustment_config is None:
             adjustment_config = {}
 
-        model = self.fit_model(data)
+        model = self.fit_model(df)
 
-        x = pd.DataFrame(columns=self.df.columns)
+        x = pd.DataFrame(columns=df.columns)
         x["Intercept"] = 1  # self.intercept
         x[self.base_test_case.treatment_variable.name] = [self.treatment_value, self.control_value]
 
