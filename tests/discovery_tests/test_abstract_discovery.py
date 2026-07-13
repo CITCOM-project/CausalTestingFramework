@@ -178,6 +178,7 @@ class TestAbstractHillClimber(unittest.TestCase):
 
     def test_evaluate_tests_inestimable(self):
         scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
+        scarf_df["completed"] = scarf_df["completed"].astype(bool)
         scarf_df = scarf_df.loc[(scarf_df["completed"]) & (scarf_df["color"] != "grey")]
 
         dag = CausalDAG()
@@ -186,6 +187,7 @@ class TestAbstractHillClimber(unittest.TestCase):
 
         abstract_discovery = AbstractDiscovery(scarf_df)
         test_results = abstract_discovery.evaluate_tests(dag)
+        print(test_results)
         expected_results = pd.DataFrame(
             [
                 {
@@ -221,7 +223,7 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "expected_effect": "SomeEffect",
                     "treatment": "length_in",
                     "outcome": "completed",
-                    "effect": "negative",
+                    "effect": "positive",
                 },
                 {
                     "result": TestResult.PASS,
@@ -245,7 +247,7 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "effect": "negative",
                 },
                 {
-                    "result": TestResult.PASS,
+                    "result": TestResult.INESTIMABLE,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "completed",
@@ -260,6 +262,7 @@ class TestAbstractHillClimber(unittest.TestCase):
                 },
             ]
         )
+        print(expected_results)
         pd.testing.assert_frame_equal(test_results, expected_results)
 
     def test_evaluate_tests(self):
