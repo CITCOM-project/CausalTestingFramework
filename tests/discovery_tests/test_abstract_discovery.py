@@ -176,6 +176,18 @@ class TestAbstractHillClimber(unittest.TestCase):
         with self.assertRaises(ValueError):
             abstract_discovery.write_dot(dag, "dag.dot")
 
+    def test_evaluate_tests_invalid_datatype(self):
+        scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
+        scarf_df["completed"] = pd.to_datetime(["2026-01-01" for _ in range(len(scarf_df))], format="%Y-%m-%d")
+
+        dag = CausalDAG()
+        dag.add_nodes_from(scarf_df.columns)
+        dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
+
+        abstract_discovery = AbstractDiscovery(scarf_df)
+        with self.assertRaises(ValueError):
+            abstract_discovery.evaluate_tests(dag)
+
     def test_evaluate_tests_inestimable(self):
         scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
         scarf_df["completed"] = scarf_df["completed"].astype(bool)
@@ -187,7 +199,6 @@ class TestAbstractHillClimber(unittest.TestCase):
 
         abstract_discovery = AbstractDiscovery(scarf_df)
         test_results = abstract_discovery.evaluate_tests(dag)
-        print(test_results)
         expected_results = pd.DataFrame(
             [
                 {
@@ -262,7 +273,6 @@ class TestAbstractHillClimber(unittest.TestCase):
                 },
             ]
         )
-        print(expected_results)
         pd.testing.assert_frame_equal(test_results, expected_results)
 
     def test_evaluate_tests(self):
