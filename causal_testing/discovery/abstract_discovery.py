@@ -10,6 +10,7 @@ from enum import Enum
 from itertools import permutations
 
 import networkx as nx
+import numpy as np
 import pandas as pd
 import rustworkx as rx
 
@@ -207,19 +208,9 @@ class Discovery(ABC):
 
         results = []
 
-        # We use "silent=False" here to allow for inestimable edges, but it'd be good to have a more stringent
-        # error catching strategy to catch "genuine" problems (e.g. to do with the structure of the data)
-        for test_case, result in zip(ctf.test_cases, ctf.run_tests(silent=False)):
-            if result.effect_estimate is None:
-                results.append(
-                    {
-                        "result": TestResult.INESTIMABLE,
-                        "expected_effect": test_case.expected_causal_effect.__class__.__name__,
-                        "treatment": test_case.base_test_case.treatment_variable.name,
-                        "outcome": test_case.base_test_case.outcome_variable.name,
-                    }
-                )
-            else:
+        for test_case, result in zip(ctf.test_cases, ctf.test_cases):
+            try:
+                result = test_case.execute_test()
                 results.append(
                     {
                         "result": (
@@ -229,6 +220,15 @@ class Discovery(ABC):
                         "treatment": test_case.base_test_case.treatment_variable.name,
                         "outcome": test_case.base_test_case.outcome_variable.name,
                         "effect": effect_direction(result),
+                    }
+                )
+            except np.linalg.LinAlgError:
+                results.append(
+                    {
+                        "result": TestResult.INESTIMABLE,
+                        "expected_effect": test_case.expected_causal_effect.__class__.__name__,
+                        "treatment": test_case.base_test_case.treatment_variable.name,
+                        "outcome": test_case.base_test_case.outcome_variable.name,
                     }
                 )
 

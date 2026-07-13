@@ -176,6 +176,105 @@ class TestAbstractHillClimber(unittest.TestCase):
         with self.assertRaises(ValueError):
             abstract_discovery.write_dot(dag, "dag.dot")
 
+    def test_evaluate_tests_invalid_datatype(self):
+        scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
+        scarf_df["completed"] = pd.to_datetime(["2026-01-01" for _ in range(len(scarf_df))], format="%Y-%m-%d")
+
+        dag = CausalDAG()
+        dag.add_nodes_from(scarf_df.columns)
+        dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
+
+        abstract_discovery = AbstractDiscovery(scarf_df)
+        with self.assertRaises(ValueError):
+            abstract_discovery.evaluate_tests(dag)
+
+    def test_evaluate_tests_inestimable(self):
+        scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
+        scarf_df["completed"] = scarf_df["completed"].astype(bool)
+        scarf_df = scarf_df.loc[(scarf_df["completed"]) & (scarf_df["color"] != "grey")]
+
+        dag = CausalDAG()
+        dag.add_nodes_from(scarf_df.columns)
+        dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
+
+        abstract_discovery = AbstractDiscovery(scarf_df)
+        test_results = abstract_discovery.evaluate_tests(dag)
+        expected_results = pd.DataFrame(
+            [
+                {
+                    "result": TestResult.PASS,
+                    "expected_effect": "NoEffect",
+                    "treatment": "length_in",
+                    "outcome": "large_gauge",
+                    "effect": "negative",
+                },
+                {
+                    "result": TestResult.PASS,
+                    "expected_effect": "NoEffect",
+                    "treatment": "large_gauge",
+                    "outcome": "length_in",
+                    "effect": "negative",
+                },
+                {
+                    "result": TestResult.PASS,
+                    "expected_effect": "NoEffect",
+                    "treatment": "length_in",
+                    "outcome": "color",
+                    "effect": None,
+                },
+                {
+                    "result": TestResult.PASS,
+                    "expected_effect": "NoEffect",
+                    "treatment": "color",
+                    "outcome": "length_in",
+                    "effect": None,
+                },
+                {
+                    "result": TestResult.FAIL,
+                    "expected_effect": "SomeEffect",
+                    "treatment": "length_in",
+                    "outcome": "completed",
+                    "effect": "positive",
+                },
+                {
+                    "result": TestResult.PASS,
+                    "expected_effect": "NoEffect",
+                    "treatment": "large_gauge",
+                    "outcome": "color",
+                    "effect": None,
+                },
+                {
+                    "result": TestResult.PASS,
+                    "expected_effect": "NoEffect",
+                    "treatment": "color",
+                    "outcome": "large_gauge",
+                    "effect": None,
+                },
+                {
+                    "result": TestResult.FAIL,
+                    "expected_effect": "SomeEffect",
+                    "treatment": "large_gauge",
+                    "outcome": "completed",
+                    "effect": "negative",
+                },
+                {
+                    "result": TestResult.INESTIMABLE,
+                    "expected_effect": "NoEffect",
+                    "treatment": "color",
+                    "outcome": "completed",
+                    "effect": None,
+                },
+                {
+                    "result": TestResult.INESTIMABLE,
+                    "expected_effect": "NoEffect",
+                    "treatment": "completed",
+                    "outcome": "color",
+                    "effect": None,
+                },
+            ]
+        )
+        pd.testing.assert_frame_equal(test_results, expected_results)
+
     def test_evaluate_tests(self):
         scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
 
