@@ -166,7 +166,6 @@ class Discovery(ABC):
                     else:
                         raise ValueError(f"Invalid test outcome {test['result']}")
 
-        individual.remove_node("index")
         if "file_index" in individual.nodes:
             individual.remove_node("file_index")
         nx.drawing.nx_pydot.write_dot(individual, output_file)

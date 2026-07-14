@@ -58,6 +58,7 @@ def main() -> None:
                 kwargs[split[0]] = split[1]
 
             logging.info("Discovering causal structure")
+            exclude_edges = list(nx.nx_pydot.read_dot(args.exclude_edges).edges()) if args.exclude_edges is not None else []
             
             if args.context:
                 dfs = []
@@ -65,23 +66,23 @@ def main() -> None:
                     temp_df = pd.read_csv(path)
                     temp_df['file_index'] = i
                     dfs.append(temp_df)
+
                 df = pd.concat(dfs, ignore_index=True)
                 
                 if args.variables:
                     df = df[list(set(args.variables + ['file_index']))]
+
+                exclude_edges.append('".*" -> file_index')
             else:
-                # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
-                # Otherwise you end up with duplicate indices, which causes problems further down the line
-                df = pd.concat([pd.read_csv(path) for path in args.data_paths]).reset_index()
+                df = pd.concat((pd.read_csv(path) for path in args.data_paths), ignore_index=True)
+                
                 if args.variables:
                     df = df[args.variables]
 
             discover_class = discover_map[args.technique].load()
             discover = discover_class(
                 df=df,
-                exclude_edges=(
-                    list(nx.nx_pydot.read_dot(args.exclude_edges).edges()) if args.exclude_edges is not None else []
-                ),
+                exclude_edges=exclude_edges,
                 include_edges=(
                     list(nx.nx_pydot.read_dot(args.include_edges).edges()) if args.include_edges is not None else []
                 ),
