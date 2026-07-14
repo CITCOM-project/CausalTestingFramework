@@ -72,7 +72,7 @@ def main() -> None:
                 if args.variables:
                     df = df[list(set(args.variables + ['file_index']))]
 
-                exclude_edges.append('".*" -> file_index')
+                exclude_edges.append((".*", "file_index"))
             else:
                 df = pd.concat((pd.read_csv(path) for path in args.data_paths), ignore_index=True)
                 
