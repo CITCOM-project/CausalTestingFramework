@@ -58,11 +58,23 @@ def main() -> None:
                 kwargs[split[0]] = split[1]
 
             logging.info("Discovering causal structure")
-            # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
-            # Otherwise you end up with duplicate indices, which causes problems further down the line
-            df = pd.concat([pd.read_csv(path) for path in args.data_paths]).reset_index()
-            if args.variables:
-                df = df[args.variables]
+            
+            if args.context:
+                dfs = []
+                for i, path in enumerate(args.data_paths):
+                    temp_df = pd.read_csv(path)
+                    temp_df['file_index'] = i
+                    dfs.append(temp_df)
+                df = pd.concat(dfs, ignore_index=True)
+                
+                if args.variables:
+                    df = df[list(set(args.variables + ['file_index']))]
+            else:
+                # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
+                # Otherwise you end up with duplicate indices, which causes problems further down the line
+                df = pd.concat([pd.read_csv(path) for path in args.data_paths]).reset_index()
+                if args.variables:
+                    df = df[args.variables]
 
             discover_class = discover_map[args.technique].load()
             discover = discover_class(
