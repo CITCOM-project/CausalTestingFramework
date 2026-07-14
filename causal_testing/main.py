@@ -591,6 +591,14 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
     parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
     parser_discover.add_argument(
+        "-c",
+        "--context",
+        help="Combine data from multiple files into a single DataFrame using a context node rather than concatenation",
+        action="store_true",
+        default=False,
+        required=False,
+    )
+    parser_discover.add_argument(
         "-a",
         "--alpha",
         help=(
