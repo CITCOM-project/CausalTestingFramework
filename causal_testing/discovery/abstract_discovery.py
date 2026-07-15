@@ -206,19 +206,20 @@ class Discovery(ABC):
 
         results = []
 
-        for test_case, result in zip(ctf.test_cases, ctf.test_cases):
+        for test_case in ctf.test_cases:
             try:
-
-                result = test_case.execute_test(self.df)
+                test_case.execute_test(self.df)
                 results.append(
                     {
                         "result": (
-                            TestResult.PASS if test_case.expected_causal_effect.apply(result) else TestResult.FAIL
+                            TestResult.PASS
+                            if test_case.expected_causal_effect.apply(test_case.result)
+                            else TestResult.FAIL
                         ),
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                         "treatment": test_case.base_test_case.treatment_variable.name,
                         "outcome": test_case.base_test_case.outcome_variable.name,
-                        "effect": self.effect_direction(result),
+                        "effect": self.effect_direction(test_case.result),
                     }
                 )
             except np.linalg.LinAlgError:

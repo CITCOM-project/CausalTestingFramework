@@ -123,24 +123,20 @@ def test_poisson_intensity_num_shapes(save=False):
         for wh in range(1, 11)
     ]
 
-    test_results = [
-        (
-            smt.execute_test(df=pd.read_csv(datapath, index_col=0).astype(float)),
-            observational.execute_test(observational_df),
-        )
-        for smt, datapath, observational in causal_test_cases
-    ]
+    for smt_causal_test, datapath, obs_causal_test in causal_test_cases:
+        smt_causal_test.execute_test(df=pd.read_csv(datapath, index_col=0).astype(float))
+        obs_causal_test.execute_test(observational_df)
 
     intensity_num_shapes_results += [
         {
-            "width": obs_causal_test_result.estimator.control_value,
-            "height": obs_causal_test_result.estimator.treatment_value,
-            "control": obs_causal_test_result.estimator.control_value,
-            "treatment": obs_causal_test_result.estimator.treatment_value,
-            "smt_risk_ratio": smt_causal_test_result.effect_estimate.value,
-            "obs_risk_ratio": obs_causal_test_result.effect_estimate.value[0],
+            "width": obs_causal_test.result.estimator.control_value,
+            "height": obs_causal_test.result.estimator.treatment_value,
+            "control": obs_causal_test.result.estimator.control_value,
+            "treatment": obs_causal_test.result.estimator.treatment_value,
+            "smt_risk_ratio": smt_causal_test.result.effect_estimate.value,
+            "obs_risk_ratio": obs_causal_test.result.effect_estimate.value[0],
         }
-        for smt_causal_test_result, obs_causal_test_result in test_results
+        for smt_causal_test, _, obs_causal_test in causal_test_cases
     ]
     intensity_num_shapes_results = pd.DataFrame(intensity_num_shapes_results)
     if save:
@@ -169,17 +165,18 @@ def test_poisson_width_num_shapes(save=False):
         for i in range(1, 17)
         for w in range(1, 10)
     ]
-    test_results = [test.execute_test(df) for test in causal_test_cases]
+    for test in causal_test_cases:
+        test.execute_test(df)
     width_num_shapes_results = [
         {
-            "control": causal_test_result.estimator.control_value,
-            "treatment": causal_test_result.estimator.treatment_value,
-            "intensity": causal_test_result.estimator.effect_modifiers["intensity"],
-            "ate": causal_test_result.effect_estimate.value[0],
-            "ci_low": causal_test_result.effect_estimate.ci_low,
-            "ci_high": causal_test_result.effect_estimate.ci_high,
+            "control": causal_test.result.estimator.control_value,
+            "treatment": causal_test.result.estimator.treatment_value,
+            "intensity": causal_test.result.estimator.effect_modifiers["intensity"],
+            "ate": causal_test.result.effect_estimate.value[0],
+            "ci_low": causal_test.result.effect_estimate.ci_low,
+            "ci_high": causal_test.result.effect_estimate.ci_high,
         }
-        for causal_test_result in test_results
+        for causal_test in causal_test_cases
     ]
     width_num_shapes_results = pd.DataFrame(width_num_shapes_results)
     if save:

@@ -58,7 +58,7 @@ def doubling_beta_CATE_on_csv(
     )
 
     # Add squared terms for beta, since it has a quadratic relationship with cumulative infections
-    causal_test_result = causal_test_case.execute_test(past_execution_df)
+    causal_test_case.execute_test(past_execution_df)
 
     # Repeat for association estimate (no adjustment)
     causal_test_case = CausalTestCase(
@@ -72,39 +72,39 @@ def doubling_beta_CATE_on_csv(
             formula="cum_infections ~ beta + I(beta ** 2)",
         ),
     )
-    association_test_result = causal_test_case.execute_test(past_execution_df)
+    causal_test_case.execute_test(past_execution_df)
 
     # Store results for plotting
     results_dict["association"] = {
-        "ate": association_test_result.effect_estimate.value,
-        "cis": [association_test_result.effect_estimate.ci_low, association_test_result.effect_estimate.ci_high],
+        "ate": causal_test_case.result.effect_estimate.value,
+        "cis": [causal_test_case.result.effect_estimate.ci_low, causal_test_case.result.effect_estimate.ci_high],
         "df": past_execution_df,
     }
     results_dict["causation"] = {
-        "ate": causal_test_result.effect_estimate.value,
-        "cis": [causal_test_result.effect_estimate.ci_low, causal_test_result.effect_estimate.ci_high],
+        "ate": causal_test_case.result.effect_estimate.value,
+        "cis": [causal_test_case.result.effect_estimate.ci_low, causal_test_case.result.effect_estimate.ci_high],
         "df": past_execution_df,
     }
 
     if verbose:
-        print(f"Association:\n{association_test_result}")
-        print(f"Causation:\n{causal_test_result}")
+        print(f"Association:\n{causal_test_case.result}")
+        print(f"Causation:\n{causal_test_case.result}")
 
     # Repeat causal inference after deleting all rows with treatment value to obtain counterfactual inferences
     if simulate_counterfactuals:
         counterfactual_past_execution_df = past_execution_df[past_execution_df["beta"] != 0.032]
-        counterfactual_causal_test_result = causal_test_case.execute_test(past_execution_df)
+        causal_test_case.execute_test(past_execution_df)
 
         results_dict["counterfactual"] = {
-            "ate": counterfactual_causal_test_result.effect_estimate.value,
+            "ate": causal_test_case.result.effect_estimate.value,
             "cis": [
-                counterfactual_causal_test_result.effect_estimate.ci_low,
-                counterfactual_causal_test_result.effect_estimate.ci_high,
+                causal_test_case.result.effect_estimate.ci_low,
+                causal_test_case.result.effect_estimate.ci_high,
             ],
             "df": counterfactual_past_execution_df,
         }
         if verbose:
-            print(f"Counterfactual:\n{counterfactual_causal_test_result}")
+            print(f"Counterfactual:\n{causal_test_case.result}")
 
     return results_dict
 

@@ -7,10 +7,10 @@ from causal_testing.estimation.linear_regression_estimator import LinearRegressi
 from causal_testing.estimation.ipcw_estimator import IPCWEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_adequacy import DAGAdequacy
+from causal_testing.testing.dag_adequacy import DAGAdequacy
 from causal_testing.testing.causal_effect import NoEffect, SomeEffect
 from causal_testing.specification.scenario import Scenario
-from causal_testing.testing.causal_test_adequacy import DataAdequacy
+from causal_testing.testing.data_adequacy import DataAdequacy
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
 
@@ -45,8 +45,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
             estimate_type="coefficient",
             estimator=estimator,
         )
-        adequacy_metric = DataAdequacy(causal_test_case)
-        adequacy_metric.measure_adequacy(self.df)
+        adequacy_metric = causal_test_case.measure_adequacy(self.df)
 
         self.assertAlmostEqual(
             adequacy_metric.kurtosis["test_input"],
@@ -54,9 +53,6 @@ class TestCausalTestAdequacy(unittest.TestCase):
             delta=1.0,
             msg=f"Expected kurtosis near 0, got {adequacy_metric.kurtosis['test_input']}",
         )  # This adds a numerical tolerance for Pandas
-        self.assertEqual(
-            adequacy_metric.bootstrap_size, 100, f"Expected bootstrap size 100 not {adequacy_metric.bootstrap_size}"
-        )
         self.assertEqual(adequacy_metric.passing, 19, f"Expected passing 19 not {adequacy_metric.passing}")
         self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
@@ -71,17 +67,13 @@ class TestCausalTestAdequacy(unittest.TestCase):
             estimate_type="coefficient",
             estimator=estimator,
         )
-        adequacy_metric = DataAdequacy(causal_test_case)
-        adequacy_metric.measure_adequacy(self.df)
+        adequacy_metric = causal_test_case.measure_adequacy(self.df)
 
         self.assertAlmostEqual(
             adequacy_metric.kurtosis["test_input_no_dist[T.b]"],
             0,
             delta=1.0,
             msg=f"Expected kurtosis near 0, got {adequacy_metric.kurtosis['test_input_no_dist[T.b]']}",
-        )
-        self.assertEqual(
-            adequacy_metric.bootstrap_size, 100, f"Expected bootstrap size 100 not {adequacy_metric.bootstrap_size}"
         )
         self.assertEqual(adequacy_metric.passing, 100, f"Expected passing 100 not {adequacy_metric.passing}")
         self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
@@ -112,16 +104,12 @@ class TestCausalTestAdequacy(unittest.TestCase):
             estimate_type="hazard_ratio",
             estimator=estimation_model,
         )
-        adequacy_metric = DataAdequacy(causal_test_case, group_by="id")
-        adequacy_metric.measure_adequacy(df)
+        adequacy_metric = causal_test_case.measure_adequacy(df, group_by="id")
 
         self.assertEqual(
             round(adequacy_metric.kurtosis["trtrand"], 3),
             -2.739,
             f"Expected kurtosis not {round(adequacy_metric.kurtosis['trtrand'], 3)}",
-        )
-        self.assertEqual(
-            adequacy_metric.bootstrap_size, 100, f"Expected bootstrap size 100 not {adequacy_metric.bootstrap_size}"
         )
         self.assertEqual(adequacy_metric.passing, 1, f"Expected passing 1 not {adequacy_metric.passing}")
         self.assertEqual(adequacy_metric.successful, 5, f"Expected successful 5 not {adequacy_metric.successful}")

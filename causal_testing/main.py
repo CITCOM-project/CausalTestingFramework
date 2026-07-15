@@ -9,7 +9,6 @@ from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -17,7 +16,6 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.testing.causal_test_adequacy import DataAdequacy
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import CausalTestResult
 
@@ -328,13 +326,12 @@ class CausalTestingFramework:
             base_test_case=base_test,
             expected_causal_effect=expected_effect,
             estimate_type=test.get("estimate_type", "ate"),
-            estimate_params=test.get("estimate_params"),
+            # TODO: Make sure this gets into test execution
+            # estimate_params=test.get("estimate_params"),
             estimator=estimator,
         )
 
-    def run_tests(
-        self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100
-    ) -> List[CausalTestResult]:
+    def run_tests(self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100):
         """
         Run all test cases and return their results.
 
@@ -343,7 +340,6 @@ class CausalTestingFramework:
         :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
                                (defaults to 100)
 
-        :return: List of CausalTestResult objects
         :raises: ValueError if no tests are loaded
         :raises: Exception if test execution fails
         """
@@ -352,26 +348,12 @@ class CausalTestingFramework:
         if not self.test_cases:
             raise ValueError("No tests loaded. Call load_tests() first.")
 
-        results = []
         for test_case in tqdm(self.test_cases):
-            try:
-                result = test_case.execute_test(self.df)
-                if adequacy:
-                    result.adequacy = DataAdequacy(test_case=test_case, bootstrap_size=bootstrap_size)
-                    result.adequacy.measure_adequacy(self.df)
-                results.append(result)
-            # pylint: disable=broad-exception-caught
-            except Exception as e:
-                if not silent:
-                    logger.error(f"Error running test {test_case}: {str(e)}")
-                    raise
-                result = CausalTestResult(estimator=test_case.estimator, effect_estimate=None, error_message=str(e))
-                results.append(result)
-                logger.info(f"Test errored: {test_case}")
+            test_case.execute_test(
+                self.df, suppress_estimation_errors=silent, adequacy=adequacy, bootstrap_size=bootstrap_size
+            )
 
-        return results
-
-    def save_results(self, results: List[CausalTestResult], output_path: str = None) -> list:
+    def save_results(self, output_path: str = None) -> list:
         """Save test results to JSON file in the expected format."""
         if output_path is None:
             output_path = self.paths.output_path
@@ -412,7 +394,7 @@ class CausalTestingFramework:
             else:
                 # Add executed test with actual results
                 test_case = self.test_cases[result_index]
-                result = results[result_index]
+                result = test_case.result
                 result_index += 1
 
                 test_passed = (

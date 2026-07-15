@@ -57,20 +57,20 @@ def run_test_case(verbose: bool = False):
             ),
         )
 
-        causal_test_result = causal_test_case.execute_test(obs_df)
+        causal_test_case.execute_test(obs_df)
 
         if verbose:
-            logging.info("Causation:\n%s", causal_test_result)
+            logging.info("Causation:\n%s", causal_test_case.result)
 
-        results_dict[outcome_variable.name]["ate"] = causal_test_result.effect_estimate.value
+        results_dict[outcome_variable.name]["ate"] = causal_test_case.result.effect_estimate.value
 
         results_dict[outcome_variable.name]["cis"] = [
-            causal_test_result.effect_estimate.ci_low,
-            causal_test_result.effect_estimate.ci_high,
+            causal_test_case.result.effect_estimate.ci_low,
+            causal_test_case.result.effect_estimate.ci_high,
         ]
 
         results_dict[outcome_variable.name]["test_passes"] = causal_test_case.expected_causal_effect.apply(
-            causal_test_result
+            causal_test_case.result
         )
 
     return results_dict

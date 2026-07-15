@@ -222,8 +222,8 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.setup()
 
         framework.load_tests()
-        results = framework.run_tests()
-        json_results = framework.save_results(results)
+        framework.run_tests()
+        json_results = framework.save_results()
 
         with open(self.test_config_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
@@ -240,12 +240,11 @@ class TestCausalTestingFramework(unittest.TestCase):
                     self.assertEqual(result["result"]["status"], "skipped")
                 else:
                     test_case = framework.test_cases[result_index]
-                    framework_result = results[result_index]
                     result_index += 1
 
                     test_passed = (
-                        test_case.expected_causal_effect.apply(framework_result)
-                        if framework_result.effect_estimate is not None
+                        test_case.expected_causal_effect.apply(test_case.result)
+                        if test_case.result.effect_estimate is not None
                         else False
                     )
                     self.assertEqual(result["passed"], test_passed)
@@ -263,8 +262,8 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.setup()
 
         framework.load_tests()
-        results = framework.run_tests(silent=True)
-        json_results = framework.save_results(results)
+        framework.run_tests(silent=True)
+        json_results = framework.save_results()
 
         with open(self.test_config_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
