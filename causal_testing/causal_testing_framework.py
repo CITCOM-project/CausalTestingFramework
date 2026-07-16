@@ -1,3 +1,7 @@
+"""
+This module implements the CausalTestingFramework class, which is the main interaction point for causal testing.
+"""
+
 import json
 import logging
 from importlib.metadata import entry_points
@@ -7,7 +11,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase

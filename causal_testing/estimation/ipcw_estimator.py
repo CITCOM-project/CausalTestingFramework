@@ -157,6 +157,8 @@ class IPCWEstimator(Estimator):
         Return the time at which the event of interest (i.e. a fault) occurred.
         """
         fault = individual[~individual[self.status_column]]
+        if (~fault).all():
+            raise ValueError("No recorded faults")
         fault_time = (
             individual["time"].loc[fault.index[0]]
             if not fault.empty
@@ -288,9 +290,6 @@ class IPCWEstimator(Estimator):
         """
 
         df = self.preprocess_data(df)
-
-        if df["fault_t_do"].sum() == 0:
-            raise ValueError("No recorded faults")
 
         # Use logistic regression to predict switching given baseline covariates
         logger.debug("Use logistic regression to predict switching given baseline covariates")

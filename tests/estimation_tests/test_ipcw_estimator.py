@@ -89,3 +89,17 @@ class TestIPCWEstimator(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             estimation_model.preprocess_data(self.df.assign(t=0))
+
+    def test_preprocess_data_no_faults(self):
+        estimation_model = IPCWEstimator(
+            self.timesteps_per_intervention,
+            self.control_strategy,
+            self.treatment_strategy,
+            self.outcome,
+            self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaises(ValueError):
+            estimation_model.preprocess_data(self.df.assign(ok=True))

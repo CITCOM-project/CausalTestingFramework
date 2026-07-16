@@ -41,12 +41,22 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.load_data(data_paths=self.data_paths, query="test_input > 4")
         self.assertTrue((framework.df["test_input"] > 4).all())
 
+    def test_load_data_invalid_extension(self):
+        framework = CausalTestingFramework()
+        with self.assertRaises(ValueError):
+            framework.load_data("data.invalid")
+
     def test_load_dag_missing_node(self):
         framework = CausalTestingFramework()
         framework.setup(**self.paths)
         framework.dag.add_node("missing")
         with self.assertRaises(ValueError):
             framework.create_variables()
+
+    def test_load_tests_before_dag(self):
+        framework = CausalTestingFramework()
+        with self.assertRaises(ValueError):
+            framework.load_test_cases_from_json(self.test_cases_path)
 
     def test_create_base_test_case_missing_treatment(self):
         framework = CausalTestingFramework()
