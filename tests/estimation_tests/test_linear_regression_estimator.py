@@ -234,13 +234,12 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             control_value=0,
             adjustment_set=covariates,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
+            adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates},
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
 
-        effect_estimate = linear_regression_estimator.estimate_ate_calculated(
-            df=self.nhefs_df, adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates}
-        )
+        effect_estimate = linear_regression_estimator.estimate_ate_calculated(df=self.nhefs_df)
         self.assertEqual(round(effect_estimate.value[0], 1), 3.5)
         self.assertEqual([round(effect_estimate.ci_low[0], 1), round(effect_estimate.ci_high[0], 1)], [1.9, 5])
 

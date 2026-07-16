@@ -117,7 +117,7 @@ class GP:
     ):
         # pylint: disable=too-many-arguments
         random.seed(seed)
-        self.df = df  # TODO: Don't store this
+        self.df = df
         self.features = features
         self.outcome = outcome
         self.max_order = max_order

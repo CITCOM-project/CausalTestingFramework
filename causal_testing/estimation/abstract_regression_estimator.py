@@ -24,10 +24,11 @@ class RegressionEstimator(Estimator):
         # pylint: disable=too-many-arguments
         self,
         base_test_case: BaseTestCase,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
+        treatment_value: float = None,
+        control_value: float = None,
+        adjustment_set: set = None,
         effect_modifiers: dict[Variable, Any] = None,
+        adjustment_config: dict[Variable, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
     ):
@@ -42,7 +43,8 @@ class RegressionEstimator(Estimator):
         )
 
         if effect_modifiers is None:
-            effect_modifiers = []
+            effect_modifiers = {}
+        self.adjustment_config = {} if adjustment_config is None else adjustment_config
         if adjustment_set is None:
             adjustment_set = []
         if formula is not None:
@@ -52,6 +54,9 @@ class RegressionEstimator(Estimator):
                 [base_test_case.treatment_variable.name] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
             )
             self.formula = f"{base_test_case.outcome_variable.name} ~ {'+'.join(terms)}"
+
+        for term in list(self.effect_modifiers) + list(self.adjustment_config):
+            self.adjustment_set.add(term)
 
     def _setup_covariates(self, df: pd.DataFrame) -> pd.Series:
         """
@@ -114,7 +119,7 @@ class RegressionEstimator(Estimator):
             or param.startswith(self.base_test_case.treatment_variable.name + "[")
         ]
 
-    def _predict(self, df, adjustment_config: dict = None) -> pd.DataFrame:
+    def _predict(self, df) -> pd.DataFrame:
         """Estimate the outcomes under control and treatment.
 
         :param df: The data to use.
@@ -123,16 +128,13 @@ class RegressionEstimator(Estimator):
         :return: The estimated outcome under control and treatment, with confidence intervals in the form of a
                  dataframe with columns "predicted", "se", "ci_lower", and "ci_upper".
         """
-        if adjustment_config is None:
-            adjustment_config = {}
-
         model = self.fit_model(df)
 
         x = pd.DataFrame(columns=df.columns)
         x["Intercept"] = 1  # self.intercept
         x[self.base_test_case.treatment_variable.name] = [self.treatment_value, self.control_value]
 
-        for k, v in adjustment_config.items():
+        for k, v in self.adjustment_config.items():
             x[k] = v
         for k, v in self.effect_modifiers.items():
             x[k] = v

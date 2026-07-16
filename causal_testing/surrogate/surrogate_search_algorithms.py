@@ -47,7 +47,8 @@ class GeneticSearchAlgorithm(SearchAlgorithm):
                 for i, adjustment in enumerate(surrogate_model.adjustment_set):
                     adjustment_dict[adjustment] = solution[i + 1]
 
-                ate = surrogate_model.estimate_ate_calculated(df, adjustment_dict).value
+                surrogate_model.adjustment_config = adjustment_dict
+                ate = surrogate_model.estimate_ate_calculated(df).value
                 if len(ate) > 1:
                     raise ValueError(
                         "Multiple ate values provided but currently only single values supported in this method"

@@ -4,8 +4,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
-import pandas as pd
-
 from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)

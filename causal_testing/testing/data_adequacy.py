@@ -3,7 +3,6 @@ This module contains code to measure various aspects of causal test adequacy.
 """
 
 import logging
-from itertools import combinations
 
 logger = logging.getLogger(__name__)
 

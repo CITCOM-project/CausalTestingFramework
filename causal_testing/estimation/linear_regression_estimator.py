@@ -1,7 +1,6 @@
 """This module contains the LinearRegressionEstimator for estimating continuous outcomes."""
 
 import logging
-from typing import Any
 
 import pandas as pd
 import statsmodels.api as sm
@@ -10,8 +9,6 @@ from patsy import ModelDesc, dmatrix  # pylint: disable = no-name-in-module
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.genetic_programming_regression_fitter import GP
-from causal_testing.specification.variable import Variable
-from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -22,31 +19,6 @@ class LinearRegressionEstimator(RegressionEstimator):
     """
 
     regressor = sm.OLS
-
-    def __init__(
-        # pylint: disable=too-many-arguments
-        self,
-        base_test_case: BaseTestCase,
-        adjustment_set: set,
-        treatment_value: float = None,
-        control_value: float = None,
-        effect_modifiers: dict[Variable, Any] = None,
-        formula: str = None,
-        alpha: float = 0.05,
-    ):
-        # pylint: disable=too-many-arguments
-        # pylint: disable=R0801
-        super().__init__(
-            base_test_case=base_test_case,
-            treatment_value=treatment_value,
-            control_value=control_value,
-            adjustment_set=adjustment_set,
-            effect_modifiers=effect_modifiers,
-            alpha=alpha,
-            formula=formula,
-        )
-        for term in self.effect_modifiers:
-            self.adjustment_set.add(term)
 
     def gp_formula(
         self,
@@ -155,16 +127,15 @@ class LinearRegressionEstimator(RegressionEstimator):
         ci_low, ci_high = [pd.Series(interval) for interval in confidence_intervals]
         return EffectEstimate("ate", ate, ci_low, ci_high)
 
-    def estimate_risk_ratio(self, df: pd.DataFrame, adjustment_config: dict = None) -> EffectEstimate:
+    def estimate_risk_ratio(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
         :param df: The data to use.
-        :param adjustment_config: The configuration of the adjustment set as a dict mapping variable names to
-                                   their values.
+
         :return: The average treatment effect and the Wald confidence intervals.
         """
-        prediction = self._predict(df=df, adjustment_config=adjustment_config)
+        prediction = self._predict(df=df)
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"])
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"])
@@ -172,20 +143,17 @@ class LinearRegressionEstimator(RegressionEstimator):
             "risk_ratio", pd.Series(treatment_outcome["mean"] / control_outcome["mean"]), ci_low, ci_high
         )
 
-    def estimate_ate_calculated(self, df: pd.DataFrame, adjustment_config: dict = None) -> EffectEstimate:
+    def estimate_ate_calculated(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the ATE of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
         :param df: The data to use.
-        :param adjustment_config: The configuration of the adjustment set as a dict mapping variable names to
-                                   their values. N.B. Every variable in the adjustment set MUST have a value in
-                                   order to estimate the outcome under control and treatment.
 
         :return: The average treatment effect and the Wald confidence intervals.
         """
-        prediction = self._predict(df=df, adjustment_config=adjustment_config)
+        prediction = self._predict(df=df)
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"])
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"])

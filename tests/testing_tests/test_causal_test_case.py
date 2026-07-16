@@ -235,6 +235,7 @@ class TestCausalTestExecution(unittest.TestCase):
             control_value=0,
             treatment_value=1,
             formula="C ~ A + D",
+            adjustment_config={"D": 1},
         )
         causal_test_case = CausalTestCase(
             base_test_case=self.base_test_case_A_C,
@@ -244,9 +245,7 @@ class TestCausalTestExecution(unittest.TestCase):
         )
         self.assertEqual(
             round(
-                causal_test_case.estimate_effect(
-                    self.df, estimate_params={"adjustment_config": {"D": 1}}
-                ).effect_estimate.value[0],
+                causal_test_case.estimate_effect(self.df).effect_estimate.value[0],
                 3,
             ),
             1.444,

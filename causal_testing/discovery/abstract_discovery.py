@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import rustworkx as rx
 
-from causal_testing.main import CausalTestingFramework
+from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_effect import Negative, Positive
@@ -187,22 +187,19 @@ class Discovery(ABC):
                   (result, expected effect, treatment, outcome, effect direction).
         """
 
-        ctf = CausalTestingFramework(None, df=self.df)
-        ctf.dag = causal_dag
+        ctf = CausalTestingFramework(dag=causal_dag, df=self.df)
         ctf.create_variables()
         ctf.scenario = Scenario(list(ctf.variables["inputs"].values()) + list(ctf.variables["outputs"].values()))
 
-        ctf.test_cases = ctf.create_test_cases(
-            {
-                "tests": [
-                    relation.to_json_stub(
-                        alpha=self.alpha,
-                        **self._json_stub_params(relation.base_test_case.outcome_variable),
-                    )
-                    for relation in generate_metamorphic_relations(causal_dag)
-                ]
-            }
-        )
+        ctf.test_cases = [
+            ctf.create_causal_test(
+                relation.to_json_stub(
+                    alpha=self.alpha,
+                    **self._json_stub_params(relation.base_test_case.outcome_variable),
+                )
+            )
+            for relation in generate_metamorphic_relations(causal_dag)
+        ]
 
         results = []
 

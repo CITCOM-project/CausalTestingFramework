@@ -34,6 +34,9 @@ class CausalTestCase:
         expected_causal_effect: CausalEffect,
         estimate_type: str = "ate",
         estimator: type(Estimator) = None,
+        name: str = None,
+        query: str = None,
+        skip: bool = False,
     ):
         self.base_test_case = base_test_case
         self.expected_causal_effect = expected_causal_effect
@@ -43,6 +46,9 @@ class CausalTestCase:
         self.estimator = estimator
         self.effect = base_test_case.effect
         self.result = None
+        self.name = name
+        self.query = query
+        self.skip = skip
 
     def measure_adequacy(
         self,
@@ -108,11 +114,12 @@ class CausalTestCase:
         random rows.
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
-        self.result = self.estimate_effect(
-            df=df, estimate_params=estimate_params, suppress_estimation_errors=suppress_estimation_errors
-        )
-        if adequacy:
-            self.result.adequacy = self.measure_adequacy(df=df, bootstrap_size=bootstrap_size, group_by=group_by)
+        if not self.skip:
+            self.result = self.estimate_effect(
+                df=df, estimate_params=estimate_params, suppress_estimation_errors=suppress_estimation_errors
+            )
+            if adequacy:
+                self.result.adequacy = self.measure_adequacy(df=df, bootstrap_size=bootstrap_size, group_by=group_by)
 
     def estimate_effect(
         self,
@@ -128,7 +135,8 @@ class CausalTestCase:
         :param suppress_estimation_errors: Set to True to suppress estimation errors. (Defaults to False)
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
-
+        if self.query:
+            df = df.query(self.query)
         if not hasattr(self.estimator, f"estimate_{self.estimate_type}"):
             raise AttributeError(f"{self.estimator.__class__} has no {self.estimate_type} method.")
         estimate_effect = getattr(self.estimator, f"estimate_{self.estimate_type}")

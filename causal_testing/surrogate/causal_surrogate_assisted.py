@@ -34,11 +34,15 @@ class SearchAlgorithm(ABC):  # pylint: disable=too-few-public-methods
     space to be searched"""
 
     @abstractmethod
-    def search(self, surrogate_models: list[CubicSplineRegressionEstimator], scenario: Scenario) -> list:
+    def search(
+        self, surrogate_models: list[CubicSplineRegressionEstimator], scenario: Scenario, df: pd.DataFrame
+    ) -> list:
         """Function which implements a search routine which searches for the optimal fitness value for the specified
         scenario
         :param surrogate_models: The surrogate models to be searched
-        :param scenario:  The modelling scenario"""
+        :param scenario:  The modelling scenario
+        :param df: The data to use
+        """
 
 
 class Simulator(ABC):
