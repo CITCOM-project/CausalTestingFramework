@@ -18,7 +18,7 @@ from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_effect import Negative, Positive
-from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
 
 TestResult = Enum("TestResult", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
@@ -101,19 +101,19 @@ class Discovery(ABC):
         :returns: The inferred causal DAG.
         """
 
-    def effect_direction(self, result: CausalTestResult) -> str:
+    def effect_direction(self, test_case: CausalTestCase) -> str:
         """
         Check whether the estimated causal effect is negative or positive.
 
-        :param result: The causal test result object.
+        :param test_case: The causal test case.
         :returns: Whether the estimated causal test is positive or negative (or no effect).
         """
         if pd.api.types.is_numeric_dtype(
-            self.df[result.estimator.base_test_case.treatment_variable.name]
-        ) and pd.api.types.is_numeric_dtype(self.df[result.estimator.base_test_case.outcome_variable.name]):
-            if Negative().apply(result):
+            self.df[test_case.base_test_case.treatment_variable.name]
+        ) and pd.api.types.is_numeric_dtype(self.df[test_case.base_test_case.outcome_variable.name]):
+            if Negative().apply(test_case.result):
                 return "negative"
-            if Positive().apply(result):
+            if Positive().apply(test_case.result):
                 return "positive"
         return None
 
@@ -216,7 +216,7 @@ class Discovery(ABC):
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                         "treatment": test_case.base_test_case.treatment_variable.name,
                         "outcome": test_case.base_test_case.outcome_variable.name,
-                        "effect": self.effect_direction(test_case.result),
+                        "effect": self.effect_direction(test_case),
                     }
                 )
             except np.linalg.LinAlgError:

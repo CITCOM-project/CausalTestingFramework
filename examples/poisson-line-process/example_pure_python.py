@@ -129,10 +129,10 @@ def test_poisson_intensity_num_shapes(save=False):
 
     intensity_num_shapes_results += [
         {
-            "width": obs_causal_test.result.estimator.control_value,
-            "height": obs_causal_test.result.estimator.treatment_value,
-            "control": obs_causal_test.result.estimator.control_value,
-            "treatment": obs_causal_test.result.estimator.treatment_value,
+            "width": obs_causal_test.estimator.control_value,
+            "height": obs_causal_test.estimator.treatment_value,
+            "control": obs_causal_test.estimator.control_value,
+            "treatment": obs_causal_test.estimator.treatment_value,
             "smt_risk_ratio": smt_causal_test.result.effect_estimate.value,
             "obs_risk_ratio": obs_causal_test.result.effect_estimate.value[0],
         }
@@ -169,9 +169,9 @@ def test_poisson_width_num_shapes(save=False):
         test.execute_test(df)
     width_num_shapes_results = [
         {
-            "control": causal_test.result.estimator.control_value,
-            "treatment": causal_test.result.estimator.treatment_value,
-            "intensity": causal_test.result.estimator.effect_modifiers["intensity"],
+            "control": causal_test.estimator.control_value,
+            "treatment": causal_test.estimator.treatment_value,
+            "intensity": causal_test.estimator.effect_modifiers["intensity"],
             "ate": causal_test.result.effect_estimate.value[0],
             "ci_low": causal_test.result.effect_estimate.ci_low,
             "ci_high": causal_test.result.effect_estimate.ci_high,

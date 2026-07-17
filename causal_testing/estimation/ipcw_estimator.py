@@ -157,7 +157,7 @@ class IPCWEstimator(Estimator):
         Return the time at which the event of interest (i.e. a fault) occurred.
         """
         fault = individual[~individual[self.status_column]]
-        if (~fault).all():
+        if (individual[self.status_column]).all():
             raise ValueError("No recorded faults")
         fault_time = (
             individual["time"].loc[fault.index[0]]

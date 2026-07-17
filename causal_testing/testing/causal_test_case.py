@@ -142,15 +142,13 @@ class CausalTestCase:
         estimate_effect = getattr(self.estimator, f"estimate_{self.estimate_type}")
         try:
             effect_estimate = estimate_effect(df, **(estimate_params if estimate_params is not None else {}))
-            # TODO: Do we need to store the estimator?
             return CausalTestResult(
-                estimator=self.estimator,
                 effect_estimate=effect_estimate,
             )
         except (np.linalg.LinAlgError, ValueError) as e:
             if not suppress_estimation_errors:
                 raise e
-            return CausalTestResult(estimator=self.estimator, effect_estimate=None, error_message=str(e))
+            return CausalTestResult(effect_estimate=None, error_message=str(e))
 
     def __str__(self):
         treatment_config = {self.treatment_variable.name: self.estimator.treatment_value}

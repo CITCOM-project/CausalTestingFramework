@@ -289,7 +289,7 @@ class CausalTestingFramework:
                 # Include those skipped test entry without execution results
                 output = {
                     **base_output,
-                    "formula": result.estimator.formula if hasattr(result.estimator, "formula") else None,
+                    "formula": test_case.estimator.formula if hasattr(test_case.estimator, "formula") else None,
                     "skip": True,
                     "passed": None,
                     "result": {
@@ -307,14 +307,16 @@ class CausalTestingFramework:
 
                 output = {
                     **base_output,
-                    "formula": result.estimator.formula if hasattr(result.estimator, "formula") else None,
+                    "formula": test_case.estimator.formula if hasattr(test_case.estimator, "formula") else None,
                     "skip": False,
                     "passed": test_passed,
                     "result": (
                         {
-                            "treatment": result.estimator.base_test_case.treatment_variable.name,
-                            "outcome": result.estimator.base_test_case.outcome_variable.name,
-                            "adjustment_set": list(result.adjustment_set) if result.adjustment_set else [],
+                            "treatment": test_case.estimator.base_test_case.treatment_variable.name,
+                            "outcome": test_case.estimator.base_test_case.outcome_variable.name,
+                            "adjustment_set": (
+                                list(test_case.estimator.adjustment_set) if test_case.estimator.adjustment_set else []
+                            ),
                         }
                         | result.effect_estimate.to_dict()
                         | (result.adequacy.to_dict() if result.adequacy else {})
