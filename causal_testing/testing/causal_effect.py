@@ -70,7 +70,6 @@ class NoEffect(CausalEffect):
                 if isinstance(res.effect_estimate.ci_high, Iterable)
                 else [res.effect_estimate.value]
             )
-            print("  value", value)
             return (
                 sum(
                     not ((ci_low < 0 < ci_high) or abs(v) < self.atol)

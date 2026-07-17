@@ -144,24 +144,31 @@ class Discovery(ABC):
         if hasattr(individual, "test_results"):
             for _, test in individual.test_results.iterrows():
                 if (test["treatment"], test["outcome"]) in individual.edges:
+                    individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
                     if test["result"] == TestResult.PASS:
                         individual[test["treatment"]][test["outcome"]]["color"] = "green"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "green"
                     elif test["result"] == TestResult.INESTIMABLE:
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
                     elif test["result"] == TestResult.FAIL:
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
                     else:
                         raise ValueError(f"Invalid test outcome {test['result']}")
                 else:
                     individual.add_edge(test["treatment"], test["outcome"], ignore_cycles=True)
                     individual[test["treatment"]][test["outcome"]]["style"] = "dashed"
+                    individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
                     if test["result"] == TestResult.PASS:
                         individual[test["treatment"]][test["outcome"]]["style"] = "invis"
                         individual[test["treatment"]][test["outcome"]]["constraint"] = False
                     elif test["result"] == TestResult.INESTIMABLE:
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
                     elif test["result"] == TestResult.FAIL:
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
                     else:
                         raise ValueError(f"Invalid test outcome {test['result']}")
 

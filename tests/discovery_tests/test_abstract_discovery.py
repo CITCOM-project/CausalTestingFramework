@@ -141,13 +141,13 @@ class TestAbstractHillClimber(unittest.TestCase):
         dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
         dag.test_results = pd.DataFrame(
             [  # Edges
-                {"treatment": "A", "outcome": "B", "result": TestResult.PASS},
-                {"treatment": "C", "outcome": "D", "result": TestResult.FAIL},
-                {"treatment": "E", "outcome": "F", "result": TestResult.INESTIMABLE},
+                {"treatment": "A", "outcome": "B", "effect": "positive", "result": TestResult.PASS},
+                {"treatment": "C", "outcome": "D", "effect": "positive", "result": TestResult.FAIL},
+                {"treatment": "E", "outcome": "F", "effect": "None", "result": TestResult.INESTIMABLE},
                 # Independences
-                {"treatment": "A", "outcome": "C", "result": TestResult.PASS},
-                {"treatment": "A", "outcome": "D", "result": TestResult.FAIL},
-                {"treatment": "A", "outcome": "E", "result": TestResult.INESTIMABLE},
+                {"treatment": "A", "outcome": "C", "effect": None, "result": TestResult.PASS},
+                {"treatment": "A", "outcome": "D", "effect": "negative", "result": TestResult.FAIL},
+                {"treatment": "A", "outcome": "E", "effect": None, "result": TestResult.INESTIMABLE},
             ]
         )
         abstract_discovery = AbstractDiscovery(pd.DataFrame())
@@ -161,7 +161,7 @@ class TestAbstractHillClimber(unittest.TestCase):
         dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
         dag.test_results = pd.DataFrame(
             [  # Edges
-                {"treatment": "A", "outcome": "B", "result": None},
+                {"treatment": "A", "outcome": "B", "effect": None, "result": None},
             ]
         )
         abstract_discovery = AbstractDiscovery(pd.DataFrame())
@@ -173,7 +173,7 @@ class TestAbstractHillClimber(unittest.TestCase):
         dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
         dag.test_results = pd.DataFrame(
             [  # Edges
-                {"treatment": "A", "outcome": "C", "result": None},
+                {"treatment": "A", "outcome": "C", "effect": None, "result": None},
             ]
         )
         abstract_discovery = AbstractDiscovery(pd.DataFrame())
