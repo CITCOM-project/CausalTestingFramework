@@ -70,7 +70,7 @@ def run_test_case(verbose: bool = False):
         ]
 
         results_dict[outcome_variable.name]["test_passes"] = causal_test_case.expected_causal_effect.apply(
-            causal_test_case.result
+            causal_test_case.result.effect_estimate
         )
 
     return results_dict

@@ -47,7 +47,7 @@ def doubling_beta_CATE_on_csv(
     # 6. Create a causal test case
     causal_test_case = CausalTestCase(
         base_test_case=base_test_case,
-        expected_causal_effect=Positive,
+        expected_causal_effect=Positive(),
         estimator=LinearRegressionEstimator(
             base_test_case=base_test_case,
             treatment_value=0.032,
@@ -63,7 +63,7 @@ def doubling_beta_CATE_on_csv(
     # Repeat for association estimate (no adjustment)
     causal_test_case = CausalTestCase(
         base_test_case=base_test_case,
-        expected_causal_effect=Positive,
+        expected_causal_effect=Positive(),
         estimator=LinearRegressionEstimator(
             base_test_case=base_test_case,
             treatment_value=0.032,

@@ -23,6 +23,7 @@ class Command(Enum):
     TEST = "test"
     GENERATE = "generate"
     DISCOVER = "discover"
+    EVALUATE = "evaluate"
 
 
 def setup_logging(level: str) -> None:
@@ -47,6 +48,15 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         type=str.upper,
         choices=["NONE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level (default: WARNING).",
+    )
+    main_parser.add_argument(
+        "-a",
+        "--alpha",
+        help=(
+            "The significance level of the confidence intervals used to determine causality. "
+            "This should be a value between 0 and 1. Defaults to 0.05 for 95%% confidence intervals."
+        ),
+        default=0.05,
     )
 
     subparsers = main_parser.add_subparsers(
@@ -108,18 +118,36 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=False,
     )
 
+    # DAG evaluation
+    parser_evaluate = subparsers.add_parser(
+        Command.EVALUATE.value, help="Evaluate how well a causal DAG fits a dataset"
+    )
+    parser_evaluate.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
+    parser_evaluate.add_argument("-o", "--output", help="Path for output file (.csv)", required=True)
+    parser_evaluate.add_argument(
+        "-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False
+    )
+    parser_evaluate.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
+    parser_evaluate.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
+    parser_evaluate.add_argument(
+        "-b",
+        "--adequacy-bootstrap-size",
+        dest="bootstrap_size",
+        help="Number of bootstrap samples for causal test adequacy. Defaults to 100",
+        type=int,
+        default=100,
+    )
+    parser_evaluate.add_argument(
+        "-s",
+        "--silent",
+        action="store_true",
+        help="Do not crash on error. If set to true, errors are recorded as test results.",
+        default=False,
+    )
+
     # Discovery
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
     parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
-    parser_discover.add_argument(
-        "-a",
-        "--alpha",
-        help=(
-            "The significance level of the confidence intervals used to determine causality. "
-            "This should be a value between 0 and 1. Defaults to 0.05 for 95%% confidence intervals."
-        ),
-        default=0.05,
-    )
     parser_discover.add_argument(
         "-t",
         "--technique",
@@ -246,6 +274,23 @@ def main() -> None:
             framework.save_results(args.output)
 
             logging.info("Causal testing completed successfully.")
+        case Command.EVALUATE:
+            # Create and setup framework
+            framework = CausalTestingFramework()
+
+            framework.setup(
+                dag_path=args.dag_path,
+                data_paths=args.data_paths,
+                test_cases_path=args.test_config,
+                query=args.query,
+                ignore_cycles=args.ignore_cycles,
+            )
+
+            logging.info("Running tests on entire dataset")
+            results = framework.evaluate_dag(alpha=args.alpha, bootstrap_size=args.bootstrap_size)
+            logging.info("Causal testing completed successfully.")
+            logging.info("Running tests on bootstrap samples")
+            results.to_csv(args.output)
 
 
 if __name__ == "__main__":

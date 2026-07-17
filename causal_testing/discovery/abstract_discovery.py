@@ -6,7 +6,6 @@ import random
 import re
 import warnings
 from abc import ABC, abstractmethod
-from enum import Enum
 from itertools import permutations
 
 import networkx as nx
@@ -19,9 +18,8 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_effect import Negative, Positive
 from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.causal_test_result import TestOutcome
 from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
-
-TestResult = Enum("TestResult", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
 
 # Ignore warnings from statsmodels when we try to evaluate test cases
 warnings.simplefilter("ignore")
@@ -111,9 +109,9 @@ class Discovery(ABC):
         if pd.api.types.is_numeric_dtype(
             self.df[test_case.base_test_case.treatment_variable.name]
         ) and pd.api.types.is_numeric_dtype(self.df[test_case.base_test_case.outcome_variable.name]):
-            if Negative().apply(test_case.result):
+            if Negative().apply(test_case.result.effect_estimate):
                 return "negative"
-            if Positive().apply(test_case.result):
+            if Positive().apply(test_case.result.effect_estimate):
                 return "positive"
         return None
 
@@ -148,15 +146,15 @@ class Discovery(ABC):
 
                     print(test)
 
-                    if test["result"] == TestResult.PASS:
+                    if test["result"] == TestOutcome.PASS:
                         print("  GREEN")
                         individual[test["treatment"]][test["outcome"]]["color"] = "green"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "green"
-                    elif test["result"] == TestResult.INESTIMABLE:
+                    elif test["result"] == TestOutcome.INESTIMABLE:
                         print("  ORANGE")
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
-                    elif test["result"] == TestResult.FAIL:
+                    elif test["result"] == TestOutcome.FAIL:
                         print("  RED")
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
@@ -166,13 +164,13 @@ class Discovery(ABC):
                     individual.add_edge(test["treatment"], test["outcome"], ignore_cycles=True)
                     individual[test["treatment"]][test["outcome"]]["style"] = "dashed"
                     individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
-                    if test["result"] == TestResult.PASS:
+                    if test["result"] == TestOutcome.PASS:
                         individual[test["treatment"]][test["outcome"]]["style"] = "invis"
                         individual[test["treatment"]][test["outcome"]]["constraint"] = False
-                    elif test["result"] == TestResult.INESTIMABLE:
+                    elif test["result"] == TestOutcome.INESTIMABLE:
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
-                    elif test["result"] == TestResult.FAIL:
+                    elif test["result"] == TestOutcome.FAIL:
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
                     else:
@@ -222,9 +220,9 @@ class Discovery(ABC):
                 results.append(
                     {
                         "result": (
-                            TestResult.PASS
-                            if test_case.expected_causal_effect.apply(test_case.result)
-                            else TestResult.FAIL
+                            TestOutcome.PASS
+                            if test_case.expected_causal_effect.apply(test_case.result.effect_estimate)
+                            else TestOutcome.FAIL
                         ),
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                         "treatment": test_case.base_test_case.treatment_variable.name,
@@ -235,7 +233,7 @@ class Discovery(ABC):
             except np.linalg.LinAlgError:
                 results.append(
                     {
-                        "result": TestResult.INESTIMABLE,
+                        "result": TestOutcome.INESTIMABLE,
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                         "treatment": test_case.base_test_case.treatment_variable.name,
                         "outcome": test_case.base_test_case.outcome_variable.name,

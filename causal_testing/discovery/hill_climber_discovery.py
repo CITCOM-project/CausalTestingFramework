@@ -8,8 +8,9 @@ import time
 import numpy as np
 import pandas as pd
 
-from causal_testing.discovery.abstract_discovery import Discovery, TestResult
+from causal_testing.discovery.abstract_discovery import Discovery
 from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.testing.causal_test_result import TestOutcome
 
 
 class HillClimberDiscovery(Discovery):
@@ -48,10 +49,10 @@ class HillClimberDiscovery(Discovery):
             axis=1,
         )
         # Ensure every column is initialised - Test outcomes that never occurred won't be in the dataframe otherwise
-        for col in TestResult:
+        for col in TestOutcome:
             if col not in counts.columns:
                 counts[col] = 0
-        counts = counts.groupby(["treatment", "outcome"]).sum().reset_index()[list(TestResult)]
+        counts = counts.groupby(["treatment", "outcome"]).sum().reset_index()[list(TestOutcome)]
         # The below line normalises by the number of tests *for each edge*
         # Independence tests X _||_ Y get two tests (X _||_ Y and Y _||_ X) because we don't know which way the
         # causality flows. We need to normalise this (e.g. if X _||_ Y and Y _||_ X both pass, then the score should be
@@ -89,15 +90,15 @@ class HillClimberDiscovery(Discovery):
         )
         problem_tests = query_df.groupby(["var1", "var2"]).filter(
             # Groups are problematic if at least one test fails or no test passes
-            lambda group: (group["result"] == TestResult.FAIL).any()
-            or ~(group["result"] == TestResult.PASS).any()
+            lambda group: (group["result"] == TestOutcome.FAIL).any()
+            or ~(group["result"] == TestOutcome.PASS).any()
         )
         problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
 
         fitness_values = (
-            counts.get(TestResult.PASS, 0),
-            -counts.get(TestResult.FAIL, 0),
-            -counts.get(TestResult.INESTIMABLE, 0),
+            counts.get(TestOutcome.PASS, 0),
+            -counts.get(TestOutcome.FAIL, 0),
+            -counts.get(TestOutcome.INESTIMABLE, 0),
         )
         return fitness_values, problem_edges
 

@@ -7,16 +7,16 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.estimation.effect_estimate import EffectEstimate
 
 
 class CausalEffect(ABC):
     """An abstract class representing an expected causal effect."""
 
     @abstractmethod
-    def apply(self, res: CausalTestResult) -> bool:
+    def apply(self, effect_estimate: EffectEstimate) -> bool:
         """Abstract apply method that should return a bool representing if the result meets the outcome
-        :param res: CausalTestResult to be checked
+        :param effect_estimate: EffectEstimate to be checked
         :return: Bool that is true if outcome is met
         """
 
@@ -27,21 +27,21 @@ class CausalEffect(ABC):
 class SomeEffect(CausalEffect):
     """An extension of CausalEffect representing that the expected causal effect should not be zero."""
 
-    def apply(self, res: CausalTestResult) -> bool:
-        if res.effect_estimate.ci_low is None or res.effect_estimate.ci_high is None:
+    def apply(self, effect_estimate: EffectEstimate) -> bool:
+        if effect_estimate.ci_low is None or effect_estimate.ci_high is None:
             return None
-        if res.effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio"):
+        if effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio"):
             return any(
                 1 < ci_low < ci_high or ci_low < ci_high < 1
-                for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
+                for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high)
             )
-        if res.effect_estimate.type in ("coefficient", "ate"):
+        if effect_estimate.type in ("coefficient", "ate"):
             return any(
                 0 < ci_low < ci_high or ci_low < ci_high < 0
-                for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
+                for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high)
             )
 
-        raise ValueError(f"Test Value type {res.effect_estimate.type} is not valid for this CausalEffect")
+        raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
 
 
 class NoEffect(CausalEffect):
@@ -56,30 +56,26 @@ class NoEffect(CausalEffect):
         self.atol = atol
         self.ctol = ctol
 
-    def apply(self, res: CausalTestResult) -> bool:
-        if res.effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
+    def apply(self, effect_estimate: EffectEstimate) -> bool:
+        if effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
             return any(
                 ci_low < 1 < ci_high or np.isclose(value, 1.0, atol=self.atol)
                 for ci_low, ci_high, value in zip(
-                    res.effect_estimate.ci_low, res.effect_estimate.ci_high, res.effect_estimate.value
+                    effect_estimate.ci_low, effect_estimate.ci_high, effect_estimate.value
                 )
             )
-        if res.effect_estimate.type in ("coefficient", "ate"):
-            value = (
-                res.effect_estimate.value
-                if isinstance(res.effect_estimate.ci_high, Iterable)
-                else [res.effect_estimate.value]
-            )
+        if effect_estimate.type in ("coefficient", "ate"):
+            value = effect_estimate.value if isinstance(effect_estimate.ci_high, Iterable) else [effect_estimate.value]
             return (
                 sum(
                     not ((ci_low < 0 < ci_high) or abs(v) < self.atol)
-                    for ci_low, ci_high, v in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high, value)
+                    for ci_low, ci_high, v in zip(effect_estimate.ci_low, effect_estimate.ci_high, value)
                 )
                 / len(value)
                 < self.ctol
             )
 
-        raise ValueError(f"Test Value type {res.effect_estimate.type} is not valid for this CausalEffect")
+        raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
 
 
 class ExactValue(CausalEffect):
@@ -105,12 +101,12 @@ class ExactValue(CausalEffect):
                     "Try specifying a smaller value of atol."
                 )
 
-    def apply(self, res: CausalTestResult) -> bool:
-        close = np.isclose(res.effect_estimate.value, self.value, atol=self.atol)
-        if res.effect_estimate.ci_valid and self.ci_low is not None and self.ci_high is not None:
+    def apply(self, effect_estimate: EffectEstimate) -> bool:
+        close = np.isclose(effect_estimate.value, self.value, atol=self.atol)
+        if effect_estimate.ci_valid and self.ci_low is not None and self.ci_high is not None:
             return all(
                 close and self.ci_low <= ci_low and self.ci_high >= ci_high
-                for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
+                for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high)
             )
         return close
 
@@ -122,34 +118,26 @@ class Positive(SomeEffect):
     """An extension of CausalEffect representing that the expected causal effect should be positive.
     Currently only single values are supported for the test value"""
 
-    def apply(self, res: CausalTestResult) -> bool:
-        if len(res.effect_estimate.value) > 1:
+    def apply(self, effect_estimate: EffectEstimate) -> bool:
+        if len(effect_estimate.value) > 1:
             raise ValueError("Positive Effects are currently only supported on single float datatypes")
-        if res.effect_estimate.type in {"ate", "coefficient"}:
-            return any(
-                0 < ci_low < ci_high for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
-            )
-        if res.effect_estimate.type in ["risk_ratio", "unit_odds_ratio"]:
-            return any(
-                1 < ci_low < ci_high for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
-            )
-        raise ValueError(f"Test Value type {res.effect_estimate.type} is not valid for this CausalEffect")
+        if effect_estimate.type in {"ate", "coefficient"}:
+            return any(0 < ci_low < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
+        if effect_estimate.type in ["risk_ratio", "unit_odds_ratio"]:
+            return any(1 < ci_low < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
+        raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
 
 
 class Negative(SomeEffect):
     """An extension of CausalEffect representing that the expected causal effect should be negative.
     Currently only single values are supported for the test value"""
 
-    def apply(self, res: CausalTestResult) -> bool:
-        if len(res.effect_estimate.value) > 1:
+    def apply(self, effect_estimate: EffectEstimate) -> bool:
+        if len(effect_estimate.value) > 1:
             raise ValueError("Negative Effects are currently only supported on single float datatypes")
-        if res.effect_estimate.type in {"ate", "coefficient"}:
-            return any(
-                ci_low < ci_high < 0 for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
-            )
-        if res.effect_estimate.type in ["risk_ratio", "unit_odds_ratio"]:
-            return any(
-                ci_low < ci_high < 1 for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
-            )
+        if effect_estimate.type in {"ate", "coefficient"}:
+            return any(ci_low < ci_high < 0 for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
+        if effect_estimate.type in ["risk_ratio", "unit_odds_ratio"]:
+            return any(ci_low < ci_high < 1 for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
         # Dead code but necessary for pylint
-        raise ValueError(f"Test Value type {res.effect_estimate.type} is not valid for this CausalEffect")
+        raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")

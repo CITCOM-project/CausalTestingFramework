@@ -38,12 +38,12 @@ def test_sensitivity_analysis():
     # Read in the 200 model runs and define mean value and expected effect
     model_runs = pd.read_csv(f"{ROOT}/data/results.csv")
     conductance_means = {
-        "G_K": (0.5, Positive),
-        "G_b": (0.5, Positive),
-        "G_K1": (0.5, Positive),
-        "G_si": (0.5, Negative),
-        "G_Na": (0.5, NoEffect),
-        "G_Kp": (0.5, NoEffect),
+        "G_K": (0.5, Positive()),
+        "G_b": (0.5, Positive()),
+        "G_K1": (0.5, Positive()),
+        "G_si": (0.5, Negative()),
+        "G_Na": (0.5, NoEffect()),
+        "G_Kp": (0.5, NoEffect()),
     }
 
     # Normalise the inputs as per the original study

@@ -8,7 +8,7 @@ import pandas as pd
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import CausalEffect
-from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.testing.causal_test_result import CausalTestResult, TestOutcome
 from causal_testing.testing.data_adequacy import DataAdequacy
 
 logger = logging.getLogger(__name__)
@@ -73,9 +73,9 @@ class CausalTestCase:
             else:
                 df = df.sample(len(df), replace=True, random_state=i)
             try:
-                result = self.estimate_effect(df)
-                outcomes.append(self.expected_causal_effect.apply(result))
-                results.append(result.effect_estimate.to_df())
+                effect_estimate = self.estimate_effect(df)
+                outcomes.append(self.expected_causal_effect.apply(effect_estimate))
+                results.append(effect_estimate.to_df())
             # Could get a variety of exceptions here due to insufficient/badly formed data
             # We don't want these to stop execution
             except Exception:  # pylint: disable=W0718
@@ -96,7 +96,6 @@ class CausalTestCase:
     def execute_test(
         self,
         df: pd.DataFrame,
-        estimate_params: dict[str, any] = None,
         adequacy: bool = False,
         suppress_estimation_errors: bool = False,
         bootstrap_size: int = 100,
@@ -106,7 +105,6 @@ class CausalTestCase:
         Execute a causal test case.
 
         :param df: The data to use.
-        :param estimate_params: Extra parameters for the estimate calculation.
         :param adequacy: Set to True to calculate the causal test adequacy associated with the effect estimate.
         :param suppress_estimation_errors: Set to True to suppress estimation errors. (Defaults to False)
         :param bootstrap_size: The number of bootstrap samples to use. (Defaults to 100)
@@ -115,24 +113,33 @@ class CausalTestCase:
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
         if not self.skip:
-            self.result = self.estimate_effect(
-                df=df, estimate_params=estimate_params, suppress_estimation_errors=suppress_estimation_errors
-            )
-            if adequacy:
-                self.result.adequacy = self.measure_adequacy(df=df, bootstrap_size=bootstrap_size, group_by=group_by)
+            try:
+                effect_estimate = self.estimate_effect(df=df)
+                self.result = CausalTestResult(
+                    effect_estimate=effect_estimate,
+                    outcome=(
+                        TestOutcome.PASS
+                        if self.expected_causal_effect.apply(effect_estimate=effect_estimate)
+                        else TestOutcome.FAIL
+                    ),
+                    adequacy=(
+                        self.measure_adequacy(df=df, bootstrap_size=bootstrap_size, group_by=group_by)
+                        if adequacy
+                        else None
+                    ),
+                )
+            except (np.linalg.LinAlgError, ValueError) as e:
+                if not suppress_estimation_errors:
+                    raise e
+                self.result = CausalTestResult(
+                    effect_estimate=None, outcome=TestOutcome.INESTIMABLE, error_message=str(e)
+                )
 
-    def estimate_effect(
-        self,
-        df: pd.DataFrame,
-        estimate_params: dict[str, any] = None,
-        suppress_estimation_errors: bool = False,
-    ) -> CausalTestResult:
+    def estimate_effect(self, df: pd.DataFrame) -> CausalTestResult:
         """
         Execute a causal test case and return the causal test result.
 
         :param df: The data to use.
-        :param estimate_params: Extra parameters for the estimate calculation.
-        :param suppress_estimation_errors: Set to True to suppress estimation errors. (Defaults to False)
         :return causal_test_result: A CausalTestResult for the executed causal test case.
         """
         if self.query:
@@ -140,15 +147,7 @@ class CausalTestCase:
         if not hasattr(self.estimator, f"estimate_{self.estimate_type}"):
             raise AttributeError(f"{self.estimator.__class__} has no {self.estimate_type} method.")
         estimate_effect = getattr(self.estimator, f"estimate_{self.estimate_type}")
-        try:
-            effect_estimate = estimate_effect(df, **(estimate_params if estimate_params is not None else {}))
-            return CausalTestResult(
-                effect_estimate=effect_estimate,
-            )
-        except (np.linalg.LinAlgError, ValueError) as e:
-            if not suppress_estimation_errors:
-                raise e
-            return CausalTestResult(effect_estimate=None, error_message=str(e))
+        return estimate_effect(df)
 
     def __str__(self):
         treatment_config = {self.treatment_variable.name: self.estimator.treatment_value}

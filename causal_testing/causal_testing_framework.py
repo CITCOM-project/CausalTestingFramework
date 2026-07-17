@@ -14,6 +14,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.causal_test_result import TestOutcome
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +266,49 @@ class CausalTestingFramework:
                 self.df, suppress_estimation_errors=silent, adequacy=adequacy, bootstrap_size=bootstrap_size
             )
 
+    def evaluate_dag(self, bootstrap_size: bool, alpha: float) -> pd.Series:
+        """
+        Calculate confidence intervals for how well a causal DAG fits a dataset by repeatedly resampling the dataset
+        and executing the causal tests.
+        Confidence intervals are then calcualted for how many tests pass, fail, or are inestimable.
+
+        :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
+                               (defaults to 100)
+        :param alpha: The significance level to use when calculating confidence intervals.
+        """
+        self.run_tests(silent=True, adequacy=False)
+        results = {
+            test_outcome: len([test for test in self.test_cases if test.result.outcome == test_outcome])
+            for test_outcome in TestOutcome
+        }
+
+        sample_results = []
+        for sample_index in range(bootstrap_size):
+            test_outcomes = {test_outcome: 0 for test_outcome in TestOutcome}
+            for test_case in tqdm(self.test_cases):
+                effect_estimate = test_case.estimate_effect(
+                    df=self.df.sample(len(self.df), replace=True, random_state=sample_index)
+                )
+                if effect_estimate:
+                    if test_case.expected_causal_effect.apply(effect_estimate):
+                        test_outcomes[TestOutcome.PASS] += 1
+                    else:
+                        test_outcomes[TestOutcome.FAIL] += 1
+                else:
+                    test_outcomes[TestOutcome.INESTIMABLE] += 1
+            sample_results.append(test_outcomes)
+
+        sample_results = pd.DataFrame(sample_results)
+        # Calculate the confidence interval of each column
+        ci_low_inx = (alpha / 2) * bootstrap_size
+        ci_high_inx = ((1 - alpha) / 2) * bootstrap_size
+        for outcome in TestOutcome:
+            data = sorted(sample_results[outcome])
+            results[f"{outcome}_ci_low"] = data[ci_low_inx]
+            results[f"{outcome}_ci_high"] = data[ci_high_inx]
+
+        return pd.Series(results).sort_index()
+
     def save_results(self, output_path) -> list:
         """Save test results to JSON file in the expected format."""
         logger.info(f"Saving results to {output_path}")
@@ -301,15 +345,11 @@ class CausalTestingFramework:
                 result = test_case.result
                 result_index += 1
 
-                test_passed = (
-                    test_case.expected_causal_effect.apply(result) if result.effect_estimate is not None else False
-                )
-
                 output = {
                     **base_output,
                     "formula": test_case.estimator.formula if hasattr(test_case.estimator, "formula") else None,
                     "skip": False,
-                    "passed": test_passed,
+                    "passed": test_case.result.outcome == TestOutcome.PASS,
                     "result": (
                         {
                             "treatment": test_case.estimator.base_test_case.treatment_variable.name,

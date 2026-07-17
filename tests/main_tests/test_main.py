@@ -181,7 +181,7 @@ class TestCausalTestingFramework(unittest.TestCase):
                 result_index += 1
 
                 test_passed = (
-                    test_case.expected_causal_effect.apply(test_case.result)
+                    test_case.expected_causal_effect.apply(test_case.result.effect_estimate)
                     if test_case.result.effect_estimate is not None
                     else False
                 )

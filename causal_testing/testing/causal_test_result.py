@@ -1,8 +1,11 @@
 """This module contains the CausalTestResult class, which is a container for the results of a causal test."""
 
 from dataclasses import dataclass
+from enum import Enum
 
 from causal_testing.estimation.effect_estimate import EffectEstimate
+
+TestOutcome = Enum("TestOutcome", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
 
 
 @dataclass
@@ -14,9 +17,11 @@ class CausalTestResult:
     def __init__(
         self,
         effect_estimate: EffectEstimate,
+        outcome: TestOutcome,
         adequacy=None,
         error_message: str = None,
     ):
-        self.adequacy = adequacy
+        self.outcome = outcome
         self.effect_estimate = effect_estimate
+        self.adequacy = adequacy
         self.error_message = error_message
