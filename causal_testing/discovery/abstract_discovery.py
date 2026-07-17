@@ -145,13 +145,19 @@ class Discovery(ABC):
             for _, test in individual.test_results.iterrows():
                 if (test["treatment"], test["outcome"]) in individual.edges:
                     individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
+
+                    print(test)
+
                     if test["result"] == TestResult.PASS:
+                        print("  GREEN")
                         individual[test["treatment"]][test["outcome"]]["color"] = "green"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "green"
                     elif test["result"] == TestResult.INESTIMABLE:
+                        print("  ORANGE")
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
                     elif test["result"] == TestResult.FAIL:
+                        print("  RED")
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
                     else:
@@ -237,4 +243,6 @@ class Discovery(ABC):
                 )
 
         causal_dag.test_results = pd.DataFrame(results)
+
+        results = pd.DataFrame(results)
         return pd.DataFrame(results)

@@ -9,7 +9,7 @@ from typing import Optional, Sequence
 import networkx as nx
 import pandas as pd
 
-from causal_testing.causal_testing_framework import CausalTestingFramework
+from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.testing.metamorphic_relation import generate_causal_tests
 
 logger = logging.getLogger(__name__)
@@ -205,9 +205,14 @@ def main() -> None:
             logging.info("Discovering causal structure")
             # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
             # Otherwise you end up with duplicate indices, which causes problems further down the line
-            df = pd.concat([pd.read_csv(path) for path in args.data_paths]).reset_index()
+            df = pd.concat([read_dataframe(path) for path in args.data_paths]).reset_index()
             if args.variables:
                 df = df[args.variables]
+            # Drop unnamed columns
+            unnamed_columns = [c for c in df.columns if c.startswith("Unnamed: ")]
+            if unnamed_columns:
+                logger.warning(f"Dropping unnamed columns: {unnamed_columns}")
+            df = df.loc[:, ~df.columns.str.contains("^Unnamed: ")]
 
             discover_class = discover_map[args.technique].load()
             discover = discover_class(

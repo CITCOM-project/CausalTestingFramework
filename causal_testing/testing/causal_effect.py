@@ -126,9 +126,13 @@ class Positive(SomeEffect):
         if len(res.effect_estimate.value) > 1:
             raise ValueError("Positive Effects are currently only supported on single float datatypes")
         if res.effect_estimate.type in {"ate", "coefficient"}:
-            return bool(res.effect_estimate.value[0] > 0)
+            return any(
+                0 < ci_low < ci_high for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
+            )
         if res.effect_estimate.type in ["risk_ratio", "unit_odds_ratio"]:
-            return bool(res.effect_estimate.value[0] > 1)
+            return any(
+                1 < ci_low < ci_high for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
+            )
         raise ValueError(f"Test Value type {res.effect_estimate.type} is not valid for this CausalEffect")
 
 
@@ -140,8 +144,12 @@ class Negative(SomeEffect):
         if len(res.effect_estimate.value) > 1:
             raise ValueError("Negative Effects are currently only supported on single float datatypes")
         if res.effect_estimate.type in {"ate", "coefficient"}:
-            return bool(res.effect_estimate.value[0] < 0)
+            return any(
+                ci_low < ci_high < 0 for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
+            )
         if res.effect_estimate.type in ["risk_ratio", "unit_odds_ratio"]:
-            return bool(res.effect_estimate.value[0] < 1)
+            return any(
+                ci_low < ci_high < 1 for ci_low, ci_high in zip(res.effect_estimate.ci_low, res.effect_estimate.ci_high)
+            )
         # Dead code but necessary for pylint
         raise ValueError(f"Test Value type {res.effect_estimate.type} is not valid for this CausalEffect")

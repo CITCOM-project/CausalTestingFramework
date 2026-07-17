@@ -39,26 +39,23 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_Positive_ate_pass(self):
         ctr = CausalTestResult(
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(5.05)),
+            effect_estimate=EffectEstimate(
+                type="ate", value=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
+            ),
         )
         ev = Positive()
         self.assertTrue(ev.apply(ctr))
 
     def test_Positive_risk_ratio_pass(self):
         ctr = CausalTestResult(
-            effect_estimate=EffectEstimate(type="risk_ratio", value=pd.Series(5.05)),
+            effect_estimate=EffectEstimate(
+                type="risk_ratio", value=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
+            ),
         )
         ev = Positive()
         self.assertTrue(ev.apply(ctr))
 
     def test_Positive_fail(self):
-        ctr = CausalTestResult(
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
-        )
-        ev = Positive()
-        self.assertFalse(ev.apply(ctr))
-
-    def test_Positive_fail_ci(self):
         ctr = CausalTestResult(
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),
         )
@@ -67,26 +64,23 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_Negative_ate_pass(self):
         ctr = CausalTestResult(
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(-5.05)),
+            effect_estimate=EffectEstimate(
+                type="ate", value=pd.Series(-5.05), ci_low=pd.Series(-6), ci_high=pd.Series(-5)
+            ),
         )
         ev = Negative()
         self.assertTrue(ev.apply(ctr))
 
     def test_Negative_risk_ratio_pass(self):
         ctr = CausalTestResult(
-            effect_estimate=EffectEstimate(type="risk_ratio", value=pd.Series(0.2)),
+            effect_estimate=EffectEstimate(
+                type="risk_ratio", value=pd.Series(0.2), ci_low=pd.Series(0.1), ci_high=pd.Series(0.5)
+            ),
         )
         ev = Negative()
         self.assertTrue(ev.apply(ctr))
 
     def test_Negative_fail(self):
-        ctr = CausalTestResult(
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
-        )
-        ev = Negative()
-        self.assertFalse(ev.apply(ctr))
-
-    def test_Negative_fail_ci(self):
         ctr = CausalTestResult(
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),
         )
