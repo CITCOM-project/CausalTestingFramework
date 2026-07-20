@@ -51,7 +51,7 @@ class TestMain(unittest.TestCase):
                 str(self.test_cases_path),
                 "--output",
                 str(self.output_path.parent / "main.json"),
-                "-a",
+                "-A",
             ],
         ):
             main()
@@ -98,7 +98,7 @@ class TestMain(unittest.TestCase):
                 str(self.test_cases_path),
                 "--output",
                 str(self.output_path.parent / "main.json"),
-                "-a",
+                "-A",
                 "-b",
                 "50",
             ],
@@ -118,34 +118,14 @@ class TestMain(unittest.TestCase):
                     "generate",
                     "--dag-path",
                     str(self.dag_path),
+                    "--data-paths",
+                    str(self.data_paths[0]),
                     "--output",
                     os.path.join(tmp, "tests.json"),
                 ],
             ):
                 main()
                 self.assertTrue(os.path.exists(os.path.join(tmp, "tests.json")))
-
-    def test_parse_args_generation_non_default(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with patch(
-                "sys.argv",
-                [
-                    "causal_testing",
-                    "generate",
-                    "--dag-path",
-                    str(self.dag_path),
-                    "--output",
-                    os.path.join(tmp, "tests_non_default.json"),
-                    "--estimator",
-                    "LogisticRegressionEstimator",
-                    "--estimate-type",
-                    "unit_odds_ratio",
-                    "--effect-type",
-                    "total",
-                ],
-            ):
-                main()
-                self.assertTrue(os.path.exists(os.path.join(tmp, "tests_non_default.json")))
 
     def test_parse_args_discover(self):
         with tempfile.TemporaryDirectory() as tmp:

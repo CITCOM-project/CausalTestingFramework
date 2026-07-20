@@ -3,14 +3,22 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from itertools import combinations
+from multiprocessing import Pool
 from typing import Generator, Set, Union
 
 import networkx as nx
+import pandas as pd
 
+from causal_testing.estimation.abstract_estimator import Estimator
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
+from causal_testing.estimation.multinomial_regression_estimator import MultinomialRegressionEstimator
+from causal_testing.specification.variable import Input, Output, Variable
 from causal_testing.testing.base_test_case import BaseTestCase
-
-from .variable import Variable
+from causal_testing.testing.causal_effect import NoEffect, SomeEffect
+from causal_testing.testing.causal_test_case import CausalTestCase
 
 Node = Union[str, int]  # Node type hint: A node is a string or an int
 
@@ -123,9 +131,10 @@ class CausalDAG(nx.DiGraph):
     ensures it is acyclic. A CausalDAG must be specified as a dot file.
     """
 
-    def __init__(self, file_path: str = None, ignore_cycles: bool = False, **attr):
+    def __init__(self, file_path: str = None, ignore_cycles: bool = False, datatypes: pd.Series = None, **attr):
         super().__init__(**attr)
         self.ignore_cycles = ignore_cycles
+        self.datatypes = datatypes
         if file_path:
             if file_path.endswith(".dot"):
                 graph = nx.DiGraph(nx.nx_pydot.read_dot(file_path))
@@ -533,3 +542,155 @@ class CausalDAG(nx.DiGraph):
 
     def __str__(self):
         return f"Nodes: {self.nodes}\nEdges: {self.edges}"
+
+    def _estimator(self, base_test_case: BaseTestCase, nodes_to_ignore: set) -> Estimator:
+        treatment_variable = base_test_case.treatment_variable.name
+        outcome_variable = base_test_case.outcome_variable.name
+
+        if self.datatypes is None or outcome_variable not in self.datatypes:
+            raise ValueError(f"No datatype specified for {outcome_variable}.")
+
+        adj_sets = self.direct_effect_adjustment_sets(
+            [treatment_variable], [outcome_variable], nodes_to_ignore=nodes_to_ignore
+        )
+        if not adj_sets:
+            return None, None
+
+        min_adj_set = sorted(list(map(lambda s: sorted(list(s)), adj_sets)))[0]
+
+        if pd.api.types.is_bool_dtype(self.datatypes[outcome_variable]):
+            return (
+                LogisticRegressionEstimator(base_test_case=base_test_case, adjustment_set=min_adj_set),
+                "unit_odds_ratio",
+            )
+        if pd.api.types.is_categorical_dtype(self.datatypes[outcome_variable]) or pd.api.types.is_object_dtype(
+            self.datatypes[outcome_variable]
+        ):
+            return (
+                MultinomialRegressionEstimator(base_test_case=base_test_case, adjustment_set=min_adj_set),
+                "unit_odds_ratio",
+            )
+        if pd.api.types.is_numeric_dtype(self.datatypes[outcome_variable]):
+            return LinearRegressionEstimator(base_test_case=base_test_case, adjustment_set=min_adj_set), "coefficient"
+        raise ValueError(f"Invalid datatype for {outcome_variable}: {self.datatypes[outcome_variable]}")
+
+    def generate_causal_test(  # pylint: disable=R0912
+        self, u: str, v: str, nodes_to_ignore: set = None, **kwargs
+    ) -> list[CausalTestCase]:
+        """
+        Construct a metamorphic relation for a given node pair implied by the Causal DAG, or None if no such relation
+        can be constructed (e.g. because every valid adjustment set contains a node to ignore).
+
+        :param u: The treatment node.
+        :param v: The outcome node.
+        :param nodes_to_ignore: Set of nodes which will be excluded from causal tests.
+        :param kwargs: Keyword arguments to be passed through to test case generation.
+
+        :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
+        """
+
+        if nodes_to_ignore is None:
+            nodes_to_ignore = set()
+
+        causal_tests = []
+
+        # Create a ShouldNotCause relation for each pair of nodes that are not directly connected
+        if ((u, v) not in self.edges) and ((v, u) not in self.edges):
+            u_in_ancestors = u in nx.ancestors(self, v)
+            v_in_ancestors = v in nx.ancestors(self, u)
+
+            # Case 1: U --> ... --> V or U _||_ V
+            if u_in_ancestors or (not u_in_ancestors and not v_in_ancestors):
+                base_test_case = BaseTestCase(Input(u, None), Output(v, None))
+                estimator, estimate_type = self._estimator(base_test_case, nodes_to_ignore)
+                if estimator and estimate_type:
+                    causal_tests.append(
+                        CausalTestCase(
+                            base_test_case=base_test_case,
+                            expected_causal_effect=NoEffect(),
+                            estimator=estimator,
+                            estimate_type=estimate_type,
+                            **kwargs,
+                        ),
+                    )
+
+            # Case 2: V --> ... --> U or U _||_ V
+            if v in nx.ancestors(self, u) or (not u_in_ancestors and not v_in_ancestors):
+                base_test_case = BaseTestCase(Input(v, None), Output(u, None))
+                estimator, estimate_type = self._estimator(base_test_case, nodes_to_ignore)
+                if estimator and estimate_type:
+                    causal_tests.append(
+                        CausalTestCase(
+                            base_test_case=base_test_case,
+                            expected_causal_effect=NoEffect(),
+                            estimator=estimator,
+                            estimate_type=estimate_type,
+                            **kwargs,
+                        ),
+                    )
+
+        # Create a ShouldCause relation for each edge (u, v) or (v, u)
+        elif (u, v) in self.edges:
+            base_test_case = BaseTestCase(Input(u, None), Output(v, None))
+            estimator, estimate_type = self._estimator(base_test_case, nodes_to_ignore)
+            if estimator and estimate_type:
+                causal_tests.append(
+                    CausalTestCase(
+                        base_test_case=base_test_case,
+                        expected_causal_effect=SomeEffect(),
+                        estimator=estimator,
+                        estimate_type=estimate_type,
+                        **kwargs,
+                    ),
+                )
+        else:
+            base_test_case = BaseTestCase(Input(v, None), Output(u, None))
+            estimator, estimate_type = self._estimator(base_test_case, nodes_to_ignore)
+            if estimator and estimate_type:
+                causal_tests.append(
+                    CausalTestCase(
+                        base_test_case=base_test_case,
+                        expected_causal_effect=SomeEffect(),
+                        estimator=estimator,
+                        estimate_type=estimate_type,
+                        **kwargs,
+                    ),
+                )
+        return causal_tests
+
+    def generate_causal_tests(
+        self, nodes_to_ignore: set = None, threads: int = 0, nodes_to_test: set = None, **kwargs: dict
+    ) -> list[CausalTestCase]:
+        """
+        Construct a list of metamorphic relations implied by the Causal DAG.
+        This list of metamorphic relations contains a ShouldCause relation for every edge, and a ShouldNotCause
+        relation for every (minimal) conditional independence relation implied by the structure of the DAG.
+
+        :param nodes_to_ignore: Set of nodes which will be excluded from causal tests.
+        :param threads: Number of threads to use (if generating in parallel).
+        :param nodes_to_test: Set of nodes to test the relationships between (defaults to all nodes).
+        :param kwargs: Keyword arguments to be passed through to test case generation.
+
+        :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
+        """
+
+        if nodes_to_ignore is None:
+            nodes_to_ignore = set()
+        nodes_to_ignore = nodes_to_ignore.union(set(self.cycle_nodes()))
+
+        if nodes_to_test is None:
+            nodes_to_test = self.nodes
+
+        if threads < 2:
+            causal_tests = [
+                self.generate_causal_test(u, v, nodes_to_ignore, **kwargs)
+                for u, v in combinations(filter(lambda node: node not in nodes_to_ignore, nodes_to_test), 2)
+            ]
+        else:
+            with Pool(threads) as pool:
+                causal_tests = pool.starmap(
+                    partial(self.generate_causal_test, nodes_to_ignore=nodes_to_ignore, **kwargs),
+                    combinations(filter(lambda node: node not in nodes_to_ignore, nodes_to_test), 2),
+                )
+
+        return [item for items in causal_tests for item in items]

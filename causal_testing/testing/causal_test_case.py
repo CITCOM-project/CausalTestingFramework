@@ -157,3 +157,21 @@ class CausalTestCase:
             f"Running {treatment_config} instead of {control_config} should cause the following "
             f"changes to {outcome_variable}: {self.expected_causal_effect}."
         )
+
+    def to_json(self):
+        """
+        Convert to a JSON serialisable dict object containing all non-standard parameters to reconstruct.
+
+        :returns: A JSON serialisable dict representing the object.
+        """
+        test_case = {
+            "name": self.name,
+            "treatment_variable": self.base_test_case.treatment_variable.name,
+            "estimate_type": self.estimate_type,
+            "expected_effect": {
+                self.base_test_case.outcome_variable.name: self.expected_causal_effect.__class__.__name__
+            },
+            "skip": self.skip,
+            "query": self.query,
+        } | self.estimator.to_json()
+        return test_case

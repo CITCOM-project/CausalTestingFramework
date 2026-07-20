@@ -19,7 +19,6 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_effect import Negative, Positive
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import TestOutcome
-from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
 
 # Ignore warnings from statsmodels when we try to evaluate test cases
 warnings.simplefilter("ignore")
@@ -202,15 +201,8 @@ class Discovery(ABC):
         ctf.create_variables()
         ctf.scenario = Scenario(list(ctf.variables["inputs"].values()) + list(ctf.variables["outputs"].values()))
 
-        ctf.test_cases = [
-            ctf.create_causal_test(
-                relation.to_json_stub(
-                    alpha=self.alpha,
-                    **self._json_stub_params(relation.base_test_case.outcome_variable),
-                )
-            )
-            for relation in generate_metamorphic_relations(causal_dag)
-        ]
+        causal_dag.datatypes = self.df.dtypes
+        ctf.test_cases = causal_dag.generate_causal_tests()
 
         results = []
 

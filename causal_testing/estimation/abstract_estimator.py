@@ -58,3 +58,14 @@ class Estimator(ABC):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
+
+    def to_json(self) -> dict:
+        """
+        Convert to a JSON serialisable dict object containing all non-standard parameters to reconstruct.
+
+        :returns: A JSON serialisable dict representing the object.
+        """
+        result = {"estimator": self.__class__.__name__, "estimator_kwargs": {}}
+        if self.effect_modifiers:
+            result["estimator_kwargs"]["effect_modifiers"] = self.effect_modifiers
+        return result
