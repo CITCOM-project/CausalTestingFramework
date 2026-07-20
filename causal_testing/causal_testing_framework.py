@@ -315,7 +315,6 @@ class CausalTestingFramework:
             results[f"{outcome.name}_ci_low"] = data[ci_low_inx]
             results[f"{outcome.name}_ci_high"] = data[ci_high_inx]
 
-        print(results)
         return pd.Series(results).sort_index()
 
     def save_results(self, output_path) -> list:
