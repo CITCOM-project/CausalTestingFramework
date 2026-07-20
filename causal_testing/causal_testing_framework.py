@@ -266,7 +266,7 @@ class CausalTestingFramework:
                 self.df, suppress_estimation_errors=silent, adequacy=adequacy, bootstrap_size=bootstrap_size
             )
 
-    def evaluate_dag(self, bootstrap_size: bool, alpha: float) -> pd.Series:
+    def evaluate_dag(self, bootstrap_size: bool = 100, alpha: float = 0.05) -> pd.Series:
         """
         Calculate confidence intervals for how well a causal DAG fits a dataset by repeatedly resampling the dataset
         and executing the causal tests.
@@ -275,17 +275,22 @@ class CausalTestingFramework:
         :param bootstrap_size: The number of bootstrap samples to use when calculating causal test adequacy
                                (defaults to 100)
         :param alpha: The significance level to use when calculating confidence intervals.
+                      (defaults to 0.05).
         """
         self.run_tests(silent=True, adequacy=False)
         results = {
-            test_outcome: len([test for test in self.test_cases if test.result.outcome == test_outcome])
+            test_outcome.name: len(
+                [test for test in self.test_cases if test.result and test.result.outcome == test_outcome]
+            )
             for test_outcome in TestOutcome
         }
 
         sample_results = []
         for sample_index in range(bootstrap_size):
             test_outcomes = {test_outcome: 0 for test_outcome in TestOutcome}
-            for test_case in tqdm(self.test_cases):
+            for test_case in self.test_cases:
+                if test_case.skip:
+                    continue
                 effect_estimate = test_case.estimate_effect(
                     df=self.df.sample(len(self.df), replace=True, random_state=sample_index)
                 )
@@ -299,14 +304,16 @@ class CausalTestingFramework:
             sample_results.append(test_outcomes)
 
         sample_results = pd.DataFrame(sample_results)
+
         # Calculate the confidence interval of each column
-        ci_low_inx = (alpha / 2) * bootstrap_size
-        ci_high_inx = ((1 - alpha) / 2) * bootstrap_size
+        ci_low_inx = round((alpha / 2) * bootstrap_size)
+        ci_high_inx = round(((1 - alpha) / 2) * bootstrap_size)
         for outcome in TestOutcome:
             data = sorted(sample_results[outcome])
-            results[f"{outcome}_ci_low"] = data[ci_low_inx]
-            results[f"{outcome}_ci_high"] = data[ci_high_inx]
+            results[f"{outcome.name}_ci_low"] = data[ci_low_inx]
+            results[f"{outcome.name}_ci_high"] = data[ci_high_inx]
 
+        print(results)
         return pd.Series(results).sort_index()
 
     def save_results(self, output_path) -> list:
