@@ -5,13 +5,10 @@ import shutil
 import pandas as pd
 import numpy as np
 
-from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_effect import ExactValue, SomeEffect
+from causal_testing.testing.causal_effect import ExactValue
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.testing.base_test_case import BaseTestCase
 
 
 class TestCausalTestCase(unittest.TestCase):
@@ -20,7 +17,7 @@ class TestCausalTestCase(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        # 1. Create Causal DAG
+        # Create Causal DAG
         self.temp_dir_path = tempfile.mkdtemp()
         dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
         dag_dot = """digraph G { A -> C; D -> A; D -> C}"""
@@ -28,33 +25,23 @@ class TestCausalTestCase(unittest.TestCase):
             file.write(dag_dot)
         self.causal_dag = CausalDAG(dag_dot_path)
 
-        # 2. Create Scenario and Causal Specification
-        self.A = Input("A", float)
-        self.C = Output("C", float)
-        self.D = Output("D", float)
-        self.scenario = Scenario({self.A, self.C, self.D})
-
-        # 3. Create a causal test case
+        # Create a causal test case
         self.expected_causal_effect = ExactValue(4)
-        self.base_test_case_A_C = BaseTestCase(self.A, self.C)
-        self.base_test_case_D_A = BaseTestCase(self.D, self.A)
         self.causal_test_case = CausalTestCase(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=self.expected_causal_effect,
-            # control_value=0,
-            # treatment_value=1,
+            effect_measure="ate",
         )
 
-        # 4. Create dummy test data and write to csv
+        # Create dummy test data
         np.random.seed(1)
         self.df = pd.DataFrame({"D": list(np.random.normal(60, 10, 1000))})  # D = exogenous
         self.df["A"] = [1 if d > 50 else 0 for d in self.df["D"]]
         self.df["C"] = self.df["D"] + (4 * (self.df["A"] + 2))  # C = (4*(A+2)) + D
-        # self.observational_data_csv_path = os.path.join(self.temp_dir_path, "observational_data.csv")
-        # self.df.to_csv(self.observational_data_csv_path, index=False)
 
-        # 5. Create minimal adjustment set
-        self.minimal_adjustment_set = self.causal_dag.identification(self.base_test_case_A_C)
+        # Create minimal adjustment set
+        self.minimal_adjustment_set = self.causal_dag.identification(treatment_variable="A", outcome_variable="C")
         # 6. Easier to access treatment and outcome values
         self.treatment_value = 1
         self.control_value = 0
@@ -62,36 +49,27 @@ class TestCausalTestCase(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
 
-    def test_invalid_base_test_case(self):
-        with self.assertRaises(ValueError):
-            BaseTestCase(self.A, self.A)
-
     def test_check_minimum_adjustment_set(self):
         """Check that the minimum adjustment set is correctly made"""
-        minimal_adjustment_set = self.causal_dag.identification(self.base_test_case_A_C)
+        minimal_adjustment_set = self.causal_dag.identification(treatment_variable="A", outcome_variable="C")
         self.assertEqual(minimal_adjustment_set, {"D"})
-
-    def test_invalid_causal_effect(self):
-        """Check that executing the causal test case returns the correct results for dummy data using a linear
-        regression estimator."""
-        base_test_case = BaseTestCase(treatment_variable=self.A, outcome_variable=self.C, effect="error")
-
-        with self.assertRaises(Exception):
-            self.causal_dag.identification(base_test_case)
 
     def test_execute_test_observational_linear_regression_estimator(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
         estimation_model = LinearRegressionEstimator(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             treatment_value=self.treatment_value,
             control_value=self.control_value,
             adjustment_set=self.minimal_adjustment_set,
         )
         causal_test_case = CausalTestCase(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=self.expected_causal_effect,
             estimator=estimation_model,
+            effect_measure="ate",
         )
         effect_estimate = causal_test_case.estimate_effect(self.df)
         pd.testing.assert_series_equal(effect_estimate.value, pd.Series(4.0), atol=1e-10)
@@ -99,18 +77,20 @@ class TestCausalTestCase(unittest.TestCase):
     def test_execute_test_observational_linear_regression_estimator_direct_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
-        base_test_case = BaseTestCase(treatment_variable=self.A, outcome_variable=self.C, effect="direct")
         estimation_model = LinearRegressionEstimator(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             treatment_value=self.treatment_value,
             control_value=self.control_value,
-            adjustment_set=self.causal_dag.identification(base_test_case),
+            adjustment_set=self.causal_dag.identification(treatment_variable="A", outcome_variable="C"),
         )
 
         causal_test_case = CausalTestCase(
-            base_test_case=base_test_case,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=self.expected_causal_effect,
             estimator=estimation_model,
+            effect_measure="ate",
         )
 
         # 6. Easier to access treatment and outcome values
@@ -123,16 +103,18 @@ class TestCausalTestCase(unittest.TestCase):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
         estimation_model = LinearRegressionEstimator(
-            base_test_case=self.base_test_case_D_A,
+            treatment_variable="D",
+            outcome_variable="A",
             treatment_value=self.treatment_value,
             control_value=self.control_value,
             adjustment_set=self.minimal_adjustment_set,
         )
         causal_test_case = CausalTestCase(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=self.expected_causal_effect,
             estimator=estimation_model,
-            estimate_type="coefficient",
+            effect_measure="coefficient",
         )
         effect_estimate = causal_test_case.estimate_effect(self.df)
         pd.testing.assert_series_equal(effect_estimate.value, pd.Series({"D": 0.0}), atol=1e-1)
@@ -141,34 +123,38 @@ class TestCausalTestCase(unittest.TestCase):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
         estimation_model = LinearRegressionEstimator(
-            base_test_case=self.base_test_case_D_A,
+            treatment_variable="D",
+            outcome_variable="A",
             treatment_value=self.treatment_value,
             control_value=self.control_value,
             adjustment_set=self.minimal_adjustment_set,
         )
         causal_test_case = CausalTestCase(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=self.expected_causal_effect,
             estimator=estimation_model,
-            estimate_type="risk_ratio",
+            effect_measure="risk_ratio",
         )
         effect_estimate = causal_test_case.estimate_effect(self.df)
         pd.testing.assert_series_equal(effect_estimate.value, pd.Series(0.0), atol=1)
 
-    def test_invalid_estimate_type(self):
+    def test_invalid_effect_measure(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
         estimation_model = LinearRegressionEstimator(
-            base_test_case=self.base_test_case_D_A,
+            treatment_variable="D",
+            outcome_variable="A",
             treatment_value=self.treatment_value,
             control_value=self.control_value,
             adjustment_set=self.minimal_adjustment_set,
         )
         causal_test_case = CausalTestCase(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=self.expected_causal_effect,
             estimator=estimation_model,
-            estimate_type="invalid",
+            effect_measure="invalid",
         )
         with self.assertRaises(AttributeError):
             causal_test_case.execute_test(self.df)
@@ -177,16 +163,19 @@ class TestCausalTestCase(unittest.TestCase):
         """Check that executing the causal test case returns the correct results for dummy data with a squared term
         using a linear regression estimator. C ~ 4*(A+2) + D + D^2"""
         estimation_model = LinearRegressionEstimator(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             treatment_value=self.treatment_value,
             control_value=self.control_value,
             adjustment_set=self.minimal_adjustment_set,
             formula=f"C ~ A + {'+'.join(self.minimal_adjustment_set)} + (D ** 2)",
         )
         causal_test_case = CausalTestCase(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=self.expected_causal_effect,
             estimator=estimation_model,
+            effect_measure="ate",
         )
         effect_estimate = causal_test_case.estimate_effect(self.df)
         pd.testing.assert_series_equal(effect_estimate.value, pd.Series(4.0), atol=1)
@@ -195,7 +184,8 @@ class TestCausalTestCase(unittest.TestCase):
         """Ensure estimate params is handled correctly when a formula is passed into the estimator object"""
 
         estimator = LinearRegressionEstimator(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             adjustment_set=set(),
             control_value=0,
             treatment_value=1,
@@ -203,9 +193,10 @@ class TestCausalTestCase(unittest.TestCase):
             adjustment_config={"D": 1},
         )
         causal_test_case = CausalTestCase(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=self.expected_causal_effect,
-            estimate_type="risk_ratio",
+            effect_measure="risk_ratio",
             estimator=estimator,
         )
         self.assertEqual(
@@ -218,15 +209,17 @@ class TestCausalTestCase(unittest.TestCase):
 
     def test_to_dict(self):
         estimator = LinearRegressionEstimator(
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             adjustment_set=set(),
             formula="C ~ A + D",
         )
         causal_test_case = CausalTestCase(
             name="A |- C",
-            base_test_case=self.base_test_case_A_C,
+            treatment_variable="A",
+            outcome_variable="C",
             expected_causal_effect=ExactValue(4),
-            estimate_type="coefficient",
+            effect_measure="coefficient",
             estimator=estimator,
         )
         causal_test_case.execute_test(self.df, adequacy=True)
@@ -235,11 +228,10 @@ class TestCausalTestCase(unittest.TestCase):
             "name": "A |- C",
             "treatment_variable": "A",
             "outcome_variable": "C",
-            "effect": "total",
             "skip": False,
-            "estimate_type": "coefficient",
+            "effect_measure": "coefficient",
             "query": None,
-            "expected_effect": {"name": "ExactValue", "value": 4, "atol": 0.2},
+            "expected_effect": {"name": "ExactValue", "effect_type": "direct", "value": 4, "atol": 0.2},
             "estimator": {
                 "name": "LinearRegressionEstimator",
                 "alpha": 0.05,

@@ -5,14 +5,11 @@ import pandas as pd
 from scipy.stats import bootstrap
 
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import ExactValue, Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
-from causal_testing.testing.base_test_case import BaseTestCase
 
 
 logger = logging.getLogger(__name__)
@@ -36,11 +33,11 @@ class EmpiricalMeanEstimator(Estimator):
         :param df: The data to use.
         :return: The empirical average treatment effect.
         """
-        treatment_variable = self.base_test_case.treatment_variable.name
-        outcome_variable = self.base_test_case.outcome_variable.name
 
-        control_results = df.where(df[treatment_variable] == self.control_value)[outcome_variable].dropna()
-        treatment_results = df.where(df[treatment_variable] == self.treatment_value)[outcome_variable].dropna()
+        control_results = df.where(df[self.treatment_variable] == self.control_value)[self.outcome_variable].dropna()
+        treatment_results = df.where(df[self.treatment_variable] == self.treatment_value)[
+            self.outcome_variable
+        ].dropna()
 
         def risk_ratio(sample1, sample2):
             return sample1.mean() / sample2.mean()
@@ -54,66 +51,48 @@ class EmpiricalMeanEstimator(Estimator):
         )
 
 
-# 1. Read in the Causal DAG
+# Read in the Causal DAG
 ROOT = os.path.realpath(os.path.dirname(__file__))
 causal_dag = CausalDAG(f"{ROOT}/dag.dot")
 
-# 2. Create variables
-width = Input("width", float)
-height = Input("height", float)
-intensity = Input("intensity", float)
-
-num_lines_abs = Output("num_lines_abs", float)
-num_lines_unit = Output("num_lines_unit", float)
-num_shapes_abs = Output("num_shapes_abs", float)
-num_shapes_unit = Output("num_shapes_unit", float)
-
-# 3. Create scenario
-scenario = Scenario(
-    variables={
-        width,
-        height,
-        intensity,
-        num_lines_abs,
-        num_lines_unit,
-        num_shapes_abs,
-        num_shapes_unit,
-    }
-)
-
-observational_data_path = f"{ROOT}/data/random/data_random_1000.csv"
+OBSERVATIONAL_DATA_PATH = f"{ROOT}/data/random/data_random_1000.csv"
 
 
 def test_poisson_intensity_num_shapes(save=False):
     intensity_num_shapes_results = []
-    base_test_case = BaseTestCase(treatment_variable=intensity, outcome_variable=num_shapes_unit)
-    observational_df = pd.read_csv(observational_data_path, index_col=0).astype(float)
+    observational_df = pd.read_csv(OBSERVATIONAL_DATA_PATH, index_col=0).astype(float)
     causal_test_cases = [
         (
             CausalTestCase(
-                base_test_case=base_test_case,
+                treatment_variable="intensity",
+                outcome_variable="num_shapes_unit",
                 expected_causal_effect=ExactValue(4, atol=0.5),
-                estimate_type="risk_ratio",
+                effect_measure="risk_ratio",
                 estimator=EmpiricalMeanEstimator(
-                    base_test_case=base_test_case,
+                    treatment_variable="intensity",
+                    outcome_variable="num_shapes_unit",
                     treatment_value=treatment_value,
                     control_value=control_value,
-                    adjustment_set=causal_dag.identification(base_test_case),
-                    effect_modifiers=None,
+                    adjustment_set=causal_dag.identification(
+                        treatment_variable="intensity", outcome_variable="num_shapes_unit"
+                    ),
                     alpha=0.05,
                 ),
             ),
             f"{ROOT}/data/smt_100/data_smt_wh{wh}_100.csv",
             CausalTestCase(
-                base_test_case=base_test_case,
+                treatment_variable="intensity",
+                outcome_variable="num_shapes_unit",
                 expected_causal_effect=ExactValue(4, atol=0.5),
-                estimate_type="risk_ratio",
+                effect_measure="risk_ratio",
                 estimator=LinearRegressionEstimator(
-                    base_test_case=base_test_case,
+                    treatment_variable="intensity",
+                    outcome_variable="num_shapes_unit",
                     treatment_value=treatment_value,
                     control_value=control_value,
-                    adjustment_set=causal_dag.identification(base_test_case),
-                    effect_modifiers=None,
+                    adjustment_set=causal_dag.identification(
+                        treatment_variable="intensity", outcome_variable="num_shapes_unit"
+                    ),
                     formula="num_shapes_unit ~ I(intensity ** 2) + intensity - 1",
                     alpha=0.05,
                 ),
@@ -145,19 +124,23 @@ def test_poisson_intensity_num_shapes(save=False):
 
 
 def test_poisson_width_num_shapes(save=False):
-    base_test_case = BaseTestCase(treatment_variable=width, outcome_variable=num_shapes_unit)
-    df = pd.read_csv(observational_data_path, index_col=0).astype(float)
+    df = pd.read_csv(OBSERVATIONAL_DATA_PATH, index_col=0).astype(float)
     causal_test_cases = [
         CausalTestCase(
-            base_test_case=base_test_case,
+            treatment_variable="width",
+            outcome_variable="num_shapes_unit",
             expected_causal_effect=Positive(),
-            estimate_type="ate_calculated",
+            effect_measure="ate_calculated",
             estimator=LinearRegressionEstimator(
-                base_test_case=base_test_case,
+                treatment_variable="width",
+                outcome_variable="num_shapes_unit",
                 treatment_value=w + 1.0,
                 control_value=float(w),
-                adjustment_set=causal_dag.identification(base_test_case),
-                effect_modifiers={"intensity": i},
+                adjustment_set=causal_dag.identification(
+                    treatment_variable="width",
+                    outcome_variable="num_shapes_unit",
+                ),
+                adjustment_config={"intensity": i},
                 formula="num_shapes_unit ~ width + I(intensity ** 2)+I(width ** -1)+intensity-1",
                 alpha=0.05,
             ),
@@ -171,7 +154,7 @@ def test_poisson_width_num_shapes(save=False):
         {
             "control": causal_test.estimator.control_value,
             "treatment": causal_test.estimator.treatment_value,
-            "intensity": causal_test.estimator.effect_modifiers["intensity"],
+            "intensity": causal_test.estimator.adjustment_config["intensity"],
             "ate": causal_test.result.effect_estimate.value[0],
             "ci_low": causal_test.result.effect_estimate.ci_low,
             "ci_high": causal_test.result.effect_estimate.ci_high,

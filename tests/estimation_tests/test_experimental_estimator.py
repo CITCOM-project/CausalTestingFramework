@@ -1,7 +1,5 @@
 import unittest
 from causal_testing.estimation.experimental_estimator import ExperimentalEstimator
-from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.specification.variable import Input, Output
 
 
 class SystemUnderTest:
@@ -35,28 +33,26 @@ class TestExperimentalEstimator(unittest.TestCase):
 
     def test_estimate_ate(self):
         estimator = ConcreteExperimentalEstimator(
-            base_test_case=BaseTestCase(Input("X", float), Output("Y", float)),
+            treatment_variable="X",
+            outcome_variable="Y",
             treatment_value=2,
             control_value=1,
-            adjustment_set={},
+            adjustment_config={},
             alpha=0.05,
             repeats=200,
         )
         effect_estimate = estimator.estimate_ate()
-        print(effect_estimate.value)
-        print(effect_estimate.ci_low)
-        print(effect_estimate.ci_high)
         self.assertEqual(effect_estimate.value["X"], 2)
         self.assertEqual(effect_estimate.ci_low["X"], 2)
         self.assertEqual(effect_estimate.ci_high["X"], 2)
 
     def test_estimate_risk_ratio(self):
         estimator = ConcreteExperimentalEstimator(
-            base_test_case=BaseTestCase(Input("X", float), Output("Y", float)),
+            treatment_variable="X",
+            outcome_variable="Y",
             treatment_value=2,
             control_value=1,
-            adjustment_set={},
-            effect_modifiers={},
+            adjustment_config={},
             alpha=0.05,
             repeats=200,
         )

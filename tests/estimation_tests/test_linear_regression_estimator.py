@@ -1,12 +1,11 @@
 import unittest
 import pandas as pd
 import numpy as np
-from causal_testing.specification.variable import Input, Output
+
 from causal_testing.utils.validation import CausalValidator
 
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.genetic_programming_regression_fitter import reciprocal
-from causal_testing.testing.base_test_case import BaseTestCase
 
 
 def load_nhefs_df():
@@ -62,13 +61,12 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         cls.nhefs_df = load_nhefs_df()
         cls.chapter_11_df = load_chapter_11_df()
         cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
-        cls.base_test_case = BaseTestCase(Input("treatments", float), Output("outcomes", float))
-        cls.program_15_base_test_case = BaseTestCase(Input("qsmk", float), Output("wt82_71", float))
 
     def test_linear_regression_categorical_ate(self):
         df = self.scarf_df.copy()
-        base_test_case = BaseTestCase(Input("color", float), Output("completed", float))
-        linear_regression_estimator = LinearRegressionEstimator(base_test_case=base_test_case, adjustment_set=set())
+        linear_regression_estimator = LinearRegressionEstimator(
+            treatment_variable="color", outcome_variable="completed", adjustment_set=set()
+        )
         effect_estimate = linear_regression_estimator.estimate_coefficient(df)
         self.assertTrue(
             all(ci_low < 0 < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
@@ -77,7 +75,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_11_2(self):
         """Test whether our linear regression implementation produces the same results as program 11.2 (p. 141)."""
         df = self.chapter_11_df
-        linear_regression_estimator = LinearRegressionEstimator(self.base_test_case, adjustment_set=set())
+        linear_regression_estimator = LinearRegressionEstimator(
+            treatment_variable="treatments", outcome_variable="outcomes", adjustment_set=set()
+        )
         effect_estimate = linear_regression_estimator.estimate_coefficient(df)
 
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
@@ -92,7 +92,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression implementation produces the same results as program 11.3 (p. 144)."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=self.base_test_case,
+            treatment_variable="treatments",
+            outcome_variable="outcomes",
             adjustment_set=set(),
             formula="outcomes ~ treatments + I(treatments ** 2)",
         )
@@ -125,7 +126,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=self.program_15_base_test_case,
+            treatment_variable="qsmk",
+            outcome_variable="wt82_71",
             treatment_value=1,
             control_value=0,
             adjustment_set=covariates,
@@ -162,7 +164,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=self.program_15_base_test_case,
+            treatment_variable="qsmk",
+            outcome_variable="wt82_71",
             treatment_value=1,
             control_value=0,
             adjustment_set=covariates,
@@ -197,7 +200,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=self.program_15_base_test_case,
+            treatment_variable="qsmk",
+            outcome_variable="wt82_71",
             treatment_value=1,
             control_value=0,
             adjustment_set=covariates,
@@ -229,7 +233,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "smokeyrs",
         }
         linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=self.program_15_base_test_case,
+            treatment_variable="qsmk",
+            outcome_variable="wt82_71",
             treatment_value=1,
             control_value=0,
             adjustment_set=covariates,
@@ -247,7 +252,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
         df = self.chapter_11_df.copy()
         linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=self.base_test_case,
+            treatment_variable="treatments",
+            outcome_variable="outcomes",
             treatment_value=100,
             control_value=90,
             adjustment_set=set(),
@@ -263,9 +269,9 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         df["X"] = np.arange(10).astype(float)
         df["Y"] = 1 / (df["X"] + 1)
         print(df)
-        base_test_case = BaseTestCase(Input("X", float), Output("Y", float))
         linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=base_test_case,
+            treatment_variable="X",
+            outcome_variable="Y",
             treatment_value=0,
             control_value=1,
             adjustment_set=set(),
@@ -281,11 +287,11 @@ class TestLinearRegressionEstimator(unittest.TestCase):
 
     def test_gp_power(self):
         df = pd.DataFrame()
-        base_test_case = BaseTestCase(Input("X", float), Output("Y", float))
         df["X"] = np.arange(10)
         df["Y"] = 2 * (df["X"] ** 2)
         linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=base_test_case,
+            treatment_variable="X",
+            outcome_variable="Y",
             treatment_value=0,
             control_value=1,
             adjustment_set=set(),
@@ -316,25 +322,22 @@ class TestLinearRegressionInteraction(unittest.TestCase):
 
     def test_X1_effect(self):
         """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
-        base_test_case = BaseTestCase(Input("X1", float), Output("Y", float))
         lr_model = LinearRegressionEstimator(
-            base_test_case=base_test_case,
+            treatment_variable="X1",
+            outcome_variable="Y",
             treatment_value=1,
             control_value=0,
             adjustment_set={"X2"},
-            effect_modifiers={"x2": 0},
+            adjustment_config={"x2": 0},
             formula="Y ~ X1 + X2 + (X1 * X2)",
         )
         effect_estimate = lr_model.estimate_ate(self.df)
         self.assertAlmostEqual(effect_estimate.value[0], 2.0)
 
     def test_categorical_confidence_intervals(self):
-        base_test_case = BaseTestCase(Input("color", float), Output("length_in", float))
         lr_model = LinearRegressionEstimator(
-            base_test_case=base_test_case,
-            control_value=None,
-            treatment_value=None,
-            adjustment_set={},
+            treatment_variable="color",
+            outcome_variable="length_in",
         )
         effect_estimate = lr_model.estimate_coefficient(self.scarf_df)
 

@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 
 from causal_testing.estimation.instrumental_variable_estimator import InstrumentalVariableEstimator
-from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.specification.variable import Input, Output
 
 
 class TestInstrumentalVariableEstimator(unittest.TestCase):
@@ -24,7 +22,8 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         Test we get the correct coefficient.
         """
         iv_estimator = InstrumentalVariableEstimator(
-            base_test_case=BaseTestCase(Input("X", float), Output("Y", float)),
+            treatment_variable="X",
+            outcome_variable="Y",
             treatment_value=None,
             control_value=None,
             adjustment_set=set(),

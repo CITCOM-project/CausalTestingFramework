@@ -7,7 +7,6 @@ import pandas as pd
 
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
-from causal_testing.testing.base_test_case import BaseTestCase
 
 
 class ExperimentalEstimator(Estimator):
@@ -19,25 +18,24 @@ class ExperimentalEstimator(Estimator):
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        base_test_case: BaseTestCase,
+        treatment_variable: str,
+        outcome_variable: str,
         treatment_value: float,
         control_value: float,
-        adjustment_set: dict[str, Any],
-        effect_modifiers: dict[str, Any] = None,
+        adjustment_config: dict[str, Any],
         alpha: float = 0.05,
         repeats: int = 200,
     ):
         # pylint: disable=R0801
         super().__init__(
-            base_test_case=base_test_case,
+            treatment_variable=treatment_variable,
+            outcome_variable=outcome_variable,
             treatment_value=treatment_value,
             control_value=control_value,
-            adjustment_set=adjustment_set,
-            effect_modifiers=effect_modifiers,
+            adjustment_set=set(adjustment_config),
+            adjustment_config=adjustment_config,
             alpha=alpha,
         )
-        if effect_modifiers is None:
-            self.effect_modifiers = {}
         self.repeats = repeats
 
     def add_modelling_assumptions(self):
@@ -63,25 +61,14 @@ class ExperimentalEstimator(Estimator):
 
         :return: The average treatment effect and the bootstrapped confidence intervals.
         """
-        control_configuration = (
-            self.adjustment_set
-            | self.effect_modifiers
-            | {self.base_test_case.treatment_variable.name: self.control_value}
-        )
-        treatment_configuration = (
-            self.adjustment_set
-            | self.effect_modifiers
-            | {self.base_test_case.treatment_variable.name: self.treatment_value}
-        )
+        control_configuration = self.adjustment_config | {self.treatment_variable: self.control_value}
+        treatment_configuration = self.adjustment_config | {self.treatment_variable: self.treatment_value}
 
         control_outcomes = pd.DataFrame([self.run_system(control_configuration) for _ in range(self.repeats)])
         treatment_outcomes = pd.DataFrame([self.run_system(treatment_configuration) for _ in range(self.repeats)])
 
         difference = (
-            (
-                treatment_outcomes[self.base_test_case.outcome_variable.name]
-                - control_outcomes[self.base_test_case.outcome_variable.name]
-            )
+            (treatment_outcomes[self.outcome_variable] - control_outcomes[self.outcome_variable])
             .sort_values()
             .reset_index()
         )
@@ -92,17 +79,9 @@ class ExperimentalEstimator(Estimator):
 
         return EffectEstimate(
             "ate",
-            pd.Series(
-                {
-                    self.base_test_case.treatment_variable.name: difference.mean()[
-                        self.base_test_case.outcome_variable.name
-                    ]
-                }
-            ),
-            pd.Series({self.base_test_case.treatment_variable.name: ci_low[self.base_test_case.outcome_variable.name]}),
-            pd.Series(
-                {self.base_test_case.treatment_variable.name: ci_high[self.base_test_case.outcome_variable.name]}
-            ),
+            pd.Series({self.treatment_variable: difference.mean()[self.outcome_variable]}),
+            pd.Series({self.treatment_variable: ci_low[self.outcome_variable]}),
+            pd.Series({self.treatment_variable: ci_high[self.outcome_variable]}),
         )
 
     def estimate_risk_ratio(self) -> tuple[pd.Series, list[pd.Series, pd.Series]]:
@@ -111,25 +90,14 @@ class ExperimentalEstimator(Estimator):
 
         :return: The average treatment effect and the bootstrapped confidence intervals.
         """
-        control_configuration = (
-            self.adjustment_set
-            | self.effect_modifiers
-            | {self.base_test_case.treatment_variable.name: self.control_value}
-        )
-        treatment_configuration = (
-            self.adjustment_set
-            | self.effect_modifiers
-            | {self.base_test_case.treatment_variable.name: self.treatment_value}
-        )
+        control_configuration = self.adjustment_config | {self.treatment_variable: self.control_value}
+        treatment_configuration = self.adjustment_config | {self.treatment_variable: self.treatment_value}
 
         control_outcomes = pd.DataFrame([self.run_system(control_configuration) for _ in range(self.repeats)])
         treatment_outcomes = pd.DataFrame([self.run_system(treatment_configuration) for _ in range(self.repeats)])
 
         difference = (
-            (
-                treatment_outcomes[self.base_test_case.outcome_variable.name]
-                / control_outcomes[self.base_test_case.outcome_variable.name]
-            )
+            (treatment_outcomes[self.outcome_variable] / control_outcomes[self.outcome_variable])
             .sort_values()
             .reset_index()
         )
@@ -140,9 +108,7 @@ class ExperimentalEstimator(Estimator):
 
         return EffectEstimate(
             "ate",
-            {self.base_test_case.treatment_variable.name: difference.mean()[self.base_test_case.outcome_variable.name]},
-            pd.Series({self.base_test_case.treatment_variable.name: ci_low[self.base_test_case.outcome_variable.name]}),
-            pd.Series(
-                {self.base_test_case.treatment_variable.name: ci_high[self.base_test_case.outcome_variable.name]}
-            ),
+            {self.treatment_variable: difference.mean()[self.outcome_variable]},
+            pd.Series({self.treatment_variable: ci_low[self.outcome_variable]}),
+            pd.Series({self.treatment_variable: ci_high[self.outcome_variable]}),
         )

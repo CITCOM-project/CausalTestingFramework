@@ -1,19 +1,11 @@
 import unittest
 import os
 import shutil, tempfile
-import json
-import networkx as nx
 
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Input, Output
-from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import NoEffect, SomeEffect
-from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
-from causal_testing.estimation.multinomial_regression_estimator import MultinomialRegressionEstimator
 
 
 def sort_test_dict(test: dict):
@@ -32,13 +24,6 @@ class TestMetamorphicRelation(unittest.TestCase):
         with open(self.dcg_dot_path, "w") as f:
             f.write(dcg_dot)
 
-        X1 = Input("X1", float)
-        X2 = Input("X2", float)
-        X3 = Input("X3", float)
-        Z = Output("Z", float)
-        M = Output("M", float)
-        Y = Output("Y", float)
-        self.scenario = Scenario(variables={X1, X2, X3, Z, M, Y})
         self.default_control_input_config = {"X1": 1, "X2": 2, "X3": 3}
         self.default_treatment_input_config = {"X1": 2, "X2": 3, "X3": 3}
 
@@ -51,15 +36,16 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         expected_tests = []
         for treatment, outcome in dag.edges:
-            base_test_case = BaseTestCase(Input(treatment, float), Output(outcome, float))
             expected_tests.append(
                 CausalTestCase(
-                    base_test_case=base_test_case,
+                    treatment_variable=treatment,
+                    outcome_variable=outcome,
                     expected_causal_effect=SomeEffect(),
-                    estimate_type="coefficient",
+                    effect_measure="coefficient",
                     estimator=LinearRegressionEstimator(
-                        base_test_case,
-                        adjustment_set=dag.identification(base_test_case),
+                        treatment_variable=treatment,
+                        outcome_variable=outcome,
+                        adjustment_set=dag.identification(treatment_variable=treatment, outcome_variable=outcome),
                     ),
                     name=f"{treatment} -> {outcome}",
                     skip=False,
@@ -80,15 +66,16 @@ class TestMetamorphicRelation(unittest.TestCase):
             ("X2", "X3"),
             ("X3", "X2"),
         ]:
-            base_test_case = BaseTestCase(Input(treatment, float), Output(outcome, float))
             expected_tests.append(
                 CausalTestCase(
-                    base_test_case=base_test_case,
+                    treatment_variable=treatment,
+                    outcome_variable=outcome,
                     expected_causal_effect=NoEffect(),
-                    estimate_type="coefficient",
+                    effect_measure="coefficient",
                     estimator=LinearRegressionEstimator(
-                        base_test_case,
-                        adjustment_set=dag.identification(base_test_case),
+                        treatment_variable=treatment,
+                        outcome_variable=outcome,
+                        adjustment_set=dag.identification(treatment_variable=treatment, outcome_variable=outcome),
                     ),
                     name=f"{treatment} _||_ {outcome}",
                     skip=False,
@@ -106,14 +93,16 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         expected_tests = []
         for treatment, outcome in dag.edges:
-            base_test_case = BaseTestCase(Input(treatment, float), Output(outcome, float))
             expected_tests.append(
                 CausalTestCase(
-                    base_test_case=base_test_case,
+                    treatment_variable=treatment,
+                    outcome_variable=outcome,
                     expected_causal_effect=SomeEffect(),
-                    estimate_type="coefficient",
+                    effect_measure="coefficient",
                     estimator=LinearRegressionEstimator(
-                        base_test_case, adjustment_set=dag.identification(base_test_case)
+                        treatment_variable=treatment,
+                        outcome_variable=outcome,
+                        adjustment_set=dag.identification(treatment_variable=treatment, outcome_variable=outcome),
                     ),
                     name=f"{treatment} -> {outcome}",
                     skip=False,
@@ -136,14 +125,16 @@ class TestMetamorphicRelation(unittest.TestCase):
             ("X2", "X3"),
             ("X3", "X2"),
         ]:
-            base_test_case = BaseTestCase(Input(treatment, float), Output(outcome, float))
             expected_tests.append(
                 CausalTestCase(
-                    base_test_case=base_test_case,
+                    treatment_variable=treatment,
+                    outcome_variable=outcome,
                     expected_causal_effect=NoEffect(),
-                    estimate_type="coefficient",
+                    effect_measure="coefficient",
                     estimator=LinearRegressionEstimator(
-                        base_test_case, adjustment_set=dag.identification(base_test_case)
+                        treatment_variable=treatment,
+                        outcome_variable=outcome,
+                        adjustment_set=dag.identification(treatment_variable=treatment, outcome_variable=outcome),
                     ),
                     name=f"{treatment} _||_ {outcome}",
                     skip=False,
@@ -158,13 +149,17 @@ class TestMetamorphicRelation(unittest.TestCase):
     def test_all_metamorphic_relations_implied_by_dag_ignore_cycles(self):
         dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True, datatypes={v: float for v in {"a", "b", "c", "d"}})
 
-        base_test_case = BaseTestCase(Input("a", float), Output("b", float))
         expected_tests = [
             CausalTestCase(
-                base_test_case=base_test_case,
+                treatment_variable="a",
+                outcome_variable="b",
                 expected_causal_effect=SomeEffect(),
-                estimate_type="coefficient",
-                estimator=LinearRegressionEstimator(base_test_case, adjustment_set=dcg.identification(base_test_case)),
+                effect_measure="coefficient",
+                estimator=LinearRegressionEstimator(
+                    treatment_variable="a",
+                    outcome_variable="b",
+                    adjustment_set=dcg.identification(treatment_variable="a", outcome_variable="b"),
+                ),
                 name="a -> b",
                 skip=False,
             )

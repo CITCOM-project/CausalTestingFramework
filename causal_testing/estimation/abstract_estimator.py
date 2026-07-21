@@ -4,8 +4,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
-from causal_testing.testing.base_test_case import BaseTestCase
-
 logger = logging.getLogger(__name__)
 
 
@@ -31,26 +29,26 @@ class Estimator(ABC):
         # pylint: disable=too-many-arguments
         # pylint: disable=R0801
         self,
-        base_test_case: BaseTestCase,
+        treatment_variable: str,
+        outcome_variable: str,
         control_value: float = None,
         treatment_value: float = None,
         adjustment_set: set = None,
-        effect_modifiers: dict[str, Any] = None,
+        adjustment_config: dict[str, Any] = None,
         alpha: float = 0.05,
     ):
-        self.base_test_case = base_test_case
+
+        self.treatment_variable = treatment_variable
+        self.outcome_variable = outcome_variable
         self.treatment_value = treatment_value
         self.control_value = control_value
-        self.adjustment_set = adjustment_set
         self.alpha = alpha
-
-        if effect_modifiers is None:
-            self.effect_modifiers = {}
-        else:
-            self.effect_modifiers = effect_modifiers
+        self.adjustment_config = {} if adjustment_config is None else adjustment_config
+        self.adjustment_set = (
+            set(self.adjustment_config) if adjustment_set is None else adjustment_set.union(set(self.adjustment_config))
+        )
         self.modelling_assumptions = []
         self.add_modelling_assumptions()
-        logger.debug("Effect Modifiers: %s", self.effect_modifiers)
 
     @abstractmethod
     def add_modelling_assumptions(self):
@@ -66,8 +64,8 @@ class Estimator(ABC):
         :returns: A JSON serialisable dict representing the estimator.
         """
         result = {"name": self.__class__.__name__, "alpha": self.alpha, "adjustment_set": sorted(self.adjustment_set)}
-        if self.effect_modifiers:
-            result["effect_modifiers"] = self.effect_modifiers
+        if self.adjustment_config:
+            result["adjustment_config"] = self.adjustment_config
         if self.control_value is not None:
             result["control_value"] = self.control_value
         if self.treatment_value is not None:

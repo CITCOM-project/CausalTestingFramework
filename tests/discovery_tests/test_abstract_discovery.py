@@ -13,8 +13,6 @@ from causal_testing.testing.causal_test_result import CausalTestResult, TestOutc
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.specification.variable import Input, Output
 
 
 class AbstractDiscovery(Discovery):
@@ -31,16 +29,16 @@ class AbstractDiscovery(Discovery):
 
 class TestAbstractHillClimber(unittest.TestCase):
     def setUp(self) -> None:
-        self.base_test_case = BaseTestCase(Input("A", float), Output("B", float))
         self.df = pd.DataFrame({"A": [1, 2], "B": [4, 5]})
         self.abstract_discovery = AbstractDiscovery(
             df=self.df,
         )
         self.estimator = LinearRegressionEstimator(
-            base_test_case=self.base_test_case,
+            treatment_variable="A",
+            outcome_variable="B",
             treatment_value=1,
             control_value=0,
-            adjustment_set={},
+            adjustment_set=set(),
         )
 
     def test_simple_cycle(self):
@@ -54,7 +52,9 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertEqual(simple_cycle(dag), [])
 
     def test_effect_direction_positive(self):
-        causal_test_case = CausalTestCase(base_test_case=self.base_test_case, expected_causal_effect=None)
+        causal_test_case = CausalTestCase(
+            treatment_variable="A", outcome_variable="B", effect_measure="ate", expected_causal_effect=None
+        )
         causal_test_case.result = CausalTestResult(
             outcome=None,
             effect_estimate=EffectEstimate(
@@ -64,7 +64,9 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertEqual(self.abstract_discovery.effect_direction(causal_test_case), "positive")
 
     def test_effect_direction_negative(self):
-        causal_test_case = CausalTestCase(base_test_case=self.base_test_case, expected_causal_effect=None)
+        causal_test_case = CausalTestCase(
+            treatment_variable="A", outcome_variable="B", expected_causal_effect=None, effect_measure="ate"
+        )
         causal_test_case.result = CausalTestResult(
             outcome=None,
             effect_estimate=EffectEstimate(
@@ -74,7 +76,9 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertEqual(self.abstract_discovery.effect_direction(causal_test_case), "negative")
 
     def test_effect_direction_none(self):
-        causal_test_case = CausalTestCase(base_test_case=self.base_test_case, expected_causal_effect=None)
+        causal_test_case = CausalTestCase(
+            treatment_variable="A", outcome_variable="B", effect_measure="ate", expected_causal_effect=None
+        )
         causal_test_case.result = CausalTestResult(
             outcome=None,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),

@@ -15,8 +15,6 @@ from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 from causal_testing.estimation.multinomial_regression_estimator import MultinomialRegressionEstimator
-from causal_testing.specification.variable import Input, Output, Variable
-from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import NoEffect, SomeEffect
 from causal_testing.testing.causal_test_case import CausalTestCase
 
@@ -498,27 +496,32 @@ class CausalDAG(nx.DiGraph):
         backdoor_graph.add_edges_from(filter(lambda x: x not in outgoing_edges, self.edges))
         return backdoor_graph
 
-    def identification(self, base_test_case: BaseTestCase, nodes_to_ignore: set[Variable] = None):
+    def identification(
+        self,
+        treatment_variable: str,
+        outcome_variable: str,
+        effect_type: str = "direct",
+        nodes_to_ignore: set[str] = None,
+    ):
         """Identify and return the minimum adjustment set
 
-        :param base_test_case: A base test case instance containing the outcome_variable and the
-                               treatment_variable required for identification.
+        :param treatment_variable: The treatment variable.
+        :param outcome_variable: The outcome variable.
+        :param effect_type: The type of effect (total or direct).
         :param nodes_to_ignore: Variables not to be adjusted for (e.g. hidden variables).
         :return: The smallest set of variables which can be adjusted for to obtain a causal
                  estimate as opposed to a purely associational estimate.
         """
         # Naive method to guarantee termination when we have cycles
         if self.ignore_cycles:
-            return set(self.predecessors(base_test_case.treatment_variable.name))
+            return set(self.predecessors(treatment_variable))
         minimal_adjustment_sets = []
-        if base_test_case.effect == "total":
-            minimal_adjustment_sets = self.enumerate_minimal_adjustment_sets(
-                [base_test_case.treatment_variable.name], [base_test_case.outcome_variable.name]
-            )
-        elif base_test_case.effect == "direct":
+        if effect_type == "total":
+            minimal_adjustment_sets = self.enumerate_minimal_adjustment_sets([treatment_variable], [outcome_variable])
+        elif effect_type == "direct":
             minimal_adjustment_sets = self.direct_effect_adjustment_sets(
-                [base_test_case.treatment_variable.name],
-                [base_test_case.outcome_variable.name],
+                [treatment_variable],
+                [outcome_variable],
                 nodes_to_ignore=nodes_to_ignore,
             )
         else:
@@ -545,28 +548,42 @@ class CausalDAG(nx.DiGraph):
     def __str__(self):
         return f"Nodes: {self.nodes}\nEdges: {self.edges}"
 
-    def _estimator(self, base_test_case: BaseTestCase, nodes_to_ignore: set) -> Estimator:
-        outcome_variable = base_test_case.outcome_variable.name
-
+    def _estimator(
+        self, treatment_variable: str, outcome_variable: str, nodes_to_ignore: set, effect_type: str = "direct"
+    ) -> Estimator:
         if self.datatypes is None or outcome_variable not in self.datatypes:
             raise ValueError(f"No datatype specified for {outcome_variable}.")
 
-        min_adj_set = self.identification(base_test_case, nodes_to_ignore=nodes_to_ignore)
+        min_adj_set = self.identification(
+            treatment_variable=treatment_variable,
+            outcome_variable=outcome_variable,
+            nodes_to_ignore=nodes_to_ignore,
+            effect_type=effect_type,
+        )
 
         if pd.api.types.is_bool_dtype(self.datatypes[outcome_variable]):
             return (
-                LogisticRegressionEstimator(base_test_case=base_test_case, adjustment_set=min_adj_set),
+                LogisticRegressionEstimator(
+                    treatment_variable=treatment_variable, outcome_variable=outcome_variable, adjustment_set=min_adj_set
+                ),
                 "unit_odds_ratio",
             )
         if pd.api.types.is_categorical_dtype(self.datatypes[outcome_variable]) or pd.api.types.is_object_dtype(
             self.datatypes[outcome_variable]
         ):
             return (
-                MultinomialRegressionEstimator(base_test_case=base_test_case, adjustment_set=min_adj_set),
+                MultinomialRegressionEstimator(
+                    treatment_variable=treatment_variable, outcome_variable=outcome_variable, adjustment_set=min_adj_set
+                ),
                 "unit_odds_ratio",
             )
         if pd.api.types.is_numeric_dtype(self.datatypes[outcome_variable]):
-            return LinearRegressionEstimator(base_test_case=base_test_case, adjustment_set=min_adj_set), "coefficient"
+            return (
+                LinearRegressionEstimator(
+                    treatment_variable=treatment_variable, outcome_variable=outcome_variable, adjustment_set=min_adj_set
+                ),
+                "coefficient",
+            )
         raise ValueError(f"Invalid datatype for {outcome_variable}: {self.datatypes[outcome_variable]}")
 
     def generate_causal_test(  # pylint: disable=R0912
@@ -596,62 +613,70 @@ class CausalDAG(nx.DiGraph):
 
             # Case 1: U --> ... --> V or U _||_ V
             if u_in_ancestors or (not u_in_ancestors and not v_in_ancestors):
-                base_test_case = BaseTestCase(Input(u, None), Output(v, None))
-                estimator, estimate_type = self._estimator(base_test_case, nodes_to_ignore)
-                if estimator and estimate_type:
+                estimator, effect_measure = self._estimator(
+                    treatment_variable=u, outcome_variable=v, nodes_to_ignore=nodes_to_ignore
+                )
+                if estimator and effect_measure:
                     causal_tests.append(
                         CausalTestCase(
                             name=f"{u} _||_ {v}",
-                            base_test_case=base_test_case,
+                            treatment_variable=u,
+                            outcome_variable=v,
                             expected_causal_effect=NoEffect(),
                             estimator=estimator,
-                            estimate_type=estimate_type,
+                            effect_measure=effect_measure,
                             **kwargs,
                         ),
                     )
 
             # Case 2: V --> ... --> U or U _||_ V
             if v in nx.ancestors(self, u) or (not u_in_ancestors and not v_in_ancestors):
-                base_test_case = BaseTestCase(Input(v, None), Output(u, None))
-                estimator, estimate_type = self._estimator(base_test_case, nodes_to_ignore)
-                if estimator and estimate_type:
+                estimator, effect_measure = self._estimator(
+                    treatment_variable=v, outcome_variable=u, nodes_to_ignore=nodes_to_ignore
+                )
+                if estimator and effect_measure:
                     causal_tests.append(
                         CausalTestCase(
                             name=f"{v} _||_ {u}",
-                            base_test_case=base_test_case,
+                            treatment_variable=v,
+                            outcome_variable=u,
                             expected_causal_effect=NoEffect(),
                             estimator=estimator,
-                            estimate_type=estimate_type,
+                            effect_measure=effect_measure,
                             **kwargs,
                         ),
                     )
 
         # Create a ShouldCause relation for each edge (u, v) or (v, u)
         elif (u, v) in self.edges:
-            base_test_case = BaseTestCase(Input(u, None), Output(v, None))
-            estimator, estimate_type = self._estimator(base_test_case, nodes_to_ignore)
-            if estimator and estimate_type:
+            estimator, effect_measure = self._estimator(
+                treatment_variable=u, outcome_variable=v, nodes_to_ignore=nodes_to_ignore
+            )
+            if estimator and effect_measure:
                 causal_tests.append(
                     CausalTestCase(
                         name=f"{u} -> {v}",
-                        base_test_case=base_test_case,
+                        treatment_variable=u,
+                        outcome_variable=v,
                         expected_causal_effect=SomeEffect(),
                         estimator=estimator,
-                        estimate_type=estimate_type,
+                        effect_measure=effect_measure,
                         **kwargs,
                     ),
                 )
         else:
-            base_test_case = BaseTestCase(Input(v, None), Output(u, None))
-            estimator, estimate_type = self._estimator(base_test_case, nodes_to_ignore)
-            if estimator and estimate_type:
+            estimator, effect_measure = self._estimator(
+                treatment_variable=v, outcome_variable=u, nodes_to_ignore=nodes_to_ignore
+            )
+            if estimator and effect_measure:
                 causal_tests.append(
                     CausalTestCase(
                         name=f"{v} -> {u}",
-                        base_test_case=base_test_case,
+                        treatment_variable=v,
+                        outcome_variable=u,
                         expected_causal_effect=SomeEffect(),
                         estimator=estimator,
-                        estimate_type=estimate_type,
+                        effect_measure=effect_measure,
                         **kwargs,
                     ),
                 )

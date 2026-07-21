@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 from causal_testing.estimation.abstract_estimator import Estimator
-from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_effect import CausalEffect
 from causal_testing.testing.causal_test_result import CausalTestResult, TestOutcome
 from causal_testing.testing.data_adequacy import DataAdequacy
@@ -23,28 +22,27 @@ class CausalTestCase:
     causes the model-under-test to produce the expected change.
     :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
     :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
-    :param estimate_type: A string which denotes the type of estimate to return.
+    :param effect_measure: A string which denotes the type of estimate to return.
     :param estimator: An Estimator class object
     """
 
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        base_test_case: BaseTestCase,
+        treatment_variable: str,
+        outcome_variable: str,
         expected_causal_effect: CausalEffect,
-        estimate_type: str = "ate",
+        effect_measure: str,
         estimator: type(Estimator) = None,
         name: str = None,
         query: str = None,
         skip: bool = False,
     ):
-        self.base_test_case = base_test_case
+        self.treatment_variable = treatment_variable
+        self.outcome_variable = outcome_variable
         self.expected_causal_effect = expected_causal_effect
-        self.outcome_variable = base_test_case.outcome_variable
-        self.treatment_variable = base_test_case.treatment_variable
-        self.estimate_type = estimate_type
+        self.effect_measure = effect_measure
         self.estimator = estimator
-        self.effect = base_test_case.effect
         self.result = None
         self.name = name
         self.query = query
@@ -147,9 +145,9 @@ class CausalTestCase:
         """
         if self.query:
             df = df.query(self.query)
-        if not hasattr(self.estimator, f"estimate_{self.estimate_type}"):
-            raise AttributeError(f"{self.estimator.__class__} has no {self.estimate_type} method.")
-        estimate_effect = getattr(self.estimator, f"estimate_{self.estimate_type}")
+        if not hasattr(self.estimator, f"estimate_{self.effect_measure}"):
+            raise AttributeError(f"{self.estimator.__class__} has no {self.effect_measure} method.")
+        estimate_effect = getattr(self.estimator, f"estimate_{self.effect_measure}")
         return estimate_effect(df)
 
     def to_dict(self) -> dict:
@@ -158,15 +156,14 @@ class CausalTestCase:
 
         :returns: A JSON serialisable dict representing the test case.
         """
-        test_case = (
-            {"name": self.name}
-            | self.base_test_case.to_dict()
-            | {
-                "skip": self.skip,
-                "estimate_type": self.estimate_type,
-                "query": self.query,
-            }
-        )
+        test_case = {
+            "name": self.name,
+            "treatment_variable": self.treatment_variable,
+            "outcome_variable": self.outcome_variable,
+            "skip": self.skip,
+            "effect_measure": self.effect_measure,
+            "query": self.query,
+        }
 
         for label, attribute in [
             ("expected_effect", self.expected_causal_effect),

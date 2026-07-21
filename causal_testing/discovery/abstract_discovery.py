@@ -15,7 +15,6 @@ import rustworkx as rx
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_effect import Negative, Positive
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import TestOutcome
@@ -105,9 +104,9 @@ class Discovery(ABC):
         :param test_case: The causal test case.
         :returns: Whether the estimated causal test is positive or negative (or no effect).
         """
-        if pd.api.types.is_numeric_dtype(
-            self.df[test_case.base_test_case.treatment_variable.name]
-        ) and pd.api.types.is_numeric_dtype(self.df[test_case.base_test_case.outcome_variable.name]):
+        if pd.api.types.is_numeric_dtype(self.df[test_case.treatment_variable]) and pd.api.types.is_numeric_dtype(
+            self.df[test_case.outcome_variable]
+        ):
             if Negative().apply(test_case.result.effect_estimate):
                 return "negative"
             if Positive().apply(test_case.result.effect_estimate):
@@ -179,11 +178,11 @@ class Discovery(ABC):
 
     def _json_stub_params(self, outcome: str) -> str:
         if pd.api.types.is_bool_dtype(self.df[outcome]):
-            return {"estimator": "LogisticRegressionEstimator", "estimate_type": "unit_odds_ratio"}
+            return {"estimator": "LogisticRegressionEstimator", "effect_measure": "unit_odds_ratio"}
         if pd.api.types.is_categorical_dtype(self.df[outcome]) or pd.api.types.is_object_dtype(self.df[outcome]):
-            return {"estimator": "MultinomialRegressionEstimator", "estimate_type": "unit_odds_ratio"}
+            return {"estimator": "MultinomialRegressionEstimator", "effect_measure": "unit_odds_ratio"}
         if pd.api.types.is_numeric_dtype(self.df[outcome]):
-            return {"estimator": "LinearRegressionEstimator", "estimate_type": "coefficient"}
+            return {"estimator": "LinearRegressionEstimator", "effect_measure": "coefficient"}
         raise ValueError(f"Invalid datatype {self.df.dtypes[outcome]}")
 
     def evaluate_tests(self, causal_dag: CausalDAG) -> pd.DataFrame:
@@ -198,9 +197,6 @@ class Discovery(ABC):
         """
 
         ctf = CausalTestingFramework(dag=causal_dag, df=self.df)
-        ctf.create_variables()
-        ctf.scenario = Scenario(list(ctf.variables["inputs"].values()) + list(ctf.variables["outputs"].values()))
-
         causal_dag.datatypes = self.df.dtypes
         ctf.test_cases = causal_dag.generate_causal_tests()
 
@@ -217,8 +213,8 @@ class Discovery(ABC):
                             else TestOutcome.FAIL
                         ),
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
-                        "treatment": test_case.base_test_case.treatment_variable.name,
-                        "outcome": test_case.base_test_case.outcome_variable.name,
+                        "treatment": test_case.treatment_variable,
+                        "outcome": test_case.outcome_variable,
                         "effect": self.effect_direction(test_case),
                     }
                 )
@@ -227,8 +223,8 @@ class Discovery(ABC):
                     {
                         "result": TestOutcome.INESTIMABLE,
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
-                        "treatment": test_case.base_test_case.treatment_variable.name,
-                        "outcome": test_case.base_test_case.outcome_variable.name,
+                        "treatment": test_case.treatment_variable,
+                        "outcome": test_case.outcome_variable,
                     }
                 )
 

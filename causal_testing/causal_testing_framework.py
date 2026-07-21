@@ -11,8 +11,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.variable import Input, Output
-from causal_testing.testing.base_test_case import BaseTestCase
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import TestOutcome
 
@@ -44,8 +42,6 @@ def read_dataframe(file_path: str, **kwargs: dict) -> pd.DataFrame:
 
     suffix = Path(file_path).suffix.lower()
 
-    print(suffix, type(suffix))
-
     if suffix in readers:
         return readers[suffix](file_path, **kwargs)
     raise ValueError(f"Unsupported file extension: '{suffix}'")
@@ -61,26 +57,6 @@ class CausalTestingFramework:
         self.test_cases = test_cases
         self.df = df
         self.variables = {"inputs": {}, "outputs": {}}
-        if self.dag is not None and self.df is not None:
-            self.create_variables()
-
-    def create_variables(self) -> None:
-        """
-        Create variable objects from DAG nodes based on their connectivity.
-        """
-        for node_name, node_data in self.dag.nodes(data=True):
-            if node_name not in self.df.columns and not node_data.get("hidden", False):
-                raise ValueError(f"Node {node_name} missing from data. Should it be marked as hidden?")
-
-            dtype = self.df.dtypes.get(node_name)
-
-            # If node has no incoming edges, it's an input
-            if self.dag.in_degree(node_name) == 0:
-                self.variables["inputs"][node_name] = Input(name=node_name, datatype=dtype)
-
-            # Otherwise it's an output
-            if self.dag.in_degree(node_name) > 0:
-                self.variables["outputs"][node_name] = Output(name=node_name, datatype=dtype)
 
     def setup(
         self,
@@ -146,8 +122,6 @@ class CausalTestingFramework:
         if self.dag is None or self.df is None:
             raise ValueError("Please load DAG and data before attempting to load tests.")
 
-        self.create_variables()
-
         with open(test_cases_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
@@ -161,32 +135,6 @@ class CausalTestingFramework:
 
         self.test_cases = test_cases
 
-    def create_base_test(self, test: dict) -> BaseTestCase:
-        """
-        Create base test case from test configuration.
-
-        :param test: Dictionary containing test configuration parameters
-
-        :return: BaseTestCase object
-        :raises: KeyError if required variables are not found in inputs or outputs
-        """
-        treatment_name = test["treatment_variable"]
-        outcome_name = next(iter(test["expected_effect"].keys()))
-
-        # Look for treatment variable in both inputs and outputs
-        treatment_var = self.variables["inputs"].get(treatment_name) or self.variables["outputs"].get(treatment_name)
-        if not treatment_var:
-            raise KeyError(f"Treatment variable '{treatment_name}' not found in inputs or outputs")
-
-        # Look for outcome variable in both inputs and outputs
-        outcome_var = self.variables["inputs"].get(outcome_name) or self.variables["outputs"].get(outcome_name)
-        if not outcome_var:
-            raise KeyError(f"Outcome variable '{outcome_name}' not found in inputs or outputs")
-
-        return BaseTestCase(
-            treatment_variable=treatment_var, outcome_variable=outcome_var, effect=test.get("effect", "total")
-        )
-
     def create_causal_test(self, test: dict) -> CausalTestCase:
         """
         Create causal test case from test configuration and base test.
@@ -199,8 +147,6 @@ class CausalTestingFramework:
         estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
         effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
 
-        base_test = self.create_base_test(test)
-
         if "estimator" not in test:
             raise ValueError("Test configuration must specify an estimator")
 
@@ -212,36 +158,45 @@ class CausalTestingFramework:
             )
 
         # Create the estimator with correct parameters
+        treatment_variable = test.get("treatment_variable")
+        outcome_variable = test.get("outcome_variable")
         estimator_class = estimator_map.get(test["estimator"]).load()
         estimator_kwargs = test.get("estimator_kwargs", {})
+        effect_type = test.get("expected_effect", {}).get("effect_type", "direct")
+
         estimator = estimator_class(
-            base_test_case=base_test,
+            treatment_variable=treatment_variable,
+            outcome_variable=outcome_variable,
             treatment_value=test.get("treatment_value"),
             control_value=test.get("control_value"),
             adjustment_set=test.get(
                 "adjustment_set",
-                self.dag.identification(base_test),
+                self.dag.identification(
+                    treatment_variable=treatment_variable, outcome_variable=outcome_variable, effect_type=effect_type
+                ),
             ),
             alpha=test.get("alpha", 0.05),
             **estimator_kwargs,
         )
 
         # Get effect type and create expected effect
-        effect_type = test["expected_effect"][base_test.outcome_variable.name]
+        expected_effect = test["expected_effect"]
+        effect_type = expected_effect.pop("name")
         if effect_type not in effect_map:
             raise ValueError(
                 f"Unsupported causal effect {effect_type}. Supported: {sorted(effect_map)}. "
                 "If you have implemented a custom causal effect, you will need to add this to your entrypoints via "
                 "your pyproject.toml file."
             )
-        expected_effect = effect_map[effect_type].load()(**test.get("effect_kwargs", {}))
+        expected_effect = effect_map[effect_type].load()(**expected_effect)
 
         return CausalTestCase(
             name=test.get("name"),
+            treatment_variable=treatment_variable,
+            outcome_variable=outcome_variable,
+            effect_measure=test.get("effect_measure"),
             query=test.get("query"),
-            base_test_case=base_test,
             expected_causal_effect=expected_effect,
-            estimate_type=test.get("estimate_type", "ate"),
             estimator=estimator,
             skip=test.get("skip", False),
         )
@@ -315,6 +270,7 @@ class CausalTestingFramework:
             results[f"{outcome.name}_ci_low"] = data[ci_low_inx]
             results[f"{outcome.name}_ci_high"] = data[ci_high_inx]
 
+        print(results)
         return pd.Series(results).sort_index()
 
     def save_results(self, output_path) -> list:
@@ -324,60 +280,8 @@ class CausalTestingFramework:
         # Create parent directory if it doesn't exist
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
-        json_results = []
-        result_index = 0
-
-        for test_case in self.test_cases:
-            # Create a base output first of common entries
-            base_output = {
-                "name": test_case.name,
-                "estimate_type": test_case.estimate_type,
-                "effect": test_case.base_test_case.effect,
-                "treatment_variable": test_case.base_test_case.treatment_variable.name,
-                "expected_effect": test_case.expected_causal_effect.__class__.__name__,
-                "alpha": test_case.estimator.alpha,
-            }
-            if test_case.skip:
-                # Include those skipped test entry without execution results
-                output = {
-                    **base_output,
-                    "formula": test_case.estimator.formula if hasattr(test_case.estimator, "formula") else None,
-                    "skip": True,
-                    "passed": None,
-                    "result": {
-                        "status": "skipped",
-                        "reason": "Test marked as skip:true in the causal test config file.",
-                    },
-                }
-            else:
-                result = test_case.result
-                result_index += 1
-
-                output = {
-                    **base_output,
-                    "formula": test_case.estimator.formula if hasattr(test_case.estimator, "formula") else None,
-                    "skip": False,
-                    "passed": test_case.result.outcome == TestOutcome.PASS,
-                    "result": (
-                        {
-                            "treatment": test_case.estimator.base_test_case.treatment_variable.name,
-                            "outcome": test_case.estimator.base_test_case.outcome_variable.name,
-                            "adjustment_set": (
-                                list(test_case.estimator.adjustment_set) if test_case.estimator.adjustment_set else []
-                            ),
-                        }
-                        | result.effect_estimate.to_dict()
-                        | (result.adequacy.to_dict() if result.adequacy else {})
-                        if result.effect_estimate
-                        else {"status": "error", "reason": result.error_message}
-                    ),
-                }
-
-            json_results.append(output)
-
         # Save to file
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(json_results, f, indent=2)
+            json.dump([test.to_dict() for test in self.test_cases], f, indent=2)
 
         logger.info("Results saved successfully")
-        return json_results

@@ -12,6 +12,9 @@ from causal_testing.estimation.effect_estimate import EffectEstimate
 class CausalEffect(ABC):
     """An abstract class representing an expected causal effect."""
 
+    def __init__(self, effect_type: str = "direct"):
+        self.effect_type = effect_type
+
     @abstractmethod
     def apply(self, effect_estimate: EffectEstimate) -> bool:
         """Abstract apply method that should return a bool representing if the result meets the outcome
@@ -28,7 +31,7 @@ class CausalEffect(ABC):
 
         :returns: A JSON serialisable dict representing the expected effect.
         """
-        return {"name": self.__class__.__name__}
+        return {"name": self.__class__.__name__, "effect_type": self.effect_type}
 
 
 class SomeEffect(CausalEffect):
@@ -53,7 +56,8 @@ class NoEffect(CausalEffect):
     :param ctol: Categorical tolerance. The test will pass if this proportion of categories pass.
     """
 
-    def __init__(self, atol: float = 0, ctol: float = 0.0):
+    def __init__(self, effect_type: str = "direct", atol: float = 0, ctol: float = 0.0):
+        super().__init__(effect_type=effect_type)
         self.atol = atol
         self.ctol = ctol
 
@@ -76,13 +80,16 @@ class NoEffect(CausalEffect):
 
         :returns: A JSON serialisable dict representing the expected effect.
         """
-        return {"name": self.__class__.__name__, "atol": self.atol, "ctol": self.ctol}
+        return super().to_dict() | {"atol": self.atol, "ctol": self.ctol}
 
 
 class ExactValue(CausalEffect):
     """An extension of CausalEffect representing that the expected causal effect should be a specific value."""
 
-    def __init__(self, value: float, atol: float = None, ci_low: float = None, ci_high: float = None):
+    def __init__(
+        self, value: float, effect_type: str = "direct", atol: float = None, ci_low: float = None, ci_high: float = None
+    ):
+        super().__init__(effect_type=effect_type)
         if (ci_low is not None) ^ (ci_high is not None):
             raise ValueError("If specifying confidence intervals, must specify `ci_low` and `ci_high` parameters.")
         if atol is not None and atol < 0:
@@ -128,7 +135,7 @@ class ExactValue(CausalEffect):
             effect["ci_high"] = self.ci_high
         if self.atol:
             effect["atol"] = self.atol
-        return {"name": self.__class__.__name__} | effect
+        return super().to_dict() | effect
 
 
 class Positive(SomeEffect):

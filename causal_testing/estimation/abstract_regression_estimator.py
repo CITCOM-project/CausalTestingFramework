@@ -9,8 +9,6 @@ from patsy import dmatrices, dmatrix  # pylint: disable = no-name-in-module
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from causal_testing.estimation.abstract_estimator import Estimator
-from causal_testing.specification.variable import Variable
-from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -23,40 +21,33 @@ class RegressionEstimator(Estimator):
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        base_test_case: BaseTestCase,
+        treatment_variable: str,
+        outcome_variable: str,
         control_value: float = None,
         treatment_value: float = None,
-        adjustment_set: set = None,
-        effect_modifiers: dict[Variable, Any] = None,
-        adjustment_config: dict[Variable, Any] = None,
+        adjustment_set: set[str] = None,
+        adjustment_config: dict[str, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
     ):
         # pylint: disable=R0801
         super().__init__(
-            base_test_case=base_test_case,
+            treatment_variable=treatment_variable,
+            outcome_variable=outcome_variable,
             control_value=control_value,
             treatment_value=treatment_value,
             adjustment_set=adjustment_set,
-            effect_modifiers=effect_modifiers,
             alpha=alpha,
         )
 
-        if effect_modifiers is None:
-            effect_modifiers = {}
         self.adjustment_config = {} if adjustment_config is None else adjustment_config
         if adjustment_set is None:
             adjustment_set = []
         if formula is not None:
             self.formula = formula
         else:
-            terms = (
-                [base_test_case.treatment_variable.name] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            )
-            self.formula = f"{base_test_case.outcome_variable.name} ~ {'+'.join(terms)}"
-
-        for term in list(self.effect_modifiers) + list(self.adjustment_config):
-            self.adjustment_set.add(term)
+            terms = [treatment_variable] + sorted(list(adjustment_set))
+            self.formula = f"{outcome_variable} ~ {'+'.join(terms)}"
 
     def _setup_covariates(self, df: pd.DataFrame) -> pd.Series:
         """
@@ -99,7 +90,7 @@ class RegressionEstimator(Estimator):
         :return: The model after fitting to data.
         """
         covariates, df = self._setup_covariates(df)
-        model = self.regressor(df[self.base_test_case.outcome_variable.name], df[covariates]).fit(disp=0)
+        model = self.regressor(df[self.outcome_variable], df[covariates]).fit(disp=0)
         return model
 
     def treatment_columns(self, model: RegressionResultsWrapper) -> list[str]:
@@ -115,8 +106,7 @@ class RegressionEstimator(Estimator):
         return [
             param
             for param in model.params.index
-            if param == self.base_test_case.treatment_variable.name
-            or param.startswith(self.base_test_case.treatment_variable.name + "[")
+            if param == self.treatment_variable or param.startswith(self.treatment_variable + "[")
         ]
 
     def _predict(self, df) -> pd.DataFrame:
@@ -132,11 +122,9 @@ class RegressionEstimator(Estimator):
 
         x = pd.DataFrame(columns=df.columns)
         x["Intercept"] = 1  # self.intercept
-        x[self.base_test_case.treatment_variable.name] = [self.treatment_value, self.control_value]
+        x[self.treatment_variable] = [self.treatment_value, self.control_value]
 
         for k, v in self.adjustment_config.items():
-            x[k] = v
-        for k, v in self.effect_modifiers.items():
             x[k] = v
         x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
         for col in x:

@@ -4,9 +4,6 @@ import shutil
 import tempfile
 import networkx as nx
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
-from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Input, Output
-from causal_testing.testing.base_test_case import BaseTestCase
 
 
 class TestCausalDAGIssue90(unittest.TestCase):
@@ -135,8 +132,7 @@ class TestCyclicCausalDAG(unittest.TestCase):
 
     def test_ignore_cycles(self):
         dag = CausalDAG(self.dag_dot_path, ignore_cycles=True)
-        base_test_case = BaseTestCase(Output("B", float), Output("C", float))
-        self.assertEqual(dag.identification(base_test_case), {"A"})
+        self.assertEqual(dag.identification(treatment_variable="B", outcome_variable="C"), {"A"})
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
@@ -413,18 +409,14 @@ class TestHiddenVariableDAG(unittest.TestCase):
         with open(self.dag_dot_path, "w") as f:
             f.write(dag_dot)
 
-    def test_hidden_varaible_adjustment_sets(self):
-        """Test whether identification produces different adjustment sets depending on if a variable is hidden."""
+    def test_ignore_varaible_adjustment_sets(self):
+        """Test whether identification produces different adjustment sets if nodes_to_ignore is set."""
         causal_dag = CausalDAG(self.dag_dot_path)
-        z = Input("Z", int)
-        x = Input("X", int)
-        m = Input("M", int)
+        adjustment_sets = causal_dag.identification(treatment_variable="X", outcome_variable="M")
 
-        scenario = Scenario(variables={z, x, m})
-        adjustment_sets = causal_dag.identification(BaseTestCase(x, m), scenario.hidden_variables())
-
-        z.hidden = True
-        adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), scenario.hidden_variables())
+        adjustment_sets_with_hidden = causal_dag.identification(
+            treatment_variable="X", outcome_variable="M", nodes_to_ignore=["Z"]
+        )
 
         self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
 

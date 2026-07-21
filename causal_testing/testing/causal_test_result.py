@@ -26,6 +26,14 @@ class CausalTestResult:
         self.adequacy = adequacy
         self.error_message = error_message
 
+    @property
+    def passed(self) -> bool:
+        """
+        Check whether the test has passed.
+        :returns: True if the test outcome is PASS.
+        """
+        return self.outcome == TestOutcome.PASS
+
     def to_dict(self):
         """
         Convert the result to a python dictionary for easy serialisation as JSON.
@@ -33,11 +41,11 @@ class CausalTestResult:
         :returns: A JSON serialisable dict representing the test result.
         """
 
-        outcome = {"outcome": self.outcome.name, "passed": self.outcome == TestOutcome.PASS}
+        outcome = {"outcome": self.outcome.name, "passed": self.passed}
         if self.error_message:
             outcome["error_message"] = self.error_message
 
-        effect_estimate = self.effect_estimate.to_dict()
+        effect_estimate = self.effect_estimate.to_dict() if self.effect_estimate else {}
 
         adequacy = self.adequacy.to_dict() if self.adequacy else {}
 

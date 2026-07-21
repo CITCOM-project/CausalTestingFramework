@@ -4,20 +4,17 @@ from causal_testing.testing.causal_effect import ExactValue, SomeEffect, Positiv
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.utils.validation import CausalValidator
-from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.specification.variable import Input, Output
 
 
 class TestCausalEffect(unittest.TestCase):
     """Test the TestCausalEffect basic methods."""
 
     def setUp(self) -> None:
-        base_test_case = BaseTestCase(Input("A", float), Output("A", float))
         self.estimator = LinearRegressionEstimator(
-            base_test_case=base_test_case,
+            treatment_variable="A",
+            outcome_variable="B",
             treatment_value=1,
             control_value=0,
-            adjustment_set={},
         )
 
     def test_Positive_ate_pass(self):
@@ -52,7 +49,7 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_exactValue_pass(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(5.05))
-        self.assertTrue(ExactValue(5, 0.1).apply(effect_estimate))
+        self.assertTrue(ExactValue(value=5, atol=0.1).apply(effect_estimate))
 
     def test_exactValue_categorical_pass(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series({"color[T.red]": 5.05, "color[T.blue]": 4.03}))
@@ -60,43 +57,43 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_exactValue_pass_ci(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(5.05), ci_low=pd.Series(4), ci_high=pd.Series(6))
-        self.assertTrue(ExactValue(5, 0.1).apply(effect_estimate))
+        self.assertTrue(ExactValue(value=5, atol=0.1).apply(effect_estimate))
 
     def test_exactValue_ci_pass_ci(self):
         effect_estimate = EffectEstimate(
             type="ate", value=pd.Series(5.05), ci_low=pd.Series(4.1), ci_high=pd.Series(5.9)
         )
-        self.assertTrue(ExactValue(5, ci_low=4, ci_high=6).apply(effect_estimate))
+        self.assertTrue(ExactValue(value=5, ci_low=4, ci_high=6).apply(effect_estimate))
 
     def test_exactValue_ci_fail_ci(self):
         effect_estimate = EffectEstimate(
             type="ate", value=pd.Series(5.05), ci_low=pd.Series(3.9), ci_high=pd.Series(6.1)
         )
-        self.assertFalse(ExactValue(5, ci_low=4, ci_high=6).apply(effect_estimate))
+        self.assertFalse(ExactValue(value=5, ci_low=4, ci_high=6).apply(effect_estimate))
 
     def test_exactValue_fail(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(0))
-        self.assertFalse(ExactValue(5, 0.1).apply(effect_estimate))
+        self.assertFalse(ExactValue(value=5, atol=0.1).apply(effect_estimate))
 
     def test_invalid_atol(self):
         with self.assertRaises(ValueError):
-            ExactValue(5, -0.1)
+            ExactValue(value=5, atol=-0.1)
 
     def test_unspecified_ci_high(self):
         with self.assertRaises(ValueError):
-            ExactValue(5, ci_low=-0.1)
+            ExactValue(value=5, ci_low=-0.1)
 
     def test_unspecified_ci_low(self):
         with self.assertRaises(ValueError):
-            ExactValue(5, ci_high=-0.1)
+            ExactValue(value=5, ci_high=-0.1)
 
     def test_invalid_ci_range(self):
         with self.assertRaises(ValueError):
-            ExactValue(5, ci_low=6, ci_high=7, atol=0.05)
+            ExactValue(value=5, ci_low=6, ci_high=7, atol=0.05)
 
     def test_invalid_ci_atol(self):
         with self.assertRaises(ValueError):
-            ExactValue(1000, ci_low=999, ci_high=1001, atol=50)
+            ExactValue(value=1000, ci_low=999, ci_high=1001, atol=50)
 
     def test_invalid(self):
         effect_estimate = EffectEstimate(
