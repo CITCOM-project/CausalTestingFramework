@@ -33,7 +33,6 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
         adjustment_config: dict[str, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
-        expected_relationship=None,
     ):
         super().__init__(
             treatment_variable=treatment_variable,
@@ -46,7 +45,6 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
             alpha=alpha,
         )
 
-        self.expected_relationship = expected_relationship
         self.adjustment_config = adjustment_config
 
         if formula is None:
