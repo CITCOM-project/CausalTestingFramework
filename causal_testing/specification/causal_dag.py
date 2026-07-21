@@ -498,12 +498,12 @@ class CausalDAG(nx.DiGraph):
         backdoor_graph.add_edges_from(filter(lambda x: x not in outgoing_edges, self.edges))
         return backdoor_graph
 
-    def identification(self, base_test_case: BaseTestCase, avoid_variables: set[Variable] = None):
+    def identification(self, base_test_case: BaseTestCase, nodes_to_ignore: set[Variable] = None):
         """Identify and return the minimum adjustment set
 
         :param base_test_case: A base test case instance containing the outcome_variable and the
                                treatment_variable required for identification.
-        :param avoid_variables: Variables not to be adjusted for (e.g. hidden variables).
+        :param nodes_to_ignore: Variables not to be adjusted for (e.g. hidden variables).
         :return: The smallest set of variables which can be adjusted for to obtain a causal
                  estimate as opposed to a purely associational estimate.
         """
@@ -517,14 +517,16 @@ class CausalDAG(nx.DiGraph):
             )
         elif base_test_case.effect == "direct":
             minimal_adjustment_sets = self.direct_effect_adjustment_sets(
-                [base_test_case.treatment_variable.name], [base_test_case.outcome_variable.name]
+                [base_test_case.treatment_variable.name],
+                [base_test_case.outcome_variable.name],
+                nodes_to_ignore=nodes_to_ignore,
             )
         else:
             raise ValueError("Causal effect should be 'total' or 'direct'")
 
-        if avoid_variables is not None:
+        if nodes_to_ignore is not None:
             minimal_adjustment_sets = [
-                adj for adj in minimal_adjustment_sets if not {x.name for x in avoid_variables}.intersection(adj)
+                adj for adj in minimal_adjustment_sets if not {x.name for x in nodes_to_ignore}.intersection(adj)
             ]
 
         minimal_adjustment_set = min(minimal_adjustment_sets, key=len, default=set())
@@ -544,19 +546,12 @@ class CausalDAG(nx.DiGraph):
         return f"Nodes: {self.nodes}\nEdges: {self.edges}"
 
     def _estimator(self, base_test_case: BaseTestCase, nodes_to_ignore: set) -> Estimator:
-        treatment_variable = base_test_case.treatment_variable.name
         outcome_variable = base_test_case.outcome_variable.name
 
         if self.datatypes is None or outcome_variable not in self.datatypes:
             raise ValueError(f"No datatype specified for {outcome_variable}.")
 
-        adj_sets = self.direct_effect_adjustment_sets(
-            [treatment_variable], [outcome_variable], nodes_to_ignore=nodes_to_ignore
-        )
-        if not adj_sets:
-            return None, None
-
-        min_adj_set = sorted(list(map(lambda s: sorted(list(s)), adj_sets)))[0]
+        min_adj_set = self.identification(base_test_case, nodes_to_ignore=nodes_to_ignore)
 
         if pd.api.types.is_bool_dtype(self.datatypes[outcome_variable]):
             return (
@@ -606,6 +601,7 @@ class CausalDAG(nx.DiGraph):
                 if estimator and estimate_type:
                     causal_tests.append(
                         CausalTestCase(
+                            name=f"{u} _||_ {v}",
                             base_test_case=base_test_case,
                             expected_causal_effect=NoEffect(),
                             estimator=estimator,
@@ -621,6 +617,7 @@ class CausalDAG(nx.DiGraph):
                 if estimator and estimate_type:
                     causal_tests.append(
                         CausalTestCase(
+                            name=f"{v} _||_ {u}",
                             base_test_case=base_test_case,
                             expected_causal_effect=NoEffect(),
                             estimator=estimator,
@@ -636,6 +633,7 @@ class CausalDAG(nx.DiGraph):
             if estimator and estimate_type:
                 causal_tests.append(
                     CausalTestCase(
+                        name=f"{u} -> {v}",
                         base_test_case=base_test_case,
                         expected_causal_effect=SomeEffect(),
                         estimator=estimator,
@@ -649,6 +647,7 @@ class CausalDAG(nx.DiGraph):
             if estimator and estimate_type:
                 causal_tests.append(
                     CausalTestCase(
+                        name=f"{v} -> {u}",
                         base_test_case=base_test_case,
                         expected_causal_effect=SomeEffect(),
                         estimator=estimator,

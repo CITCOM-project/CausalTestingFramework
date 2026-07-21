@@ -87,3 +87,11 @@ class InstrumentalVariableEstimator(Estimator):
         ci_high = pd.Series(bootstraps[self.bootstrap_size - bound])
 
         return EffectEstimate("coefficient", pd.Series(self.iv_coefficient(df)), ci_low, ci_high)
+
+    def to_dict(self) -> dict:
+        """
+        Convert the estimator to a python dictionary for easy serialisation as JSON or CSV.
+
+        :returns: A JSON serialisable dict representing the estimator.
+        """
+        return super().to_dict() | {"instrument": self.instrument, "bootstrap_size": self.bootstrap_size}

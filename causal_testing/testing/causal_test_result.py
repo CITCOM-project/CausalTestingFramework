@@ -21,7 +21,24 @@ class CausalTestResult:
         adequacy=None,
         error_message: str = None,
     ):
-        self.outcome = outcome
         self.effect_estimate = effect_estimate
+        self.outcome = outcome
         self.adequacy = adequacy
         self.error_message = error_message
+
+    def to_dict(self):
+        """
+        Convert the result to a python dictionary for easy serialisation as JSON.
+
+        :returns: A JSON serialisable dict representing the test result.
+        """
+
+        outcome = {"outcome": self.outcome.name, "passed": self.outcome == TestOutcome.PASS}
+        if self.error_message:
+            outcome["error_message"] = self.error_message
+
+        effect_estimate = self.effect_estimate.to_dict()
+
+        adequacy = self.adequacy.to_dict() if self.adequacy else {}
+
+        return outcome | effect_estimate | {"adequacy": adequacy}

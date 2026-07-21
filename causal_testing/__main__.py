@@ -192,7 +192,7 @@ def main() -> None:
                 skip=False,
             )
             with open(args.output, "w", encoding="utf-8") as f:
-                json.dump({"tests": [test.to_json() for test in causal_tests]}, f)
+                json.dump({"tests": [test.to_dict() for test in causal_tests]}, f)
             logging.info("Causal test generation completed successfully.")
 
         case Command.DISCOVER:

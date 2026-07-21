@@ -16,6 +16,10 @@ from causal_testing.estimation.logistic_regression_estimator import LogisticRegr
 from causal_testing.estimation.multinomial_regression_estimator import MultinomialRegressionEstimator
 
 
+def sort_test_dict(test: dict):
+    return test["name"]
+
+
 class TestMetamorphicRelation(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir_path = tempfile.mkdtemp()
@@ -53,7 +57,10 @@ class TestMetamorphicRelation(unittest.TestCase):
                     base_test_case=base_test_case,
                     expected_causal_effect=SomeEffect(),
                     estimate_type="coefficient",
-                    estimator=LinearRegressionEstimator(base_test_case),
+                    estimator=LinearRegressionEstimator(
+                        base_test_case,
+                        adjustment_set=dag.identification(base_test_case),
+                    ),
                     name=f"{treatment} -> {outcome}",
                     skip=False,
                 )
@@ -79,13 +86,19 @@ class TestMetamorphicRelation(unittest.TestCase):
                     base_test_case=base_test_case,
                     expected_causal_effect=NoEffect(),
                     estimate_type="coefficient",
-                    estimator=LinearRegressionEstimator(base_test_case),
-                    name=f"{treatment} -> {outcome}",
+                    estimator=LinearRegressionEstimator(
+                        base_test_case,
+                        adjustment_set=dag.identification(base_test_case),
+                    ),
+                    name=f"{treatment} _||_ {outcome}",
                     skip=False,
                 )
             )
 
-        self.assertEqual(sorted(map(str, expected_tests)), sorted(map(str, dag.generate_causal_tests())))
+        self.assertEqual(
+            sorted(map(lambda t: t.to_dict(), expected_tests), key=sort_test_dict),
+            sorted(map(lambda t: t.to_dict(), dag.generate_causal_tests()), key=sort_test_dict),
+        )
 
     def test_all_metamorphic_relations_implied_by_dag_parallel(self):
         dag = CausalDAG(self.dag_dot_path, datatypes={v: float for v in {"X1", "X2", "X3", "Y", "Z", "M"}})
@@ -99,11 +112,15 @@ class TestMetamorphicRelation(unittest.TestCase):
                     base_test_case=base_test_case,
                     expected_causal_effect=SomeEffect(),
                     estimate_type="coefficient",
-                    estimator=LinearRegressionEstimator(base_test_case),
+                    estimator=LinearRegressionEstimator(
+                        base_test_case, adjustment_set=dag.identification(base_test_case)
+                    ),
                     name=f"{treatment} -> {outcome}",
                     skip=False,
                 )
             )
+        # We can't just do "nx.non_edges" here, since some independences are bidirectional (if there is no path from
+        # X -> ... -> Y) and some are unidirectional (if X -> Y is not in the DAG but X -> ... -> Y is).
         for treatment, outcome in [
             ("X1", "M"),
             ("X1", "Y"),
@@ -125,13 +142,18 @@ class TestMetamorphicRelation(unittest.TestCase):
                     base_test_case=base_test_case,
                     expected_causal_effect=NoEffect(),
                     estimate_type="coefficient",
-                    estimator=LinearRegressionEstimator(base_test_case),
-                    name=f"{treatment} -> {outcome}",
+                    estimator=LinearRegressionEstimator(
+                        base_test_case, adjustment_set=dag.identification(base_test_case)
+                    ),
+                    name=f"{treatment} _||_ {outcome}",
                     skip=False,
                 )
             )
 
-        self.assertEqual(sorted(map(str, expected_tests)), sorted(map(str, dag.generate_causal_tests(threads=2))))
+        self.assertEqual(
+            sorted(map(lambda t: t.to_dict(), expected_tests), key=sort_test_dict),
+            sorted(map(lambda t: t.to_dict(), dag.generate_causal_tests(threads=2)), key=sort_test_dict),
+        )
 
     def test_all_metamorphic_relations_implied_by_dag_ignore_cycles(self):
         dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True, datatypes={v: float for v in {"a", "b", "c", "d"}})
@@ -142,9 +164,12 @@ class TestMetamorphicRelation(unittest.TestCase):
                 base_test_case=base_test_case,
                 expected_causal_effect=SomeEffect(),
                 estimate_type="coefficient",
-                estimator=LinearRegressionEstimator(base_test_case),
-                name=f"a -> b",
+                estimator=LinearRegressionEstimator(base_test_case, adjustment_set=dcg.identification(base_test_case)),
+                name="a -> b",
                 skip=False,
             )
         ]
-        self.assertEqual(sorted(map(str, expected_tests)), sorted(map(str, dcg.generate_causal_tests(threads=2))))
+        self.assertEqual(
+            sorted(map(lambda t: t.to_dict(), expected_tests), key=sort_test_dict),
+            sorted(map(lambda t: t.to_dict(), dcg.generate_causal_tests(threads=2)), key=sort_test_dict),
+        )

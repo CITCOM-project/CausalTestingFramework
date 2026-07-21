@@ -9,47 +9,12 @@ from causal_testing.specification.scenario import Scenario
 from causal_testing.specification.variable import Input, Output
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_effect import ExactValue
+from causal_testing.testing.causal_effect import ExactValue, SomeEffect
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
 
 
 class TestCausalTestCase(unittest.TestCase):
-    """Test the CausalTestCase class.
-
-    The base test case is a data class which contains the minimum information
-    necessary to perform identification. The CausalTestCase class represents
-    a causal test case. We here test the basic getter methods.
-    """
-
-    def setUp(self) -> None:
-        # 2. Create Scenario and Causal Specification
-        A = Input("A", float)
-        C = Output("C", float)
-
-        # 3. Create an intervention and causal test case
-        self.expected_causal_effect = ExactValue(4)
-        self.base_test_case = BaseTestCase(A, C)
-        self.causal_test_case = CausalTestCase(
-            base_test_case=self.base_test_case,
-            expected_causal_effect=self.expected_causal_effect,
-            estimator=LinearRegressionEstimator(
-                base_test_case=self.base_test_case,
-                adjustment_set=set(),
-                control_value=0,
-                treatment_value=1,
-            ),
-        )
-
-    def test_str(self):
-        print(str(self.causal_test_case))
-        self.assertEqual(
-            str(self.causal_test_case),
-            "Running {'A': 1} instead of {'A': 0} should cause the following changes to {'C'}: ExactValue: 4±0.2.",
-        )
-
-
-class TestCausalTestExecution(unittest.TestCase):
     """
     Test the causal test execution workflow using observational data.
     """
@@ -249,4 +214,50 @@ class TestCausalTestExecution(unittest.TestCase):
                 3,
             ),
             1.444,
+        )
+
+    def test_to_dict(self):
+        estimator = LinearRegressionEstimator(
+            base_test_case=self.base_test_case_A_C,
+            adjustment_set=set(),
+            formula="C ~ A + D",
+        )
+        causal_test_case = CausalTestCase(
+            name="A |- C",
+            base_test_case=self.base_test_case_A_C,
+            expected_causal_effect=ExactValue(4),
+            estimate_type="coefficient",
+            estimator=estimator,
+        )
+        causal_test_case.execute_test(self.df, adequacy=True)
+
+        expected = {
+            "name": "A |- C",
+            "treatment_variable": "A",
+            "outcome_variable": "C",
+            "effect": "total",
+            "skip": False,
+            "estimate_type": "coefficient",
+            "query": None,
+            "expected_effect": {"name": "ExactValue", "value": 4, "atol": 0.2},
+            "estimator": {
+                "name": "LinearRegressionEstimator",
+                "alpha": 0.05,
+                "adjustment_set": [],
+                "formula": "C ~ A + D",
+            },
+            "result": {
+                "outcome": "PASS",
+                "passed": True,
+                "effect_measure": "coefficient",
+                "effect_estimate": {"A": 4.0},
+                "ci_low": {"A": 4.0},
+                "ci_high": {"A": 4.0},
+                "adequacy": {"kurtosis": {"A": 0.0}, "passing": 100, "successful": 100},
+            },
+        }
+
+        # Use json_normalize to avoid rounding errors
+        pd.testing.assert_frame_equal(
+            pd.json_normalize(expected).round(2), pd.json_normalize(causal_test_case.to_dict()).round(2)
         )

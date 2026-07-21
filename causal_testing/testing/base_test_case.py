@@ -22,3 +22,13 @@ class BaseTestCase:
     def __post_init__(self):
         if self.treatment_variable == self.outcome_variable:
             raise ValueError(f"Treatment variable {self.treatment_variable} cannot also be the outcome variable.")
+
+    def to_dict(self) -> dict:
+        """
+        :returns: A JSON serialisable dictionary representing the base test case.
+        """
+        return {
+            "treatment_variable": self.treatment_variable.name,
+            "outcome_variable": self.outcome_variable.name,
+            "effect": self.effect,
+        }

@@ -54,6 +54,10 @@ class TestCausalEffect(unittest.TestCase):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(5.05))
         self.assertTrue(ExactValue(5, 0.1).apply(effect_estimate))
 
+    def test_exactValue_categorical_pass(self):
+        effect_estimate = EffectEstimate(type="ate", value=pd.Series({"color[T.red]": 5.05, "color[T.blue]": 4.03}))
+        self.assertTrue(ExactValue(pd.Series({"color[T.red]": 5, "color[T.blue]": 4}), 0.1).apply(effect_estimate))
+
     def test_exactValue_pass_ci(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(5.05), ci_low=pd.Series(4), ci_high=pd.Series(6))
         self.assertTrue(ExactValue(5, 0.1).apply(effect_estimate))
@@ -132,10 +136,6 @@ class TestCausalEffect(unittest.TestCase):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-0.1), ci_high=pd.Series(0.2))
         self.assertFalse(SomeEffect().apply(effect_estimate))
         self.assertTrue(NoEffect().apply(effect_estimate))
-
-    def test_someEffect_None(self):
-        effect_estimate = EffectEstimate(type="ate", value=pd.Series(0))
-        self.assertEqual(SomeEffect().apply(effect_estimate), None)
 
     def test_positive_risk_ratio_e_value(self):
         cv = CausalValidator()

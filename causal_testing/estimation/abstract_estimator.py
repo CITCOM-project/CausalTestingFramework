@@ -32,9 +32,9 @@ class Estimator(ABC):
         # pylint: disable=R0801
         self,
         base_test_case: BaseTestCase,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
+        control_value: float = None,
+        treatment_value: float = None,
+        adjustment_set: set = None,
         effect_modifiers: dict[str, Any] = None,
         alpha: float = 0.05,
     ):
@@ -59,13 +59,17 @@ class Estimator(ABC):
         must hold if the resulting causal inference is to be considered valid.
         """
 
-    def to_json(self) -> dict:
+    def to_dict(self) -> dict:
         """
-        Convert to a JSON serialisable dict object containing all non-standard parameters to reconstruct.
+        Convert the estimator to a python dictionary for easy serialisation as JSON or CSV.
 
-        :returns: A JSON serialisable dict representing the object.
+        :returns: A JSON serialisable dict representing the estimator.
         """
-        result = {"estimator": self.__class__.__name__, "estimator_kwargs": {}}
+        result = {"name": self.__class__.__name__, "alpha": self.alpha, "adjustment_set": sorted(self.adjustment_set)}
         if self.effect_modifiers:
-            result["estimator_kwargs"]["effect_modifiers"] = self.effect_modifiers
+            result["effect_modifiers"] = self.effect_modifiers
+        if self.control_value is not None:
+            result["control_value"] = self.control_value
+        if self.treatment_value is not None:
+            result["treatment_value"] = self.treatment_value
         return result

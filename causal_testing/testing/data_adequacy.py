@@ -4,6 +4,8 @@ This module contains code to measure various aspects of causal test adequacy.
 
 import logging
 
+from pandas import Series
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,21 +22,26 @@ class DataAdequacy:
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
-        kurtosis=None,
-        passing=None,
-        results=None,
-        successful=None,
+        kurtosis: Series = None,
+        passing: int = None,
+        results: dict = None,
+        successful: int = None,
     ):
         self.kurtosis = kurtosis
         self.passing = passing
         self.results = results
         self.successful = successful
 
-    def to_dict(self):
-        """Returns the adequacy object as a dictionary."""
-        return {
+    def to_dict(self, include_results: bool = False):
+        """
+        :returns: the adequacy object as a dictionary.
+        :param include_results: Whether to serialise the results.
+        """
+        result = {
             "kurtosis": self.kurtosis.to_dict(),
             "passing": self.passing,
             "successful": self.successful,
-            "results": self.results.reset_index(drop=True).to_dict(),
         }
+        if include_results:
+            return result | {"results": self.results.reset_index(drop=True).to_dict()}
+        return result

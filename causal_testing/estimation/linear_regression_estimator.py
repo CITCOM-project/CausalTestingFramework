@@ -95,9 +95,6 @@ class LinearRegressionEstimator(RegressionEstimator):
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
 
-        if len(unit_effect) == 0:
-            unit_effect = pd.Series({self.base_test_case.treatment_variable.name: None})
-
         return EffectEstimate("coefficient", unit_effect, ci_low, ci_high)
 
     def estimate_ate(self, df: pd.DataFrame) -> EffectEstimate:

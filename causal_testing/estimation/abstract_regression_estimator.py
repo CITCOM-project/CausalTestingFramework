@@ -24,8 +24,8 @@ class RegressionEstimator(Estimator):
         # pylint: disable=too-many-arguments
         self,
         base_test_case: BaseTestCase,
-        treatment_value: float = None,
         control_value: float = None,
+        treatment_value: float = None,
         adjustment_set: set = None,
         effect_modifiers: dict[Variable, Any] = None,
         adjustment_config: dict[Variable, Any] = None,
@@ -35,8 +35,8 @@ class RegressionEstimator(Estimator):
         # pylint: disable=R0801
         super().__init__(
             base_test_case=base_test_case,
-            treatment_value=treatment_value,
             control_value=control_value,
+            treatment_value=treatment_value,
             adjustment_set=adjustment_set,
             effect_modifiers=effect_modifiers,
             alpha=alpha,
@@ -144,3 +144,16 @@ class RegressionEstimator(Estimator):
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
 
         return model.get_prediction(x).summary_frame()
+
+    def to_dict(self) -> dict:
+        """
+        Convert the estimator to a python dictionary for easy serialisation as JSON or CSV.
+
+        :returns: A JSON serialisable dict representing the estimator.
+        """
+        result = super().to_dict()
+        if self.adjustment_config:
+            result["adjustment_config"] = self.adjustment_config
+        if self.formula:
+            result["formula"] = self.formula
+        return result

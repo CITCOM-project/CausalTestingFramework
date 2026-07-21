@@ -3,7 +3,6 @@
 ExactValue, Positive, Negative, SomeEffect, NoEffect"""
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
 
 import numpy as np
 
@@ -23,25 +22,27 @@ class CausalEffect(ABC):
     def __str__(self) -> str:
         return type(self).__name__
 
+    def to_dict(self):
+        """
+        Convert the expected effect to a python dictionary for easy serialisation as JSON.
+
+        :returns: A JSON serialisable dict representing the expected effect.
+        """
+        return {"name": self.__class__.__name__}
+
 
 class SomeEffect(CausalEffect):
     """An extension of CausalEffect representing that the expected causal effect should not be zero."""
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:
-        if effect_estimate.ci_low is None or effect_estimate.ci_high is None:
-            return None
-        if effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio"):
-            return any(
-                1 < ci_low < ci_high or ci_low < ci_high < 1
-                for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high)
-            )
-        if effect_estimate.type in ("coefficient", "ate"):
-            return any(
-                0 < ci_low < ci_high or ci_low < ci_high < 0
-                for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high)
-            )
+        if effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
+            value_to_check = 1
+        elif effect_estimate.type in ("coefficient", "ate"):
+            value_to_check = 0
+        else:
+            raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
 
-        raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
+        return (~((effect_estimate.ci_low <= value_to_check) & (value_to_check <= effect_estimate.ci_high))).all()
 
 
 class NoEffect(CausalEffect):
@@ -52,30 +53,30 @@ class NoEffect(CausalEffect):
     :param ctol: Categorical tolerance. The test will pass if this proportion of categories pass.
     """
 
-    def __init__(self, atol: float = 1e-10, ctol: float = 0.05):
+    def __init__(self, atol: float = 0, ctol: float = 0.0):
         self.atol = atol
         self.ctol = ctol
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:
         if effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
-            return any(
-                ci_low < 1 < ci_high or np.isclose(value, 1.0, atol=self.atol)
-                for ci_low, ci_high, value in zip(
-                    effect_estimate.ci_low, effect_estimate.ci_high, effect_estimate.value
-                )
-            )
-        if effect_estimate.type in ("coefficient", "ate"):
-            value = effect_estimate.value if isinstance(effect_estimate.ci_high, Iterable) else [effect_estimate.value]
-            return (
-                sum(
-                    not ((ci_low < 0 < ci_high) or abs(v) < self.atol)
-                    for ci_low, ci_high, v in zip(effect_estimate.ci_low, effect_estimate.ci_high, value)
-                )
-                / len(value)
-                < self.ctol
-            )
+            value_to_check = 1
+        elif effect_estimate.type in ("coefficient", "ate"):
+            value_to_check = 0
+        else:
+            raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
 
-        raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
+        return sum(
+            ((effect_estimate.ci_low <= value_to_check) & (value_to_check <= effect_estimate.ci_high))
+            | (np.isclose(effect_estimate.value, value_to_check, atol=self.atol))
+        ) / len(effect_estimate.value) >= (1 - self.ctol)
+
+    def to_dict(self):
+        """
+        Convert the expected effect to a python dictionary for easy serialisation as JSON.
+
+        :returns: A JSON serialisable dict representing the expected effect.
+        """
+        return {"name": self.__class__.__name__, "atol": self.atol, "ctol": self.ctol}
 
 
 class ExactValue(CausalEffect):
@@ -98,20 +99,36 @@ class ExactValue(CausalEffect):
             if self.value - self.atol < self.ci_low or self.value + self.atol > self.ci_high:
                 raise ValueError(
                     "Arithmetic tolerance falls outside the confidence intervals."
-                    "Try specifying a smaller value of atol."
+                    f"Try specifying wider intervals or a value of atol smaller than the current vlaue {self.atol}."
                 )
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:
         close = np.isclose(effect_estimate.value, self.value, atol=self.atol)
         if effect_estimate.ci_valid and self.ci_low is not None and self.ci_high is not None:
-            return all(
-                close and self.ci_low <= ci_low and self.ci_high >= ci_high
-                for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high)
+            return (
+                close.all()
+                and (self.ci_low <= effect_estimate.ci_low).all()
+                and (self.ci_high >= effect_estimate.ci_high).all()
             )
-        return close
+        return close.all()
 
     def __str__(self):
         return f"ExactValue: {self.value}±{self.atol}"
+
+    def to_dict(self):
+        """
+        Convert the expected effect to a python dictionary for easy serialisation as JSON or CSV.
+
+        :returns: A JSON serialisable dict representing the expected effect.
+        """
+        effect = {"value": self.value}
+        if self.ci_low:
+            effect["ci_low"] = self.ci_low
+        if self.ci_low:
+            effect["ci_high"] = self.ci_high
+        if self.atol:
+            effect["atol"] = self.atol
+        return {"name": self.__class__.__name__} | effect
 
 
 class Positive(SomeEffect):

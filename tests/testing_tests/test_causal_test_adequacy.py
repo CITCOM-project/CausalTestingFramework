@@ -53,7 +53,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
             delta=1.0,
             msg=f"Expected kurtosis near 0, got {adequacy_metric.kurtosis['test_input']}",
         )  # This adds a numerical tolerance for Pandas
-        self.assertEqual(adequacy_metric.passing, 19, f"Expected passing 19 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.passing, 91, f"Expected passing 91 not {adequacy_metric.passing}")
         self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
     def test_data_adequacy_categorical(self):
@@ -75,7 +75,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
             delta=1.0,
             msg=f"Expected kurtosis near 0, got {adequacy_metric.kurtosis['test_input_no_dist[T.b]']}",
         )
-        self.assertEqual(adequacy_metric.passing, 100, f"Expected passing 100 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.passing, 86, f"Expected passing 86 not {adequacy_metric.passing}")
         self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
     def test_data_adequacy_group_by(self):
@@ -108,11 +108,11 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
         self.assertEqual(
             round(adequacy_metric.kurtosis["trtrand"], 3),
-            -2.739,
+            -0.857,
             f"Expected kurtosis not {round(adequacy_metric.kurtosis['trtrand'], 3)}",
         )
-        self.assertEqual(adequacy_metric.passing, 1, f"Expected passing 1 not {adequacy_metric.passing}")
-        self.assertEqual(adequacy_metric.successful, 5, f"Expected successful 5 not {adequacy_metric.successful}")
+        self.assertEqual(adequacy_metric.passing, 32, f"Expected passing 32 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
     def test_dag_adequacy_dependent(self):
         base_test_case = BaseTestCase(

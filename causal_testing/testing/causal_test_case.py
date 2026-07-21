@@ -69,28 +69,31 @@ class CausalTestCase:
             if group_by is not None:
                 ids = pd.Series(df[group_by].unique())
                 ids = ids.sample(len(ids), replace=True, random_state=i)
-                df = df[df[group_by].isin(ids)]
+                sample_df = df[df[group_by].isin(ids)]
             else:
-                df = df.sample(len(df), replace=True, random_state=i)
+                sample_df = df.sample(len(df), replace=True, random_state=i)
             try:
-                effect_estimate = self.estimate_effect(df)
+                effect_estimate = self.estimate_effect(sample_df)
                 outcomes.append(self.expected_causal_effect.apply(effect_estimate))
-                results.append(effect_estimate.to_df())
-            # Could get a variety of exceptions here due to insufficient/badly formed data
+                results.append(
+                    effect_estimate.to_df().assign(
+                        test_index=i, passed=self.expected_causal_effect.apply(effect_estimate)
+                    )
+                )
+            # Could get a variety of exceptions here due to insufficient/badly formed data in the sample
             # We don't want these to stop execution
             except Exception:  # pylint: disable=W0718
-                pass
+                outcomes.append(None)
 
         results = pd.concat(results)
 
         results["var"] = results.index
-        results["passed"] = outcomes
 
         return DataAdequacy(
             results=results,
             kurtosis=results.groupby("var")["effect_estimate"].apply(lambda x: x.kurtosis()),
-            passing=sum(filter(lambda x: x is not None, outcomes)),
-            successful=sum(x is not None for x in outcomes),
+            passing=int(sum(filter(lambda x: x is not None, outcomes))),
+            successful=int(sum(x is not None for x in outcomes)),
         )
 
     def execute_test(
@@ -149,29 +152,28 @@ class CausalTestCase:
         estimate_effect = getattr(self.estimator, f"estimate_{self.estimate_type}")
         return estimate_effect(df)
 
-    def __str__(self):
-        treatment_config = {self.treatment_variable.name: self.estimator.treatment_value}
-        control_config = {self.treatment_variable.name: self.estimator.control_value}
-        outcome_variable = {self.outcome_variable.name}
-        return (
-            f"Running {treatment_config} instead of {control_config} should cause the following "
-            f"changes to {outcome_variable}: {self.expected_causal_effect}."
+    def to_dict(self) -> dict:
+        """
+        Convert the test case to a python dictionary for easy serialisation as JSON.
+
+        :returns: A JSON serialisable dict representing the test case.
+        """
+        test_case = (
+            {"name": self.name}
+            | self.base_test_case.to_dict()
+            | {
+                "skip": self.skip,
+                "estimate_type": self.estimate_type,
+                "query": self.query,
+            }
         )
 
-    def to_json(self):
-        """
-        Convert to a JSON serialisable dict object containing all non-standard parameters to reconstruct.
+        for label, attribute in [
+            ("expected_effect", self.expected_causal_effect),
+            ("estimator", self.estimator),
+            ("result", self.result),
+        ]:
+            if attribute is not None:
+                test_case[label] = attribute.to_dict()
 
-        :returns: A JSON serialisable dict representing the object.
-        """
-        test_case = {
-            "name": self.name,
-            "treatment_variable": self.base_test_case.treatment_variable.name,
-            "estimate_type": self.estimate_type,
-            "expected_effect": {
-                self.base_test_case.outcome_variable.name: self.expected_causal_effect.__class__.__name__
-            },
-            "skip": self.skip,
-            "query": self.query,
-        } | self.estimator.to_json()
         return test_case
