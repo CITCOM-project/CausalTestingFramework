@@ -44,8 +44,6 @@ def read_dataframe(file_path: str, **kwargs: dict) -> pd.DataFrame:
 
     suffix = Path(file_path).suffix.lower()
 
-    print(suffix, type(suffix))
-
     if suffix in readers:
         return readers[suffix](file_path, **kwargs)
     raise ValueError(f"Unsupported file extension: '{suffix}'")

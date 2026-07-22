@@ -138,7 +138,6 @@ class TestMain(unittest.TestCase):
                     "HillClimberDiscovery",
                     "--data-paths",
                     str(self.data_paths[0]),
-                    str(self.data_paths[0]),
                     "--output",
                     os.path.join(tmp, "discovered_dag.dot"),
                     "--include-edges",
