@@ -34,7 +34,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
         causal_test_case = CausalTestCase(
             treatment_variable="test_input",
             outcome_variable="test_output",
-            expected_causal_effect=NoEffect(),
+            expected_causal_effect=NoEffect(atol=1e-10),
             effect_measure="coefficient",
             estimator=estimator,
         )
@@ -46,14 +46,14 @@ class TestCausalTestAdequacy(unittest.TestCase):
             delta=1.0,
             msg=f"Expected kurtosis near 0, got {adequacy_metric.kurtosis['test_input']}",
         )  # This adds a numerical tolerance for Pandas
-        self.assertEqual(adequacy_metric.passing, 91, f"Expected passing 91 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.passing, 100, f"Expected passing 100 not {adequacy_metric.passing}")
         self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
     def test_data_adequacy_categorical(self):
         causal_test_case = CausalTestCase(
             treatment_variable="test_input_no_dist",
             outcome_variable="test_output",
-            expected_causal_effect=NoEffect(),
+            expected_causal_effect=NoEffect(atol=1e-10),
             effect_measure="coefficient",
             estimator=LinearRegressionEstimator(
                 treatment_variable="test_input_no_dist", outcome_variable="test_output"
@@ -67,7 +67,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
             delta=1.0,
             msg=f"Expected kurtosis near 0, got {adequacy_metric.kurtosis['test_input_no_dist[T.b]']}",
         )
-        self.assertEqual(adequacy_metric.passing, 86, f"Expected passing 86 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.passing, 100, f"Expected passing 100 not {adequacy_metric.passing}")
         self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
     def test_data_adequacy_group_by(self):
