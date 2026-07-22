@@ -72,12 +72,9 @@ class CausalTestCase:
                 sample_df = df.sample(len(df), replace=True, random_state=i)
             try:
                 effect_estimate = self.estimate_effect(sample_df)
-                outcomes.append(self.expected_causal_effect.apply(effect_estimate))
-                results.append(
-                    effect_estimate.to_df().assign(
-                        test_index=i, passed=self.expected_causal_effect.apply(effect_estimate)
-                    )
-                )
+                passed = self.expected_causal_effect.apply(effect_estimate=effect_estimate)
+                outcomes.append(passed)
+                results.append(effect_estimate.to_df().assign(test_index=i, passed=passed))
             # Could get a variety of exceptions here due to insufficient/badly formed data in the sample
             # We don't want these to stop execution
             except Exception:  # pylint: disable=W0718
