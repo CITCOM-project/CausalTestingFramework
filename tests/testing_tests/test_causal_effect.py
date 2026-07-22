@@ -23,74 +23,40 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_None_ci(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
         )
 
         self.assertIsNone(ctr.effect_estimate.ci_low)
         self.assertIsNone(ctr.effect_estimate.ci_high)
-        self.assertEqual(
-            ctr.to_dict(),
-            {
-                "treatment": "A",
-                "control_value": 0,
-                "treatment_value": 1,
-                "outcome": "A",
-                "adjustment_set": set(),
-                "effect_estimate": {0: 0},
-                "effect_measure": "ate",
-            },
-        )
 
     def test_empty_adjustment_set(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
         )
 
         self.assertIsNone(ctr.effect_estimate.ci_low)
         self.assertIsNone(ctr.effect_estimate.ci_high)
-        self.assertEqual(
-            str(ctr),
-            (
-                "Causal Test Result\n==============\n"
-                "Treatment: A\n"
-                "Control value: 0\n"
-                "Treatment value: 1\n"
-                "Outcome: A\n"
-                "Adjustment set: set()\n"
-                "Formula: A ~ A\n"
-                "ate: {0: 0}\n"
-            ),
-        )
 
     def test_Positive_ate_pass(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(5.05)),
+            effect_estimate=EffectEstimate(
+                type="ate", value=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
+            ),
         )
         ev = Positive()
         self.assertTrue(ev.apply(ctr))
 
     def test_Positive_risk_ratio_pass(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="risk_ratio", value=pd.Series(5.05)),
+            effect_estimate=EffectEstimate(
+                type="risk_ratio", value=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
+            ),
         )
         ev = Positive()
         self.assertTrue(ev.apply(ctr))
 
     def test_Positive_fail(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
-        )
-        ev = Positive()
-        self.assertFalse(ev.apply(ctr))
-
-    def test_Positive_fail_ci(self):
-        ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),
         )
         ev = Positive()
@@ -98,31 +64,24 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_Negative_ate_pass(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(-5.05)),
+            effect_estimate=EffectEstimate(
+                type="ate", value=pd.Series(-5.05), ci_low=pd.Series(-6), ci_high=pd.Series(-5)
+            ),
         )
         ev = Negative()
         self.assertTrue(ev.apply(ctr))
 
     def test_Negative_risk_ratio_pass(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="risk_ratio", value=pd.Series(0.2)),
+            effect_estimate=EffectEstimate(
+                type="risk_ratio", value=pd.Series(0.2), ci_low=pd.Series(0.1), ci_high=pd.Series(0.5)
+            ),
         )
         ev = Negative()
         self.assertTrue(ev.apply(ctr))
 
     def test_Negative_fail(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
-        )
-        ev = Negative()
-        self.assertFalse(ev.apply(ctr))
-
-    def test_Negative_fail_ci(self):
-        ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),
         )
         ev = Negative()
@@ -130,7 +89,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_exactValue_pass(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(5.05)),
         )
         ev = ExactValue(5, 0.1)
@@ -138,7 +96,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_exactValue_pass_ci(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(
                 type="ate", value=pd.Series(5.05), ci_low=pd.Series(4), ci_high=pd.Series(6)
             ),
@@ -148,7 +105,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_exactValue_ci_pass_ci(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(
                 type="ate", value=pd.Series(5.05), ci_low=pd.Series(4.1), ci_high=pd.Series(5.9)
             ),
@@ -158,7 +114,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_exactValue_ci_fail_ci(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(
                 type="ate", value=pd.Series(5.05), ci_low=pd.Series(3.9), ci_high=pd.Series(6.1)
             ),
@@ -168,7 +123,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_exactValue_fail(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
         )
         ev = ExactValue(5, 0.1)
@@ -196,7 +150,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_invalid(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(
                 type="invalid", value=pd.Series(5.05), ci_low=pd.Series(4.8), ci_high=pd.Series(6.7)
             ),
@@ -212,7 +165,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_someEffect_pass_coefficient(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(
                 type="coefficient", value=pd.Series(5.05), ci_low=pd.Series(4.8), ci_high=pd.Series(6.7)
             ),
@@ -222,7 +174,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_someEffect_pass_ate(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(
                 type="coefficient", value=pd.Series(5.05), ci_low=pd.Series(4.8), ci_high=pd.Series(6.7)
             ),
@@ -232,7 +183,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_someEffect_pass_rr(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(
                 type="coefficient", value=pd.Series(5.05), ci_low=pd.Series(4.8), ci_high=pd.Series(6.7)
             ),
@@ -242,7 +192,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_someEffect_fail(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(
                 type="ate", value=pd.Series(0), ci_low=pd.Series(-0.1), ci_high=pd.Series(0.2)
             ),
@@ -252,32 +201,9 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_someEffect_None(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
         )
         self.assertEqual(SomeEffect().apply(ctr), None)
-
-    def test_someEffect_dict(self):
-        ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(
-                type="ate", value=pd.Series(0), ci_low=pd.Series(-0.1), ci_high=pd.Series(0.2)
-            ),
-        )
-        self.assertEqual(
-            ctr.to_dict(),
-            {
-                "treatment": "A",
-                "control_value": 0,
-                "treatment_value": 1,
-                "outcome": "A",
-                "adjustment_set": set(),
-                "effect_estimate": {0: 0},
-                "effect_measure": "ate",
-                "ci_low": {0: -0.1},
-                "ci_high": {0: 0.2},
-            },
-        )
 
     def test_positive_risk_ratio_e_value(self):
         cv = CausalValidator()
@@ -301,7 +227,6 @@ class TestCausalEffect(unittest.TestCase):
 
     def test_multiple_value_exception_caught(self):
         ctr = CausalTestResult(
-            estimator=self.estimator,
             effect_estimate=EffectEstimate(type="ate", value=pd.Series([0, 1])),
         )
         with self.assertRaises(ValueError):

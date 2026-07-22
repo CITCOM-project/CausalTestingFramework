@@ -49,34 +49,28 @@ def run_test_case(verbose: bool = False):
         causal_test_case = CausalTestCase(
             base_test_case=base_test_case,
             expected_causal_effect=expected_effect,
-        )
-        # 7. Obtain the minimal adjustment set for the causal test case from the causal DAG
-        minimal_adjustment_set = causal_dag.identification(base_test_case)
-
-        # 8. Build statistical model using the Linear Regression estimator
-        linear_regression_estimator = LinearRegressionEstimator(
-            base_test_case=base_test_case,
-            treatment_value=1,
-            control_value=0,
-            adjustment_set=minimal_adjustment_set,
-            df=obs_df,
+            estimator=LinearRegressionEstimator(
+                base_test_case=base_test_case,
+                treatment_value=1,
+                control_value=0,
+                adjustment_set=causal_dag.identification(base_test_case),
+            ),
         )
 
-        # 9. Execute test and save results in dict
-        causal_test_result = causal_test_case.execute_test(linear_regression_estimator)
+        causal_test_case.execute_test(obs_df)
 
         if verbose:
-            logging.info("Causation:\n%s", causal_test_result)
+            logging.info("Causation:\n%s", causal_test_case.result)
 
-        results_dict[outcome_variable.name]["ate"] = causal_test_result.effect_estimate.value
+        results_dict[outcome_variable.name]["ate"] = causal_test_case.result.effect_estimate.value
 
         results_dict[outcome_variable.name]["cis"] = [
-            causal_test_result.effect_estimate.ci_low,
-            causal_test_result.effect_estimate.ci_high,
+            causal_test_case.result.effect_estimate.ci_low,
+            causal_test_case.result.effect_estimate.ci_high,
         ]
 
         results_dict[outcome_variable.name]["test_passes"] = causal_test_case.expected_causal_effect.apply(
-            causal_test_result
+            causal_test_case.result
         )
 
     return results_dict

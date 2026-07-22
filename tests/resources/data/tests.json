@@ -6,8 +6,8 @@
     "estimate_type": "coefficient",
     "expected_effect": {"test_output": "NoEffect"},
     "skip": false,
+    "query": "test_input > 0",
     "estimator_kwargs": {
-      "query": "test_input > 0",
       "effect_modifiers": []
     }
   },
@@ -18,9 +18,9 @@
     "estimate_type": "coefficient",
     "expected_effect": {"test_output": "NoEffect"},
     "skip": true,
+    "query": "test_input <= 5",
     "estimator_kwargs": {
-      "effect_modifiers": [],
-      "query": "test_input <= 5"
+      "effect_modifiers": []
     }
   }]
 }

@@ -22,7 +22,6 @@ class TestIPCWEstimator(unittest.TestCase):
 
     def test_estimate_hazard_ratio(self):
         estimation_model = IPCWEstimator(
-            self.df,
             self.timesteps_per_intervention,
             self.control_strategy,
             self.treatment_strategy,
@@ -32,26 +31,11 @@ class TestIPCWEstimator(unittest.TestCase):
             fit_bltd_switch_formula=self.fit_bl_switch_formula,
             eligibility=None,
         )
-        estimate = estimation_model.estimate_hazard_ratio()
+        estimate = estimation_model.estimate_hazard_ratio(self.df)
         self.assertEqual(round(estimate.value["trtrand"], 3), 1.351)
 
     def test_invalid_treatment_strategies(self):
-        with self.assertRaises(ValueError):
-            IPCWEstimator(
-                self.df.assign(t=(["1", "0"] * len(self.df))[: len(self.df)]),
-                self.timesteps_per_intervention,
-                self.control_strategy,
-                self.treatment_strategy,
-                self.outcome,
-                self.status_column,
-                fit_bl_switch_formula=self.fit_bl_switch_formula,
-                fit_bltd_switch_formula=self.fit_bl_switch_formula,
-                eligibility=None,
-            )
-
-    def test_invalid_fault_t_do(self):
         estimation_model = IPCWEstimator(
-            self.df.assign(outcome=1),
             self.timesteps_per_intervention,
             self.control_strategy,
             self.treatment_strategy,
@@ -61,34 +45,61 @@ class TestIPCWEstimator(unittest.TestCase):
             fit_bltd_switch_formula=self.fit_bl_switch_formula,
             eligibility=None,
         )
-        estimation_model.df["fault_t_do"] = 0
         with self.assertRaises(ValueError):
-            estimation_model.estimate_hazard_ratio()
+            estimation_model.preprocess_data(self.df.assign(t=(["1", "0"] * len(self.df))[: len(self.df)]))
+
+    def test_invalid_fault_t_do(self):
+        estimation_model = IPCWEstimator(
+            self.timesteps_per_intervention,
+            self.control_strategy,
+            self.treatment_strategy,
+            self.outcome,
+            self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaises(ValueError):
+            estimation_model.estimate_hazard_ratio(self.df.loc[~self.df["ok"]])
 
     def test_no_individual_began_control_strategy(self):
+        estimation_model = IPCWEstimator(
+            self.timesteps_per_intervention,
+            self.control_strategy,
+            self.treatment_strategy,
+            self.outcome,
+            self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
         with self.assertRaises(ValueError):
-            IPCWEstimator(
-                self.df.assign(t=1),
-                self.timesteps_per_intervention,
-                self.control_strategy,
-                self.treatment_strategy,
-                self.outcome,
-                self.status_column,
-                fit_bl_switch_formula=self.fit_bl_switch_formula,
-                fit_bltd_switch_formula=self.fit_bl_switch_formula,
-                eligibility=None,
-            )
+            estimation_model.preprocess_data(self.df.assign(t=1))
 
     def test_no_individual_began_treatment_strategy(self):
+        estimation_model = IPCWEstimator(
+            self.timesteps_per_intervention,
+            self.control_strategy,
+            self.treatment_strategy,
+            self.outcome,
+            self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
         with self.assertRaises(ValueError):
-            IPCWEstimator(
-                self.df.assign(t=0),
-                self.timesteps_per_intervention,
-                self.control_strategy,
-                self.treatment_strategy,
-                self.outcome,
-                self.status_column,
-                fit_bl_switch_formula=self.fit_bl_switch_formula,
-                fit_bltd_switch_formula=self.fit_bl_switch_formula,
-                eligibility=None,
-            )
+            estimation_model.preprocess_data(self.df.assign(t=0))
+
+    def test_preprocess_data_no_faults(self):
+        estimation_model = IPCWEstimator(
+            self.timesteps_per_intervention,
+            self.control_strategy,
+            self.treatment_strategy,
+            self.outcome,
+            self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaises(ValueError):
+            estimation_model.preprocess_data(self.df.assign(ok=True))

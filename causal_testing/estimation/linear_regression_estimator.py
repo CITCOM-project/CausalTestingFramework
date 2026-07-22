@@ -1,7 +1,6 @@
 """This module contains the LinearRegressionEstimator for estimating continuous outcomes."""
 
 import logging
-from typing import Any
 
 import pandas as pd
 import statsmodels.api as sm
@@ -10,8 +9,6 @@ from patsy import ModelDesc, dmatrix  # pylint: disable = no-name-in-module
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.genetic_programming_regression_fitter import GP
-from causal_testing.specification.variable import Variable
-from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -23,37 +20,9 @@ class LinearRegressionEstimator(RegressionEstimator):
 
     regressor = sm.OLS
 
-    def __init__(
-        # pylint: disable=too-many-arguments
-        self,
-        base_test_case: BaseTestCase,
-        treatment_value: float,
-        control_value: float,
-        adjustment_set: set,
-        df: pd.DataFrame = None,
-        effect_modifiers: dict[Variable, Any] = None,
-        formula: str = None,
-        alpha: float = 0.05,
-        query: str = "",
-    ):
-        # pylint: disable=too-many-arguments
-        # pylint: disable=R0801
-        super().__init__(
-            base_test_case=base_test_case,
-            treatment_value=treatment_value,
-            control_value=control_value,
-            adjustment_set=adjustment_set,
-            df=df,
-            effect_modifiers=effect_modifiers,
-            alpha=alpha,
-            query=query,
-            formula=formula,
-        )
-        for term in self.effect_modifiers:
-            self.adjustment_set.add(term)
-
     def gp_formula(
         self,
+        df: pd.DataFrame,
         ngen: int = 100,
         pop_size: int = 20,
         num_offspring: int = 10,
@@ -67,6 +36,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         """
         Use Genetic Programming (GP) to infer the regression equation from the data.
 
+        :param df: The data to use.
         :param ngen: The maximum number of GP generations to run for.
         :param pop_size: The GP population size.
         :param num_offspring: The number of offspring per generation.
@@ -81,7 +51,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         :param seed: Random seed for the GP.
         """
         gp = GP(
-            df=self.df,
+            df=df,
             features=sorted(list(self.adjustment_set.union([self.base_test_case.treatment_variable.name]))),
             outcome=self.base_test_case.outcome_variable.name,
             extra_operators=extra_operators,
@@ -92,27 +62,28 @@ class LinearRegressionEstimator(RegressionEstimator):
         formula = gp.run_gp(ngen=ngen, pop_size=pop_size, num_offspring=num_offspring, seeds=seeds)
         formula = gp.simplify(formula)
         self.formula = f"{self.base_test_case.outcome_variable.name} ~ I({formula}) - 1"
-        self.setup_covariates()
+        self._setup_covariates(df)
 
-    def estimate_coefficient(self) -> EffectEstimate:
+    def estimate_coefficient(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the unit average treatment effect of the treatment on the outcome. That is, the change in outcome
         caused by a unit change in treatment.
 
+        :param df: The data to use.
         :return: The unit average treatment effect and the Wald confidence intervals.
         """
-        model = self.fit_model()
+        model = self.fit_model(df)
         newline = "\n"
         patsy_md = ModelDesc.from_formula(self.base_test_case.treatment_variable.name)
 
         if any(
             (
-                not pd.api.types.is_numeric_dtype(self.df.dtypes[factor.name()])
+                not pd.api.types.is_numeric_dtype(df.dtypes[factor.name()])
                 for factor in patsy_md.rhs_termlist[1].factors
                 # We want to remove this long term as it prevents us from discovering categoricals within I(...) blocks
-                if factor.name() in self.df.dtypes
+                if factor.name() in df.dtypes
             )
         ):
-            design_info = dmatrix(self.formula.split("~")[1], self.df).design_info
+            design_info = dmatrix(self.formula.split("~")[1], df).design_info
             treatment = design_info.column_names[
                 design_info.term_name_slices[self.base_test_case.treatment_variable.name]
             ]
@@ -123,15 +94,20 @@ class LinearRegressionEstimator(RegressionEstimator):
         ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
+
+        if len(unit_effect) == 0:
+            unit_effect = pd.Series({self.base_test_case.treatment_variable.name: None})
+
         return EffectEstimate("coefficient", unit_effect, ci_low, ci_high)
 
-    def estimate_ate(self) -> EffectEstimate:
+    def estimate_ate(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
+        :param df: The data to use.
         :return: The average treatment effect and the Wald confidence intervals.
         """
-        model = self.fit_model()
+        model = self.fit_model(df)
 
         # Create an empty individual for the control and treated
         individuals = pd.DataFrame(1, index=["control", "treated"], columns=model.params.index)
@@ -151,13 +127,15 @@ class LinearRegressionEstimator(RegressionEstimator):
         ci_low, ci_high = [pd.Series(interval) for interval in confidence_intervals]
         return EffectEstimate("ate", ate, ci_low, ci_high)
 
-    def estimate_risk_ratio(self, adjustment_config: dict = None) -> EffectEstimate:
+    def estimate_risk_ratio(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the risk_ratio effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value.
 
+        :param df: The data to use.
+
         :return: The average treatment effect and the Wald confidence intervals.
         """
-        prediction = self._predict(adjustment_config=adjustment_config)
+        prediction = self._predict(df=df)
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] / control_outcome["mean_ci_upper"])
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] / control_outcome["mean_ci_lower"])
@@ -165,19 +143,17 @@ class LinearRegressionEstimator(RegressionEstimator):
             "risk_ratio", pd.Series(treatment_outcome["mean"] / control_outcome["mean"]), ci_low, ci_high
         )
 
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> EffectEstimate:
+    def estimate_ate_calculated(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the ATE of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
-        :param: adjustment_config: The configuration of the adjustment set as a dict mapping variable names to
-                                   their values. N.B. Every variable in the adjustment set MUST have a value in
-                                   order to estimate the outcome under control and treatment.
+        :param df: The data to use.
 
         :return: The average treatment effect and the Wald confidence intervals.
         """
-        prediction = self._predict(adjustment_config=adjustment_config)
+        prediction = self._predict(df=df)
         control_outcome, treatment_outcome = prediction.iloc[1], prediction.iloc[0]
         ci_low = pd.Series(treatment_outcome["mean_ci_lower"] - control_outcome["mean_ci_upper"])
         ci_high = pd.Series(treatment_outcome["mean_ci_upper"] - control_outcome["mean_ci_lower"])

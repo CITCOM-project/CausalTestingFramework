@@ -4,9 +4,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "max_doses",
-    "expected_effect": {
-      "cum_vaccinations": "NoEffect"
-    },
+    "expected_effect": "NoEffect",
     "alpha": 0.05,
     "formula": "cum_vaccinations ~ max_doses",
     "skip": false,
@@ -32,9 +30,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "max_doses",
-    "expected_effect": {
-      "cum_vaccinated": "NoEffect"
-    },
+    "expected_effect": "NoEffect",
     "alpha": 0.05,
     "formula": "cum_vaccinated ~ max_doses",
     "skip": false,
@@ -60,9 +56,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "max_doses",
-    "expected_effect": {
-      "cum_infections": "NoEffect"
-    },
+    "expected_effect": "NoEffect",
     "alpha": 0.05,
     "formula": "cum_infections ~ max_doses",
     "skip": false,
@@ -88,9 +82,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "vaccine",
-    "expected_effect": {
-      "cum_vaccinations": "SomeEffect"
-    },
+    "expected_effect": "SomeEffect",
     "alpha": 0.05,
     "formula": "cum_vaccinations ~ vaccine",
     "skip": false,
@@ -116,9 +108,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "vaccine",
-    "expected_effect": {
-      "cum_vaccinated": "SomeEffect"
-    },
+    "expected_effect": "SomeEffect",
     "alpha": 0.05,
     "formula": "cum_vaccinated ~ vaccine",
     "skip": false,
@@ -144,9 +134,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "vaccine",
-    "expected_effect": {
-      "cum_infections": "SomeEffect"
-    },
+    "expected_effect": "SomeEffect",
     "alpha": 0.05,
     "formula": "cum_infections ~ vaccine",
     "skip": false,
@@ -172,9 +160,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "cum_vaccinations",
-    "expected_effect": {
-      "cum_vaccinated": "NoEffect"
-    },
+    "expected_effect": "NoEffect",
     "alpha": 0.05,
     "formula": "cum_vaccinated ~ cum_vaccinations+vaccine",
     "skip": false,
@@ -202,9 +188,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "cum_vaccinations",
-    "expected_effect": {
-      "cum_infections": "NoEffect"
-    },
+    "expected_effect": "NoEffect",
     "alpha": 0.05,
     "formula": "cum_infections ~ cum_vaccinations+vaccine",
     "skip": false,
@@ -232,9 +216,7 @@
     "estimate_type": "coefficient",
     "effect": "direct",
     "treatment_variable": "cum_vaccinated",
-    "expected_effect": {
-      "cum_infections": "NoEffect"
-    },
+    "expected_effect": "NoEffect",
     "alpha": 0.05,
     "formula": "cum_infections ~ cum_vaccinated+vaccine",
     "skip": false,

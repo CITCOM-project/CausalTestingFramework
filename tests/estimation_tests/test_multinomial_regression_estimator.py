@@ -16,27 +16,22 @@ class TestMultinomialRegressionEstimator(unittest.TestCase):
         cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
 
     def test_odds_ratio(self):
-        df = self.scarf_df.copy()
-        multinomial_regression_estimator = MultinomialRegressionEstimator(
-            BaseTestCase(Input("length_in", float), Output("completed", bool)), 65, 55, set(), df
-        )
-        effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio()
-        self.assertEqual(round(effect_estimate.value.iloc[0], 4), 0.8948)
-
-    def test_odds_ratio_category(self):
-        df = self.scarf_df.copy()
-        multinomial_regression_estimator = MultinomialRegressionEstimator(
-            BaseTestCase(Input("length_in", float), Output("color", bool)), 65, 55, set(), df
-        )
-        effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio()
-        print(effect_estimate.value)
-        self.assertTrue(effect_estimate.value.round(4).equals, pd.Series({"grey": 1.0072, "orange": 0.9668}))
-
-    def test_odds_ratio_data(self):
-        df = self.scarf_df.copy()
         multinomial_regression_estimator = MultinomialRegressionEstimator(
             BaseTestCase(Input("length_in", float), Output("completed", bool)), 65, 55, set()
         )
-        multinomial_regression_estimator.df = df
-        effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio()
+        effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio(self.scarf_df)
+        self.assertEqual(round(effect_estimate.value.iloc[0], 4), 0.8948)
+
+    def test_odds_ratio_category(self):
+        multinomial_regression_estimator = MultinomialRegressionEstimator(
+            BaseTestCase(Input("length_in", float), Output("color", bool)), 65, 55, set()
+        )
+        effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio(self.scarf_df)
+        self.assertTrue(effect_estimate.value.round(4).equals, pd.Series({"grey": 1.0072, "orange": 0.9668}))
+
+    def test_odds_ratio_data(self):
+        multinomial_regression_estimator = MultinomialRegressionEstimator(
+            BaseTestCase(Input("length_in", float), Output("completed", bool)), 65, 55, set()
+        )
+        effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio(self.scarf_df)
         self.assertEqual(round(effect_estimate.value.iloc[0], 4), 0.8948)

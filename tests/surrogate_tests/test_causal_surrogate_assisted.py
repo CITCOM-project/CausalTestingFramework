@@ -19,11 +19,9 @@ from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressi
 class TestSimulationResult(unittest.TestCase):
 
     def setUp(self):
-
         self.data = {"key": "value"}
 
     def test_inputs(self):
-
         fault_values = [True, False]
 
         relationship_values = ["positive", "negative", None]
@@ -55,9 +53,6 @@ class TestCausalSurrogate(unittest.TestCase):
             f.write(dag_dot)
 
     def test_surrogate_model_generation(self):
-
-        df = self.class_df.copy()
-
         causal_dag = CausalDAG(self.dag_dot_path)
         z = Input("Z", int)
         x = Input("X", float)
@@ -66,7 +61,7 @@ class TestCausalSurrogate(unittest.TestCase):
         scenario = Scenario(variables={z, x, m, y})
 
         c_s_a_test_case = CausalSurrogateAssistedTestCase(scenario, causal_dag, None, None)
-        surrogate_models = c_s_a_test_case.generate_surrogates(df)
+        surrogate_models = c_s_a_test_case.generate_surrogates()
         self.assertEqual(len(surrogate_models), 2)
 
         for surrogate_model in surrogate_models:

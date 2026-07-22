@@ -3,10 +3,10 @@ continuous outcomes with changes in behaviour"""
 
 import logging
 from typing import Any
-import statsmodels.formula.api as smf
-from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 import pandas as pd
+import statsmodels.formula.api as smf
+from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
@@ -31,20 +31,27 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
         control_value: float,
         adjustment_set: set,
         basis: int,
-        df: pd.DataFrame = None,
         effect_modifiers: dict[Variable, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
         expected_relationship=None,
+        adjustment_config: dict[Variable, Any] = None,
     ):
         super().__init__(
-            base_test_case, treatment_value, control_value, adjustment_set, df, effect_modifiers, formula, alpha
+            base_test_case=base_test_case,
+            treatment_value=treatment_value,
+            control_value=control_value,
+            adjustment_set=adjustment_set,
+            effect_modifiers=effect_modifiers,
+            formula=formula,
+            alpha=alpha,
         )
 
         self.expected_relationship = expected_relationship
+        self.adjustment_config = adjustment_config
 
         if effect_modifiers is None:
-            effect_modifiers = []
+            effect_modifiers = {}
 
         if formula is None:
             terms = (
@@ -52,33 +59,33 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
             )
             self.formula = f"{base_test_case.outcome_variable.name} ~ cr({'+'.join(terms)}, df={basis})"
 
-    def fit_model(self, data=None) -> RegressionResultsWrapper:
+    def fit_model(self, df: pd.DataFrame) -> RegressionResultsWrapper:
         """Run linear regression of the treatment and adjustment set against the outcome and return the model.
 
+        :param df: The data to use.
         :return: The model after fitting to data.
         """
-        if data is None:
-            data = self.df
-        model = self.regressor(formula=self.formula, data=data).fit(disp=0)
+        model = self.regressor(formula=self.formula, data=df).fit(disp=0)
         return model
 
-    def estimate_ate_calculated(self, adjustment_config: dict = None) -> EffectEstimate:
+    def estimate_ate_calculated(
+        self,
+        df: pd.DataFrame,
+    ) -> EffectEstimate:
         """Estimate the ate effect of the treatment on the outcome. That is, the change in outcome caused
         by changing the treatment variable from the control value to the treatment value. Here, we actually
         calculate the expected outcomes under control and treatment and divide one by the other. This
         allows for custom terms to be put in such as squares, inverses, products, etc.
 
-        :param: adjustment_config: The configuration of the adjustment set as a dict mapping variable names to
-                                   their values. N.B. Every variable in the adjustment set MUST have a value in
-                                   order to estimate the outcome under control and treatment.
+        :param df: The data to use.
 
         :return: The average treatment effect.
         """
-        model = self.fit_model()
+        model = self.fit_model(df)
 
         x = pd.DataFrame({"Intercept": [1], self.base_test_case.treatment_variable.name: [self.treatment_value]})
-        if adjustment_config is not None:
-            for k, v in adjustment_config.items():
+        if self.adjustment_config is not None:
+            for k, v in self.adjustment_config.items():
                 x[k] = v
         if self.effect_modifiers is not None:
             for k, v in self.effect_modifiers.items():

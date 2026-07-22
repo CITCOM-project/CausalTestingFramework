@@ -14,11 +14,11 @@ import numpy as np
 import pandas as pd
 import rustworkx as rx
 
-from causal_testing.main import CausalTestingFramework
+from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_effect import Negative, Positive
-from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
 
 TestResult = Enum("TestResult", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
@@ -36,23 +36,6 @@ def simple_cycle(causal_dag: CausalDAG):
     """
     rx_graph = rx.networkx_converter(causal_dag)
     return [(rx_graph[i], rx_graph[j]) for i, j in rx.digraph_find_cycle(rx_graph)]
-
-
-def effect_direction(result: CausalTestResult) -> str:
-    """
-    Check whether the estimated causal effect is negative or positive.
-
-    :param result: The causal test result object.
-    :returns: Whether the estimated causal test is positive or negative (or no effect).
-    """
-    if pd.api.types.is_numeric_dtype(
-        result.estimator.df[result.estimator.base_test_case.treatment_variable.name]
-    ) and pd.api.types.is_numeric_dtype(result.estimator.df[result.estimator.base_test_case.outcome_variable.name]):
-        if Negative().apply(result):
-            return "negative"
-        if Positive().apply(result):
-            return "positive"
-    return None
 
 
 def is_match(u: str, v: str, patterns: list[str]):
@@ -118,6 +101,22 @@ class Discovery(ABC):
         :returns: The inferred causal DAG.
         """
 
+    def effect_direction(self, test_case: CausalTestCase) -> str:
+        """
+        Check whether the estimated causal effect is negative or positive.
+
+        :param test_case: The causal test case.
+        :returns: Whether the estimated causal test is positive or negative (or no effect).
+        """
+        if pd.api.types.is_numeric_dtype(
+            self.df[test_case.base_test_case.treatment_variable.name]
+        ) and pd.api.types.is_numeric_dtype(self.df[test_case.base_test_case.outcome_variable.name]):
+            if Negative().apply(test_case.result):
+                return "negative"
+            if Positive().apply(test_case.result):
+                return "positive"
+        return None
+
     def remove_cycles(self, causal_dag: CausalDAG):
         """
         Remove cycles from individuals by iteratively deleting a random edge from each cycle until there are no more
@@ -145,24 +144,37 @@ class Discovery(ABC):
         if hasattr(individual, "test_results"):
             for _, test in individual.test_results.iterrows():
                 if (test["treatment"], test["outcome"]) in individual.edges:
+                    individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
+
+                    print(test)
+
                     if test["result"] == TestResult.PASS:
+                        print("  GREEN")
                         individual[test["treatment"]][test["outcome"]]["color"] = "green"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "green"
                     elif test["result"] == TestResult.INESTIMABLE:
+                        print("  ORANGE")
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
                     elif test["result"] == TestResult.FAIL:
+                        print("  RED")
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
                     else:
                         raise ValueError(f"Invalid test outcome {test['result']}")
                 else:
                     individual.add_edge(test["treatment"], test["outcome"], ignore_cycles=True)
                     individual[test["treatment"]][test["outcome"]]["style"] = "dashed"
+                    individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
                     if test["result"] == TestResult.PASS:
                         individual[test["treatment"]][test["outcome"]]["style"] = "invis"
                         individual[test["treatment"]][test["outcome"]]["constraint"] = False
                     elif test["result"] == TestResult.INESTIMABLE:
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
                     elif test["result"] == TestResult.FAIL:
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
+                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
                     else:
                         raise ValueError(f"Invalid test outcome {test['result']}")
 
@@ -188,38 +200,36 @@ class Discovery(ABC):
                   (result, expected effect, treatment, outcome, effect direction).
         """
 
-        ctf = CausalTestingFramework(None)
-        ctf.dag = causal_dag
-        ctf.data = self.df
+        ctf = CausalTestingFramework(dag=causal_dag, df=self.df)
         ctf.create_variables()
         ctf.scenario = Scenario(list(ctf.variables["inputs"].values()) + list(ctf.variables["outputs"].values()))
 
-        ctf.test_cases = ctf.create_test_cases(
-            {
-                "tests": [
-                    relation.to_json_stub(
-                        alpha=self.alpha,
-                        **self._json_stub_params(relation.base_test_case.outcome_variable),
-                    )
-                    for relation in generate_metamorphic_relations(causal_dag)
-                ]
-            }
-        )
+        ctf.test_cases = [
+            ctf.create_causal_test(
+                relation.to_json_stub(
+                    alpha=self.alpha,
+                    **self._json_stub_params(relation.base_test_case.outcome_variable),
+                )
+            )
+            for relation in generate_metamorphic_relations(causal_dag)
+        ]
 
         results = []
 
-        for test_case, result in zip(ctf.test_cases, ctf.test_cases):
+        for test_case in ctf.test_cases:
             try:
-                result = test_case.execute_test()
+                test_case.execute_test(self.df)
                 results.append(
                     {
                         "result": (
-                            TestResult.PASS if test_case.expected_causal_effect.apply(result) else TestResult.FAIL
+                            TestResult.PASS
+                            if test_case.expected_causal_effect.apply(test_case.result)
+                            else TestResult.FAIL
                         ),
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                         "treatment": test_case.base_test_case.treatment_variable.name,
                         "outcome": test_case.base_test_case.outcome_variable.name,
-                        "effect": effect_direction(result),
+                        "effect": self.effect_direction(test_case),
                     }
                 )
             except np.linalg.LinAlgError:
@@ -233,4 +243,6 @@ class Discovery(ABC):
                 )
 
         causal_dag.test_results = pd.DataFrame(results)
+
+        results = pd.DataFrame(results)
         return pd.DataFrame(results)

@@ -33,13 +33,14 @@ class LogisticRegressionEstimator(RegressionEstimator):
         self.modelling_assumptions.append("The outcome must be binary.")
         self.modelling_assumptions.append("Independently and identically distributed errors.")
 
-    def estimate_unit_odds_ratio(self) -> EffectEstimate:
+    def estimate_unit_odds_ratio(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the odds ratio of increasing the treatment by one. In logistic regression, this corresponds to the
         coefficient of the treatment of interest.
 
+        :param df: The data to use.
         :return: The odds ratio with confidence intervals.
         """
-        model = self.fit_model(self.df)
+        model = self.fit_model(df)
 
         treatment_columns = self.treatment_columns(model)
         confidence_intervals = np.exp(model.conf_int(self.alpha).loc[treatment_columns])

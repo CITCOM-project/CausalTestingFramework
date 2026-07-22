@@ -6,10 +6,12 @@ import unittest
 import pandas as pd
 from tempfile import TemporaryDirectory
 import os
+from numpy import nan
 
-from causal_testing.discovery.abstract_discovery import TestResult, Discovery, simple_cycle, effect_direction
+from causal_testing.discovery.abstract_discovery import TestResult, Discovery, simple_cycle
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_result import CausalTestResult
+from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.testing.base_test_case import BaseTestCase
@@ -30,10 +32,13 @@ class AbstractDiscovery(Discovery):
 
 class TestAbstractHillClimber(unittest.TestCase):
     def setUp(self) -> None:
-        base_test_case = BaseTestCase(Input("A", float), Output("B", float))
+        self.base_test_case = BaseTestCase(Input("A", float), Output("B", float))
+        self.df = pd.DataFrame({"A": [1, 2], "B": [4, 5]})
+        self.abstract_discovery = AbstractDiscovery(
+            df=self.df,
+        )
         self.estimator = LinearRegressionEstimator(
-            df=pd.DataFrame({"A": [1, 2], "B": [4, 5]}),
-            base_test_case=base_test_case,
+            base_test_case=self.base_test_case,
             treatment_value=1,
             control_value=0,
             adjustment_set={},
@@ -50,25 +55,29 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertEqual(simple_cycle(dag), [])
 
     def test_effect_direction_positive(self):
-        ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(5.05)),
+        causal_test_case = CausalTestCase(base_test_case=self.base_test_case, expected_causal_effect=None)
+        causal_test_case.result = CausalTestResult(
+            effect_estimate=EffectEstimate(
+                type="ate", value=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
+            ),
         )
-        self.assertEqual(effect_direction(ctr), "positive")
+        self.assertEqual(self.abstract_discovery.effect_direction(causal_test_case), "positive")
 
     def test_effect_direction_negative(self):
-        ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(-5.05)),
+        causal_test_case = CausalTestCase(base_test_case=self.base_test_case, expected_causal_effect=None)
+        causal_test_case.result = CausalTestResult(
+            effect_estimate=EffectEstimate(
+                type="ate", value=pd.Series(-5.05), ci_low=pd.Series(-6), ci_high=pd.Series(-5)
+            ),
         )
-        self.assertEqual(effect_direction(ctr), "negative")
+        self.assertEqual(self.abstract_discovery.effect_direction(causal_test_case), "negative")
 
     def test_effect_direction_none(self):
-        ctr = CausalTestResult(
-            estimator=self.estimator,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(0)),
+        causal_test_case = CausalTestCase(base_test_case=self.base_test_case, expected_causal_effect=None)
+        causal_test_case.result = CausalTestResult(
+            effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),
         )
-        self.assertEqual(effect_direction(ctr), None)
+        self.assertEqual(self.abstract_discovery.effect_direction(causal_test_case), None)
 
     def test_include_edge_wildcard(self):
         abstract_discovery = AbstractDiscovery(
@@ -137,13 +146,13 @@ class TestAbstractHillClimber(unittest.TestCase):
         dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
         dag.test_results = pd.DataFrame(
             [  # Edges
-                {"treatment": "A", "outcome": "B", "result": TestResult.PASS},
-                {"treatment": "C", "outcome": "D", "result": TestResult.FAIL},
-                {"treatment": "E", "outcome": "F", "result": TestResult.INESTIMABLE},
+                {"treatment": "A", "outcome": "B", "effect": "positive", "result": TestResult.PASS},
+                {"treatment": "C", "outcome": "D", "effect": "positive", "result": TestResult.FAIL},
+                {"treatment": "E", "outcome": "F", "effect": "None", "result": TestResult.INESTIMABLE},
                 # Independences
-                {"treatment": "A", "outcome": "C", "result": TestResult.PASS},
-                {"treatment": "A", "outcome": "D", "result": TestResult.FAIL},
-                {"treatment": "A", "outcome": "E", "result": TestResult.INESTIMABLE},
+                {"treatment": "A", "outcome": "C", "effect": None, "result": TestResult.PASS},
+                {"treatment": "A", "outcome": "D", "effect": "negative", "result": TestResult.FAIL},
+                {"treatment": "A", "outcome": "E", "effect": None, "result": TestResult.INESTIMABLE},
             ]
         )
         abstract_discovery = AbstractDiscovery(pd.DataFrame())
@@ -157,7 +166,7 @@ class TestAbstractHillClimber(unittest.TestCase):
         dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
         dag.test_results = pd.DataFrame(
             [  # Edges
-                {"treatment": "A", "outcome": "B", "result": None},
+                {"treatment": "A", "outcome": "B", "effect": None, "result": None},
             ]
         )
         abstract_discovery = AbstractDiscovery(pd.DataFrame())
@@ -169,7 +178,7 @@ class TestAbstractHillClimber(unittest.TestCase):
         dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
         dag.test_results = pd.DataFrame(
             [  # Edges
-                {"treatment": "A", "outcome": "C", "result": None},
+                {"treatment": "A", "outcome": "C", "effect": None, "result": None},
             ]
         )
         abstract_discovery = AbstractDiscovery(pd.DataFrame())
@@ -206,73 +215,64 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "expected_effect": "NoEffect",
                     "treatment": "length_in",
                     "outcome": "large_gauge",
-                    "effect": "negative",
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "large_gauge",
                     "outcome": "length_in",
-                    "effect": "negative",
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "length_in",
                     "outcome": "color",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "length_in",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.FAIL,
                     "expected_effect": "SomeEffect",
                     "treatment": "length_in",
                     "outcome": "completed",
-                    "effect": "positive",
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "large_gauge",
                     "outcome": "color",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "large_gauge",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.FAIL,
                     "expected_effect": "SomeEffect",
                     "treatment": "large_gauge",
                     "outcome": "completed",
-                    "effect": "negative",
                 },
                 {
                     "result": TestResult.INESTIMABLE,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "completed",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.INESTIMABLE,
                     "expected_effect": "NoEffect",
                     "treatment": "completed",
                     "outcome": "color",
-                    "effect": None,
                 },
             ]
         )
+        expected_results["effect"] = nan
         pd.testing.assert_frame_equal(test_results, expected_results)
 
     def test_evaluate_tests(self):
@@ -291,71 +291,62 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "expected_effect": "NoEffect",
                     "treatment": "length_in",
                     "outcome": "large_gauge",
-                    "effect": "positive",
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "large_gauge",
                     "outcome": "length_in",
-                    "effect": "positive",
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "length_in",
                     "outcome": "color",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "length_in",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.FAIL,
                     "expected_effect": "SomeEffect",
                     "treatment": "length_in",
                     "outcome": "completed",
-                    "effect": "negative",
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "large_gauge",
                     "outcome": "color",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "large_gauge",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.FAIL,
                     "expected_effect": "SomeEffect",
                     "treatment": "large_gauge",
                     "outcome": "completed",
-                    "effect": "positive",
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "completed",
-                    "effect": None,
                 },
                 {
                     "result": TestResult.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "completed",
                     "outcome": "color",
-                    "effect": None,
                 },
             ]
         )
+        expected_results["effect"] = None
         pd.testing.assert_frame_equal(test_results, expected_results)

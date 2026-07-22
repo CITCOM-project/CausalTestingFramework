@@ -6,7 +6,7 @@ import unittest
 import pandas as pd
 from causal_testing.discovery.hill_climber_discovery import HillClimberDiscovery
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.discovery.abstract_discovery import TestResult, Discovery, simple_cycle, effect_direction
+from causal_testing.discovery.abstract_discovery import TestResult, Discovery, simple_cycle
 
 
 class TestHillClimber(unittest.TestCase):
