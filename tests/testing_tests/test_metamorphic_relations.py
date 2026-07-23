@@ -38,8 +38,6 @@ class TestMetamorphicRelation(unittest.TestCase):
         for treatment, outcome in dag.edges:
             expected_tests.append(
                 CausalTestCase(
-                    treatment_variable=treatment,
-                    outcome_variable=outcome,
                     expected_causal_effect=SomeEffect(),
                     effect_measure="coefficient",
                     estimator=LinearRegressionEstimator(
@@ -68,8 +66,6 @@ class TestMetamorphicRelation(unittest.TestCase):
         ]:
             expected_tests.append(
                 CausalTestCase(
-                    treatment_variable=treatment,
-                    outcome_variable=outcome,
                     expected_causal_effect=NoEffect(),
                     effect_measure="coefficient",
                     estimator=LinearRegressionEstimator(
@@ -95,8 +91,6 @@ class TestMetamorphicRelation(unittest.TestCase):
         for treatment, outcome in dag.edges:
             expected_tests.append(
                 CausalTestCase(
-                    treatment_variable=treatment,
-                    outcome_variable=outcome,
                     expected_causal_effect=SomeEffect(),
                     effect_measure="coefficient",
                     estimator=LinearRegressionEstimator(
@@ -127,8 +121,6 @@ class TestMetamorphicRelation(unittest.TestCase):
         ]:
             expected_tests.append(
                 CausalTestCase(
-                    treatment_variable=treatment,
-                    outcome_variable=outcome,
                     expected_causal_effect=NoEffect(),
                     effect_measure="coefficient",
                     estimator=LinearRegressionEstimator(
@@ -151,8 +143,6 @@ class TestMetamorphicRelation(unittest.TestCase):
 
         expected_tests = [
             CausalTestCase(
-                treatment_variable="a",
-                outcome_variable="b",
                 expected_causal_effect=SomeEffect(),
                 effect_measure="coefficient",
                 estimator=LinearRegressionEstimator(

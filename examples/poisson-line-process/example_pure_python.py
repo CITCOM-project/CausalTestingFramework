@@ -64,8 +64,6 @@ def test_poisson_intensity_num_shapes(save=False):
     causal_test_cases = [
         (
             CausalTestCase(
-                treatment_variable="intensity",
-                outcome_variable="num_shapes_unit",
                 expected_causal_effect=ExactValue(4, atol=0.5),
                 effect_measure="risk_ratio",
                 estimator=EmpiricalMeanEstimator(
@@ -81,8 +79,6 @@ def test_poisson_intensity_num_shapes(save=False):
             ),
             f"{ROOT}/data/smt_100/data_smt_wh{wh}_100.csv",
             CausalTestCase(
-                treatment_variable="intensity",
-                outcome_variable="num_shapes_unit",
                 expected_causal_effect=ExactValue(4, atol=0.5),
                 effect_measure="risk_ratio",
                 estimator=LinearRegressionEstimator(
@@ -127,8 +123,6 @@ def test_poisson_width_num_shapes(save=False):
     df = pd.read_csv(OBSERVATIONAL_DATA_PATH, index_col=0).astype(float)
     causal_test_cases = [
         CausalTestCase(
-            treatment_variable="width",
-            outcome_variable="num_shapes_unit",
             expected_causal_effect=Positive(),
             effect_measure="ate_calculated",
             estimator=LinearRegressionEstimator(

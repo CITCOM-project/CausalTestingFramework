@@ -32,8 +32,6 @@ class TestCausalTestAdequacy(unittest.TestCase):
             outcome_variable="test_output",
         )
         causal_test_case = CausalTestCase(
-            treatment_variable="test_input",
-            outcome_variable="test_output",
             expected_causal_effect=NoEffect(atol=1e-10),
             effect_measure="coefficient",
             estimator=estimator,
@@ -51,8 +49,6 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
     def test_data_adequacy_categorical(self):
         causal_test_case = CausalTestCase(
-            treatment_variable="test_input_no_dist",
-            outcome_variable="test_output",
             expected_causal_effect=NoEffect(atol=1e-10),
             effect_measure="coefficient",
             estimator=LinearRegressionEstimator(
@@ -89,8 +85,6 @@ class TestCausalTestAdequacy(unittest.TestCase):
         )
 
         causal_test_case = CausalTestCase(
-            treatment_variable="t",
-            outcome_variable="outcome",
             expected_causal_effect=SomeEffect(),
             effect_measure="hazard_ratio",
             estimator=estimation_model,
@@ -107,8 +101,10 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
     def test_dag_adequacy_dependent(self):
         causal_test_case = CausalTestCase(
-            treatment_variable="test_input",
-            outcome_variable="B",
+            estimator=LinearRegressionEstimator(
+                treatment_variable="test_input",
+                outcome_variable="B",
+            ),
             expected_causal_effect=None,
             effect_measure=None,
         )
@@ -150,8 +146,10 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
     def test_dag_adequacy_independent(self):
         causal_test_case = CausalTestCase(
-            treatment_variable="test_input",
-            outcome_variable="C",
+            estimator=LinearRegressionEstimator(
+                treatment_variable="test_input",
+                outcome_variable="C",
+            ),
             expected_causal_effect=None,
             effect_measure=None,
         )
@@ -193,8 +191,10 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
     def test_dag_adequacy_independent_other_way(self):
         causal_test_case = CausalTestCase(
-            treatment_variable="C",
-            outcome_variable="test_input",
+            estimator=LinearRegressionEstimator(
+                treatment_variable="C",
+                outcome_variable="test_input",
+            ),
             expected_causal_effect=None,
             effect_measure=None,
         )

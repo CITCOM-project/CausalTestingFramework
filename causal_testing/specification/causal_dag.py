@@ -620,8 +620,6 @@ class CausalDAG(nx.DiGraph):
                     causal_tests.append(
                         CausalTestCase(
                             name=f"{u} _||_ {v}",
-                            treatment_variable=u,
-                            outcome_variable=v,
                             expected_causal_effect=NoEffect(),
                             estimator=estimator,
                             effect_measure=effect_measure,
@@ -638,8 +636,6 @@ class CausalDAG(nx.DiGraph):
                     causal_tests.append(
                         CausalTestCase(
                             name=f"{v} _||_ {u}",
-                            treatment_variable=v,
-                            outcome_variable=u,
                             expected_causal_effect=NoEffect(),
                             estimator=estimator,
                             effect_measure=effect_measure,
@@ -656,8 +652,6 @@ class CausalDAG(nx.DiGraph):
                 causal_tests.append(
                     CausalTestCase(
                         name=f"{u} -> {v}",
-                        treatment_variable=u,
-                        outcome_variable=v,
                         expected_causal_effect=SomeEffect(),
                         estimator=estimator,
                         effect_measure=effect_measure,
@@ -672,8 +666,6 @@ class CausalDAG(nx.DiGraph):
                 causal_tests.append(
                     CausalTestCase(
                         name=f"{v} -> {u}",
-                        treatment_variable=v,
-                        outcome_variable=u,
                         expected_causal_effect=SomeEffect(),
                         estimator=estimator,
                         effect_measure=effect_measure,

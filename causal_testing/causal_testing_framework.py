@@ -192,8 +192,6 @@ class CausalTestingFramework:
 
         return CausalTestCase(
             name=test.get("name"),
-            treatment_variable=treatment_variable,
-            outcome_variable=outcome_variable,
             effect_measure=test.get("effect_measure"),
             query=test.get("query"),
             expected_causal_effect=expected_effect,

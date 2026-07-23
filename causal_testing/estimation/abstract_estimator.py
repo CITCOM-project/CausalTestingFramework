@@ -63,7 +63,13 @@ class Estimator(ABC):
 
         :returns: A JSON serialisable dict representing the estimator.
         """
-        result = {"name": self.__class__.__name__, "alpha": self.alpha, "adjustment_set": sorted(self.adjustment_set)}
+        result = {
+            "name": self.__class__.__name__,
+            "treatment_variable": self.treatment_variable,
+            "outcome_variable": self.outcome_variable,
+            "alpha": self.alpha,
+            "adjustment_set": sorted(self.adjustment_set),
+        }
         if self.adjustment_config:
             result["adjustment_config"] = self.adjustment_config
         if self.control_value is not None:

@@ -29,8 +29,6 @@ class CausalTestCase:
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        treatment_variable: str,
-        outcome_variable: str,
         expected_causal_effect: CausalEffect,
         effect_measure: str,
         estimator: type(Estimator) = None,
@@ -38,8 +36,6 @@ class CausalTestCase:
         query: str = None,
         skip: bool = False,
     ):
-        self.treatment_variable = treatment_variable
-        self.outcome_variable = outcome_variable
         self.expected_causal_effect = expected_causal_effect
         self.effect_measure = effect_measure
         self.estimator = estimator
@@ -47,6 +43,24 @@ class CausalTestCase:
         self.name = name
         self.query = query
         self.skip = skip
+
+    @property
+    def treatment_variable(self):
+        """
+        :returns: The treatment variable of the test case.
+        """
+        if self.estimator is not None:
+            return self.estimator.treatment_variable
+        return None
+
+    @property
+    def outcome_variable(self):
+        """
+        :returns: The outcome variable of the test case.
+        """
+        if self.estimator is not None:
+            return self.estimator.outcome_variable
+        return None
 
     def measure_adequacy(
         self,
@@ -155,8 +169,6 @@ class CausalTestCase:
         """
         test_case = {
             "name": self.name,
-            "treatment_variable": self.treatment_variable,
-            "outcome_variable": self.outcome_variable,
             "skip": self.skip,
             "effect_measure": self.effect_measure,
             "query": self.query,

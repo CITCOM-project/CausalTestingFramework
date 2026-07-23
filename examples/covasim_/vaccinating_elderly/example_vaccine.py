@@ -37,8 +37,6 @@ def run_test_case(verbose: bool = False):
 
     for outcome_variable, expected_effect in expected_outcome_effects.items():
         causal_test_case = CausalTestCase(
-            treatment_variable="vaccine",
-            outcome_variable=outcome_variable,
             expected_causal_effect=expected_effect,
             effect_measure="ate",
             estimator=LinearRegressionEstimator(

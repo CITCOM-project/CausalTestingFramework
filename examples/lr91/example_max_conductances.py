@@ -84,8 +84,6 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
 
     # Create a causal test case
     causal_test_case = CausalTestCase(
-        treatment_variable=treatment_var,
-        outcome_variable="APD90",
         expected_causal_effect=expected_causal_effect,
         effect_measure="ate",
         estimator=LinearRegressionEstimator(
