@@ -182,9 +182,6 @@ class RegressionEstimator(Estimator):
         for k, v in self.adjustment_config.items():
             x[k] = v
         x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
-        for col in x:
-            if isinstance(x[col], pd.CategoricalDtype) or pd.api.types.is_object_dtype(x[col]):
-                x = pd.get_dummies(x, columns=[col], drop_first=True)
 
         return model.get_prediction(x).summary_frame()
 

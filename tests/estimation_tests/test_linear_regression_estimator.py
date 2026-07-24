@@ -146,7 +146,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """
         with self.assertRaises(ValueError) as e:
             LinearRegressionEstimator(treatment_variable="cut", outcome_variable="price")
-            self.assertEqual(e.exception, f"Please specify either a formula or an adjustment set.")
+            self.assertEqual(e.exception, "Please specify either a formula or an adjustment set.")
 
     def test_linear_regression_categorical_ate(self):
         df = self.scarf_df.copy()
