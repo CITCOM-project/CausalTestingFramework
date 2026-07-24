@@ -146,6 +146,33 @@ class TestMain(unittest.TestCase):
                     "--exclude-edges",
                     self.exclude_edges_path,
                     "--technique-kwargs",
+                    "max_iterations 10",
+                ],
+            ):
+                with self.assertRaises(ValueError) as e:
+                    main()
+                    self.assertEqual(
+                        e.message, "Malformed argument max_iterations. Should be specified as `arg_name=arg_value`"
+                    )
+
+    def test_parse_args_discover_malformed_argument(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "discover",
+                    "--technique",
+                    "HillClimberDiscovery",
+                    "--data-paths",
+                    str(self.data_paths[0]),
+                    "--output",
+                    os.path.join(tmp, "discovered_dag.dot"),
+                    "--include-edges",
+                    self.include_edges_path,
+                    "--exclude-edges",
+                    self.exclude_edges_path,
+                    "--technique-kwargs",
                     "max_iterations=10",
                     "--variables",
                     "test_input",
@@ -205,6 +232,24 @@ class TestMain(unittest.TestCase):
             ):
                 with self.assertWarnsRegex(UserWarning, r"Dropping unnamed columns: \['Unnamed: 0'\]"):
                     main()
+
+    def test_parse_args_evaluation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "evaluate",
+                    "--dag-path",
+                    str(self.dag_path),
+                    "--data-paths",
+                    str(self.data_paths[0]),
+                    "--output",
+                    os.path.join(tmp, "results.csv"),
+                ],
+            ):
+                main()
+                self.assertTrue(os.path.exists(os.path.join(tmp, "results.csv")))
 
     def tearDown(self):
         if self.output_path.parent.exists():

@@ -108,6 +108,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         help="Do not crash on error. If set to true, errors are recorded as test results.",
         default=False,
     )
+    parser_evaluate.add_argument("-t", "--test-config", help="Path to test configuration file (.json)")
 
     # Discovery
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
@@ -259,14 +260,14 @@ def main() -> None:
         case Command.EVALUATE:
             # Create and setup framework
             framework = CausalTestingFramework()
+            framework.load_data(args.data_paths, query=args.query)
+            framework.load_dag(args.dag_path, args.ignore_cycles)
+            framework.dag.datatypes = framework.df.dtypes
 
-            framework.setup(
-                dag_path=args.dag_path,
-                data_paths=args.data_paths,
-                test_cases_path=args.test_config,
-                query=args.query,
-                ignore_cycles=args.ignore_cycles,
-            )
+            if args.test_config:
+                framework.load_test_cases_from_json(args.test_config)
+            else:
+                framework.test_cases = framework.dag.generate_causal_tests()
 
             logging.info("Running tests on entire dataset")
             results = framework.evaluate_dag(alpha=args.alpha, bootstrap_size=args.bootstrap_size)
