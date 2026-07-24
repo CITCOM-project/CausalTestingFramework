@@ -1,10 +1,11 @@
+import json
+import os
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
-import tempfile
-import os
 from unittest.mock import patch
-import shutil
-import json
+
 from causal_testing.__main__ import main
 
 

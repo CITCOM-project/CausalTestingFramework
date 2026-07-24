@@ -1,6 +1,7 @@
+import json
 import unittest
 from pathlib import Path
-import json
+
 import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework

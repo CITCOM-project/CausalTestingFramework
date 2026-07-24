@@ -1,8 +1,10 @@
 import unittest
+
 import pandas as pd
-from causal_testing.testing.causal_effect import ExactValue, SomeEffect, Positive, Negative, NoEffect
-from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+
 from causal_testing.estimation.effect_estimate import EffectEstimate
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.testing.causal_effect import ExactValue, Negative, NoEffect, Positive, SomeEffect
 from causal_testing.utils.validation import CausalValidator
 
 

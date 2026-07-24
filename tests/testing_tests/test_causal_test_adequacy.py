@@ -1,18 +1,16 @@
 import os
 import unittest
-import scipy
+
 import pandas as pd
+import scipy
 
-from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.ipcw_estimator import IPCWEstimator
-
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.testing.causal_effect import NoEffect, SomeEffect
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.dag_adequacy import DAGAdequacy
-from causal_testing.testing.causal_effect import NoEffect, SomeEffect
-
 from causal_testing.testing.data_adequacy import DataAdequacy
-
-from causal_testing.specification.causal_dag import CausalDAG
 
 
 class TestCausalTestAdequacy(unittest.TestCase):

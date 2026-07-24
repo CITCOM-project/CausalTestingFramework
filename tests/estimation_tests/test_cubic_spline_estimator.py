@@ -1,8 +1,6 @@
 import unittest
 
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
-
-
 from tests.estimation_tests.test_linear_regression_estimator import load_chapter_11_df
 
 

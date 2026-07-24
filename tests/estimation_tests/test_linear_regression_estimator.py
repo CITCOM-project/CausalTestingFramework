@@ -1,11 +1,11 @@
 import unittest
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
-from causal_testing.utils.validation import CausalValidator
-
-from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.genetic_programming_regression_fitter import reciprocal
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.utils.validation import CausalValidator
 
 
 def load_nhefs_df():

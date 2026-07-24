@@ -1,14 +1,15 @@
-import unittest
 import os
-import tempfile
 import shutil
-import pandas as pd
-import numpy as np
+import tempfile
+import unittest
 
-from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_effect import ExactValue
+import numpy as np
+import pandas as pd
+
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.testing.causal_effect import ExactValue
+from causal_testing.testing.causal_test_case import CausalTestCase
 
 
 class TestCausalTestCase(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
-import pandas as pd
 
+import pandas as pd
 
 from causal_testing.estimation.ipcw_estimator import IPCWEstimator
 

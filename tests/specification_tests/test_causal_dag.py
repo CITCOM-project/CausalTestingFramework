@@ -1,8 +1,10 @@
-import unittest
 import os
 import shutil
 import tempfile
+import unittest
+
 import networkx as nx
+
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
 
 

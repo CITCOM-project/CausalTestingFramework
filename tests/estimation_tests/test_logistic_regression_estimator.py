@@ -1,5 +1,7 @@
 import unittest
+
 import pandas as pd
+
 from causal_testing.estimation.logistic_regression_estimator import LogisticRegressionEstimator
 
 

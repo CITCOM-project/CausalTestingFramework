@@ -2,17 +2,19 @@
 This module tests common causal discovery functionality provided within the abstract_discovery module.
 """
 
-import unittest
-import pandas as pd
-from tempfile import TemporaryDirectory
 import os
+import unittest
+from tempfile import TemporaryDirectory
+
+import pandas as pd
 from numpy import nan
+
 from causal_testing.discovery.abstract_discovery import Discovery, simple_cycle
-from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.testing.causal_test_result import CausalTestResult, TestOutcome
-from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
+from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.testing.causal_test_case import CausalTestCase
+from causal_testing.testing.causal_test_result import CausalTestResult, TestOutcome
 
 
 class AbstractDiscovery(Discovery):

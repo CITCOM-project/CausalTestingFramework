@@ -1,5 +1,7 @@
 import unittest
+
 import pandas as pd
+
 from causal_testing.estimation.multinomial_regression_estimator import MultinomialRegressionEstimator
 
 
