@@ -94,7 +94,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         linear_regression_estimator = LinearRegressionEstimator(
             treatment_variable="treatments",
             outcome_variable="outcomes",
-            adjustment_set=set(),
             formula="outcomes ~ treatments + I(treatments ** 2)",
         )
         effect_estimate = linear_regression_estimator.estimate_coefficient(df)
@@ -130,7 +129,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             outcome_variable="wt82_71",
             treatment_value=1,
             control_value=0,
-            adjustment_set=covariates,
             formula=f"""wt82_71 ~ qsmk +
                              {'+'.join(sorted(list(covariates)))} +
                              I(age ** 2) +
@@ -147,28 +145,11 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
         without product parameter."""
         df = self.nhefs_df
-        covariates = {
-            "sex",
-            "race",
-            "age",
-            "edu_2",
-            "edu_3",
-            "edu_4",
-            "edu_5",
-            "exercise_1",
-            "exercise_2",
-            "active_1",
-            "active_2",
-            "wt71",
-            "smokeintensity",
-            "smokeyrs",
-        }
         linear_regression_estimator = LinearRegressionEstimator(
             treatment_variable="qsmk",
             outcome_variable="wt82_71",
             treatment_value=1,
             control_value=0,
-            adjustment_set=covariates,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
@@ -183,28 +164,11 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
         without product parameter."""
         df = self.nhefs_df
-        covariates = {
-            "sex",
-            "race",
-            "age",
-            "edu_2",
-            "edu_3",
-            "edu_4",
-            "edu_5",
-            "exercise_1",
-            "exercise_2",
-            "active_1",
-            "active_2",
-            "wt71",
-            "smokeintensity",
-            "smokeyrs",
-        }
         linear_regression_estimator = LinearRegressionEstimator(
             treatment_variable="qsmk",
             outcome_variable="wt82_71",
             treatment_value=1,
             control_value=0,
-            adjustment_set=covariates,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
         )
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
@@ -216,33 +180,15 @@ class TestLinearRegressionEstimator(unittest.TestCase):
     def test_program_15_no_interaction_ate_calculated(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
         without product parameter."""
-        covariates = {
-            "sex",
-            "race",
-            "age",
-            "edu_2",
-            "edu_3",
-            "edu_4",
-            "edu_5",
-            "exercise_1",
-            "exercise_2",
-            "active_1",
-            "active_2",
-            "wt71",
-            "smokeintensity",
-            "smokeyrs",
-        }
+        covariates = {"age", "wt71", "smokeintensity", "smokeyrs"}
         linear_regression_estimator = LinearRegressionEstimator(
             treatment_variable="qsmk",
             outcome_variable="wt82_71",
             treatment_value=1,
             control_value=0,
-            adjustment_set=covariates,
             formula="wt82_71 ~ qsmk + age + I(age ** 2) + wt71 + I(wt71 ** 2) + smokeintensity + I(smokeintensity ** 2) + smokeyrs + I(smokeyrs ** 2)",
             adjustment_config={k: self.nhefs_df.mean()[k] for k in covariates},
         )
-        # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
-        # for term_to_square in terms_to_square:
 
         effect_estimate = linear_regression_estimator.estimate_ate_calculated(df=self.nhefs_df)
         self.assertEqual(round(effect_estimate.value[0], 1), 3.5)
@@ -328,7 +274,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
             treatment_value=1,
             control_value=0,
             adjustment_set={"X2"},
-            adjustment_config={"x2": 0},
+            adjustment_config={"X2": 0},
             formula="Y ~ X1 + X2 + (X1 * X2)",
         )
         effect_estimate = lr_model.estimate_ate(self.df)
@@ -336,8 +282,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
 
     def test_categorical_confidence_intervals(self):
         lr_model = LinearRegressionEstimator(
-            treatment_variable="color",
-            outcome_variable="length_in",
+            treatment_variable="color", outcome_variable="length_in", adjustment_set=set()
         )
         effect_estimate = lr_model.estimate_coefficient(self.scarf_df)
 

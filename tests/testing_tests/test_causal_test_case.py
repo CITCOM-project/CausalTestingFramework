@@ -178,6 +178,7 @@ class TestCausalTestCase(unittest.TestCase):
             ),
         )
         causal_test_case.execute_test(self.df, adequacy=True)
+        test_case_dict = causal_test_case.to_dict()
 
         expected = {
             "name": "A |- C",
@@ -190,7 +191,7 @@ class TestCausalTestCase(unittest.TestCase):
                 "treatment_variable": "A",
                 "outcome_variable": "C",
                 "alpha": 0.05,
-                "adjustment_set": [],
+                "adjustment_set": ["D"],
                 "formula": "C ~ A + D",
             },
             "result": {
@@ -206,5 +207,6 @@ class TestCausalTestCase(unittest.TestCase):
 
         # Use json_normalize to avoid rounding errors
         pd.testing.assert_frame_equal(
-            pd.json_normalize(expected).round(2), pd.json_normalize(causal_test_case.to_dict()).round(2)
+            pd.json_normalize(expected).round(2),
+            pd.json_normalize(test_case_dict).round(2),
         )

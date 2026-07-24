@@ -53,7 +53,7 @@ class TestAbstractHillClimber(unittest.TestCase):
 
     def test_effect_direction_positive(self):
         causal_test_case = CausalTestCase(
-            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B"),
+            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B", adjustment_set=set()),
             effect_measure="ate",
             expected_causal_effect=None,
         )
@@ -67,7 +67,7 @@ class TestAbstractHillClimber(unittest.TestCase):
 
     def test_effect_direction_negative(self):
         causal_test_case = CausalTestCase(
-            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B"),
+            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B", adjustment_set=set()),
             expected_causal_effect=None,
             effect_measure="ate",
         )
@@ -81,7 +81,7 @@ class TestAbstractHillClimber(unittest.TestCase):
 
     def test_effect_direction_none(self):
         causal_test_case = CausalTestCase(
-            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B"),
+            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B", adjustment_set=set()),
             effect_measure="ate",
             expected_causal_effect=None,
         )

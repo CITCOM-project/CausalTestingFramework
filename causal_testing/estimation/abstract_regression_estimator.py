@@ -1,11 +1,12 @@
 """This module contains the RegressionEstimator, which is an abstract class for concrete regression estimators."""
 
+import ast
 import logging
 from abc import abstractmethod
 from typing import Any
 
 import pandas as pd
-from patsy import dmatrices, dmatrix  # pylint: disable = no-name-in-module
+from patsy import ModelDesc, dmatrices, dmatrix  # pylint: disable = no-name-in-module
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from causal_testing.estimation.abstract_estimator import Estimator
@@ -40,14 +41,64 @@ class RegressionEstimator(Estimator):
             alpha=alpha,
         )
 
-        self.adjustment_config = {} if adjustment_config is None else adjustment_config
-        if adjustment_set is None:
-            adjustment_set = []
         if formula is not None:
             self.formula = formula
-        else:
+            self._adjustment_set_from_formula()
+            if adjustment_set is not None and set(adjustment_set) != set(self.adjustment_set):
+                raise ValueError(
+                    f"Specified formula {self.formula} does not match specified adjustment set {adjustment_set}"
+                )
+        elif adjustment_set is not None:
             terms = [treatment_variable] + sorted(list(adjustment_set))
             self.formula = f"{outcome_variable} ~ {'+'.join(terms)}"
+        else:
+            raise ValueError("Please specify either a formula or an adjustment set.")
+
+        self.adjustment_config = adjustment_config if adjustment_config is not None else {}
+        if not set(self.adjustment_config).issubset(self.adjustment_set):
+            raise ValueError(
+                "Specified configuration for variables "
+                f"{sorted([v for v in adjustment_config if v not in self.adjustment_set])} "
+                f"which are not in the adjustment set {self.adjustment_set}."
+            )
+
+    def _get_adjusted_variables(self, tree: ast.AST) -> set[str]:
+        """
+        Recursively return variables in an AST.
+        :returns: Set of all variables not used as part of a function.
+        """
+        if isinstance(tree, ast.Name) and tree.id != self.treatment_variable:
+            return {tree.id}
+        if isinstance(tree, ast.Expression):
+            return self._get_adjusted_variables(tree.body)
+        if isinstance(tree, ast.Call):
+            return set().union(*[self._get_adjusted_variables(arg) for arg in tree.args])
+        return set()
+
+    def _adjustment_set_from_formula(self):
+        """
+        Set up the adjustment set from the formula string.
+        """
+        desc = ModelDesc.from_formula(self.formula)
+
+        if desc.lhs_termlist:
+            if [self.outcome_variable] != [term.name() for term in desc.lhs_termlist]:
+                raise ValueError(
+                    f"Left hand side of formula {self.formula} does not match the specified outcome_variable "
+                    f"{self.outcome_variable}."
+                )
+        else:
+            self.formula = f"{self.outcome_variable} ~ {self.formula}"
+
+        raw_factors = {factor.code for term in desc.rhs_termlist for factor in term.factors}
+
+        adjustment_set = set()
+
+        for code in raw_factors:
+            tree = ast.parse(code, mode="eval")
+            adjustment_set = adjustment_set.union(self._get_adjusted_variables(tree))
+
+        self.adjustment_set = sorted(list(adjustment_set))
 
     def _setup_covariates(self, df: pd.DataFrame) -> pd.Series:
         """

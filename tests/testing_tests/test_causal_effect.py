@@ -11,10 +11,7 @@ class TestCausalEffect(unittest.TestCase):
 
     def setUp(self) -> None:
         self.estimator = LinearRegressionEstimator(
-            treatment_variable="A",
-            outcome_variable="B",
-            treatment_value=1,
-            control_value=0,
+            treatment_variable="A", outcome_variable="B", treatment_value=1, control_value=0, adjustment_set=set()
         )
 
     def test_Positive_ate_pass(self):

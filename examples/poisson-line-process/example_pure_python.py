@@ -86,9 +86,6 @@ def test_poisson_intensity_num_shapes(save=False):
                     outcome_variable="num_shapes_unit",
                     treatment_value=treatment_value,
                     control_value=control_value,
-                    adjustment_set=causal_dag.identification(
-                        treatment_variable="intensity", outcome_variable="num_shapes_unit"
-                    ),
                     formula="num_shapes_unit ~ I(intensity ** 2) + intensity - 1",
                     alpha=0.05,
                 ),
@@ -130,10 +127,6 @@ def test_poisson_width_num_shapes(save=False):
                 outcome_variable="num_shapes_unit",
                 treatment_value=w + 1.0,
                 control_value=float(w),
-                adjustment_set=causal_dag.identification(
-                    treatment_variable="width",
-                    outcome_variable="num_shapes_unit",
-                ),
                 adjustment_config={"intensity": i},
                 formula="num_shapes_unit ~ width + I(intensity ** 2)+I(width ** -1)+intensity-1",
                 alpha=0.05,
