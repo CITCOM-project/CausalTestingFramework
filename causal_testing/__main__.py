@@ -223,7 +223,7 @@ def main() -> None:
             unnamed_columns = [c for c in df.columns if c.startswith("Unnamed: ")]
             if unnamed_columns:
                 warn(f"Dropping unnamed columns: {unnamed_columns}")
-            df = df.loc[:, ~df.columns.str.contains("^Unnamed: ")]
+            df = df.drop(unnamed_columns)
 
             discover_class = discover_map[args.technique].load()
             discover = discover_class(
