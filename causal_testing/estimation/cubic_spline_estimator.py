@@ -10,8 +10,6 @@ from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.specification.variable import Variable
-from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -26,38 +24,32 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        base_test_case: BaseTestCase,
+        treatment_variable: str,
+        outcome_variable: str,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
         basis: int,
-        effect_modifiers: dict[Variable, Any] = None,
+        adjustment_config: dict[str, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
-        expected_relationship=None,
-        adjustment_config: dict[Variable, Any] = None,
     ):
         super().__init__(
-            base_test_case=base_test_case,
+            treatment_variable=treatment_variable,
+            outcome_variable=outcome_variable,
             treatment_value=treatment_value,
             control_value=control_value,
             adjustment_set=adjustment_set,
-            effect_modifiers=effect_modifiers,
+            adjustment_config=adjustment_config,
             formula=formula,
             alpha=alpha,
         )
 
-        self.expected_relationship = expected_relationship
         self.adjustment_config = adjustment_config
 
-        if effect_modifiers is None:
-            effect_modifiers = {}
-
         if formula is None:
-            terms = (
-                [base_test_case.treatment_variable.name] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            )
-            self.formula = f"{base_test_case.outcome_variable.name} ~ cr({'+'.join(terms)}, df={basis})"
+            terms = [treatment_variable] + sorted(list(adjustment_set))
+            self.formula = f"{outcome_variable} ~ cr({'+'.join(terms)}, df={basis})"
 
     def fit_model(self, df: pd.DataFrame) -> RegressionResultsWrapper:
         """Run linear regression of the treatment and adjustment set against the outcome and return the model.
@@ -83,17 +75,14 @@ class CubicSplineRegressionEstimator(LinearRegressionEstimator):
         """
         model = self.fit_model(df)
 
-        x = pd.DataFrame({"Intercept": [1], self.base_test_case.treatment_variable.name: [self.treatment_value]})
+        x = pd.DataFrame({"Intercept": [1], self.treatment_variable: [self.treatment_value]})
         if self.adjustment_config is not None:
             for k, v in self.adjustment_config.items():
-                x[k] = v
-        if self.effect_modifiers is not None:
-            for k, v in self.effect_modifiers.items():
                 x[k] = v
 
         treatment = model.predict(x).iloc[0]
 
-        x[self.base_test_case.treatment_variable.name] = self.control_value
+        x[self.treatment_variable] = self.control_value
         control = model.predict(x).iloc[0]
 
         return EffectEstimate("ate", pd.Series(treatment - control))

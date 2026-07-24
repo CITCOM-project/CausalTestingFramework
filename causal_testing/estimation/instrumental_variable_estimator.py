@@ -9,7 +9,6 @@ import statsmodels.api as sm
 
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
-from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,8 @@ class InstrumentalVariableEstimator(Estimator):
         # pylint: disable=too-many-arguments
         # pylint: disable=duplicate-code
         self,
-        base_test_case: BaseTestCase,
+        outcome_variable: str,
+        treatment_variable: str,
         treatment_value: float,
         control_value: float,
         adjustment_set: set,
@@ -33,11 +33,11 @@ class InstrumentalVariableEstimator(Estimator):
         bootstrap_size=100,
     ):
         super().__init__(
-            base_test_case=base_test_case,
+            treatment_variable=treatment_variable,
+            outcome_variable=outcome_variable,
             treatment_value=treatment_value,
             control_value=control_value,
             adjustment_set=adjustment_set,
-            effect_modifiers=None,
             alpha=alpha,
         )
 
@@ -67,10 +67,10 @@ class InstrumentalVariableEstimator(Estimator):
         outcome.
         """
         # Estimate the total effect of instrument I on outcome Y = abI + c1
-        ab = sm.OLS(df[self.base_test_case.outcome_variable.name], df[[self.instrument]]).fit().params[self.instrument]
+        ab = sm.OLS(df[self.outcome_variable], df[[self.instrument]]).fit().params[self.instrument]
 
         # Estimate the direct effect of instrument I on treatment X = aI + c1
-        a = sm.OLS(df[self.base_test_case.treatment_variable.name], df[[self.instrument]]).fit().params[self.instrument]
+        a = sm.OLS(df[self.treatment_variable], df[[self.instrument]]).fit().params[self.instrument]
 
         # Estimate the coefficient of I on X by cancelling
         return ab / a
@@ -87,3 +87,11 @@ class InstrumentalVariableEstimator(Estimator):
         ci_high = pd.Series(bootstraps[self.bootstrap_size - bound])
 
         return EffectEstimate("coefficient", pd.Series(self.iv_coefficient(df)), ci_low, ci_high)
+
+    def to_dict(self) -> dict:
+        """
+        Convert the estimator to a python dictionary for easy serialisation as JSON or CSV.
+
+        :returns: A JSON serialisable dict representing the estimator.
+        """
+        return super().to_dict() | {"instrument": self.instrument, "bootstrap_size": self.bootstrap_size}

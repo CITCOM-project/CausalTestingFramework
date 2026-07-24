@@ -1,4 +1,5 @@
 import unittest
+
 import pandas as pd
 
 from causal_testing.estimation.genetic_programming_regression_fitter import GP

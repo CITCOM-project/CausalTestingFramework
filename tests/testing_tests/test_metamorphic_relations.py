@@ -1,19 +1,16 @@
-import unittest
 import os
-import shutil, tempfile
-import json
+import shutil
+import tempfile
+import unittest
 
+from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
-from causal_testing.testing.metamorphic_relation import (
-    ShouldCause,
-    ShouldNotCause,
-    generate_metamorphic_relations,
-    generate_metamorphic_relation,
-    generate_causal_tests,
-)
-from causal_testing.specification.variable import Input, Output
-from causal_testing.testing.base_test_case import BaseTestCase
+from causal_testing.testing.causal_effect import NoEffect, SomeEffect
+from causal_testing.testing.causal_test_case import CausalTestCase
+
+
+def sort_test_dict(test: dict):
+    return test["name"]
 
 
 class TestMetamorphicRelation(unittest.TestCase):
@@ -28,304 +25,137 @@ class TestMetamorphicRelation(unittest.TestCase):
         with open(self.dcg_dot_path, "w") as f:
             f.write(dcg_dot)
 
-        X1 = Input("X1", float)
-        X2 = Input("X2", float)
-        X3 = Input("X3", float)
-        Z = Output("Z", float)
-        M = Output("M", float)
-        Y = Output("Y", float)
-        self.scenario = Scenario(variables={X1, X2, X3, Z, M, Y})
         self.default_control_input_config = {"X1": 1, "X2": 2, "X3": 3}
         self.default_treatment_input_config = {"X1": 2, "X2": 3, "X3": 3}
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
 
-    def test_json_stub_invalid_estimator(self):
-        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
-        and there is only a single input."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.remove_nodes_from(["X2", "X3"])
-        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_not_cause_mr = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
-        with self.assertRaises(ValueError) as e:
-            should_not_cause_mr.to_json_stub(estimator="InvalidEstimator")
-            self.assertTrue(e.exception.startswith("Unsupported estimator estimator InvalidEstimator."))
-
-    def test_should_not_cause_json_stub(self):
-        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
-        and there is only a single input."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.remove_nodes_from(["X2", "X3"])
-        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_not_cause_mr = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
-        self.assertEqual(
-            should_not_cause_mr.to_json_stub(),
-            {
-                "effect": "direct",
-                "estimate_type": "coefficient",
-                "estimator": "LinearRegressionEstimator",
-                "expected_effect": {"Z": "NoEffect"},
-                "treatment_variable": "X1",
-                "name": "X1 _||_ Z",
-                "estimator_kwargs": {"formula": "Z ~ X1"},
-                "alpha": 0.05,
-                "skip": False,
-            },
-        )
-
-    def test_should_not_cause_logistic_json_stub(self):
-        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
-        and there is only a single input."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.remove_nodes_from(["X2", "X3"])
-        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_not_cause_mr = ShouldNotCause(BaseTestCase("X1", "Z"), adj_set)
-        self.assertEqual(
-            should_not_cause_mr.to_json_stub(
-                effect_type="total", estimate_type="unit_odds_ratio", estimator="LogisticRegressionEstimator"
-            ),
-            {
-                "effect": "total",
-                "estimate_type": "unit_odds_ratio",
-                "estimator": "LogisticRegressionEstimator",
-                "expected_effect": {"Z": "NoEffect"},
-                "treatment_variable": "X1",
-                "name": "X1 _||_ Z",
-                "estimator_kwargs": {"formula": "Z ~ X1"},
-                "alpha": 0.05,
-                "skip": False,
-            },
-        )
-
-    def test_should_cause_json_stub(self):
-        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
-        and there is only a single input."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.remove_nodes_from(["X2", "X3"])
-        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_cause_mr = ShouldCause(BaseTestCase("X1", "Z"), adj_set)
-        self.assertEqual(
-            should_cause_mr.to_json_stub(),
-            {
-                "effect": "direct",
-                "estimate_type": "coefficient",
-                "estimator": "LinearRegressionEstimator",
-                "expected_effect": {"Z": "SomeEffect"},
-                "estimator_kwargs": {"formula": "Z ~ X1"},
-                "treatment_variable": "X1",
-                "name": "X1 --> Z",
-                "alpha": 0.05,
-                "skip": False,
-            },
-        )
-
-    def test_should_cause_logistic_json_stub(self):
-        """Test if the ShouldCause MR passes all metamorphic tests where the DAG perfectly represents the program
-        and there is only a single input."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.remove_nodes_from(["X2", "X3"])
-        adj_set = list(causal_dag.direct_effect_adjustment_sets(["X1"], ["Z"])[0])
-        should_cause_mr = ShouldCause(BaseTestCase("X1", "Z"), adj_set)
-        self.assertEqual(
-            should_cause_mr.to_json_stub(
-                effect_type="total",
-                estimate_type="unit_odds_ratio",
-                estimator="LogisticRegressionEstimator",
-                skip=False,
-            ),
-            {
-                "effect": "total",
-                "estimate_type": "unit_odds_ratio",
-                "estimator": "LogisticRegressionEstimator",
-                "expected_effect": {"Z": "SomeEffect"},
-                "estimator_kwargs": {"formula": "Z ~ X1"},
-                "treatment_variable": "X1",
-                "name": "X1 --> Z",
-                "alpha": 0.05,
-                "skip": False,
-            },
-        )
-
     def test_all_metamorphic_relations_implied_by_dag(self):
-        dag = CausalDAG(self.dag_dot_path)
-        print(dag)
+        dag = CausalDAG(self.dag_dot_path, datatypes={v: float for v in {"X1", "X2", "X3", "Y", "Z", "M"}})
         dag.add_edge("Z", "Y")  # Add a direct path from Z to Y so M becomes a mediator
-        metamorphic_relations = generate_metamorphic_relations(dag)
 
-        expected_relations = [
-            ShouldCause(BaseTestCase("X1", "Z"), []),
-            ShouldNotCause(BaseTestCase("X1", "M"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X1", "Y"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X1", "X2"), []),
-            ShouldNotCause(BaseTestCase("X2", "X1"), []),
-            ShouldNotCause(BaseTestCase("X1", "X3"), []),
-            ShouldNotCause(BaseTestCase("X3", "X1"), []),
-            ShouldCause(BaseTestCase("Z", "M"), []),
-            ShouldCause(BaseTestCase("Z", "Y"), ["M"]),
-            ShouldCause(BaseTestCase("X2", "Z"), []),
-            ShouldNotCause(BaseTestCase("Z", "X3"), []),
-            ShouldNotCause(BaseTestCase("X3", "Z"), []),
-            ShouldCause(BaseTestCase("M", "Y"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X2", "M"), ["Z"]),
-            ShouldCause(BaseTestCase("X3", "M"), []),
-            ShouldNotCause(BaseTestCase("X2", "Y"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X3", "Y"), ["M", "Z"]),
-            ShouldNotCause(BaseTestCase("X2", "X3"), []),
-            ShouldNotCause(BaseTestCase("X3", "X2"), []),
-        ]
+        expected_tests = []
+        for treatment, outcome in dag.edges:
+            expected_tests.append(
+                CausalTestCase(
+                    expected_causal_effect=SomeEffect(),
+                    effect_measure="coefficient",
+                    estimator=LinearRegressionEstimator(
+                        treatment_variable=treatment,
+                        outcome_variable=outcome,
+                        adjustment_set=dag.identification(treatment_variable=treatment, outcome_variable=outcome),
+                    ),
+                    name=f"{treatment} -> {outcome}",
+                    skip=False,
+                )
+            )
+        for treatment, outcome in [
+            ("X1", "M"),
+            ("X1", "Y"),
+            ("X1", "X2"),
+            ("X2", "X1"),
+            ("X1", "X3"),
+            ("X3", "X1"),
+            ("Z", "X3"),
+            ("X3", "Z"),
+            ("X2", "M"),
+            ("X2", "Y"),
+            ("X3", "Y"),
+            ("X2", "X3"),
+            ("X3", "X2"),
+        ]:
+            expected_tests.append(
+                CausalTestCase(
+                    expected_causal_effect=NoEffect(),
+                    effect_measure="coefficient",
+                    estimator=LinearRegressionEstimator(
+                        treatment_variable=treatment,
+                        outcome_variable=outcome,
+                        adjustment_set=dag.identification(treatment_variable=treatment, outcome_variable=outcome),
+                    ),
+                    name=f"{treatment} _||_ {outcome}",
+                    skip=False,
+                )
+            )
 
-        self.assertEqual(expected_relations, metamorphic_relations)
+        self.assertEqual(
+            sorted(map(lambda t: t.to_dict(), expected_tests), key=sort_test_dict),
+            sorted(map(lambda t: t.to_dict(), dag.generate_causal_tests()), key=sort_test_dict),
+        )
 
     def test_all_metamorphic_relations_implied_by_dag_parallel(self):
-        dag = CausalDAG(self.dag_dot_path)
+        dag = CausalDAG(self.dag_dot_path, datatypes={v: float for v in {"X1", "X2", "X3", "Y", "Z", "M"}})
         dag.add_edge("Z", "Y")  # Add a direct path from Z to Y so M becomes a mediator
-        metamorphic_relations = generate_metamorphic_relations(dag, threads=2)
 
-        expected_relations = [
-            ShouldCause(BaseTestCase("X1", "Z"), []),
-            ShouldNotCause(BaseTestCase("X1", "M"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X1", "Y"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X1", "X2"), []),
-            ShouldNotCause(BaseTestCase("X2", "X1"), []),
-            ShouldNotCause(BaseTestCase("X1", "X3"), []),
-            ShouldNotCause(BaseTestCase("X3", "X1"), []),
-            ShouldCause(BaseTestCase("Z", "M"), []),
-            ShouldCause(BaseTestCase("Z", "Y"), ["M"]),
-            ShouldCause(BaseTestCase("X2", "Z"), []),
-            ShouldNotCause(BaseTestCase("Z", "X3"), []),
-            ShouldNotCause(BaseTestCase("X3", "Z"), []),
-            ShouldCause(BaseTestCase("M", "Y"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X2", "M"), ["Z"]),
-            ShouldCause(BaseTestCase("X3", "M"), []),
-            ShouldNotCause(BaseTestCase("X2", "Y"), ["Z"]),
-            ShouldNotCause(BaseTestCase("X3", "Y"), ["M", "Z"]),
-            ShouldNotCause(BaseTestCase("X2", "X3"), []),
-            ShouldNotCause(BaseTestCase("X3", "X2"), []),
-        ]
+        expected_tests = []
+        for treatment, outcome in dag.edges:
+            expected_tests.append(
+                CausalTestCase(
+                    expected_causal_effect=SomeEffect(),
+                    effect_measure="coefficient",
+                    estimator=LinearRegressionEstimator(
+                        treatment_variable=treatment,
+                        outcome_variable=outcome,
+                        adjustment_set=dag.identification(treatment_variable=treatment, outcome_variable=outcome),
+                    ),
+                    name=f"{treatment} -> {outcome}",
+                    skip=False,
+                )
+            )
+        # We can't just do "nx.non_edges" here, since some independences are bidirectional (if there is no path from
+        # X -> ... -> Y) and some are unidirectional (if X -> Y is not in the DAG but X -> ... -> Y is).
+        for treatment, outcome in [
+            ("X1", "M"),
+            ("X1", "Y"),
+            ("X1", "X2"),
+            ("X2", "X1"),
+            ("X1", "X3"),
+            ("X3", "X1"),
+            ("Z", "X3"),
+            ("X3", "Z"),
+            ("X2", "M"),
+            ("X2", "Y"),
+            ("X3", "Y"),
+            ("X2", "X3"),
+            ("X3", "X2"),
+        ]:
+            expected_tests.append(
+                CausalTestCase(
+                    expected_causal_effect=NoEffect(),
+                    effect_measure="coefficient",
+                    estimator=LinearRegressionEstimator(
+                        treatment_variable=treatment,
+                        outcome_variable=outcome,
+                        adjustment_set=dag.identification(treatment_variable=treatment, outcome_variable=outcome),
+                    ),
+                    name=f"{treatment} _||_ {outcome}",
+                    skip=False,
+                )
+            )
 
-        self.assertEqual(expected_relations, metamorphic_relations)
+        self.assertEqual(
+            sorted(map(lambda t: t.to_dict(), expected_tests), key=sort_test_dict),
+            sorted(map(lambda t: t.to_dict(), dag.generate_causal_tests(threads=2)), key=sort_test_dict),
+        )
 
     def test_all_metamorphic_relations_implied_by_dag_ignore_cycles(self):
-        dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True)
-        metamorphic_relations = generate_metamorphic_relations(dcg, threads=2, nodes_to_ignore=set(dcg.cycle_nodes()))
-        should_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldCause)]
-        should_not_cause_relations = [mr for mr in metamorphic_relations if isinstance(mr, ShouldNotCause)]
+        dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True, datatypes={v: float for v in {"a", "b", "c", "d"}})
 
-        # Check all ShouldCause relations are present and no extra
-
-        self.assertEqual(
-            should_cause_relations,
-            [
-                ShouldCause(BaseTestCase("a", "b"), []),
-            ],
-        )
-        self.assertEqual(
-            should_not_cause_relations,
-            [],
-        )
-
-    def test_generate_metamorphic_relation_(self):
-        dag = CausalDAG(self.dag_dot_path)
-        [metamorphic_relation] = generate_metamorphic_relation(("X1", "Z"), dag)
-        self.assertEqual(
-            metamorphic_relation,
-            ShouldCause(BaseTestCase("X1", "Z"), []),
-        )
-
-    def test_generate_causal_tests_ignore_cycles(self):
-        dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True)
-        relations = generate_metamorphic_relations(dcg, nodes_to_ignore=set(dcg.cycle_nodes()))
-        with tempfile.TemporaryDirectory() as tmp:
-            tests_file = os.path.join(tmp, "causal_tests.json")
-            generate_causal_tests(self.dcg_dot_path, tests_file, ignore_cycles=True)
-            with open(tests_file, encoding="utf8") as f:
-                tests = json.load(f)
-            expected = list(
-                map(
-                    lambda x: x.to_json_stub(skip=False),
-                    filter(
-                        lambda relation: len(list(dcg.predecessors(relation.base_test_case.outcome_variable))) > 0,
-                        relations,
-                    ),
-                )
+        expected_tests = [
+            CausalTestCase(
+                expected_causal_effect=SomeEffect(),
+                effect_measure="coefficient",
+                estimator=LinearRegressionEstimator(
+                    treatment_variable="a",
+                    outcome_variable="b",
+                    adjustment_set=dcg.identification(treatment_variable="a", outcome_variable="b"),
+                ),
+                name="a -> b",
+                skip=False,
             )
-            self.assertEqual(tests["tests"], expected)
-
-    def test_generate_causal_tests(self):
-        dag = CausalDAG(self.dag_dot_path)
-        relations = generate_metamorphic_relations(dag)
-        with tempfile.TemporaryDirectory() as tmp:
-            tests_file = os.path.join(tmp, "causal_tests.json")
-            generate_causal_tests(self.dag_dot_path, tests_file)
-            with open(tests_file, encoding="utf8") as f:
-                tests = json.load(f)
-            expected = list(
-                map(
-                    lambda x: x.to_json_stub(skip=False),
-                    filter(
-                        lambda relation: len(list(dag.predecessors(relation.base_test_case.outcome_variable))) > 0,
-                        relations,
-                    ),
-                )
-            )
-            self.assertEqual(tests["tests"], expected)
-
-    def test_generate_causal_tests_test_inputs(self):
-        dag = CausalDAG(self.dag_dot_path)
-        relations = generate_metamorphic_relations(dag)
-        with tempfile.TemporaryDirectory() as tmp:
-            tests_file = os.path.join(tmp, "causal_tests.json")
-            generate_causal_tests(self.dag_dot_path, tests_file, test_inputs=True)
-            with open(tests_file, encoding="utf8") as f:
-                tests = json.load(f)
-            expected = list(
-                map(
-                    lambda x: x.to_json_stub(skip=False),
-                    relations,
-                )
-            )
-            self.assertEqual(tests["tests"], expected)
-
-    def test_shoud_cause_string(self):
-        sc_mr = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
-        self.assertEqual(str(sc_mr), "X --> Y | ['A', 'B', 'C']")
-
-    def test_shoud_not_cause_string(self):
-        sc_mr = ShouldNotCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
-        self.assertEqual(str(sc_mr), "X _||_ Y | ['A', 'B', 'C']")
-
-    def test_equivalent_metamorphic_relations(self):
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
-        self.assertEqual(sc_mr_a == sc_mr_b, True)
-
-    def test_equivalent_metamorphic_relations_empty_adjustment_set(self):
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
-        self.assertEqual(sc_mr_a == sc_mr_b, True)
-
-    def test_equivalent_metamorphic_relations_different_order_adjustment_set(self):
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A", "B", "C"])
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), ["C", "A", "B"])
-        self.assertEqual(sc_mr_a == sc_mr_b, True)
-
-    def test_different_metamorphic_relations_empty_adjustment_set_different_outcome(self):
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Z"), [])
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
-        self.assertEqual(sc_mr_a == sc_mr_b, False)
-
-    def test_different_metamorphic_relations_empty_adjustment_set_different_treatment(self):
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
-        sc_mr_b = ShouldCause(BaseTestCase("Z", "Y"), [])
-        self.assertEqual(sc_mr_a == sc_mr_b, False)
-
-    def test_different_metamorphic_relations_empty_adjustment_set_adjustment_set(self):
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), ["A"])
-        sc_mr_b = ShouldCause(BaseTestCase("X", "Y"), [])
-        self.assertEqual(sc_mr_a == sc_mr_b, False)
-
-    def test_different_metamorphic_relations_different_type(self):
-        sc_mr_a = ShouldCause(BaseTestCase("X", "Y"), [])
-        sc_mr_b = ShouldNotCause(BaseTestCase("X", "Y"), [])
-        self.assertEqual(sc_mr_a == sc_mr_b, False)
+        ]
+        self.assertEqual(
+            sorted(map(lambda t: t.to_dict(), expected_tests), key=sort_test_dict),
+            sorted(map(lambda t: t.to_dict(), dcg.generate_causal_tests(threads=2)), key=sort_test_dict),
+        )

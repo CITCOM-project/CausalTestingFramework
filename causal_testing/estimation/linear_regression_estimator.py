@@ -52,8 +52,8 @@ class LinearRegressionEstimator(RegressionEstimator):
         """
         gp = GP(
             df=df,
-            features=sorted(list(self.adjustment_set.union([self.base_test_case.treatment_variable.name]))),
-            outcome=self.base_test_case.outcome_variable.name,
+            features=sorted(list(self.adjustment_set.union([self.treatment_variable]))),
+            outcome=self.outcome_variable,
             extra_operators=extra_operators,
             sympy_conversions=sympy_conversions,
             seed=seed,
@@ -61,7 +61,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         )
         formula = gp.run_gp(ngen=ngen, pop_size=pop_size, num_offspring=num_offspring, seeds=seeds)
         formula = gp.simplify(formula)
-        self.formula = f"{self.base_test_case.outcome_variable.name} ~ I({formula}) - 1"
+        self.formula = f"{self.outcome_variable} ~ I({formula}) - 1"
         self._setup_covariates(df)
 
     def estimate_coefficient(self, df: pd.DataFrame) -> EffectEstimate:
@@ -73,7 +73,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         """
         model = self.fit_model(df)
         newline = "\n"
-        patsy_md = ModelDesc.from_formula(self.base_test_case.treatment_variable.name)
+        patsy_md = ModelDesc.from_formula(self.treatment_variable)
 
         if any(
             (
@@ -84,19 +84,14 @@ class LinearRegressionEstimator(RegressionEstimator):
             )
         ):
             design_info = dmatrix(self.formula.split("~")[1], df).design_info
-            treatment = design_info.column_names[
-                design_info.term_name_slices[self.base_test_case.treatment_variable.name]
-            ]
+            treatment = design_info.column_names[design_info.term_name_slices[self.treatment_variable]]
         else:
-            treatment = [self.base_test_case.treatment_variable.name]
+            treatment = [self.treatment_variable]
         assert set(treatment).issubset(
             model.params.index.tolist()
         ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
         unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
         [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
-
-        if len(unit_effect) == 0:
-            unit_effect = pd.Series({self.base_test_case.treatment_variable.name: None})
 
         return EffectEstimate("coefficient", unit_effect, ci_low, ci_high)
 
@@ -117,8 +112,8 @@ class LinearRegressionEstimator(RegressionEstimator):
 
         # It is ABSOLUTELY CRITICAL that these go last, otherwise we can't index
         # the effect with "ate = t_test_results.effect[0]"
-        individuals.loc["control", [self.base_test_case.treatment_variable.name]] = self.control_value
-        individuals.loc["treated", [self.base_test_case.treatment_variable.name]] = self.treatment_value
+        individuals.loc["control", [self.treatment_variable]] = self.control_value
+        individuals.loc["treated", [self.treatment_variable]] = self.treatment_value
 
         # Perform a t-test to compare the predicted outcome of the control and treated individual (ATE)
         t_test_results = model.t_test(individuals.loc["treated"] - individuals.loc["control"])

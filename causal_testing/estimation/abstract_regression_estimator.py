@@ -1,16 +1,15 @@
 """This module contains the RegressionEstimator, which is an abstract class for concrete regression estimators."""
 
+import ast
 import logging
 from abc import abstractmethod
 from typing import Any
 
 import pandas as pd
-from patsy import dmatrices, dmatrix  # pylint: disable = no-name-in-module
+from patsy import ModelDesc, dmatrices, dmatrix  # pylint: disable = no-name-in-module
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from causal_testing.estimation.abstract_estimator import Estimator
-from causal_testing.specification.variable import Variable
-from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -23,40 +22,87 @@ class RegressionEstimator(Estimator):
     def __init__(
         # pylint: disable=too-many-arguments
         self,
-        base_test_case: BaseTestCase,
-        treatment_value: float = None,
+        treatment_variable: str,
+        outcome_variable: str,
         control_value: float = None,
-        adjustment_set: set = None,
-        effect_modifiers: dict[Variable, Any] = None,
-        adjustment_config: dict[Variable, Any] = None,
+        treatment_value: float = None,
+        adjustment_set: set[str] = None,
+        adjustment_config: dict[str, Any] = None,
         formula: str = None,
         alpha: float = 0.05,
     ):
         # pylint: disable=R0801
         super().__init__(
-            base_test_case=base_test_case,
-            treatment_value=treatment_value,
+            treatment_variable=treatment_variable,
+            outcome_variable=outcome_variable,
             control_value=control_value,
+            treatment_value=treatment_value,
             adjustment_set=adjustment_set,
-            effect_modifiers=effect_modifiers,
             alpha=alpha,
         )
 
-        if effect_modifiers is None:
-            effect_modifiers = {}
-        self.adjustment_config = {} if adjustment_config is None else adjustment_config
-        if adjustment_set is None:
-            adjustment_set = []
         if formula is not None:
             self.formula = formula
+            self._adjustment_set_from_formula()
+            if adjustment_set is not None and set(adjustment_set) != set(self.adjustment_set):
+                raise ValueError(
+                    f"Specified formula {self.formula} does not match specified adjustment set {adjustment_set}"
+                )
+        elif adjustment_set is not None:
+            terms = [treatment_variable] + sorted(list(adjustment_set))
+            self.formula = f"{outcome_variable} ~ {' + '.join(terms)}"
         else:
-            terms = (
-                [base_test_case.treatment_variable.name] + sorted(list(adjustment_set)) + sorted(list(effect_modifiers))
-            )
-            self.formula = f"{base_test_case.outcome_variable.name} ~ {'+'.join(terms)}"
+            raise ValueError("Please specify either a formula or an adjustment set.")
 
-        for term in list(self.effect_modifiers) + list(self.adjustment_config):
-            self.adjustment_set.add(term)
+        self.adjustment_config = adjustment_config if adjustment_config is not None else {}
+        if not set(self.adjustment_config).issubset(self.adjustment_set):
+            raise ValueError(
+                "Specified configuration for variables "
+                f"{sorted([v for v in adjustment_config if v not in self.adjustment_set])} "
+                f"which are not in the adjustment set {self.adjustment_set}."
+            )
+
+    def _get_adjusted_variables(self, tree: ast.AST) -> set[str]:
+        """
+        Recursively return variables in an AST.
+        :returns: Set of all variables not used as part of a function.
+        """
+        if isinstance(tree, ast.Name) and tree.id != self.treatment_variable:
+            return {tree.id}
+        if isinstance(tree, ast.Expression):
+            return self._get_adjusted_variables(tree.body)
+        if isinstance(tree, ast.Call):
+            return set().union(*[self._get_adjusted_variables(arg) for arg in tree.args])
+        if isinstance(tree, ast.BinOp):
+            return self._get_adjusted_variables(tree.left).union(self._get_adjusted_variables(tree.right))
+        return set()
+
+    def _adjustment_set_from_formula(self):
+        """
+        Set up the adjustment set from the formula string.
+        """
+        desc = ModelDesc.from_formula(self.formula)
+
+        # Check that the outcome variable is the dependent variable specified in the formula
+        if desc.lhs_termlist:
+            if [self.outcome_variable] != [term.name() for term in desc.lhs_termlist]:
+                raise ValueError(
+                    f"Left hand side of formula {self.formula} does not match the specified outcome_variable "
+                    f"{self.outcome_variable}."
+                )
+        # If no dependent variable is specified, make it the outcome variable
+        else:
+            self.formula = f"{self.outcome_variable} ~ {self.formula}"
+
+        raw_factors = {factor.code for term in desc.rhs_termlist for factor in term.factors}
+
+        adjustment_set = set()
+
+        for code in raw_factors:
+            tree = ast.parse(code, mode="eval")
+            adjustment_set = adjustment_set.union(self._get_adjusted_variables(tree))
+
+        self.adjustment_set = sorted(list(adjustment_set))
 
     def _setup_covariates(self, df: pd.DataFrame) -> pd.Series:
         """
@@ -99,7 +145,7 @@ class RegressionEstimator(Estimator):
         :return: The model after fitting to data.
         """
         covariates, df = self._setup_covariates(df)
-        model = self.regressor(df[self.base_test_case.outcome_variable.name], df[covariates]).fit(disp=0)
+        model = self.regressor(df[self.outcome_variable], df[covariates]).fit(disp=0)
         return model
 
     def treatment_columns(self, model: RegressionResultsWrapper) -> list[str]:
@@ -115,8 +161,7 @@ class RegressionEstimator(Estimator):
         return [
             param
             for param in model.params.index
-            if param == self.base_test_case.treatment_variable.name
-            or param.startswith(self.base_test_case.treatment_variable.name + "[")
+            if param == self.treatment_variable or param.startswith(self.treatment_variable + "[")
         ]
 
     def _predict(self, df) -> pd.DataFrame:
@@ -132,15 +177,23 @@ class RegressionEstimator(Estimator):
 
         x = pd.DataFrame(columns=df.columns)
         x["Intercept"] = 1  # self.intercept
-        x[self.base_test_case.treatment_variable.name] = [self.treatment_value, self.control_value]
+        x[self.treatment_variable] = [self.treatment_value, self.control_value]
 
         for k, v in self.adjustment_config.items():
             x[k] = v
-        for k, v in self.effect_modifiers.items():
-            x[k] = v
         x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
-        for col in x:
-            if str(x.dtypes[col]) == "object":
-                x = pd.get_dummies(x, columns=[col], drop_first=True)
 
         return model.get_prediction(x).summary_frame()
+
+    def to_dict(self) -> dict:
+        """
+        Convert the estimator to a python dictionary for easy serialisation as JSON or CSV.
+
+        :returns: A JSON serialisable dict representing the estimator.
+        """
+        result = super().to_dict()
+        if self.adjustment_config:
+            result["adjustment_config"] = self.adjustment_config
+        if self.formula:
+            result["formula"] = self.formula
+        return result

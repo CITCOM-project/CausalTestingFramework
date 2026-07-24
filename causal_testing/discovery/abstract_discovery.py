@@ -6,7 +6,6 @@ import random
 import re
 import warnings
 from abc import ABC, abstractmethod
-from enum import Enum
 from itertools import permutations
 
 import networkx as nx
@@ -16,12 +15,9 @@ import rustworkx as rx
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
 from causal_testing.testing.causal_effect import Negative, Positive
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.metamorphic_relation import generate_metamorphic_relations
-
-TestResult = Enum("TestResult", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
+from causal_testing.testing.causal_test_result import TestOutcome
 
 # Ignore warnings from statsmodels when we try to evaluate test cases
 warnings.simplefilter("ignore")
@@ -108,12 +104,12 @@ class Discovery(ABC):
         :param test_case: The causal test case.
         :returns: Whether the estimated causal test is positive or negative (or no effect).
         """
-        if pd.api.types.is_numeric_dtype(
-            self.df[test_case.base_test_case.treatment_variable.name]
-        ) and pd.api.types.is_numeric_dtype(self.df[test_case.base_test_case.outcome_variable.name]):
-            if Negative().apply(test_case.result):
+        if pd.api.types.is_numeric_dtype(self.df[test_case.treatment_variable]) and pd.api.types.is_numeric_dtype(
+            self.df[test_case.outcome_variable]
+        ):
+            if Negative().apply(test_case.result.effect_estimate):
                 return "negative"
-            if Positive().apply(test_case.result):
+            if Positive().apply(test_case.result.effect_estimate):
                 return "positive"
         return None
 
@@ -148,15 +144,15 @@ class Discovery(ABC):
 
                     print(test)
 
-                    if test["result"] == TestResult.PASS:
+                    if test["result"] == TestOutcome.PASS:
                         print("  GREEN")
                         individual[test["treatment"]][test["outcome"]]["color"] = "green"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "green"
-                    elif test["result"] == TestResult.INESTIMABLE:
+                    elif test["result"] == TestOutcome.INESTIMABLE:
                         print("  ORANGE")
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
-                    elif test["result"] == TestResult.FAIL:
+                    elif test["result"] == TestOutcome.FAIL:
                         print("  RED")
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
@@ -166,13 +162,13 @@ class Discovery(ABC):
                     individual.add_edge(test["treatment"], test["outcome"], ignore_cycles=True)
                     individual[test["treatment"]][test["outcome"]]["style"] = "dashed"
                     individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
-                    if test["result"] == TestResult.PASS:
+                    if test["result"] == TestOutcome.PASS:
                         individual[test["treatment"]][test["outcome"]]["style"] = "invis"
                         individual[test["treatment"]][test["outcome"]]["constraint"] = False
-                    elif test["result"] == TestResult.INESTIMABLE:
+                    elif test["result"] == TestOutcome.INESTIMABLE:
                         individual[test["treatment"]][test["outcome"]]["color"] = "orange"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
-                    elif test["result"] == TestResult.FAIL:
+                    elif test["result"] == TestOutcome.FAIL:
                         individual[test["treatment"]][test["outcome"]]["color"] = "red"
                         individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
                     else:
@@ -182,11 +178,11 @@ class Discovery(ABC):
 
     def _json_stub_params(self, outcome: str) -> str:
         if pd.api.types.is_bool_dtype(self.df[outcome]):
-            return {"estimator": "LogisticRegressionEstimator", "estimate_type": "unit_odds_ratio"}
+            return {"estimator": "LogisticRegressionEstimator", "effect_measure": "unit_odds_ratio"}
         if pd.api.types.is_categorical_dtype(self.df[outcome]) or pd.api.types.is_object_dtype(self.df[outcome]):
-            return {"estimator": "MultinomialRegressionEstimator", "estimate_type": "unit_odds_ratio"}
+            return {"estimator": "MultinomialRegressionEstimator", "effect_measure": "unit_odds_ratio"}
         if pd.api.types.is_numeric_dtype(self.df[outcome]):
-            return {"estimator": "LinearRegressionEstimator", "estimate_type": "coefficient"}
+            return {"estimator": "LinearRegressionEstimator", "effect_measure": "coefficient"}
         raise ValueError(f"Invalid datatype {self.df.dtypes[outcome]}")
 
     def evaluate_tests(self, causal_dag: CausalDAG) -> pd.DataFrame:
@@ -201,18 +197,8 @@ class Discovery(ABC):
         """
 
         ctf = CausalTestingFramework(dag=causal_dag, df=self.df)
-        ctf.create_variables()
-        ctf.scenario = Scenario(list(ctf.variables["inputs"].values()) + list(ctf.variables["outputs"].values()))
-
-        ctf.test_cases = [
-            ctf.create_causal_test(
-                relation.to_json_stub(
-                    alpha=self.alpha,
-                    **self._json_stub_params(relation.base_test_case.outcome_variable),
-                )
-            )
-            for relation in generate_metamorphic_relations(causal_dag)
-        ]
+        causal_dag.datatypes = self.df.dtypes
+        ctf.test_cases = causal_dag.generate_causal_tests()
 
         results = []
 
@@ -222,23 +208,23 @@ class Discovery(ABC):
                 results.append(
                     {
                         "result": (
-                            TestResult.PASS
-                            if test_case.expected_causal_effect.apply(test_case.result)
-                            else TestResult.FAIL
+                            TestOutcome.PASS
+                            if test_case.expected_causal_effect.apply(test_case.result.effect_estimate)
+                            else TestOutcome.FAIL
                         ),
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
-                        "treatment": test_case.base_test_case.treatment_variable.name,
-                        "outcome": test_case.base_test_case.outcome_variable.name,
+                        "treatment": test_case.treatment_variable,
+                        "outcome": test_case.outcome_variable,
                         "effect": self.effect_direction(test_case),
                     }
                 )
             except np.linalg.LinAlgError:
                 results.append(
                     {
-                        "result": TestResult.INESTIMABLE,
+                        "result": TestOutcome.INESTIMABLE,
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
-                        "treatment": test_case.base_test_case.treatment_variable.name,
-                        "outcome": test_case.base_test_case.outcome_variable.name,
+                        "treatment": test_case.treatment_variable,
+                        "outcome": test_case.outcome_variable,
                     }
                 )
 

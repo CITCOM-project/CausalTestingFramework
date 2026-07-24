@@ -5,11 +5,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.testing.base_test_case import BaseTestCase
 
 
 logger = logging.getLogger(__name__)
@@ -37,19 +35,13 @@ def doubling_beta_CATE_on_csv(
     # Read in the observational data, perform identification
     past_execution_df = pd.read_csv(observational_data_path)
 
-    # 2. Create variables
-    cum_infections = Output("cum_infections", int)
-    beta = Input("beta", float)
-
-    # 5. Create a base test case
-    base_test_case = BaseTestCase(treatment_variable=beta, outcome_variable=cum_infections)
-
     # 6. Create a causal test case
     causal_test_case = CausalTestCase(
-        base_test_case=base_test_case,
-        expected_causal_effect=Positive,
+        expected_causal_effect=Positive(),
+        effect_measure="ate",
         estimator=LinearRegressionEstimator(
-            base_test_case=base_test_case,
+            treatment_variable="beta",
+            outcome_variable="cum_infections",
             treatment_value=0.032,
             control_value=0.016,
             adjustment_set={"avg_age", "contacts"},  # We use custom adjustment set
@@ -62,10 +54,11 @@ def doubling_beta_CATE_on_csv(
 
     # Repeat for association estimate (no adjustment)
     causal_test_case = CausalTestCase(
-        base_test_case=base_test_case,
-        expected_causal_effect=Positive,
+        expected_causal_effect=Positive(),
+        effect_measure="ate",
         estimator=LinearRegressionEstimator(
-            base_test_case=base_test_case,
+            treatment_variable="beta",
+            outcome_variable="cum_infections",
             treatment_value=0.032,
             control_value=0.016,
             adjustment_set=set(),

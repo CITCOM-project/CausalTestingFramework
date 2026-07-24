@@ -1,9 +1,6 @@
 import unittest
 
 from causal_testing.estimation.cubic_spline_estimator import CubicSplineRegressionEstimator
-from causal_testing.testing.base_test_case import BaseTestCase
-from causal_testing.specification.variable import Input, Output
-
 from tests.estimation_tests.test_linear_regression_estimator import load_chapter_11_df
 
 
@@ -20,10 +17,13 @@ class TestCubicSplineRegressionEstimator(unittest.TestCase):
 
         df = load_chapter_11_df()
 
-        base_test_case = BaseTestCase(Input("treatments", float), Output("outcomes", float))
-
         cublic_spline_estimator = CubicSplineRegressionEstimator(
-            base_test_case=base_test_case, treatment_value=1, control_value=0, adjustment_set=set(), basis=3
+            treatment_variable="treatments",
+            outcome_variable="outcomes",
+            treatment_value=1,
+            control_value=0,
+            adjustment_set=set(),
+            basis=3,
         )
 
         ate_1 = cublic_spline_estimator.estimate_ate_calculated(df).value

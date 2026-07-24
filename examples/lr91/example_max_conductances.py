@@ -2,13 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Input, Output
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import Positive, Negative, NoEffect
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
-from causal_testing.testing.base_test_case import BaseTestCase
-from matplotlib.pyplot import rcParams
 
 import os
 import logging
@@ -17,6 +13,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 # Uncommenting the code below will make all graphs publication quality but requires a suitable latex installation
+# from matplotlib.pyplot import rcParams
 
 # rc_fonts = {
 #     "font.size": 8,
@@ -38,12 +35,12 @@ def test_sensitivity_analysis():
     # Read in the 200 model runs and define mean value and expected effect
     model_runs = pd.read_csv(f"{ROOT}/data/results.csv")
     conductance_means = {
-        "G_K": (0.5, Positive),
-        "G_b": (0.5, Positive),
-        "G_K1": (0.5, Positive),
-        "G_si": (0.5, Negative),
-        "G_Na": (0.5, NoEffect),
-        "G_Kp": (0.5, NoEffect),
+        "G_K": (0.5, Positive()),
+        "G_b": (0.5, Positive()),
+        "G_K1": (0.5, Positive()),
+        "G_si": (0.5, Negative()),
+        "G_Na": (0.5, NoEffect()),
+        "G_Kp": (0.5, NoEffect()),
     }
 
     # Normalise the inputs as per the original study
@@ -63,8 +60,7 @@ def test_sensitivity_analysis():
         # Perform each causal test for the given input
         for treatment_value in treatment_values:
             mean, oracle = mean_and_oracle
-            conductance_input = Input(conductance_param, float)
-            ate, ci = effects_on_APD90(OBSERVATIONAL_DATA_PATH, conductance_input, 0.5, treatment_value, oracle)
+            ate, ci = effects_on_APD90(OBSERVATIONAL_DATA_PATH, conductance_param, 0.5, treatment_value, oracle)
 
             # Store results
             average_treatment_effects.append(ate)
@@ -83,59 +79,26 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
     :return: ATE for the effect of G_K on APD90
     """
-    # 1. Define Causal DAG
+    # Define Causal DAG
     causal_dag = CausalDAG(f"{ROOT}/dag.dot")
 
-    # 2. Specify all inputs
-    g_na = Input("G_Na", float)
-    g_si = Input("G_si", float)
-    g_k = Input("G_K", float)
-    g_k1 = Input("G_K1", float)
-    g_kp = Input("G_Kp", float)
-    g_b = Input("G_b", float)
-
-    # 3. Specify all outputs
-    max_voltage = Output("max_voltage", float)
-    rest_voltage = Output("rest_voltage", float)
-    max_voltage_gradient = Output("max_voltage_gradient", float)
-    dome_voltage = Output("dome_voltage", float)
-    apd50 = Output("APD50", int)
-    apd90 = Output("APD90", int)
-
-    # 4. Create scenario by applying constraints over a subset of the inputs
-    scenario = Scenario(
-        variables={
-            g_na,
-            g_si,
-            g_k,
-            g_k1,
-            g_kp,
-            g_b,
-            max_voltage,
-            rest_voltage,
-            max_voltage_gradient,
-            dome_voltage,
-            apd50,
-            apd90,
-        },
-        constraints=set(),
-    )
-
-    # 5. Create a causal specification from the scenario and causal DAG
-    base_test_case = BaseTestCase(treatment_var, apd90)
-    # 6. Create a causal test case
+    # Create a causal test case
     causal_test_case = CausalTestCase(
-        base_test_case=base_test_case,
         expected_causal_effect=expected_causal_effect,
+        effect_measure="ate",
         estimator=LinearRegressionEstimator(
-            base_test_case=base_test_case,
+            treatment_variable=treatment_var,
+            outcome_variable="APD90",
             treatment_value=treatment_val,
             control_value=control_val,
-            adjustment_set=causal_dag.identification(base_test_case),
+            adjustment_set=causal_dag.identification(
+                treatment_variable=treatment_var,
+                outcome_variable="APD90",
+            ),
         ),
     )
 
-    # 9. Run the causal test and print results
+    # Run the causal test and print results
     causal_test_case.execute_test(pd.read_csv(observational_data_path))
     logger.info("%s", causal_test_case.result)
     return causal_test_case.result.effect_estimate.value, (

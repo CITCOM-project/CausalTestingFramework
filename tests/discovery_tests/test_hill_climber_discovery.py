@@ -3,10 +3,13 @@ This module tests the Hill Climber Discovery algorithm.
 """
 
 import unittest
+
 import pandas as pd
+
+from causal_testing.discovery.abstract_discovery import simple_cycle
 from causal_testing.discovery.hill_climber_discovery import HillClimberDiscovery
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.discovery.abstract_discovery import TestResult, Discovery, simple_cycle
+from causal_testing.testing.causal_test_result import TestOutcome
 
 
 class TestHillClimber(unittest.TestCase):
@@ -15,70 +18,70 @@ class TestHillClimber(unittest.TestCase):
         test_results = pd.DataFrame(
             [
                 {
-                    "result": TestResult.PASS,
+                    "result": TestOutcome.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "length_in",
                     "outcome": "large_gauge",
                     "effect": "positive",
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestOutcome.INESTIMABLE,
                     "expected_effect": "NoEffect",
                     "treatment": "large_gauge",
                     "outcome": "length_in",
                     "effect": None,
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestOutcome.INESTIMABLE,
                     "expected_effect": "NoEffect",
                     "treatment": "length_in",
                     "outcome": "color",
                     "effect": None,
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestOutcome.INESTIMABLE,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "length_in",
                     "effect": None,
                 },
                 {
-                    "result": TestResult.FAIL,
+                    "result": TestOutcome.FAIL,
                     "expected_effect": "SomeEffect",
                     "treatment": "length_in",
                     "outcome": "completed",
                     "effect": "negative",
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestOutcome.INESTIMABLE,
                     "expected_effect": "NoEffect",
                     "treatment": "large_gauge",
                     "outcome": "color",
                     "effect": None,
                 },
                 {
-                    "result": TestResult.PASS,
+                    "result": TestOutcome.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "large_gauge",
                     "effect": None,
                 },
                 {
-                    "result": TestResult.FAIL,
+                    "result": TestOutcome.FAIL,
                     "expected_effect": "SomeEffect",
                     "treatment": "large_gauge",
                     "outcome": "completed",
                     "effect": "positive",
                 },
                 {
-                    "result": TestResult.PASS,
+                    "result": TestOutcome.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "completed",
                     "effect": None,
                 },
                 {
-                    "result": TestResult.INESTIMABLE,
+                    "result": TestOutcome.INESTIMABLE,
                     "expected_effect": "NoEffect",
                     "treatment": "completed",
                     "outcome": "color",
@@ -86,13 +89,13 @@ class TestHillClimber(unittest.TestCase):
                 },
             ]
         )
-        expected_results = {TestResult.PASS: 1.5, TestResult.FAIL: 2, TestResult.INESTIMABLE: 2.5}
+        expected_results = {TestOutcome.PASS: 1.5, TestOutcome.FAIL: 2, TestOutcome.INESTIMABLE: 2.5}
         hill_climber = HillClimberDiscovery(pd.DataFrame())
         self.assertEqual(expected_results, hill_climber.sum_test_outcomes(test_results))
 
     def test_sum_test_outcomes_uninitialised(self):
         hill_climber = HillClimberDiscovery(pd.DataFrame())
-        expected_results = {TestResult.PASS: 0, TestResult.FAIL: 0, TestResult.INESTIMABLE: 0}
+        expected_results = {TestOutcome.PASS: 0, TestOutcome.FAIL: 0, TestOutcome.INESTIMABLE: 0}
 
         self.assertEqual(
             expected_results, hill_climber.sum_test_outcomes(pd.DataFrame(columns=["treatment", "outcome", "result"]))
