@@ -62,6 +62,92 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         cls.chapter_11_df = load_chapter_11_df()
         cls.scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
 
+    def test_complex_formula_adjustment_set(self):
+        """
+        Test that the adjustment set can be extracted from a complex formula without ignoring variables that share their
+        names with key terms like C (for categoricals) or the treatment variable.
+        """
+        formula = "price ~ depth:color + C(cut, Treatment('Good')) + cr(np.minimum(C, 0.8), df=5, constraints='center')"
+        linear_regression_estimator = LinearRegressionEstimator(
+            treatment_variable="cut", outcome_variable="price", formula=formula
+        )
+        self.assertEqual(linear_regression_estimator.adjustment_set, ["C", "color", "depth"])
+
+    def test_complex_formula_adjustment_set_no_c(self):
+        """
+        Test that key terms are not included in the adjustment set.
+        """
+        formula = "price ~ I(color ** 2) + C(cut, Treatment('Good')) + Q(np.minimum(caret, 0.8))"
+        linear_regression_estimator = LinearRegressionEstimator(
+            treatment_variable="cut", outcome_variable="price", formula=formula
+        )
+        self.assertEqual(linear_regression_estimator.adjustment_set, ["caret", "color"])
+
+    def test_complex_formula_adjustment_set_no_dependent(self):
+        """
+        Test that the outcome variable is prepended to the formula if no dependent variable is specified.
+        """
+        formula = "I(color ** 2) + C(cut, Treatment('Good')) + Q(np.minimum(caret, 0.8))"
+        linear_regression_estimator = LinearRegressionEstimator(
+            treatment_variable="cut", outcome_variable="price", formula=formula
+        )
+        self.assertEqual(linear_regression_estimator.formula, f"price ~ {formula}")
+
+    def test_complex_formula_adjustment_set_wrong_dependent(self):
+        """
+        Test that an error is thrown if there is a mismatch between the outcome variable and the  dependent variable.
+        """
+        formula = "incorrect ~ I(color ** 2) + C(cut, Treatment('Good')) + Q(np.minimum(caret, 0.8))"
+        with self.assertRaises(ValueError) as e:
+            LinearRegressionEstimator(treatment_variable="cut", outcome_variable="price", formula=formula)
+            self.assertEqual(
+                e.exception, "Left hand side of formula incorrect does not match the specified outcome_variable price."
+            )
+
+    def test_formula_from_adjustment_set(self):
+        """
+        Test that the correct formula is built from the adjustment set.
+        """
+        linear_regression_estimator = LinearRegressionEstimator(
+            treatment_variable="cut", outcome_variable="price", adjustment_set={"caret", "color"}
+        )
+        self.assertEqual(linear_regression_estimator.formula, "price ~ cut + caret + color")
+
+    def test_complex_formula_adjustment_set_mismatch(self):
+        """
+        Test that an error is thrown when the adjustment set implied by the formula does not match the one specified.
+        """
+        formula = "price ~ I(color ** 2) + C(cut, Treatment('Good')) + Q(np.minimum(caret, 0.8))"
+        with self.assertRaises(ValueError) as e:
+            LinearRegressionEstimator(
+                treatment_variable="cut", outcome_variable="price", formula=formula, adjustment_set=set()
+            )
+            self.assertEqual(e.exception, f"Specified formula {formula} does not match specified adjustment set set()")
+
+    def test_complex_formula_adjustment_config_mismatch(self):
+        """
+        Test that an error is thrown when the adjustment configuration does not match the adjustment set.
+        """
+        with self.assertRaises(ValueError) as e:
+            LinearRegressionEstimator(
+                treatment_variable="cut",
+                outcome_variable="price",
+                adjustment_set={"caret"},
+                adjustment_config={"color": "green"},
+            )
+            self.assertEqual(
+                e.exception,
+                "Specified configuration for variables [color] which are not in the adjustment set {caret}.",
+            )
+
+    def test_no_formula_of_adjustment_set(self):
+        """
+        Test that an error is thrown when neither the formula nor the adjustment set is specified.
+        """
+        with self.assertRaises(ValueError) as e:
+            LinearRegressionEstimator(treatment_variable="cut", outcome_variable="price")
+            self.assertEqual(e.exception, f"Please specify either a formula or an adjustment set.")
+
     def test_linear_regression_categorical_ate(self):
         df = self.scarf_df.copy()
         linear_regression_estimator = LinearRegressionEstimator(

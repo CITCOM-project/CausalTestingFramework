@@ -50,7 +50,7 @@ class RegressionEstimator(Estimator):
                 )
         elif adjustment_set is not None:
             terms = [treatment_variable] + sorted(list(adjustment_set))
-            self.formula = f"{outcome_variable} ~ {'+'.join(terms)}"
+            self.formula = f"{outcome_variable} ~ {' + '.join(terms)}"
         else:
             raise ValueError("Please specify either a formula or an adjustment set.")
 
@@ -73,6 +73,8 @@ class RegressionEstimator(Estimator):
             return self._get_adjusted_variables(tree.body)
         if isinstance(tree, ast.Call):
             return set().union(*[self._get_adjusted_variables(arg) for arg in tree.args])
+        if isinstance(tree, ast.BinOp):
+            return self._get_adjusted_variables(tree.left).union(self._get_adjusted_variables(tree.right))
         return set()
 
     def _adjustment_set_from_formula(self):
@@ -81,12 +83,14 @@ class RegressionEstimator(Estimator):
         """
         desc = ModelDesc.from_formula(self.formula)
 
+        # Check that the outcome variable is the dependent variable specified in the formula
         if desc.lhs_termlist:
             if [self.outcome_variable] != [term.name() for term in desc.lhs_termlist]:
                 raise ValueError(
                     f"Left hand side of formula {self.formula} does not match the specified outcome_variable "
                     f"{self.outcome_variable}."
                 )
+        # If no dependent variable is specified, make it the outcome variable
         else:
             self.formula = f"{self.outcome_variable} ~ {self.formula}"
 
@@ -179,7 +183,7 @@ class RegressionEstimator(Estimator):
             x[k] = v
         x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
         for col in x:
-            if str(x.dtypes[col]) == "object":
+            if isinstance(x[col], pd.CategoricalDtype) or pd.api.types.is_object_dtype(x[col]):
                 x = pd.get_dummies(x, columns=[col], drop_first=True)
 
         return model.get_prediction(x).summary_frame()

@@ -233,7 +233,7 @@ class TestMain(unittest.TestCase):
                 with self.assertWarnsRegex(UserWarning, r"Dropping unnamed columns: \['Unnamed: 0'\]"):
                     main()
 
-    def test_parse_args_evaluation(self):
+    def test_parse_args_evaluation_create_tests(self):
         with tempfile.TemporaryDirectory() as tmp:
             with patch(
                 "sys.argv",
@@ -244,6 +244,26 @@ class TestMain(unittest.TestCase):
                     str(self.dag_path),
                     "--data-paths",
                     str(self.data_paths[0]),
+                    "--output",
+                    os.path.join(tmp, "results.csv"),
+                ],
+            ):
+                main()
+                self.assertTrue(os.path.exists(os.path.join(tmp, "results.csv")))
+
+    def test_parse_args_evaluation_read_tests(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "evaluate",
+                    "--dag-path",
+                    str(self.dag_path),
+                    "--data-paths",
+                    str(self.data_paths[0]),
+                    "--test-config",
+                    str(self.test_cases_path),
                     "--output",
                     os.path.join(tmp, "results.csv"),
                 ],
