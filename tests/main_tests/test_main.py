@@ -1,11 +1,11 @@
 import unittest
+from pathlib import Path
 import tempfile
 import os
 from unittest.mock import patch
 import shutil
 import json
 from causal_testing.__main__ import main
-from pathlib import Path
 
 
 class TestMain(unittest.TestCase):
@@ -153,6 +153,57 @@ class TestMain(unittest.TestCase):
             ):
                 main()
                 self.assertTrue(os.path.exists(os.path.join(tmp, "discovered_dag.dot")))
+
+    def test_parse_args_discover_invalid_technique(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "discover",
+                    "--technique",
+                    "Invalid",
+                    "--data-paths",
+                    str(self.data_paths[0]),
+                    "--output",
+                    os.path.join(tmp, "discovered_dag.dot"),
+                    "--include-edges",
+                    self.include_edges_path,
+                    "--exclude-edges",
+                    self.exclude_edges_path,
+                    "--technique-kwargs",
+                    "max_iterations=10",
+                    "--variables",
+                    "test_input",
+                    "test_output",
+                ],
+            ):
+                with self.assertRaises(ValueError) as e:
+                    main()
+                    self.assertTrue(e.message.startswith("Unsupported technique Invalid."))
+
+    def test_parse_args_discover_drop_unnamed(self):
+        """
+        Test that the user is warned of the dropping of unnamed columns.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "discover",
+                    "--technique",
+                    "HillClimberDiscovery",
+                    "--data-paths",
+                    str(self.data_paths[0]),
+                    "--output",
+                    os.path.join(tmp, "discovered_dag.dot"),
+                    "--technique-kwargs",
+                    "max_iterations=10",
+                ],
+            ):
+                with self.assertWarnsRegex(UserWarning, r"Dropping unnamed columns: \['Unnamed: 0'\]"):
+                    main()
 
     def tearDown(self):
         if self.output_path.parent.exists():

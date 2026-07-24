@@ -568,7 +568,7 @@ class CausalDAG(nx.DiGraph):
                 ),
                 "unit_odds_ratio",
             )
-        if pd.api.types.is_categorical_dtype(self.datatypes[outcome_variable]) or pd.api.types.is_object_dtype(
+        if isinstance(self.datatypes[outcome_variable], pd.CategoricalDtype) or pd.api.types.is_object_dtype(
             self.datatypes[outcome_variable]
         ):
             return (

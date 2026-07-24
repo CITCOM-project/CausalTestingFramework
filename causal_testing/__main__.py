@@ -6,6 +6,7 @@ import logging
 from enum import Enum
 from importlib.metadata import entry_points
 from typing import Optional, Sequence
+from warnings import warn
 
 import networkx as nx
 import pandas as pd
@@ -214,12 +215,13 @@ def main() -> None:
             # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
             # Otherwise you end up with duplicate indices, which causes problems further down the line
             df = pd.concat([read_dataframe(path) for path in args.data_paths]).reset_index()
+            print(df)
             if args.variables:
                 df = df[args.variables]
             # Drop unnamed columns
             unnamed_columns = [c for c in df.columns if c.startswith("Unnamed: ")]
             if unnamed_columns:
-                logger.warning(f"Dropping unnamed columns: {unnamed_columns}")
+                warn(f"Dropping unnamed columns: {unnamed_columns}")
             df = df.loc[:, ~df.columns.str.contains("^Unnamed: ")]
 
             discover_class = discover_map[args.technique].load()
