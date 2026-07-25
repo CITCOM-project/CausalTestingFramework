@@ -26,6 +26,11 @@ class TestCausalDAGIssue90(unittest.TestCase):
         self.assertEqual(dot_dag.nodes, xml_dag.nodes)
         self.assertEqual(dot_dag.edges, xml_dag.edges)
 
+    def test_invalid_file_extension(self):
+        with self.assertRaises(ValueError) as e:
+            CausalDAG("test.csv")
+            self.assertEqual(e.exception, "Unsupported file extension test.csv. We only support .dot and .xml files.")
+
     def test_enumerate_minimal_adjustment_sets(self):
         """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
         causal_dag = CausalDAG(self.dag_dot_path)

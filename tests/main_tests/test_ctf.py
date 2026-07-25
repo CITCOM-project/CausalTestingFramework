@@ -60,15 +60,32 @@ class TestCausalTestingFramework(unittest.TestCase):
                 }
             )
         self.assertEqual(
-            f"Unsupported estimator InvalidEstimator. Supported: ['CubicSplineEstimator', 'IPCWEstimator', 'InstrumentalVariableEstimator', 'LinearRegressionEstimator', 'LogisticRegressionEstimator', 'MultinomialRegressionEstimator']. "
+            "Unsupported estimator InvalidEstimator. Supported: ['CubicSplineEstimator', 'IPCWEstimator', 'InstrumentalVariableEstimator', 'LinearRegressionEstimator', 'LogisticRegressionEstimator', 'MultinomialRegressionEstimator']. "
             "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
             "pyproject.toml file.",
             str(e.exception),
         )
 
-    def test_create_test_case_invalid_effect(self):
+    def test_create_test_case_no_estimator(self):
         framework = CausalTestingFramework()
         framework.setup(**self.paths)
+        with self.assertRaises(ValueError) as e:
+            framework.create_causal_test(
+                {
+                    "treatment_variable": "test_input",
+                    "outcome_variable": "test_output",
+                    "expected_effect": {"name": "NoEffect"},
+                }
+            )
+        self.assertEqual(
+            "Test configuration must specify an estimator",
+            str(e.exception),
+        )
+
+    def test_create_test_case_invalid_effect(self):
+        framework = CausalTestingFramework()
+        framework.load_dag(self.dag_path)
+        framework.load_data(self.data_paths)
         test = {
             "name": "test1",
             "treatment_variable": "test_input",
@@ -76,19 +93,21 @@ class TestCausalTestingFramework(unittest.TestCase):
             "effect_measure": "coefficient",
             "outcome_variable": "test_output",
             "expected_effect": {"name": "InvalidEffect"},
+            "estimator_kwargs": {"adjustment_set": []},
         }
         with self.assertRaises(ValueError) as e:
             framework.create_causal_test(test)
-        self.assertEqual(
-            f"Unsupported causal effect InvalidEffect. Supported: ['ExactValue', 'Negative', 'NoEffect', 'Positive', 'SomeEffect']. "
-            "If you have implemented a custom causal effect, you will need to add this to your entrypoints via your "
-            "pyproject.toml file.",
-            str(e.exception),
-        )
+            self.assertEqual(
+                "Unsupported causal effect InvalidEffect. Supported: ['ExactValue', 'Negative', 'NoEffect', 'Positive', 'SomeEffect']. "
+                "If you have implemented a custom causal effect, you will need to add this to your entrypoints via your "
+                "pyproject.toml file.",
+                str(e.exception),
+            )
 
     def test_create_test_case_effect_kwargs(self):
         framework = CausalTestingFramework()
-        framework.setup(**self.paths)
+        framework.load_dag(self.dag_path)
+        framework.load_data(self.data_paths)
         test = {
             "name": "test1",
             "treatment_variable": "test_input",
@@ -96,13 +115,15 @@ class TestCausalTestingFramework(unittest.TestCase):
             "effect_measure": "coefficient",
             "outcome_variable": "test_output",
             "expected_effect": {"name": "ExactValue", "value": 4},
+            "estimator_kwargs": {"adjustment_set": []},
         }
         test_case = framework.create_causal_test(test)
         self.assertEqual(test_case.expected_causal_effect.value, 4)
 
     def test_create_test_case_estimator_kwargs(self):
         framework = CausalTestingFramework()
-        framework.setup(**self.paths)
+        framework.load_dag(self.dag_path)
+        framework.load_data(self.data_paths)
         test = {
             "name": "test1",
             "treatment_variable": "test_input",

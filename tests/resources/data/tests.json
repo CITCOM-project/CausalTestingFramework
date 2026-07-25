@@ -6,7 +6,9 @@
     "effect_measure": "coefficient",
     "outcome_variable": "test_output", "expected_effect": {"name": "NoEffect"},
     "skip": false,
-    "query": "test_input > 0"
+    "query": "test_input > 0",
+    "estimator_kwargs": {"adjustment_set": []}
+
   },
   {
     "name": "test2",
@@ -15,6 +17,7 @@
     "effect_measure": "coefficient",
     "outcome_variable": "test_output", "expected_effect": {"name": "NoEffect"},
     "skip": true,
-    "query": "test_input <= 5"
+    "query": "test_input <= 5",
+    "estimator_kwargs": {"adjustment_set": []}
   }]
 }

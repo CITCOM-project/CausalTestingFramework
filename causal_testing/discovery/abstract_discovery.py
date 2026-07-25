@@ -176,15 +176,6 @@ class Discovery(ABC):
 
         nx.drawing.nx_pydot.write_dot(individual, output_file)
 
-    def _json_stub_params(self, outcome: str) -> str:
-        if pd.api.types.is_bool_dtype(self.df[outcome]):
-            return {"estimator": "LogisticRegressionEstimator", "effect_measure": "unit_odds_ratio"}
-        if pd.api.types.is_categorical_dtype(self.df[outcome]) or pd.api.types.is_object_dtype(self.df[outcome]):
-            return {"estimator": "MultinomialRegressionEstimator", "effect_measure": "unit_odds_ratio"}
-        if pd.api.types.is_numeric_dtype(self.df[outcome]):
-            return {"estimator": "LinearRegressionEstimator", "effect_measure": "coefficient"}
-        raise ValueError(f"Invalid datatype {self.df.dtypes[outcome]}")
-
     def evaluate_tests(self, causal_dag: CausalDAG) -> pd.DataFrame:
         """
         Generate and evaluate causal test cases from the supplied CausalDAG and return a list of edges for which the

@@ -296,11 +296,35 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             round(cv.estimate_robustness(linear_regression_estimator.fit_model(df))["treatments"], 4), 0.7353
         )
 
+    def test_to_dict(self):
+        linear_regression_estimator = LinearRegressionEstimator(
+            treatment_variable="X",
+            outcome_variable="Y",
+            control_value=0,
+            treatment_value=1,
+            adjustment_set={"Z"},
+            adjustment_config={"Z": 1},
+        )
+        self.assertEqual(
+            linear_regression_estimator.to_dict(),
+            {
+                "name": "LinearRegressionEstimator",
+                "treatment_variable": "X",
+                "outcome_variable": "Y",
+                "alpha": 0.05,
+                "adjustment_set": ["Z"],
+                "formula": "Y ~ X + Z",
+                "adjustment_set": ["Z"],
+                "adjustment_config": {"Z": 1},
+                "control_value": 0,
+                "treatment_value": 1,
+            },
+        )
+
     def test_gp(self):
         df = pd.DataFrame()
         df["X"] = np.arange(10).astype(float)
         df["Y"] = 1 / (df["X"] + 1)
-        print(df)
         linear_regression_estimator = LinearRegressionEstimator(
             treatment_variable="X",
             outcome_variable="Y",

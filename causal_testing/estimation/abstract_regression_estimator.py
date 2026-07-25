@@ -37,10 +37,8 @@ class RegressionEstimator(Estimator):
             outcome_variable=outcome_variable,
             control_value=control_value,
             treatment_value=treatment_value,
-            adjustment_set=adjustment_set,
             alpha=alpha,
         )
-
         if formula is not None:
             self.formula = formula
             self._adjustment_set_from_formula()
@@ -49,6 +47,7 @@ class RegressionEstimator(Estimator):
                     f"Specified formula {self.formula} does not match specified adjustment set {adjustment_set}"
                 )
         elif adjustment_set is not None:
+            self.adjustment_set = adjustment_set
             terms = [treatment_variable] + sorted(list(adjustment_set))
             self.formula = f"{outcome_variable} ~ {' + '.join(terms)}"
         else:
@@ -192,6 +191,8 @@ class RegressionEstimator(Estimator):
         :returns: A JSON serialisable dict representing the estimator.
         """
         result = super().to_dict()
+        if self.adjustment_set:
+            result["adjustment_set"] = sorted(self.adjustment_set)
         if self.adjustment_config:
             result["adjustment_config"] = self.adjustment_config
         if self.formula:

@@ -33,7 +33,6 @@ class Estimator(ABC):
         outcome_variable: str,
         control_value: float = None,
         treatment_value: float = None,
-        adjustment_set: set = None,
         adjustment_config: dict[str, Any] = None,
         alpha: float = 0.05,
     ):
@@ -44,9 +43,6 @@ class Estimator(ABC):
         self.control_value = control_value
         self.alpha = alpha
         self.adjustment_config = {} if adjustment_config is None else adjustment_config
-        self.adjustment_set = (
-            set(self.adjustment_config) if adjustment_set is None else adjustment_set.union(set(self.adjustment_config))
-        )
         self.modelling_assumptions = []
         self.add_modelling_assumptions()
 
@@ -68,8 +64,8 @@ class Estimator(ABC):
             "treatment_variable": self.treatment_variable,
             "outcome_variable": self.outcome_variable,
             "alpha": self.alpha,
-            "adjustment_set": sorted(self.adjustment_set),
         }
+
         if self.adjustment_config:
             result["adjustment_config"] = self.adjustment_config
         if self.control_value is not None:

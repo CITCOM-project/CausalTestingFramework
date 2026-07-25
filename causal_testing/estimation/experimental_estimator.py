@@ -32,7 +32,6 @@ class ExperimentalEstimator(Estimator):
             outcome_variable=outcome_variable,
             treatment_value=treatment_value,
             control_value=control_value,
-            adjustment_set=set(adjustment_config),
             adjustment_config=adjustment_config,
             alpha=alpha,
         )

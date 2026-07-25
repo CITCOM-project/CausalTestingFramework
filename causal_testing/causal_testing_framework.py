@@ -171,12 +171,6 @@ class CausalTestingFramework:
             outcome_variable=outcome_variable,
             treatment_value=test.get("treatment_value"),
             control_value=test.get("control_value"),
-            adjustment_set=test.get(
-                "adjustment_set",
-                self.dag.identification(
-                    treatment_variable=treatment_variable, outcome_variable=outcome_variable, effect_type=effect_type
-                ),
-            ),
             alpha=test.get("alpha", 0.05),
             **estimator_kwargs,
         )

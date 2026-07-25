@@ -16,6 +16,22 @@ class TestCausalEffect(unittest.TestCase):
             treatment_variable="A", outcome_variable="B", treatment_value=1, control_value=0, adjustment_set=set()
         )
 
+    def test_effect_estimate_to_dict(self):
+        effect_estimate = EffectEstimate(
+            type="ate", value=pd.Series({"A": 1}), ci_low=pd.Series({"A": 0.1}), ci_high=pd.Series({"A": 1.2})
+        )
+        self.assertEqual(
+            effect_estimate.to_dict(),
+            {"effect_measure": "ate", "effect_estimate": {"A": 1}, "ci_low": {"A": 0.1}, "ci_high": {"A": 1.2}},
+        )
+
+    def test_effect_estimate_to_dict_no_ci(self):
+        effect_estimate = EffectEstimate(type="ate", value=pd.Series({"A": 1}))
+        self.assertEqual(
+            effect_estimate.to_dict(),
+            {"effect_measure": "ate", "effect_estimate": {"A": 1}},
+        )
+
     def test_Positive_ate_pass(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6))
         self.assertTrue(Positive().apply(effect_estimate))

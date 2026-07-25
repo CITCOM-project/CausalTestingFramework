@@ -11,7 +11,6 @@ from causal_testing.estimation.linear_regression_estimator import LinearRegressi
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
 
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
@@ -71,9 +70,6 @@ def test_poisson_intensity_num_shapes(save=False):
                     outcome_variable="num_shapes_unit",
                     treatment_value=treatment_value,
                     control_value=control_value,
-                    adjustment_set=causal_dag.identification(
-                        treatment_variable="intensity", outcome_variable="num_shapes_unit"
-                    ),
                     alpha=0.05,
                 ),
             ),

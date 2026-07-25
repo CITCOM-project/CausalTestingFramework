@@ -27,10 +27,31 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
             outcome_variable="Y",
             treatment_value=None,
             control_value=None,
-            adjustment_set=set(),
             instrument="Z",
         )
         effect_estimate = iv_estimator.estimate_coefficient(self.df)
         self.assertEqual(effect_estimate.value[0], 2)
         self.assertEqual(effect_estimate.ci_low[0], 2)
         self.assertEqual(effect_estimate.ci_high[0], 2)
+
+    def test_to_dict(self):
+        iv_estimator = InstrumentalVariableEstimator(
+            treatment_variable="X",
+            outcome_variable="Y",
+            control_value=0,
+            treatment_value=1,
+            instrument="Z",
+        )
+        self.assertEqual(
+            iv_estimator.to_dict(),
+            {
+                "name": "InstrumentalVariableEstimator",
+                "treatment_variable": "X",
+                "outcome_variable": "Y",
+                "alpha": 0.05,
+                "control_value": 0,
+                "treatment_value": 1,
+                "instrument": "Z",
+                "bootstrap_size": 100,
+            },
+        )
