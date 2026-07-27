@@ -13,7 +13,7 @@ def sort_test_dict(test: dict):
     return test["name"]
 
 
-class TestMetamorphicRelation(unittest.TestCase):
+class TestGenerateCausalTestCases(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir_path = tempfile.mkdtemp()
         self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
@@ -138,6 +138,12 @@ class TestMetamorphicRelation(unittest.TestCase):
             sorted(map(lambda t: t.to_dict(), expected_tests), key=sort_test_dict),
             sorted(map(lambda t: t.to_dict(), dag.generate_causal_tests(threads=2)), key=sort_test_dict),
         )
+
+    def test_all_metamorphic_relations_implied_by_dag_no_datatype(self):
+        causal_dag = CausalDAG(self.dag_dot_path)
+        with self.assertRaises(ValueError) as e:
+            causal_dag.generate_causal_tests()
+            self.assertEqual(e.exception, "No datatype specified for .")
 
     def test_all_metamorphic_relations_implied_by_dag_ignore_cycles(self):
         dcg = CausalDAG(self.dcg_dot_path, ignore_cycles=True, datatypes={v: float for v in {"a", "b", "c", "d"}})
