@@ -207,5 +207,4 @@ class TestCausalTestingFramework(unittest.TestCase):
                 "PASS_ci_low": 0,
             }
         ).sort_index()
-        print(results)
         pd.testing.assert_series_equal(results, expected)
