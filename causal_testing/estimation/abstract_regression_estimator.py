@@ -6,7 +6,7 @@ from abc import abstractmethod
 from typing import Any
 
 import pandas as pd
-from patsy import ModelDesc, dmatrices, dmatrix  # pylint: disable = no-name-in-module
+from patsy import ModelDesc, build_design_matrices, dmatrices  # pylint: disable = no-name-in-module
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 from causal_testing.estimation.abstract_estimator import Estimator
@@ -114,7 +114,7 @@ class RegressionEstimator(Estimator):
         _, covariate_data = dmatrices(self.formula, df, return_type="dataframe")
         df = pd.concat([df, covariate_data[[col for col in covariate_data.columns if col not in df]]], axis=1)
         covariates = covariate_data.columns.tolist()
-        return covariates, df.dropna(subset=covariates)
+        return df.dropna(subset=covariates), covariates, covariate_data.design_info
 
     @property
     @abstractmethod
@@ -143,8 +143,9 @@ class RegressionEstimator(Estimator):
         :param df: The data to use.
         :return: The model after fitting to data.
         """
-        covariates, df = self._setup_covariates(df)
+        df, covariates, design_info = self._setup_covariates(df)
         model = self.regressor(df[self.outcome_variable], df[covariates]).fit(disp=0)
+        model.design_info = design_info
         return model
 
     def treatment_columns(self, model: RegressionResultsWrapper) -> list[str]:
@@ -180,7 +181,7 @@ class RegressionEstimator(Estimator):
 
         for k, v in self.adjustment_config.items():
             x[k] = v
-        x = dmatrix(self.formula.split("~")[1], x, return_type="dataframe")
+        x = build_design_matrices([model.design_info], x, return_type="dataframe")[0]
 
         return model.get_prediction(x).summary_frame()
 
