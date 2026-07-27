@@ -8,7 +8,7 @@
       "treatment_variable": "max_doses",
       "outcome_variable": "cum_vaccinations",
       "expected_effect": {"name": "NoEffect"},
-      "formula": "cum_vaccinations ~ max_doses",
+      "estimator_kwargs": {"formula": "cum_vaccinations ~ max_doses"},
       "alpha": 0.05,
       "skip": false
     },
@@ -20,7 +20,7 @@
       "treatment_variable": "max_doses",
       "outcome_variable": "cum_vaccinated",
       "expected_effect": {"name": "NoEffect"},
-      "formula": "cum_vaccinated ~ max_doses",
+      "estimator_kwargs": {"formula": "cum_vaccinated ~ max_doses"},
       "alpha": 0.05,
       "skip": false
     },
@@ -32,7 +32,7 @@
       "treatment_variable": "max_doses",
       "outcome_variable": "cum_infections",
       "expected_effect": {"name": "NoEffect"},
-      "formula": "cum_infections ~ max_doses",
+      "estimator_kwargs": {"formula": "cum_infections ~ max_doses"},
       "alpha": 0.05,
       "skip": false
     },
@@ -44,7 +44,7 @@
       "treatment_variable": "vaccine",
       "outcome_variable": "cum_vaccinations",
       "expected_effect": {"name": "SomeEffect"},
-      "formula": "cum_vaccinations ~ vaccine",
+      "estimator_kwargs": {"formula": "cum_vaccinations ~ vaccine"},
       "skip": false
     },
     {
@@ -55,7 +55,7 @@
       "treatment_variable": "vaccine",
       "outcome_variable": "cum_vaccinated",
       "expected_effect": {"name": "SomeEffect"},
-      "formula": "cum_vaccinated ~ vaccine",
+      "estimator_kwargs": {"formula": "cum_vaccinated ~ vaccine"},
       "skip": false
     },
     {
@@ -66,7 +66,7 @@
       "treatment_variable": "vaccine",
       "outcome_variable": "cum_infections",
       "expected_effect": {"name": "SomeEffect"},
-      "formula": "cum_infections ~ vaccine",
+      "estimator_kwargs": {"formula": "cum_infections ~ vaccine"},
       "skip": false
     },
     {
@@ -77,7 +77,7 @@
       "treatment_variable": "cum_vaccinations",
       "outcome_variable": "cum_vaccinated",
       "expected_effect": {"name": "NoEffect"},
-      "formula": "cum_vaccinated ~ cum_vaccinations + vaccine",
+      "estimator_kwargs": {"formula": "cum_vaccinated ~ cum_vaccinations + vaccine"},
       "alpha": 0.05,
       "skip": false
     },
@@ -89,7 +89,7 @@
       "treatment_variable": "cum_vaccinations",
       "outcome_variable": "cum_infections",
       "expected_effect": {"name": "NoEffect"},
-      "formula": "cum_infections ~ cum_vaccinations + vaccine",
+      "estimator_kwargs": {"formula": "cum_infections ~ cum_vaccinations + vaccine"},
       "alpha": 0.05,
       "skip": false
     },
@@ -101,7 +101,7 @@
       "treatment_variable": "cum_vaccinated",
       "outcome_variable": "cum_infections",
       "expected_effect": {"name": "NoEffect"},
-      "formula": "cum_infections ~ cum_vaccinated + vaccine",
+      "estimator_kwargs": {"formula": "cum_infections ~ cum_vaccinated + vaccine"},
       "alpha": 0.05,
       "skip": false
     }
