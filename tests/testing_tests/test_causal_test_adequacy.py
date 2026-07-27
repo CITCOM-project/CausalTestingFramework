@@ -63,6 +63,37 @@ class TestCausalTestAdequacy(unittest.TestCase):
         self.assertEqual(adequacy_metric.passing, 100, f"Expected passing 100 not {adequacy_metric.passing}")
         self.assertEqual(adequacy_metric.successful, 100, f"Expected successful 100 not {adequacy_metric.successful}")
 
+    def test_data_adequacy_categorical_inestimable(self):
+        df = pd.read_csv("tests/resources/data/scarf_data.csv")
+        causal_test_case = CausalTestCase(
+            expected_causal_effect=NoEffect(atol=1e-10),
+            effect_measure="coefficient",
+            estimator=LinearRegressionEstimator(
+                treatment_variable="color", outcome_variable="completed", adjustment_set=set()
+            ),
+        )
+        adequacy_metric = causal_test_case.measure_adequacy(df.loc[df["color"] == "grey"])
+
+        self.assertEqual(adequacy_metric.kurtosis, None, f"Expected passing None not {adequacy_metric.kurtosis}")
+        self.assertEqual(adequacy_metric.passing, 0, f"Expected passing 0 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.successful, 0, f"Expected successful 0 not {adequacy_metric.successful}")
+        self.assertEqual(adequacy_metric.results, [])
+
+    def test_data_adequacy_categorical_partly_inestimable(self):
+        df = pd.read_csv("tests/resources/data/scarf_data.csv")
+        causal_test_case = CausalTestCase(
+            expected_causal_effect=NoEffect(atol=1e-10),
+            effect_measure="coefficient",
+            estimator=LinearRegressionEstimator(
+                treatment_variable="color", outcome_variable="completed", adjustment_set=set()
+            ),
+        )
+        adequacy_metric = causal_test_case.measure_adequacy(df.loc[df["length_in"] == 55])
+
+        self.assertEqual(adequacy_metric.kurtosis.values, [0], f"Expected [0] not {adequacy_metric.kurtosis.values}")
+        self.assertEqual(adequacy_metric.passing, 63, f"Expected passing 63 not {adequacy_metric.passing}")
+        self.assertEqual(adequacy_metric.successful, 63, f"Expected successful 63 not {adequacy_metric.successful}")
+
     def test_data_adequacy_group_by(self):
         timesteps_per_intervention = 1
         control_strategy = [[t, "t", 0] for t in range(1, 4, timesteps_per_intervention)]

@@ -87,7 +87,7 @@ class ExactValue(CausalEffect):
     """An extension of CausalEffect representing that the expected causal effect should be a specific value."""
 
     def __init__(
-        self, value: float, effect_type: str = "direct", atol: float = None, ci_low: float = None, ci_high: float = None
+        self, value: float, effect_type: str = "direct", atol: float = 0, ci_low: float = None, ci_high: float = None
     ):
         super().__init__(effect_type=effect_type)
         if (ci_low is not None) ^ (ci_high is not None):
@@ -98,7 +98,7 @@ class ExactValue(CausalEffect):
         self.value = value
         self.ci_low = ci_low
         self.ci_high = ci_high
-        self.atol = atol if atol is not None else abs(value * 0.05)
+        self.atol = atol
 
         if self.ci_low is not None and self.ci_high is not None:
             if not self.ci_low <= self.value <= self.ci_high:
@@ -128,13 +128,12 @@ class ExactValue(CausalEffect):
 
         :returns: A JSON serialisable dict representing the expected effect.
         """
-        effect = {"value": self.value}
+        effect = {"value": self.value, "atol": self.atol}
         if self.ci_low:
             effect["ci_low"] = self.ci_low
         if self.ci_low:
             effect["ci_high"] = self.ci_high
-        if self.atol:
-            effect["atol"] = self.atol
+
         return super().to_dict() | effect
 
 

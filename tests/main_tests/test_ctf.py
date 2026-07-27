@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
+from causal_testing.specification.causal_dag import CausalDAG
 
 
 class TestCausalTestingFramework(unittest.TestCase):
@@ -183,4 +184,28 @@ class TestCausalTestingFramework(unittest.TestCase):
                 "INESTIMABLE_ci_high": 0,
             }
         ).sort_index()
+        pd.testing.assert_series_equal(results, expected)
+
+    def test_ctf_evaluate_dag_inestimable(self):
+        framework = CausalTestingFramework()
+        framework.df = pd.read_csv("tests/resources/data/scarf_data.csv", index_col=0).query("length_in > 60")
+        framework.dag = CausalDAG(datatypes=framework.df.dtypes)
+        framework.dag.add_nodes_from(framework.df.columns)
+        framework.test_cases = framework.dag.generate_causal_tests()
+
+        results = framework.evaluate_dag()
+        expected = pd.Series(
+            {
+                "FAIL": 1,
+                "FAIL_ci_high": 2,
+                "FAIL_ci_low": 0,
+                "INESTIMABLE": 1,
+                "INESTIMABLE_ci_high": 1,
+                "INESTIMABLE_ci_low": 0,
+                "PASS": 4,
+                "PASS_ci_high": 4,
+                "PASS_ci_low": 0,
+            }
+        ).sort_index()
+        print(results)
         pd.testing.assert_series_equal(results, expected)

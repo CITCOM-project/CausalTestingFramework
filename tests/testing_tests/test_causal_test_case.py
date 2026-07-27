@@ -19,12 +19,8 @@ class TestCausalTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         # Create Causal DAG
-        self.temp_dir_path = tempfile.mkdtemp()
-        dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph G { A -> C; D -> A; D -> C}"""
-        with open(dag_dot_path, "w") as file:
-            file.write(dag_dot)
-        self.causal_dag = CausalDAG(dag_dot_path)
+        self.causal_dag = CausalDAG()
+        self.causal_dag.add_edges_from([("A", "C"), ("D", "A"), ("D", "C")])
 
         # Create a causal test case
         self.expected_causal_effect = ExactValue(4)
@@ -50,8 +46,17 @@ class TestCausalTestCase(unittest.TestCase):
         self.df["A"] = [1 if d > 50 else 0 for d in self.df["D"]]
         self.df["C"] = self.df["D"] + (4 * (self.df["A"] + 2))  # C = (4*(A+2)) + D
 
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
+    def test_treatment_no_estimator(self):
+        self.assertEqual(
+            CausalTestCase(expected_causal_effect=self.expected_causal_effect, effect_measure="ate").treatment_variable,
+            None,
+        )
+
+    def test_outcome_no_estimator(self):
+        self.assertEqual(
+            CausalTestCase(expected_causal_effect=self.expected_causal_effect, effect_measure="ate").outcome_variable,
+            None,
+        )
 
     def test_check_minimum_adjustment_set(self):
         """Check that the minimum adjustment set is correctly made"""
@@ -186,7 +191,7 @@ class TestCausalTestCase(unittest.TestCase):
             "skip": False,
             "effect_measure": "coefficient",
             "query": None,
-            "expected_effect": {"name": "ExactValue", "effect_type": "direct", "value": 4, "atol": 0.2},
+            "expected_effect": {"name": "ExactValue", "effect_type": "direct", "value": 4, "atol": 0},
             "estimator": {
                 "name": "LinearRegressionEstimator",
                 "treatment_variable": "A",

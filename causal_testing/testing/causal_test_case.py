@@ -94,13 +94,20 @@ class CausalTestCase:
             except Exception:  # pylint: disable=W0718
                 outcomes.append(None)
 
-        results = pd.concat(results)
+        if results:
+            results = pd.concat(results)
 
-        results["var"] = results.index
+            results["var"] = results.index
 
+            return DataAdequacy(
+                results=results,
+                kurtosis=results.groupby("var")["effect_estimate"].apply(lambda x: x.kurtosis()),
+                passing=int(sum(filter(lambda x: x is not None, outcomes))),
+                successful=int(sum(x is not None for x in outcomes)),
+            )
         return DataAdequacy(
             results=results,
-            kurtosis=results.groupby("var")["effect_estimate"].apply(lambda x: x.kurtosis()),
+            kurtosis=None,
             passing=int(sum(filter(lambda x: x is not None, outcomes))),
             successful=int(sum(x is not None for x in outcomes)),
         )

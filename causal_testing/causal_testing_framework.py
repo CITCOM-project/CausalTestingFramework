@@ -7,6 +7,7 @@ import logging
 from importlib.metadata import entry_points
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -43,8 +44,6 @@ def read_dataframe(file_path: str, **kwargs: dict) -> pd.DataFrame:
     suffix = Path(file_path).suffix.lower()
 
     if suffix in readers:
-        print("READING FROM", file_path, kwargs)
-        print(readers[suffix](file_path, **kwargs))
         return readers[suffix](file_path, **kwargs)
     raise ValueError(f"Unsupported file extension: '{suffix}'")
 
@@ -242,16 +241,18 @@ class CausalTestingFramework:
             for test_case in self.test_cases:
                 if test_case.skip:
                     continue
-                effect_estimate = test_case.estimate_effect(
-                    df=self.df.sample(len(self.df), replace=True, random_state=sample_index)
-                )
+                try:
+                    effect_estimate = test_case.estimate_effect(
+                        df=self.df.sample(len(self.df), replace=True, random_state=sample_index)
+                    )
+                except (np.linalg.LinAlgError, ValueError):
+                    test_outcomes[TestOutcome.INESTIMABLE] += 1
+
                 if effect_estimate:
                     if test_case.expected_causal_effect.apply(effect_estimate):
                         test_outcomes[TestOutcome.PASS] += 1
                     else:
                         test_outcomes[TestOutcome.FAIL] += 1
-                else:
-                    test_outcomes[TestOutcome.INESTIMABLE] += 1
             sample_results.append(test_outcomes)
 
         sample_results = pd.DataFrame(sample_results)
@@ -264,7 +265,6 @@ class CausalTestingFramework:
             results[f"{outcome.name}_ci_low"] = data[ci_low_inx]
             results[f"{outcome.name}_ci_high"] = data[ci_high_inx]
 
-        print(results)
         return pd.Series(results).sort_index()
 
     def save_results(self, output_path) -> list:

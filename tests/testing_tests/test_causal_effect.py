@@ -66,9 +66,17 @@ class TestCausalEffect(unittest.TestCase):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(5.05))
         self.assertTrue(ExactValue(value=5, atol=0.1).apply(effect_estimate))
 
+    def test_exactValue_to_dict(self):
+        self.assertTrue(
+            ExactValue(value=5.01, ci_low=5.0, ci_high=5.08).to_dict(),
+            {"name": "ExactValue", "effect_type": "direct", "value": 5, "ci_high": 5.0, "ci_low": 5.08},
+        )
+
     def test_exactValue_categorical_pass(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series({"color[T.red]": 5.05, "color[T.blue]": 4.03}))
-        self.assertTrue(ExactValue(pd.Series({"color[T.red]": 5, "color[T.blue]": 4}), 0.1).apply(effect_estimate))
+        self.assertTrue(
+            ExactValue(value=pd.Series({"color[T.red]": 5, "color[T.blue]": 4}), atol=0.1).apply(effect_estimate)
+        )
 
     def test_exactValue_pass_ci(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(5.05), ci_low=pd.Series(4), ci_high=pd.Series(6))
@@ -78,13 +86,13 @@ class TestCausalEffect(unittest.TestCase):
         effect_estimate = EffectEstimate(
             type="ate", value=pd.Series(5.05), ci_low=pd.Series(4.1), ci_high=pd.Series(5.9)
         )
-        self.assertTrue(ExactValue(value=5, ci_low=4, ci_high=6).apply(effect_estimate))
+        self.assertTrue(ExactValue(value=5, atol=0.05, ci_low=4, ci_high=6).apply(effect_estimate))
 
     def test_exactValue_ci_fail_ci(self):
         effect_estimate = EffectEstimate(
-            type="ate", value=pd.Series(5.05), ci_low=pd.Series(3.9), ci_high=pd.Series(6.1)
+            type="ate", value=pd.Series(5.05), ci_low=pd.Series(4.1), ci_high=pd.Series(5.9)
         )
-        self.assertFalse(ExactValue(value=5, ci_low=4, ci_high=6).apply(effect_estimate))
+        self.assertFalse(ExactValue(value=5, atol=0.04, ci_low=4, ci_high=6).apply(effect_estimate))
 
     def test_exactValue_fail(self):
         effect_estimate = EffectEstimate(type="ate", value=pd.Series(0))

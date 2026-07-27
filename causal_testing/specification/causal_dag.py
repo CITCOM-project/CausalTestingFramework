@@ -512,11 +512,12 @@ class CausalDAG(nx.DiGraph):
         :return: The smallest set of variables which can be adjusted for to obtain a causal
                  estimate as opposed to a purely associational estimate.
         """
-        # Naive method to guarantee termination when we have cycles
+        nodes_to_ignore = set(nodes_to_ignore) if nodes_to_ignore is not None else set()
+
         if self.ignore_cycles:
-            return set(self.predecessors(treatment_variable))
-        minimal_adjustment_sets = []
-        if effect_type == "total":
+            # Naive method to guarantee termination when we have cycles
+            minimal_adjustment_sets = [set(self.predecessors(treatment_variable))]
+        elif effect_type == "total":
             minimal_adjustment_sets = self.enumerate_minimal_adjustment_sets([treatment_variable], [outcome_variable])
         elif effect_type == "direct":
             minimal_adjustment_sets = self.direct_effect_adjustment_sets(
@@ -525,14 +526,20 @@ class CausalDAG(nx.DiGraph):
                 nodes_to_ignore=nodes_to_ignore,
             )
         else:
-            raise ValueError("Causal effect should be 'total' or 'direct'")
+            raise ValueError(f"Causal effect should be 'total' or 'direct', not '{effect_type}'")
 
         if nodes_to_ignore is not None:
             minimal_adjustment_sets = [
-                adj for adj in minimal_adjustment_sets if not {x.name for x in nodes_to_ignore}.intersection(adj)
+                adj for adj in minimal_adjustment_sets if not set(nodes_to_ignore).intersection(adj)
             ]
 
-        minimal_adjustment_set = min(minimal_adjustment_sets, key=len, default=set())
+        if not minimal_adjustment_sets:
+            raise ValueError(
+                f"Could not find a suitable adjustment set for the {effect_type} effect of {treatment_variable} on "
+                f"{outcome_variable} while avoiding nodes in set {nodes_to_ignore}."
+            )
+
+        minimal_adjustment_set = min(minimal_adjustment_sets, key=len)
         return set(minimal_adjustment_set)
 
     def to_dot_string(self) -> str:
@@ -601,8 +608,7 @@ class CausalDAG(nx.DiGraph):
         :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
         """
 
-        if nodes_to_ignore is None:
-            nodes_to_ignore = set()
+        nodes_to_ignore = set(nodes_to_ignore) if nodes_to_ignore is not None else set()
 
         causal_tests = []
 
@@ -690,8 +696,7 @@ class CausalDAG(nx.DiGraph):
         :return: A list containing ShouldCause and ShouldNotCause metamorphic relations.
         """
 
-        if nodes_to_ignore is None:
-            nodes_to_ignore = set()
+        nodes_to_ignore = set(nodes_to_ignore) if nodes_to_ignore is not None else set()
         nodes_to_ignore = nodes_to_ignore.union(set(self.cycle_nodes()))
 
         if nodes_to_test is None:

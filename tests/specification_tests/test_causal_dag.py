@@ -291,6 +291,21 @@ class TestDAGIdentification(unittest.TestCase):
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
         self.assertEqual([{"Z"}], list(adjustment_sets))
 
+    def test_identification_total_effect(self):
+        """Test whether identification works for total effect."""
+        causal_dag = CausalDAG()
+        causal_dag.add_edges_from([("X", "M"), ("M", "Y")])
+
+        self.assertEqual(
+            set(), causal_dag.identification(treatment_variable="X", outcome_variable="Y", effect_type="total")
+        )
+
+    def test_identification_invalid_effect(self):
+        causal_dag = CausalDAG()
+        with self.assertRaises(ValueError) as e:
+            causal_dag.identification(treatment_variable="X", outcome_variable="Y", effect_type="invalid")
+            self.assertEqual(e.exception, f"Causal effect should be 'total' or 'direct', not 'invalid'.")
+
     def test_enumerate_minimal_adjustment_sets_multiple(self):
         """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
         causal_dag = CausalDAG()
@@ -403,32 +418,48 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         min_separators = set(frozenset(min_separator) for min_separator in min_separators)
         self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
 
+    def test_close_separator_exception(self):
+        g = nx.Graph()
+        g.add_edges_from([("X", "Y")])
+
+        with self.assertRaises(ValueError) as e:
+            close_separator(
+                graph=g,
+                treatment_node="X",
+                outcome_node="X",
+                treatment_node_set={"Y"},
+            )
+            self.assertEqual(e.exception, "No X-Y separator in the graph.")
+
 
 class TestHiddenVariableDAG(unittest.TestCase):
     """
     Test the CausalDAG identification for the exclusion of hidden variables.
     """
 
-    def setUp(self) -> None:
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }"""
-        with open(self.dag_dot_path, "w") as f:
-            f.write(dag_dot)
-
-    def test_ignore_varaible_adjustment_sets(self):
+    def test_impossible_identification(self):
         """Test whether identification produces different adjustment sets if nodes_to_ignore is set."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        adjustment_sets = causal_dag.identification(treatment_variable="X", outcome_variable="M")
+        causal_dag = CausalDAG()
+        causal_dag.add_edges_from([("X", "M"), ("M", "Y"), ("X", "Y")])
 
-        adjustment_sets_with_hidden = causal_dag.identification(
-            treatment_variable="X", outcome_variable="M", nodes_to_ignore=["Z"]
+        self.assertEqual(causal_dag.identification(treatment_variable="X", outcome_variable="Y"), {"M"})
+
+        with self.assertRaises(ValueError) as e:
+            causal_dag.identification(treatment_variable="X", outcome_variable="Y", nodes_to_ignore=["M"])
+            self.assertEqual(
+                e.exception,
+                "Could not find a suitable adjustment set for the direct effect of X on Y while avoiding nodes in set {M}.",
+            )
+
+    def test_adjustment_set_nodes_to_ignore(self):
+        """Test whether identification produces different adjustment sets if nodes_to_ignore is set."""
+        causal_dag = CausalDAG()
+        causal_dag.add_edges_from([("L", "V"), ("V", "X"), ("X", "Y"), ("L", "C"), ("C", "Y")])
+
+        self.assertEqual(causal_dag.identification(treatment_variable="X", outcome_variable="Y"), {"C"})
+        self.assertEqual(
+            causal_dag.identification(treatment_variable="X", outcome_variable="Y", nodes_to_ignore={"C"}), {"L"}
         )
-
-        self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
 
 
 def time_it(label, func, *args, **kwargs):
