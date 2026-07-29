@@ -2,19 +2,14 @@
 This module tests common causal discovery functionality provided within the abstract_discovery module.
 """
 
-import os
 import unittest
-from tempfile import TemporaryDirectory
 
 import pandas as pd
-from numpy import nan
 
 from causal_testing.discovery.abstract_discovery import Discovery, simple_cycle
-from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_result import CausalTestResult, TestOutcome
+from causal_testing.testing.causal_test_result import TestOutcome
 
 
 class AbstractDiscovery(Discovery):
@@ -52,46 +47,6 @@ class TestAbstractHillClimber(unittest.TestCase):
         dag = CausalDAG()
         dag.add_edges_from([("A", "B"), ("B", "C")])
         self.assertEqual(simple_cycle(dag), [])
-
-    def test_effect_direction_positive(self):
-        causal_test_case = CausalTestCase(
-            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B", adjustment_set=set()),
-            effect_measure="ate",
-            expected_causal_effect=None,
-        )
-        causal_test_case.result = CausalTestResult(
-            outcome=None,
-            effect_estimate=EffectEstimate(
-                type="ate", value=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
-            ),
-        )
-        self.assertEqual(self.abstract_discovery.effect_direction(causal_test_case), "positive")
-
-    def test_effect_direction_negative(self):
-        causal_test_case = CausalTestCase(
-            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B", adjustment_set=set()),
-            expected_causal_effect=None,
-            effect_measure="ate",
-        )
-        causal_test_case.result = CausalTestResult(
-            outcome=None,
-            effect_estimate=EffectEstimate(
-                type="ate", value=pd.Series(-5.05), ci_low=pd.Series(-6), ci_high=pd.Series(-5)
-            ),
-        )
-        self.assertEqual(self.abstract_discovery.effect_direction(causal_test_case), "negative")
-
-    def test_effect_direction_none(self):
-        causal_test_case = CausalTestCase(
-            estimator=LinearRegressionEstimator(treatment_variable="A", outcome_variable="B", adjustment_set=set()),
-            effect_measure="ate",
-            expected_causal_effect=None,
-        )
-        causal_test_case.result = CausalTestResult(
-            outcome=None,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),
-        )
-        self.assertEqual(self.abstract_discovery.effect_direction(causal_test_case), None)
 
     def test_include_edge_wildcard(self):
         abstract_discovery = AbstractDiscovery(
@@ -154,50 +109,6 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertEqual(len(dag.edges()), 2)
         self.assertTrue(dag.has_edge("A", "B") or dag.has_edge("B", "A"))
         self.assertTrue(dag.has_edge("C", "D") or dag.has_edge("D", "C"))
-
-    def test_write_dot(self):
-        dag = CausalDAG()
-        dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
-        dag.test_results = pd.DataFrame(
-            [  # Edges
-                {"treatment": "A", "outcome": "B", "effect": "positive", "result": TestOutcome.PASS},
-                {"treatment": "C", "outcome": "D", "effect": "positive", "result": TestOutcome.FAIL},
-                {"treatment": "E", "outcome": "F", "effect": "None", "result": TestOutcome.INESTIMABLE},
-                # Independences
-                {"treatment": "A", "outcome": "C", "effect": None, "result": TestOutcome.PASS},
-                {"treatment": "A", "outcome": "D", "effect": "negative", "result": TestOutcome.FAIL},
-                {"treatment": "A", "outcome": "E", "effect": None, "result": TestOutcome.INESTIMABLE},
-            ]
-        )
-        abstract_discovery = AbstractDiscovery(pd.DataFrame())
-        with TemporaryDirectory() as tmp:
-            abstract_discovery.write_dot(dag, os.path.join(tmp, "dag.dot"))
-            dag2 = CausalDAG(os.path.join(tmp, "dag.dot"))
-            self.assertEqual(dag.nodes, dag2.nodes)
-
-    def test_write_dot_invalid_edge_outcome(self):
-        dag = CausalDAG()
-        dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
-        dag.test_results = pd.DataFrame(
-            [  # Edges
-                {"treatment": "A", "outcome": "B", "effect": None, "result": None},
-            ]
-        )
-        abstract_discovery = AbstractDiscovery(pd.DataFrame())
-        with self.assertRaises(ValueError):
-            abstract_discovery.write_dot(dag, "dag.dot")
-
-    def test_write_dot_invalid_independence_outcome(self):
-        dag = CausalDAG()
-        dag.add_edges_from([("A", "B"), ("C", "D"), ("E", "F")])
-        dag.test_results = pd.DataFrame(
-            [  # Edges
-                {"treatment": "A", "outcome": "C", "effect": None, "result": None},
-            ]
-        )
-        abstract_discovery = AbstractDiscovery(pd.DataFrame())
-        with self.assertRaises(ValueError):
-            abstract_discovery.write_dot(dag, "dag.dot")
 
     def test_evaluate_tests_invalid_datatype(self):
         scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
@@ -286,7 +197,6 @@ class TestAbstractHillClimber(unittest.TestCase):
                 },
             ]
         )
-        expected_results["effect"] = nan
         pd.testing.assert_frame_equal(test_results, expected_results)
 
     def test_evaluate_tests(self):
@@ -362,5 +272,5 @@ class TestAbstractHillClimber(unittest.TestCase):
                 },
             ]
         )
-        expected_results["effect"] = None
+        print(test_results)
         pd.testing.assert_frame_equal(test_results, expected_results)

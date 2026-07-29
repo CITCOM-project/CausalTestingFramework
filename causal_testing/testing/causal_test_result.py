@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from causal_testing.estimation.effect_estimate import EffectEstimate
+from causal_testing.testing.causal_effect import Negative, Positive
 
 TestOutcome = Enum("TestOutcome", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
 
@@ -50,3 +51,15 @@ class CausalTestResult:
         adequacy = self.adequacy.to_dict() if self.adequacy else {}
 
         return outcome | effect_estimate | {"adequacy": adequacy}
+
+    def effect_direction(self) -> str:
+        """
+        Check whether the estimated causal effect is negative or positive.
+
+        :returns: Whether the estimated causal effect is positive or negative (or no effect).
+        """
+        if Negative().apply(self.effect_estimate):
+            return "negative"
+        if Positive().apply(self.effect_estimate):
+            return "positive"
+        return None

@@ -13,6 +13,7 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.visualisation.causal_test_result_visualiser import results_dag
 
 logger = logging.getLogger(__name__)
 
@@ -237,7 +238,7 @@ def main() -> None:
                 **kwargs,
             )
             evolved_dag = discover.discover()
-            discover.write_dot(evolved_dag, args.output)
+            results_dag(test_cases=evolved_dag.test_cases, dag=evolved_dag, output_file=args.output)
             logging.info("Causal structure discovery completed successfully.")
         case Command.TEST:
             # Create and setup framework

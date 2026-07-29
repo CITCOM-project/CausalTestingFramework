@@ -75,16 +75,14 @@ class HillClimberDiscovery(Discovery):
         :returns: Tuple of the form (X, Y), where X is a triple containing the number of passing, failing, and
                   inestimable tests respectively, and Y is a list of failing edges.
         """
-        self.evaluate_tests(individual)
-        counts = self.sum_test_outcomes(individual.test_results)
+        test_results = self.evaluate_tests(individual)
+        counts = self.sum_test_outcomes(test_results)
 
         # Add extra "var1" and "var2" columns to serve as order independent "treatment" and "outcome"
         query_df = pd.concat(
             [
-                individual.test_results,
-                pd.DataFrame(
-                    np.sort(individual.test_results[["treatment", "outcome"]], axis=1), columns=["var1", "var2"]
-                ),
+                test_results,
+                pd.DataFrame(np.sort(test_results[["treatment", "outcome"]], axis=1), columns=["var1", "var2"]),
             ],
             axis=1,
         )

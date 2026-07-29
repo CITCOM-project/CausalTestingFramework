@@ -45,7 +45,7 @@ class SomeEffect(CausalEffect):
         else:
             raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
 
-        return (~((effect_estimate.ci_low <= value_to_check) & (value_to_check <= effect_estimate.ci_high))).all()
+        return (~((effect_estimate.ci_low <= value_to_check) & (value_to_check <= effect_estimate.ci_high))).any()
 
 
 class NoEffect(CausalEffect):
