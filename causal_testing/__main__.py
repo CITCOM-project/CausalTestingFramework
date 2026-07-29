@@ -1,16 +1,18 @@
 """This module contains the main entrypoint functionality to the Causal Testing Framework."""
 
 import argparse
+import json
 import logging
 from enum import Enum
 from importlib.metadata import entry_points
 from typing import Optional, Sequence
+from warnings import warn
 
 import networkx as nx
 import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
-from causal_testing.testing.metamorphic_relation import generate_causal_tests
+from causal_testing.specification.causal_dag import CausalDAG
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class Command(Enum):
     TEST = "test"
     GENERATE = "generate"
     DISCOVER = "discover"
+    EVALUATE = "evaluate"
 
 
 def setup_logging(level: str) -> None:
@@ -40,15 +43,6 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "A causal inference-driven framework for functional black-box testing of complex software.",
     )
 
-    main_parser.add_argument(
-        "-l",
-        "--log_level",
-        default="WARNING",
-        type=str.upper,
-        choices=["NONE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="Set the logging level (default: WARNING).",
-    )
-
     subparsers = main_parser.add_subparsers(
         help="The action you want to run - call `causal_testing {action} -h` for further details", dest="command"
     )
@@ -57,24 +51,6 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_generate = subparsers.add_parser(Command.GENERATE.value, help="Generate causal tests from a DAG")
     parser_generate.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
     parser_generate.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
-    parser_generate.add_argument(
-        "-e",
-        "--estimator",
-        help="The name of the estimator class to use when evaluating tests (defaults to LinearRegressionEstimator)",
-        default="LinearRegressionEstimator",
-    )
-    parser_generate.add_argument(
-        "-T",
-        "--effect-type",
-        help="The effect type to estimate {direct, total}",
-        default="direct",
-    )
-    parser_generate.add_argument(
-        "-E",
-        "--estimate-type",
-        help="The estimate type to use when evaluating tests (defaults to coefficient)",
-        default="coefficient",
-    )
     parser_generate.add_argument(
         "-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False
     )
@@ -87,11 +63,10 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_test.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
     parser_test.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
     parser_test.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
-    parser_test.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
     parser_test.add_argument("-t", "--test-config", help="Path to test configuration file (.json)", required=True)
     parser_test.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
     parser_test.add_argument(
-        "-a", "--adequacy", help="Calculate causal test adequacy for each test case", action="store_true", default=False
+        "-A", "--adequacy", help="Calculate causal test adequacy for each test case", action="store_true", default=False
     )
     parser_test.add_argument(
         "-b",
@@ -108,18 +83,35 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=False,
     )
 
+    # DAG evaluation
+    parser_evaluate = subparsers.add_parser(
+        Command.EVALUATE.value, help="Evaluate how well a causal DAG fits a dataset"
+    )
+    parser_evaluate.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
+    parser_evaluate.add_argument("-o", "--output", help="Path for output file (.csv)", required=True)
+    parser_evaluate.add_argument(
+        "-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False
+    )
+    parser_evaluate.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
+    parser_evaluate.add_argument(
+        "-b",
+        "--adequacy-bootstrap-size",
+        dest="bootstrap_size",
+        help="Number of bootstrap samples for causal test adequacy. Defaults to 100",
+        type=int,
+        default=100,
+    )
+    parser_evaluate.add_argument(
+        "-s",
+        "--silent",
+        action="store_true",
+        help="Do not crash on error. If set to true, errors are recorded as test results.",
+        default=False,
+    )
+    parser_evaluate.add_argument("-t", "--test-config", help="Path to test configuration file (.json)")
+
     # Discovery
     parser_discover = subparsers.add_parser(Command.DISCOVER.value, help="Discover causal structures from data")
-    parser_discover.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
-    parser_discover.add_argument(
-        "-a",
-        "--alpha",
-        help=(
-            "The significance level of the confidence intervals used to determine causality. "
-            "This should be a value between 0 and 1. Defaults to 0.05 for 95%% confidence intervals."
-        ),
-        default=0.05,
-    )
     parser_discover.add_argument(
         "-t",
         "--technique",
@@ -146,6 +138,26 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         nargs="*",
         default=[],
     )
+
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate]:
+        parser.add_argument(
+            "-l",
+            "--log_level",
+            default="WARNING",
+            type=str.upper,
+            choices=["NONE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+            help="Set the logging level (default: WARNING).",
+        )
+        parser.add_argument(
+            "-a",
+            "--alpha",
+            help=(
+                "The significance level of the confidence intervals used to determine causality. "
+                "This should be a value between 0 and 1. Defaults to 0.05 for 95%% confidence intervals."
+            ),
+            default=0.05,
+        )
+        parser.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
 
     args = main_parser.parse_args(args)
 
@@ -175,16 +187,14 @@ def main() -> None:
     match args.command:
         case Command.GENERATE:
             logging.info("Generating causal tests")
-            generate_causal_tests(
-                args.dag_path,
-                args.output,
-                args.ignore_cycles,
-                args.threads,
-                effect_type=args.effect_type,
-                estimate_type=args.estimate_type,
-                estimator=args.estimator,
+            df = pd.concat(read_dataframe(path) for path in args.data_paths)
+            causal_dag = CausalDAG(args.dag_path, ignore_cycles=args.ignore_cycles, datatypes=df.dtypes)
+            causal_tests = causal_dag.generate_causal_tests(
+                threads=args.threads,
                 skip=False,
             )
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump({"tests": [test.to_dict() for test in causal_tests]}, f)
             logging.info("Causal test generation completed successfully.")
 
         case Command.DISCOVER:
@@ -211,8 +221,8 @@ def main() -> None:
             # Drop unnamed columns
             unnamed_columns = [c for c in df.columns if c.startswith("Unnamed: ")]
             if unnamed_columns:
-                logger.warning(f"Dropping unnamed columns: {unnamed_columns}")
-            df = df.drop(unnamed_columns)
+                warn(f"Dropping unnamed columns: {unnamed_columns}")
+            df = df.drop(unnamed_columns, axis=1)
 
             discover_class = discover_map[args.technique].load()
             discover = discover_class(
@@ -246,6 +256,23 @@ def main() -> None:
             framework.save_results(args.output)
 
             logging.info("Causal testing completed successfully.")
+        case Command.EVALUATE:
+            # Create and setup framework
+            framework = CausalTestingFramework()
+            framework.load_data(args.data_paths, query=args.query)
+            framework.load_dag(args.dag_path, args.ignore_cycles)
+            framework.dag.datatypes = framework.df.dtypes
+
+            if args.test_config:
+                framework.load_test_cases_from_json(args.test_config)
+            else:
+                framework.test_cases = framework.dag.generate_causal_tests()
+
+            logging.info("Running tests on entire dataset")
+            results = framework.evaluate_dag(alpha=args.alpha, bootstrap_size=args.bootstrap_size)
+            logging.info("Causal testing completed successfully.")
+            logging.info("Running tests on bootstrap samples")
+            results.to_csv(args.output)
 
 
 if __name__ == "__main__":

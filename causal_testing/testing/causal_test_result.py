@@ -1,8 +1,11 @@
 """This module contains the CausalTestResult class, which is a container for the results of a causal test."""
 
 from dataclasses import dataclass
+from enum import Enum
 
 from causal_testing.estimation.effect_estimate import EffectEstimate
+
+TestOutcome = Enum("TestOutcome", [("PASS", 2), ("FAIL", 0), ("INESTIMABLE", 1)])
 
 
 @dataclass
@@ -14,9 +17,36 @@ class CausalTestResult:
     def __init__(
         self,
         effect_estimate: EffectEstimate,
+        outcome: TestOutcome,
         adequacy=None,
         error_message: str = None,
     ):
-        self.adequacy = adequacy
         self.effect_estimate = effect_estimate
+        self.outcome = outcome
+        self.adequacy = adequacy
         self.error_message = error_message
+
+    @property
+    def passed(self) -> bool:
+        """
+        Check whether the test has passed.
+        :returns: True if the test outcome is PASS.
+        """
+        return self.outcome == TestOutcome.PASS
+
+    def to_dict(self):
+        """
+        Convert the result to a python dictionary for easy serialisation as JSON.
+
+        :returns: A JSON serialisable dict representing the test result.
+        """
+
+        outcome = {"outcome": self.outcome.name, "passed": self.passed}
+        if self.error_message:
+            outcome["error_message"] = self.error_message
+
+        effect_estimate = self.effect_estimate.to_dict() if self.effect_estimate else {}
+
+        adequacy = self.adequacy.to_dict() if self.adequacy else {}
+
+        return outcome | effect_estimate | {"adequacy": adequacy}

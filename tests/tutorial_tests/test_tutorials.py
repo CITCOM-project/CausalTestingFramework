@@ -2,9 +2,9 @@ import os
 
 os.environ["JUPYTER_PLATFORM_DIRS"] = "1"
 
+import asyncio
 import sys
 import warnings
-import asyncio
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, message=r"Jupyter is migrating.*")
 
@@ -12,8 +12,9 @@ if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 import pathlib
-import pytest
+
 import nbformat
+import pytest
 from nbclient.client import NotebookClient
 
 NOTEBOOK_DIR = pathlib.Path(__file__).parent.parent.parent / "docs" / "source" / "tutorials"

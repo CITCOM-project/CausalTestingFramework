@@ -3,9 +3,11 @@ This module tests the NSGA Discovery algorithm.
 """
 
 import unittest
-import numpy as np
+
 import networkx as nx
+import numpy as np
 import pandas as pd
+
 from causal_testing.discovery.nsga_discovery import NSGADiscovery
 from causal_testing.specification.causal_dag import CausalDAG
 

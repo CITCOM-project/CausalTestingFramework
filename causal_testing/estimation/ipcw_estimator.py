@@ -11,8 +11,6 @@ from lifelines import CoxPHFitter
 
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
-from causal_testing.specification.variable import Variable
-from causal_testing.testing.base_test_case import BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +43,7 @@ class IPCWEstimator(Estimator):
         timesteps_per_observation: int,
         control_strategy: list[tuple[int, str, Any]],
         treatment_strategy: list[tuple[int, str, Any]],
-        outcome: Variable,
+        outcome_variable: str,
         status_column: str,
         fit_bl_switch_formula: str,
         fit_bltd_switch_formula: str,
@@ -54,11 +52,10 @@ class IPCWEstimator(Estimator):
         total_time: float = None,
     ):
         super().__init__(
-            base_test_case=BaseTestCase(None, outcome),
+            outcome_variable=outcome_variable,
+            treatment_variable=[var for _, var, _ in treatment_strategy],
             treatment_value=[val for _, _, val in treatment_strategy],
             control_value=[val for _, _, val in control_strategy],
-            adjustment_set=None,
-            effect_modifiers=None,
             alpha=alpha,
         )
         self.timesteps_per_observation = timesteps_per_observation

@@ -1,12 +1,11 @@
-import unittest
 import os
 import shutil
 import tempfile
+import unittest
+
 import networkx as nx
+
 from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
-from causal_testing.specification.scenario import Scenario
-from causal_testing.specification.variable import Input, Output
-from causal_testing.testing.base_test_case import BaseTestCase
 
 
 class TestCausalDAGIssue90(unittest.TestCase):
@@ -26,6 +25,11 @@ class TestCausalDAGIssue90(unittest.TestCase):
         xml_dag = CausalDAG(os.path.join("tests", "resources", "data", "dag.xml"))
         self.assertEqual(dot_dag.nodes, xml_dag.nodes)
         self.assertEqual(dot_dag.edges, xml_dag.edges)
+
+    def test_invalid_file_extension(self):
+        with self.assertRaises(ValueError) as e:
+            CausalDAG("test.csv")
+            self.assertEqual(e.exception, "Unsupported file extension test.csv. We only support .dot and .xml files.")
 
     def test_enumerate_minimal_adjustment_sets(self):
         """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
@@ -135,8 +139,7 @@ class TestCyclicCausalDAG(unittest.TestCase):
 
     def test_ignore_cycles(self):
         dag = CausalDAG(self.dag_dot_path, ignore_cycles=True)
-        base_test_case = BaseTestCase(Output("B", float), Output("C", float))
-        self.assertEqual(dag.identification(base_test_case), {"A"})
+        self.assertEqual(dag.identification(treatment_variable="B", outcome_variable="C"), {"A"})
 
     def tearDown(self) -> None:
         shutil.rmtree(self.temp_dir_path)
@@ -288,6 +291,21 @@ class TestDAGIdentification(unittest.TestCase):
         adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
         self.assertEqual([{"Z"}], list(adjustment_sets))
 
+    def test_identification_total_effect(self):
+        """Test whether identification works for total effect."""
+        causal_dag = CausalDAG()
+        causal_dag.add_edges_from([("X", "M"), ("M", "Y")])
+
+        self.assertEqual(
+            set(), causal_dag.identification(treatment_variable="X", outcome_variable="Y", effect_type="total")
+        )
+
+    def test_identification_invalid_effect(self):
+        causal_dag = CausalDAG()
+        with self.assertRaises(ValueError) as e:
+            causal_dag.identification(treatment_variable="X", outcome_variable="Y", effect_type="invalid")
+            self.assertEqual(e.exception, f"Causal effect should be 'total' or 'direct', not 'invalid'.")
+
     def test_enumerate_minimal_adjustment_sets_multiple(self):
         """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
         causal_dag = CausalDAG()
@@ -400,36 +418,48 @@ class TestUndirectedGraphAlgorithms(unittest.TestCase):
         min_separators = set(frozenset(min_separator) for min_separator in min_separators)
         self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
 
+    def test_close_separator_exception(self):
+        g = nx.Graph()
+        g.add_edges_from([("X", "Y")])
+
+        with self.assertRaises(ValueError) as e:
+            close_separator(
+                graph=g,
+                treatment_node="X",
+                outcome_node="X",
+                treatment_node_set={"Y"},
+            )
+            self.assertEqual(e.exception, "No X-Y separator in the graph.")
+
 
 class TestHiddenVariableDAG(unittest.TestCase):
     """
     Test the CausalDAG identification for the exclusion of hidden variables.
     """
 
-    def setUp(self) -> None:
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }"""
-        with open(self.dag_dot_path, "w") as f:
-            f.write(dag_dot)
+    def test_impossible_identification(self):
+        """Test whether identification produces different adjustment sets if nodes_to_ignore is set."""
+        causal_dag = CausalDAG()
+        causal_dag.add_edges_from([("X", "M"), ("M", "Y"), ("X", "Y")])
 
-    def test_hidden_varaible_adjustment_sets(self):
-        """Test whether identification produces different adjustment sets depending on if a variable is hidden."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        z = Input("Z", int)
-        x = Input("X", int)
-        m = Input("M", int)
+        self.assertEqual(causal_dag.identification(treatment_variable="X", outcome_variable="Y"), {"M"})
 
-        scenario = Scenario(variables={z, x, m})
-        adjustment_sets = causal_dag.identification(BaseTestCase(x, m), scenario.hidden_variables())
+        with self.assertRaises(ValueError) as e:
+            causal_dag.identification(treatment_variable="X", outcome_variable="Y", nodes_to_ignore=["M"])
+            self.assertEqual(
+                e.exception,
+                "Could not find a suitable adjustment set for the direct effect of X on Y while avoiding nodes in set {M}.",
+            )
 
-        z.hidden = True
-        adjustment_sets_with_hidden = causal_dag.identification(BaseTestCase(x, m), scenario.hidden_variables())
+    def test_adjustment_set_nodes_to_ignore(self):
+        """Test whether identification produces different adjustment sets if nodes_to_ignore is set."""
+        causal_dag = CausalDAG()
+        causal_dag.add_edges_from([("L", "V"), ("V", "X"), ("X", "Y"), ("L", "C"), ("C", "Y")])
 
-        self.assertNotEqual(adjustment_sets, adjustment_sets_with_hidden)
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
+        self.assertEqual(causal_dag.identification(treatment_variable="X", outcome_variable="Y"), {"C"})
+        self.assertEqual(
+            causal_dag.identification(treatment_variable="X", outcome_variable="Y", nodes_to_ignore={"C"}), {"L"}
+        )
 
 
 def time_it(label, func, *args, **kwargs):
