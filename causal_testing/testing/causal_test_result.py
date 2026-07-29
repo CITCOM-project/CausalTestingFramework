@@ -58,6 +58,9 @@ class CausalTestResult:
 
         :returns: Whether the estimated causal effect is positive or negative (or no effect).
         """
+        if len(self.effect_estimate.value) > 1:
+            # Don't bother checking categorical estimates since they're not numeric
+            return None
         if Negative().apply(self.effect_estimate):
             return "negative"
         if Positive().apply(self.effect_estimate):

@@ -36,3 +36,15 @@ class TestCausalTestCase(unittest.TestCase):
             effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),
         )
         self.assertEqual(result.effect_direction(), None)
+
+    def test_effect_direction_categorical(self):
+        result = CausalTestResult(
+            outcome=None,
+            effect_estimate=EffectEstimate(
+                type="ate",
+                value=pd.Series({"color[T.RED]": -5, "color[T.BLUE]": -4}),
+                ci_low=pd.Series({"color[T.RED]": -4, "color[T.BLUE]": -1}),
+                ci_high=pd.Series({"color[T.RED]": 5, "color[T.BLUE]": 4}),
+            ),
+        )
+        self.assertEqual(result.effect_direction(), None)
