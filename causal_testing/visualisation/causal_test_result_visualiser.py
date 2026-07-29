@@ -3,6 +3,7 @@ This module implements a set of utilities to help visualise causal test results.
 """
 
 import networkx as nx
+import pandas as pd
 
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
@@ -39,16 +40,31 @@ def results_dag(
 
     for test in test_cases:
         if test.result:
+            effect_estimate = pd.concat(
+                [
+                    test.result.effect_estimate.ci_low,
+                    test.result.effect_estimate.value,
+                    test.result.effect_estimate.ci_high,
+                ],
+                axis=1,
+            )
+            effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
+            tooltip = (
+                f"Treatment: {test.treatment_variable}\nOutcome: {test.outcome_variable}\nEstimated effect:\n"
+                "{effect_estimate.to_markdown(index=False)}"
+            )
             if (test.treatment_variable, test.outcome_variable) in result_dag.edges:
                 result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
                 result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
                 result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[test.result.outcome]
+                result_dag[test.treatment_variable][test.outcome_variable]["tooltip"] = tooltip
             elif view_independences and test.result.outcome != TestOutcome.PASS:
                 result_dag.add_edge(test.treatment_variable, test.outcome_variable, ignore_cycles=True)
                 result_dag[test.treatment_variable][test.outcome_variable]["style"] = "dashed"
                 result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
                 result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
                 result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[test.result.outcome]
+                result_dag[test.treatment_variable][test.outcome_variable]["tooltip"] = tooltip
 
     if output_file is not None:
         nx.drawing.nx_pydot.write_dot(result_dag, output_file)
