@@ -60,9 +60,9 @@ class CausalTestResult:
         """
         if len(self.effect_estimate.value) > 1:
             # Don't bother checking categorical estimates since they're not numeric
-            return None
+            return "categorical"
         if Negative().apply(self.effect_estimate):
             return "negative"
         if Positive().apply(self.effect_estimate):
             return "positive"
-        return None
+        return "no effect"
