@@ -207,7 +207,7 @@ class TestCausalTestCase(unittest.TestCase):
                 "effect_estimate": {"A": 4.0},
                 "ci_low": {"A": 4.0},
                 "ci_high": {"A": 4.0},
-                "adequacy": {"kurtosis": {"A": 0.0}, "passing": 100, "successful": 100},
+                "adequacy": {"kurtosis": {"A": 0.0}, "passing": 100, "successful": 100, "bootstrap_size": 100},
             },
         }
 

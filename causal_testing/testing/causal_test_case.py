@@ -104,12 +104,14 @@ class CausalTestCase:
                 kurtosis=results.groupby("var")["effect_estimate"].apply(lambda x: x.kurtosis()),
                 passing=int(sum(filter(lambda x: x is not None, outcomes))),
                 successful=int(sum(x is not None for x in outcomes)),
+                bootstrap_size=bootstrap_size,
             )
         return DataAdequacy(
             results=results,
             kurtosis=None,
             passing=int(sum(filter(lambda x: x is not None, outcomes))),
             successful=int(sum(x is not None for x in outcomes)),
+            bootstrap_size=bootstrap_size,
         )
 
     def execute_test(

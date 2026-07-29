@@ -26,11 +26,13 @@ class DataAdequacy:
         passing: int = None,
         results: dict = None,
         successful: int = None,
+        bootstrap_size: int = None,
     ):
         self.kurtosis = kurtosis
         self.passing = passing
         self.results = results
         self.successful = successful
+        self.bootstrap_size = bootstrap_size
 
     def to_dict(self, include_results: bool = False):
         """
@@ -41,6 +43,7 @@ class DataAdequacy:
             "kurtosis": self.kurtosis.to_dict(),
             "passing": self.passing,
             "successful": self.successful,
+            "bootstrap_size": self.bootstrap_size,
         }
         if include_results:
             return result | {"results": self.results.reset_index(drop=True).to_dict()}

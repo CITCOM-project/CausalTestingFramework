@@ -142,6 +142,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
             "kurtosis": {"test_input": 0.0},
             "passing": 10,
             "successful": 10,
+            "bootstrap_size": 10,
             "results": {
                 "effect_estimate": {
                     0: -2.220446049250313e-16,
