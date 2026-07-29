@@ -33,7 +33,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         seed: int = 0,
     ):
         # pylint: disable=too-many-arguments
-        """
+        r"""
         Use Genetic Programming (GP) to infer the regression equation from the data.
 
         :param df: The data to use.

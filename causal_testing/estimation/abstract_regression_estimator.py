@@ -101,7 +101,7 @@ class RegressionEstimator(Estimator):
             tree = ast.parse(code, mode="eval")
             adjustment_set = adjustment_set.union(self._get_adjusted_variables(tree))
 
-        self.adjustment_set = sorted(list(adjustment_set))
+        self.adjustment_set = adjustment_set
 
     def _setup_covariates(self, df: pd.DataFrame) -> pd.Series:
         """
