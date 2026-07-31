@@ -51,8 +51,6 @@ dev = [
 "pandoc",
 "pre-commit",
 "tox",
-]
-test = [
 "nbclient",
 "nbformat",
 "ipykernel",
