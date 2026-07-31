@@ -49,22 +49,19 @@ def results_dag(
                 axis=1,
             )
             effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
-            tooltip = (
-                f"Treatment: {test.treatment_variable}\nOutcome: {test.outcome_variable}\nEstimated effect:\n"
-                "{effect_estimate.to_markdown(index=False)}"
-            )
             if (test.treatment_variable, test.outcome_variable) in result_dag.edges:
                 result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
                 result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
                 result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[test.result.outcome]
-                result_dag[test.treatment_variable][test.outcome_variable]["tooltip"] = tooltip
+                result_dag[test.treatment_variable][test.outcome_variable]["title"] = effect_estimate.to_html()
+
             elif view_independences and test.result.outcome != TestOutcome.PASS:
                 result_dag.add_edge(test.treatment_variable, test.outcome_variable, ignore_cycles=True)
                 result_dag[test.treatment_variable][test.outcome_variable]["style"] = "dashed"
                 result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
                 result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
                 result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[test.result.outcome]
-                result_dag[test.treatment_variable][test.outcome_variable]["tooltip"] = tooltip
+                result_dag[test.treatment_variable][test.outcome_variable]["title"] = effect_estimate.to_html()
 
     if output_file is not None:
         nx.drawing.nx_pydot.write_dot(result_dag, output_file)
