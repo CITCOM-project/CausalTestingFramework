@@ -31,7 +31,7 @@ LogisticRegressionEstimator
    :noindex:
 
 MultinomialRegressionEstimator
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Recommended use:** For categorical outcomes (e.g. colurs: Red, Green, Blue).
 
@@ -41,19 +41,6 @@ MultinomialRegressionEstimator
    :undoc-members:
    :show-inheritance:
    :noindex:
-
-CubicSplineRegressionEstimator
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Recommended use:** For continuous outcomes with non-linear relationships or changes in behaviour.
-Useful when the relationship between treatment and outcome cannot be captured by a linear model.
-
-.. autoclass:: causal_testing.estimation.cubic_spline_estimator.CubicSplineRegressionEstimator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :noindex:
-
 
 InstrumentalVariableEstimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
