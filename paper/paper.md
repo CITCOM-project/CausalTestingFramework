@@ -69,7 +69,7 @@ The user may also refine tests to validate the nature of a particular relationsh
 Next, the user supplies a set of runtime data in the form of a table with each column representing a variable and rows containing the value of each variable for a particular run of the software.
 Finally, the CTF automatically validates the causal properties by using the causal DAG to identify a statistical estimand [@pearl2009causality] (essentially a set of features in the data which must be controlled for), calculate a causal effect estimate from the supplied data, and validating this against the expected causal relationship.
 
-![Causal Testing workflow.\label{fig:schematic}](../images/schematic.png)
+![Causal Testing workflow.\label{fig:schematic}](../docs/_static/images/schematic.png)
 
 ## Test Adequacy
 Because the properties being tested are completely separate from the data used to validate them, traditional coverage-based metrics are not appropriate here.

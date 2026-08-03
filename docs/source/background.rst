@@ -71,7 +71,7 @@ Background
 
 .. container:: zoom-container
 
-   .. figure:: ../../images/schematic.png
+   .. figure:: _static/images/CITCOM-logo.png
       :class: zoomable-image
       :alt: Schematic diagram of the Causal Testing Framework
       :align: center

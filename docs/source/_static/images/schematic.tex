@@ -1,0 +1,127 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning,shapes,calc,fit,overlay-beamer-styles, backgrounds}
+\usepackage{dsfont,pifont}
+\newcommand*{\expe}{\mathds{E}}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{fontawesome7}
+
+\usepackage[default]{FiraSans}
+\usepackage[mathrm=sym]{unicode-math}
+\setmathfont{Fira Math}
+
+\newcommand{\indep}{\perp \!\!\! \perp}
+
+\begin{document}
+\tikzset{
+  node/.style={circle, draw, minimum size=3ex, inner sep=0.2},
+  edge/.style={->,> = latex'},
+}
+
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+\begin{tikzpicture}[background rectangle/.style={fill=none}, show background rectangle, color=black]
+
+  % Test Case
+  \begin{scope}[name prefix=test-, local bounding box=test-case]
+    \node[draw=none, rectangle, anchor=north] (title) at (0, 0) {Causal Test Cases};
+    \node[anchor=north,align=center] (tuple) at (title.south) {$I \to_{?} Y_3$\hspace{5mm}$X_2 \indep_? X_2$};
+    \node[draw, rectangle] [fit=(title) (tuple)] {};
+  \end{scope}
+
+  % ci
+  \begin{scope}[name prefix=ci-, local bounding box=ci, shift={($(test-test-case.east) + (1, 0)$)}]
+  \node[draw=none, rectangle, anchor=south west] (title) {Causal Inference};
+  \node[draw=none, rectangle, anchor=north, align=center] (brain) at (title.south) {\faIcon{hexagon-nodes-bolt}};
+
+  \coordinate (top) at ({(0, 0)} |- test-title.north);
+  \coordinate (bot) at ({(0, 0)} |- test-tuple.south);
+
+  \node[draw, rectangle] [fit=(title) (brain)  (top) (bot)] {};
+  \end{scope}
+
+  % Estimate
+  \begin{scope}[name prefix=estimate-, local bounding box=estimate, shift={($(ci-ci.east)+(1, 0)$)}]
+    \node[draw=none, rectangle, anchor=south west] (title) {Causal Estimate};
+    \node[anchor=north] (table) at (title.south) {\faIcon{chart-line}};
+    \coordinate (top) at ({(0, 0)} |- test-title.north);
+    \coordinate (bot) at ({(0, 0)} |- test-tuple.south);
+    \node[draw, rectangle] [fit=(title) (table) (top) (bot)] {};
+  \end{scope}
+
+  % Oracle
+  \begin{scope}[name prefix=oracle-, local bounding box=test-oracle, shift={($(estimate-estimate.east) + (1, 0)$)}]
+    \node[draw=none, rectangle, anchor=south west] (title) {Test Oracle};
+    \node[draw=none, rectangle, anchor=north] (scale) at (title.south) {\faIcon{scale-balanced}};
+
+    \coordinate (top) at ({(0, 0)} |- test-title.north);
+    \coordinate (bot) at ({(0, 0)} |- test-tuple.south);
+    \node[draw, rectangle] [fit=(title) (scale) (top) (bot)] {};
+  \end{scope}
+
+  % Outcome
+  \begin{scope}[name prefix=outcome-, local bounding box=test-outcome, shift={($(oracle-test-oracle.east) + (1, 0)$)}]
+    \node[draw=none, rectangle, anchor=south west] (title) at (0,0) {Test Outcomes};
+    \node[draw=none, anchor=north] (ok) at (title.south) {\cmark ~ \xmark};
+
+    \coordinate (top) at ({(0, 0)} |- test-title.north);
+    \coordinate (bot) at ({(0, 0)} |- test-tuple.south);
+    \node[draw, rectangle] (test-outcome) [fit=(outcome-title) (outcome-ok) (top) (bot)] {};
+  \end{scope}
+
+
+  % Causal DAG
+  \begin{scope}[name prefix=dag-, shift={(0, 2)}]
+    \node[node] (x1) at (-1, 0) {$X_1$};
+    \node[node] (x2) at (-1, 1.4) {$X_2$};
+    \node[node] (i) at (0, 0.7) {$I$};
+    \node[node] (y1) at (1,0) {$Y_{1}$};
+    \node[node] (y2) at (1,0.7) {$Y_2$};
+    \node[node] (y3) at (1,1.4) {$Y_3$};
+
+    \draw[edge] (x1) to (i);
+    \draw[edge] (x2) to (i);
+    \draw[edge] (i) to (y1);
+    \draw[edge] (i) to (y2);
+    \draw[edge] (i) to (y3);
+    \draw[edge] (x1) to (y1);
+    \draw[edge] (x2) to (y3);
+    \node[draw=none, rectangle] (nodes) [fit=(x1) (x2) (y1) (y2) (y3) (i)] {};
+    \node[draw=none, rectangle, anchor=south] (title) at (nodes.north) {Causal DAG};
+  \end{scope}
+  % DAG outline
+  \node[draw, rectangle] (dag) [fit=(dag-nodes) (dag-title) (dag-title)] {};
+
+  % Data
+  \begin{scope}[name prefix=data-, local bounding box=test-data, shift={($(dag) + (5, 1.12)$)}]
+    \node[draw=none, rectangle] (title) {Test Data};
+    \node[anchor=north] (table) at (title.south) {
+      \begin{tabular}{rrrrrr}
+        \toprule
+        $X_1$ & $X_2$  & $I$ & $Y_1$ & $Y_2$ & $Y_3$ \\
+        \midrule
+        1.2   & ``UK'' & 0.3 & 7.8   & 4     & True   \\
+        3.2   & ``UK'' & 0.1 & 7.6   & 8     & False  \\
+        \multicolumn{6}{c}{$\vdots$}                  \\
+        \bottomrule
+      \end{tabular}
+    };
+    \node[draw, rectangle] [fit=(title) (table)] {};
+  \end{scope}
+
+
+  %Information flow
+  \draw[edge, dashed] (dag.290) -- (ci-ci.160);
+  \draw[edge, dashed] (dag) -- (test-test-case.north);
+  \draw[edge, dashed] (test-test-case) -- (ci-ci);
+
+  \draw[edge, dashed] (data-test-data.south) -- (data-test-data |- ci-ci.north);
+  \draw[edge, dashed] (ci-ci) -- (estimate-estimate);
+
+  \draw[edge, dashed] (estimate-estimate) -- (oracle-test-oracle.west |- estimate-estimate);
+  \draw[edge, dashed] (oracle-test-oracle.east |- outcome-test-outcome) -- (outcome-test-outcome);
+\end{tikzpicture}
+\end{document}

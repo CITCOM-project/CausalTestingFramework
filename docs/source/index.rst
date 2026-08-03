@@ -7,7 +7,10 @@ Welcome to the Causal Testing Framework
 Motivation
 ----------
 
-A common problem in computer science is to develop robust and reliable software systems that can perform correctly under various input configurations and maintain consistency across complex, physical scenarios. However, software systems, and more specifically computational models, can be difficult to test: they may contain hundreds of parameters, making testing all possible inputs computationally infeasible; some models may be inherently non-deterministic, producing different outputs for the same inputs due to randomness; or there may exist hidden causal relationships between input-output pairs, causing errors that only appear under specific combinations of input configurations.
+From predicting the weather to simulating disease transmission, scientific software plays an increasingly pivotal role in developing scientific understanding that informs our everyday lives.
+However, they are also some of the most difficult software systems to properly test.
+They have large, complex input spaces, are computationally expensive to run, often rely on stochastic black-box components, and are applied in exploratory contexts where the expected outcomes are not known.
+From a practical standpoint, the time and effort that can be dedicated to testing is often limited, especially in an academic context, making it especially important to maximise the efficiency of the limited number of test runs we are able to perform.
 
 The Framework
 -------------
