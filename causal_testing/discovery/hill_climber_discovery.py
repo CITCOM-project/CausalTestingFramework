@@ -7,6 +7,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from causal_testing.discovery.abstract_discovery import Discovery
 from causal_testing.specification.causal_dag import CausalDAG
@@ -116,11 +117,11 @@ class HillClimberDiscovery(Discovery):
         self.remove_cycles(individual)
         fitness_values, problem_edges = self.evaluate_fitness(individual)
 
-        iterations = self.max_iterations
         iterations_without_improvement = 0
 
-        while problem_edges and iterations:
-            iterations -= 1
+        for _ in tqdm(range(self.max_iterations)):
+            if not problem_edges:
+                break
 
             new_individual = individual.copy()
             for origin, dest in random.sample(
