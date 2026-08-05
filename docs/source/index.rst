@@ -12,41 +12,89 @@ However, they are also some of the most difficult software systems to properly t
 They have large, complex input spaces, are computationally expensive to run, often rely on stochastic black-box components, and are applied in exploratory contexts where the expected outcomes are not known.
 From a practical standpoint, the time and effort that can be dedicated to testing is often limited, especially in an academic context, making it especially important to maximise the efficiency of the limited number of test runs we are able to perform.
 
-The Framework
--------------
+The Causal Testing Framework has two main workflows:
 
-The Causal Testing Framework is composed of a :term:`causal inference`-driven architecture designed for functional black-box testing.
-It leverages graphical causal inference (CI) techniques to specify and evaluate software behaviour from a black-box perspective.
-Within this framework, causal directed acyclic graphs (DAGs) are used to represent the expected cause–effect relationships between
-the inputs and outputs of the system under test, supported by mathematical foundations for designing statistical procedures that
-enable causal inference. Each causal test case targets the causal effect of a specific intervention on the system under test--that is,
-a deliberate modification to the input configuration expected to produce a corresponding change in one or more outputs.
+  - **Causal Testing** involves specifying the expected causal relationships and testing that the data conforms to this.
+  - **Causal Discovery** involves infering the causal effects from the data and checking that the model is reasonable.
 
-If you have any questions about our framework, you can also reach us by `email <mailto:citcom-group@sheffield.ac.uk>`__.
+Causal Testing
+--------------
+
+ .. figure:: _static/images/testing-workflow.png
+    :alt: Schematic diagram of the Causal Testing Workflow.
+    :align: center
+
+    **Figure:** Schematic diagram of the Causal Testing Workflow.
+
+The Causal Testing Framework uses graphical :term:`causal inference` to specify and validate software behaviour by estimating the causal effects between variables.
+This requires three main components:
+
+#.
+   :doc:`Causal Graph <../modules/causal_dag>`\ : This specifies the expected causal relationships between the variables in the form of a directed acyclic graph (DAG).
+   The nodes in your DAG represent variables in your system, and edges between the variables represent the "flow of causality" such that an edge from X to Y represents the value of Y being caused (i.e. directly affected) by the value of X.
+
+#.
+  :doc:`Test Data <../modules/test_data>`\ : This is the data that will be used to estimate the causal effects between variables and evaluate your causal test cases.
+  This takes the form of a table in which columns represent the variables in your DAG and each row represents a run of the system.
+
+#.
+   :doc:`Causal Tests <../modules/causal_tests>`\ : Each causal test case validates that the causal effect between the *treatment* and *outcome* variable that can be estimated from the :doc:`test data <../modules/test_data>` is as expected.
+   The most basic causal test case simply validates the presence or absence of a causal effect.
+   The Causal Testing Framework can automatically generate a suite of such tests from the causal DAG alone.
+   You can then customise and refine these tests to suite your needs.
+
+An example of this workflow can be seen in our :doc:`tutorials <tutorials/vaccinating_elderly/vaccinating_elderly_tutorial>`\.
+
+Causal Discovery
+----------------
+
+.. figure:: _static/images/discovery-workflow.png
+   :alt: Schematic diagram of the Causal Discovery Workflow.
+   :align: center
+
+   **Figure:** Schematic diagram of the Causal Discovery Workflow.
+
+An alternative, more analytical approach involves using the Causal Testing Framework to automatically "discover" the causal relationships between variables from execution data.
+This approach is well suited to users who do not have a concrete notion of the expected causal relationships between variables upfront, or are looking to gain an understanding of how an unfamiliar system works,
+Note that we do not recommend using discovered DAGs for Causal Testing without careful manual inspection, since such graphs will trivially lead to passing test cases.
+
 
 .. toctree::
-   :hidden:
-   :caption: Home
-.. toctree::
-   :hidden:
    :maxdepth: 1
-   :caption: Introduction
 
-   background
    installation
-   tutorials
 
+.. toctree::
+  :hidden:
+  :maxdepth: 1
+  :caption: Quick Start
+
+  quick_start/causal_testing
+  quick_start/causal_discovery
 
 .. toctree::
    :hidden:
    :maxdepth: 1
    :caption: Module Descriptions
 
-   /modules/causal_specification
-   /modules/estimators
-   /modules/custom_estimators
-   /modules/causal_testing
-   /modules/discovery
+   /modules/causal_dag
+   /modules/test_data
+   /modules/causal_tests
+   /modules/causal_inference
+   /modules/causal_estimate
+   /modules/test_oracle
+   /modules/causal_discovery
+
+.. toctree::
+  :hidden:
+  :maxdepth: 1
+  :caption: Tutorials
+
+  tutorials/vaccinating_elderly/vaccinating_elderly_tutorial
+  tutorials/poisson_line_process/poisson_line_process_tutorial
+  tutorials/visualising_causal_test_results/visualise_causal_test_results
+
+
 
 .. toctree::
    :maxdepth: 2
@@ -55,6 +103,12 @@ If you have any questions about our framework, you can also reach us by `email <
    :titlesonly:
 
    /autoapi/index
+
+.. toctree::
+  :maxdepth: 1
+  :caption: DAFNI integration
+
+  dafni
 
 .. toctree::
    :hidden:

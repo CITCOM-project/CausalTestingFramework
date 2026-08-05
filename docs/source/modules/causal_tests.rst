@@ -1,11 +1,17 @@
-Causal Testing
-==============
+Causal Test Cases
+=================
 
 A ``causal test`` or ``causal test case`` is the expected change in an outcome that applying an intervention to the input should cause.
 In this context, an intervention is simply a function which manipulates the input configuration of the scenario-under-test in a way that is expected to cause a change to some outcome.
-Programmatically, the data structure of causal tests can either be a ``.json`` file or hard-coded (e.g. our :doc:`tutorials <../tutorials>` contain examples of how to
+Programmatically, the data structure of causal tests can either be a ``.json`` file or hard-coded contain examples of how to
 encode your causal tests). Moreover, by ``causal testing`` we refer to the overall process and execution of using the ``modelling scenario``, ``causal graph``, and ``causal test case(s)``, including statistical estimators,
 to determine whether each test case passes or fails relative to the test oracle.
+
+Evaluating causal test cases will result in one of three outcomes: Pass, Fail, or Inestimable.
+A passing test case indicates that the expected relationship holds within the test data (for example that X causes Y).
+A failing test case indicates that the relationship does not hold (for example that we expected X to cause Y, but in fact it does not).
+An inestimable test outcome indicates that no causal effect estimate could be calculated from the data
+
 
 Getting Started
 ---------------

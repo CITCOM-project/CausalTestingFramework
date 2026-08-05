@@ -5,6 +5,9 @@ Glossary
 
 .. glossary::
 
+   Adjustment
+      The process of controlling, or "taking into account", variables other than the treatment and outcome in order to calculate an unbiassed effect estimate.
+
    Causal inference
       Causal inference (:abbr:`CI (Causal Inference)`) is a family of statistical techniques designed to quantify and establish **causal** relationships in data. In contrast to purely statistical techniques that are driven by associations in data, CI incorporates knowledge about the data-generating mechanisms behind relationships in data to derive causal conclusions.
 
@@ -41,11 +44,19 @@ Glossary
       **Odds Ratio**
          The ratio of the odds of A in the presence of B and the odds of A in the absence of B.
 
+   Identification
+      The process of analysing a causal DAG to determine the variables which should be *adjusted for* in order to calculate an unbiassed causal effect of a treatment variable X on an outcome variable Y.
+      Interested readers can find a more technical definition `here <https://miguelhernan.org/whatifbook>`_.
+
    Intervention
       An intervention ``delta : X -> X'`` is a function which manipulates the values of a subset of input valuations.
 
    Minimal Adjustment Set
       The smallest set of variables which must be controlled, or "adjusted for", to produce an unbiased estimate of causal effect.
+
+   Potential Outcome
+      When we run a system under a particular configuration, we can observe one of several possible (of *potential*) outcomes.
+      Interested readers can find a more technical definition `here <https://miguelhernan.org/whatifbook>`_.
 
    Scenario
       A modelling scenario ``M`` is a pair ``(X, C)`` where ``X`` is a non-strict subset of the model's input variables and ``C`` is a set of constraints over valuations of ``C``, which may be empty.

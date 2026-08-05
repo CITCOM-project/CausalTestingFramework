@@ -1,7 +1,7 @@
 \documentclass{standalone}
 
 \usepackage{tikz}
-\usetikzlibrary{arrows,positioning,shapes,calc,fit,overlay-beamer-styles, backgrounds}
+\usetikzlibrary{arrows.meta,positioning,shapes,calc,fit,overlay-beamer-styles, backgrounds}
 \usepackage{dsfont,pifont}
 \newcommand*{\expe}{\mathds{E}}
 \usepackage{amsmath}
@@ -17,7 +17,7 @@
 \begin{document}
 \tikzset{
   node/.style={circle, draw, minimum size=3ex, inner sep=0.2},
-  edge/.style={->,> = latex'},
+  edge/.style={-{Stealth[length=3mm]}},
 }
 
 \newcommand{\cmark}{\ding{51}}%
@@ -28,12 +28,12 @@
   % Test Case
   \begin{scope}[name prefix=test-, local bounding box=test-case]
     \node[draw=none, rectangle, anchor=north] (title) at (0, 0) {Causal Test Cases};
-    \node[anchor=north,align=center] (tuple) at (title.south) {$I \to_{?} Y_3$\hspace{5mm}$X_2 \indep_? X_2$};
+    \node[anchor=north,align=center] (tuple) at (title.south) {$I \to_{?} Y_3$\hspace{5mm}$X_1 \indep_? X_2$};
     \node[draw, rectangle] [fit=(title) (tuple)] {};
   \end{scope}
 
   % ci
-  \begin{scope}[name prefix=ci-, local bounding box=ci, shift={($(test-test-case.east) + (1, 0)$)}]
+  \begin{scope}[name prefix=ci-, local bounding box=ci, shift={($(test-test-case.east) + (1.2, 0)$)}]
   \node[draw=none, rectangle, anchor=south west] (title) {Causal Inference};
   \node[draw=none, rectangle, anchor=north, align=center] (brain) at (title.south) {\faIcon{hexagon-nodes-bolt}};
 
@@ -115,8 +115,8 @@
 
   %Information flow
   \draw[edge, dashed] (dag.290) -- (ci-ci.160);
-  \draw[edge, dashed] (dag) -- (test-test-case.north);
-  \draw[edge, dashed] (test-test-case) -- (ci-ci);
+  \draw[edge, dashed] (dag) -- node [left] {\texttt{generate}} (test-test-case.north);
+  \draw[edge, dashed] (test-test-case) -- node [below, shift={(-0.12, 0)}] {\texttt{test}} (ci-ci);
 
   \draw[edge, dashed] (data-test-data.south) -- (data-test-data |- ci-ci.north);
   \draw[edge, dashed] (ci-ci) -- (estimate-estimate);

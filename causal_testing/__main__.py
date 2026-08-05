@@ -115,8 +115,11 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_discover.add_argument(
         "-t",
         "--technique",
-        help="The name of the technique to use. Currently supported are 'HillClimberDiscovery' and 'NSGADiscovery'",
-        required=True,
+        default="HillClimberDiscovery",
+        help=(
+            "The name of the technique to use. Currently supported are 'HillClimberDiscovery' and 'NSGADiscovery'. "
+            "Defaults to HillClimberDiscovery."
+        ),
     )
     parser_discover.add_argument(
         "-V",
