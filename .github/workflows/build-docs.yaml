@@ -26,4 +26,4 @@ jobs:
       - name: "Build docs"
         working-directory: "docs"
         run: |
-          make html
+           sphinx-build -W source/ build
