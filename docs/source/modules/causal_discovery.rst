@@ -1,7 +1,7 @@
 Causal Discovery
 ================
 
-The Causal Discovery tool generates a directed acyclic graph (DAG) that represents the causal relationships between
+The :doc:`causal discovery tool <../quick_start/causal_discovery>` generates a directed acyclic graph (DAG) that represents the causal relationships between
 variables in your input dataset(s). This generated DAG can then serve as the foundational causal specification for
 your causal model.
 

@@ -93,14 +93,9 @@ Next Steps
 
 * Read the quick start guides for :doc:`quick_start/causal_testing` and :doc:`quick_start/causal_discovery`.
 * Check out tutorials to learn how to use the framework.
-* Run the command for guidance on how to generate your causal tests directly from your input DAG::
+* Run the following commands for guidance on the various commands and parameter option ::
 
-    causal-testing generate --help
-
-* and the command on guidance on how to execute your causal tests::
-
-    causal-testing test --help
-
-* You can also use the framework to discover causal structures from your data::
-
-    causal-testing discover --help
+    causal-testing --help # To see the available commands
+    causal-testing generate --help # To see how to generate your causal tests from your DAG
+    causal-testing test --help # To see how to execute your causal tests
+    causal-testing discover --help # To see how to discover causal structures from your data

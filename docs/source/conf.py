@@ -33,6 +33,8 @@ extensions = [
     "sphinx.ext.autosummary",
 ]
 
+autosectionlabel_prefix_document = True
+
 autosummary_generate = True
 autosummary_imported_members = False
 

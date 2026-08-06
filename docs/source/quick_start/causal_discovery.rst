@@ -30,3 +30,17 @@ For full details, run :code:`causal-testing discover --help`.
 .. warning::
    Causal discovery should **not** be seen as an easy way to create specifications for causal testing!
    While causal discovery can be very to understand the causal relationships between variables in a system, it critical to check that the inferred relationships are **sensible and meaningful**.
+
+Step 3: Evaluate your DAG
+-------------------------
+
+The construction of a DAG is an iterative process.
+As with any data-driven technique, the output of causal discovery is entirely dependent on the data that the algorithm is given.
+If the dataset is small, the resulting DAG may be overfitted to the dataset, meaning the corresponding test outcomes are highly dependent on a few individual points.
+To help mitigate this risk, we provide an evaluation function to help you investigate this::
+
+    causal-testing evaluate --data paths data.csv --dag-path dag.dot --output output.csv
+
+This will iteratively resample the data and evaluate causal tests to check the presence and absence of the causal relationships that the DAG specifies.
+The result will be a CSV file saved to :code:`output.csv` which gives confidence intervals for the number of passing, failing, and :term:`inestimable` tests, as well as the results with the full dataset.
+Narrower confidence intervals indicate that the DAG gives *stable* test outcomes, and so is less likely to be overfitted to the dataset.

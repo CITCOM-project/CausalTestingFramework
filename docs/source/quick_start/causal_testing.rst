@@ -64,3 +64,9 @@ Assuming your data is saved in a single CSV file called :code:`data.csv`, you ca
 This will execute your causal test cases and produce a file called :code:`test_results.json` that will contain your causal test results.
 There are various configuration options at this stage.
 Run :code:`causal-testing test --help` to see them all.
+
+.. note::
+   In traditional testing, when a test case fails, this means that there must be a problem with either the system or the test case.
+   Because causal testing is a statistical technique, test outcomes depend on the data they are evaluated with.
+   If you have insufficient data to calculate a reliable causal effect estimate, tests may fail even for fault-free systems.
+   Check out our :doc:`../modules/test_data` and :doc:`../modules/test_adequacy` pages for more information.

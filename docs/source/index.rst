@@ -45,6 +45,15 @@ This requires three main components:
 
 An example of this workflow can be seen in our :doc:`tutorials <tutorials/vaccinating_elderly/vaccinating_elderly_tutorial>`\.
 
+You do not need to be familiar with causal inference to use the causal testing framework, since the technical parts can all be handled automatically "under the hood".
+Throughout this documentation, we will gently and informally introduce the various concepts that are necessary to understand and use the framework.
+Interested readers are invited to check out the following additional resources for a more detailed introduction, as well as our `paper <https://dl.acm.org/doi/10.1145/3607184>`_ on causal testing.
+
+* `The Book of Why <https://bayes.cs.ucla.edu/WHY>`_ provides a "pop science" introduction and motivation to causal inference.
+* `Causal Inference in Statistics: A Primer <https://bayes.cs.ucla.edu/PRIMER/>`_ provides a slightly more technical, yet still mostly approachable introduction.
+* `What if <https://miguelhernan.org/whatifbook>`_ provides a more technical introduction with formal definitions and examples for those with a statistical background.
+* `Causality: Models, Reasoning, and Inference <https://bayes.cs.ucla.edu/BOOK-2K/>`_ provides a highly technical introduction with formal definitions, proofs, and mathematical details.
+
 Causal Discovery
 ----------------
 
@@ -60,9 +69,10 @@ Note that we do not recommend using discovered DAGs for Causal Testing without c
 
 
 .. toctree::
-   :maxdepth: 1
+  :maxdepth: 1
+  :hidden:
 
-   installation
+  installation
 
 .. toctree::
   :hidden:
@@ -80,9 +90,9 @@ Note that we do not recommend using discovered DAGs for Causal Testing without c
    /modules/causal_dag
    /modules/test_data
    /modules/causal_tests
-   /modules/causal_inference
    /modules/causal_estimate
    /modules/test_oracle
+   /modules/test_adequacy
    /modules/causal_discovery
 
 .. toctree::
@@ -94,8 +104,6 @@ Note that we do not recommend using discovered DAGs for Causal Testing without c
   tutorials/poisson_line_process/poisson_line_process_tutorial
   tutorials/visualising_causal_test_results/visualise_causal_test_results
 
-
-
 .. toctree::
    :maxdepth: 2
    :caption: API
@@ -106,6 +114,7 @@ Note that we do not recommend using discovered DAGs for Causal Testing without c
 
 .. toctree::
   :maxdepth: 1
+  :hidden:
   :caption: DAFNI integration
 
   dafni
