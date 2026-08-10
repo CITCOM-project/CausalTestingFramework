@@ -42,10 +42,12 @@ class NSGADiscovery(Discovery):
         possible_edges[i] being an edge in the graph and 0 represents it not being.
         :returns: The converted CausalDAG instance.
         """
-        causal_dag = CausalDAG()
+        causal_dag = CausalDAG(ignore_cycles=True)
         origins, destinations = zip(*self.possible_edges)
         causal_dag.add_nodes_from(set(origins).union(set(destinations)))
-        causal_dag.add_edges_from([edge for edge, add in zip(self.possible_edges, individual) if add])
+        causal_dag.add_edges_from(
+            [edge for edge, add in zip(self.possible_edges, individual) if add], ignore_cycles=True
+        )
         return causal_dag
 
     def causal_dag_to_binary_string(self, causal_dag: CausalDAG) -> np.array:

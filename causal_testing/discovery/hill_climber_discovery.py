@@ -111,9 +111,9 @@ class HillClimberDiscovery(Discovery):
         """
 
         start_time = time.time()
-        individual = CausalDAG()
+        individual = CausalDAG(ignore_cycles=True)
         individual.add_nodes_from(self.df.columns)
-        individual.add_edges_from(self.possible_edges)
+        individual.add_edges_from(self.possible_edges, ignore_cycles=True)
         self.remove_cycles(individual)
         fitness_values, problem_edges = self.evaluate_fitness(individual)
 

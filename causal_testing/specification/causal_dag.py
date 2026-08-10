@@ -179,19 +179,36 @@ class CausalDAG(nx.DiGraph):
                 raise ValueError(f"Instrument {instrument} and outcome {outcome} share common causes")
         return True
 
-    def add_edge(self, u_of_edge: Node, v_of_edge: Node, ignore_cycles: bool = False, **attr):
-        """Add an edge to the causal DAG.
-
-        Overrides the default networkx method to prevent users from adding a cycle.
+    def add_edge(self, u_of_edge: Node, v_of_edge: Node, **attr):
+        """
+        Add an edge to the causal DAG.
+        Overrides the default networkx method to prevent users from inadvertently adding a cycle.
 
         :param u_of_edge: Origin node
         :param v_of_edge: Destination node
-        :param ignore_cycles: Whether to ignore cycles that adding the new edge may have introduced.
-        :param attr: Attributes
+        :param attr: Attributes passed to superclass method.
         """
         super().add_edge(u_of_edge, v_of_edge, **attr)
-        if not ignore_cycles and not self.is_acyclic():
-            raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
+        if not self.ignore_cycles and not self.is_acyclic():
+            raise nx.HasACycle(
+                "Invalid Causal DAG: contains a cycle. If this was intentional, set `dag.ignore_cycles` to true."
+            )
+
+    def add_edges_from(self, ebunch_to_add: list, **attr):
+        """
+        Add all the edges in ebunch_to_add.
+        Overrides the default networkx method to prevent users from inadvertently adding a cycle.
+
+        :param ebunch_to_add: container of edges. Each edge given in the container will be added to the graph.
+                              The edges must be given as 2-tuples (u, v) or 3-tuples (u, v, d) where d is a dictionary
+                              containing edge data.
+        :param attr: Attributes passed to superclass method.
+        """
+        super().add_edges_from(ebunch_to_add, **attr)
+        if not self.ignore_cycles and not self.is_acyclic():
+            raise nx.HasACycle(
+                "Invalid Causal DAG: contains a cycle. If this was intentional, set `dag.ignore_cycles` to true."
+            )
 
     def cycle_nodes(self) -> list:
         """Get the nodes involved in any cycles.

@@ -21,9 +21,10 @@ class TestNSGA(unittest.TestCase):
         dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
         nsga = NSGADiscovery(scarf_df)
 
-        self.assertTrue(
-            nx.utils.graphs_equal(dag, nsga.binary_string_to_causal_dag(nsga.causal_dag_to_binary_string(dag)))
-        )
+        back_translated_dag = nsga.binary_string_to_causal_dag(nsga.causal_dag_to_binary_string(dag))
+
+        self.assertEqual(dag.nodes, back_translated_dag.nodes)
+        self.assertEqual(dag.edges, back_translated_dag.edges)
 
     def test_multiobjective_fitness(self):
         scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
