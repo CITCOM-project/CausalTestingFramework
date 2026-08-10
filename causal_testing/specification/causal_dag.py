@@ -148,7 +148,10 @@ class CausalDAG(nx.DiGraph):
                     "Cycles found. Ignoring them can invalidate causal estimates. Proceed with extreme caution."
                 )
             else:
-                raise nx.HasACycle("Invalid Causal DAG: contains a cycle.")
+                raise nx.HasACycle(
+                    f"Invalid Causal DAG: contains a cycle {next(nx.simple_cycles(self))}. "
+                    "If this was intentional, set `dag.ignore_cycles` to true."
+                )
 
     def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
         """
@@ -191,7 +194,8 @@ class CausalDAG(nx.DiGraph):
         super().add_edge(u_of_edge, v_of_edge, **attr)
         if not self.ignore_cycles and not self.is_acyclic():
             raise nx.HasACycle(
-                "Invalid Causal DAG: contains a cycle. If this was intentional, set `dag.ignore_cycles` to true."
+                f"Invalid Causal DAG: contains a cycle {next(nx.simple_cycles(self))}. "
+                "If this was intentional, set `dag.ignore_cycles` to true."
             )
 
     def add_edges_from(self, ebunch_to_add: list, **attr):
@@ -207,7 +211,8 @@ class CausalDAG(nx.DiGraph):
         super().add_edges_from(ebunch_to_add, **attr)
         if not self.ignore_cycles and not self.is_acyclic():
             raise nx.HasACycle(
-                "Invalid Causal DAG: contains a cycle. If this was intentional, set `dag.ignore_cycles` to true."
+                f"Invalid Causal DAG: contains a cycle {next(nx.simple_cycles(self))}. "
+                "If this was intentional, set `dag.ignore_cycles` to true."
             )
 
     def cycle_nodes(self) -> list:
