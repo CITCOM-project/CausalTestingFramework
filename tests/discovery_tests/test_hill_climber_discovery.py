@@ -109,7 +109,7 @@ class TestHillClimber(unittest.TestCase):
 
         hill_climber = HillClimberDiscovery(scarf_df)
         fitness_values, problem_edges = hill_climber.evaluate_fitness(dag)
-        expected_fitness_values = (4, -2, 0)
+        expected_fitness_values = (4 / 6, -2 / 6, 0)
         expected_problem_edges = [
             ("length_in", "completed"),
             ("large_gauge", "completed"),

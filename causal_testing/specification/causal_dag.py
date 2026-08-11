@@ -153,6 +153,23 @@ class CausalDAG(nx.DiGraph):
                     "If this was intentional, set `dag.ignore_cycles` to true."
                 )
 
+    def copy(self, as_view: bool = False) -> CausalDAG:
+        """
+        Returns a copy of the graph.
+        The copy method by default returns an independent shallow copy of the graph and attributes. That is, if an
+        attribute is a container, that container is shared by the original an the copy. Use Python’s copy.deepcopy for
+        new containers.
+        If as_view is True then a view is returned instead of a copy.
+
+        :param as_view: optional (default=False).
+                        If True, the returned graph-view provides a read-only view of the original graph without
+                        actually copying any data.
+        """
+        new_individual = super().copy(as_view=as_view)
+        new_individual.datatypes = self.datatypes
+        new_individual.ignore_cycles = self.ignore_cycles
+        return new_individual
+
     def check_iv_assumptions(self, treatment, outcome, instrument) -> bool:
         """
         Checks the three instrumental variable assumptions, raising a
