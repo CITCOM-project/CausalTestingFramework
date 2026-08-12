@@ -53,7 +53,6 @@ def results_dag(
                 result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
                 result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
                 result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[test.result.outcome]
-                result_dag[test.treatment_variable][test.outcome_variable]["title"] = effect_estimate.to_html()
 
             elif view_independences and test.result.outcome != TestOutcome.PASS:
                 result_dag.add_edge(test.treatment_variable, test.outcome_variable, ignore_cycles=True)
@@ -61,7 +60,6 @@ def results_dag(
                 result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
                 result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
                 result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[test.result.outcome]
-                result_dag[test.treatment_variable][test.outcome_variable]["title"] = effect_estimate.to_html()
 
     if output_file is not None:
         nx.drawing.nx_pydot.write_dot(result_dag, output_file)
