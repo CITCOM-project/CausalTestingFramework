@@ -45,7 +45,7 @@ class TestNSGA(unittest.TestCase):
             scarf_df,
             include_edges=[("length_in", "completed")],
             exclude_edges=[("color", "length_in")],
-            max_iterations=10,
+            max_iterations=20,
         )
         dag = hill_climber.discover()
         self.assertTrue(

@@ -45,9 +45,7 @@ class NSGADiscovery(Discovery):
         causal_dag = CausalDAG(ignore_cycles=True)
         origins, destinations = zip(*self.possible_edges)
         causal_dag.add_nodes_from(set(origins).union(set(destinations)))
-        causal_dag.add_edges_from(
-            [edge for edge, add in zip(self.possible_edges, individual) if add], ignore_cycles=True
-        )
+        causal_dag.add_edges_from([edge for edge, add in zip(self.possible_edges, individual) if add])
         return causal_dag
 
     def causal_dag_to_binary_string(self, causal_dag: CausalDAG) -> np.array:
