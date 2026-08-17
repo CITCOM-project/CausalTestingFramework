@@ -142,17 +142,6 @@ class CausalDAG(nx.DiGraph):
                 raise ValueError(f"Unsupported file extension {file_path}. We only support .dot and .xml files.")
             self.update(graph)
 
-        if not self.is_acyclic():
-            if ignore_cycles:
-                logger.warning(
-                    "Cycles found. Ignoring them can invalidate causal estimates. Proceed with extreme caution."
-                )
-            else:
-                raise nx.HasACycle(
-                    f"Invalid Causal DAG: contains a cycle {next(nx.simple_cycles(self))}. "
-                    "If this was intentional, set `dag.ignore_cycles` to true."
-                )
-
     def copy(self, as_view: bool = False) -> CausalDAG:
         """
         Returns a copy of the graph.
