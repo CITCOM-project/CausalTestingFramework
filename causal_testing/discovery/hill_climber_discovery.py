@@ -3,10 +3,10 @@ This module implements a hill climbing algorithm to optimise causal DAGs based o
 """
 
 import random
-import time
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from causal_testing.discovery.abstract_discovery import Discovery
 from causal_testing.specification.causal_dag import CausalDAG
@@ -94,11 +94,12 @@ class HillClimberDiscovery(Discovery):
             or ~(group["result"] == TestOutcome.PASS).any()
         )
         problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
+        num_tests = sum(counts.values())
 
         fitness_values = (
-            counts.get(TestOutcome.PASS, 0),
-            -counts.get(TestOutcome.FAIL, 0),
-            -counts.get(TestOutcome.INESTIMABLE, 0),
+            counts.get(TestOutcome.PASS, 0) / num_tests,
+            -counts.get(TestOutcome.FAIL, 0) / num_tests,
+            -counts.get(TestOutcome.INESTIMABLE, 0) / num_tests,
         )
         return fitness_values, problem_edges
 
@@ -109,18 +110,17 @@ class HillClimberDiscovery(Discovery):
         :returns: The inferred causal DAG.
         """
 
-        start_time = time.time()
-        individual = CausalDAG()
+        individual = CausalDAG(ignore_cycles=True)
         individual.add_nodes_from(self.df.columns)
         individual.add_edges_from(self.possible_edges)
         self.remove_cycles(individual)
         fitness_values, problem_edges = self.evaluate_fitness(individual)
 
-        iterations = self.max_iterations
         iterations_without_improvement = 0
 
-        while problem_edges and iterations:
-            iterations -= 1
+        for _ in tqdm(range(self.max_iterations)):
+            if not problem_edges:
+                break
 
             new_individual = individual.copy()
             for origin, dest in random.sample(
@@ -137,7 +137,7 @@ class HillClimberDiscovery(Discovery):
                     new_individual.remove_edge(origin, dest)
                 elif not new_individual.has_edge(origin, dest) and (origin, dest) not in self.exclude_edges:
                     # Want to bypass the cycle check of CausalDAG as we remove the cycles afterwards
-                    new_individual.add_edge(origin, dest, ignore_cycles=True)
+                    new_individual.add_edge(origin, dest)
             self.remove_cycles(new_individual)
             new_fitness_values, new_problem_edges = self.evaluate_fitness(new_individual)
 
@@ -148,9 +148,5 @@ class HillClimberDiscovery(Discovery):
                 iterations_without_improvement = 0
             else:
                 iterations_without_improvement += 1
-
-        end_time = time.time()
-        individual.graph["fitness"] = fitness_values
-        individual.graph["time"] = round(end_time - start_time)
 
         return individual

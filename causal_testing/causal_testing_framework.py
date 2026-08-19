@@ -236,7 +236,7 @@ class CausalTestingFramework:
         }
 
         sample_results = []
-        for sample_index in range(bootstrap_size):
+        for sample_index in tqdm(range(bootstrap_size)):
             test_outcomes = {test_outcome: 0 for test_outcome in TestOutcome}
             for test_case in self.test_cases:
                 if test_case.skip:

@@ -215,7 +215,7 @@ def main() -> None:
             logging.info("Discovering causal structure")
             # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
             # Otherwise you end up with duplicate indices, which causes problems further down the line
-            df = pd.concat([read_dataframe(path) for path in args.data_paths]).reset_index()
+            df = pd.concat([read_dataframe(path) for path in args.data_paths]).reset_index(drop=True)
             if args.variables:
                 df = df[args.variables]
             # Drop unnamed columns
@@ -237,7 +237,8 @@ def main() -> None:
                 **kwargs,
             )
             evolved_dag = discover.discover()
-            discover.write_dot(evolved_dag, args.output)
+            if args.output is not None:
+                nx.drawing.nx_pydot.write_dot(evolved_dag, args.output)
             logging.info("Causal structure discovery completed successfully.")
         case Command.TEST:
             # Create and setup framework
