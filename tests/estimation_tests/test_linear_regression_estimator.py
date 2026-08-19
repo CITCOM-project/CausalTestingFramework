@@ -71,7 +71,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         linear_regression_estimator = LinearRegressionEstimator(
             treatment_variable="cut", outcome_variable="price", formula=formula
         )
-        self.assertEqual(linear_regression_estimator.adjustment_set, ["C", "color", "depth"])
+        self.assertEqual(linear_regression_estimator.adjustment_set, {"C", "color", "depth"})
 
     def test_complex_formula_adjustment_set_no_c(self):
         """
@@ -81,7 +81,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         linear_regression_estimator = LinearRegressionEstimator(
             treatment_variable="cut", outcome_variable="price", formula=formula
         )
-        self.assertEqual(linear_regression_estimator.adjustment_set, ["caret", "color"])
+        self.assertEqual(linear_regression_estimator.adjustment_set, {"caret", "color"})
 
     def test_complex_formula_adjustment_set_no_dependent(self):
         """
