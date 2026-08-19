@@ -31,7 +31,7 @@ class CausalEffect(ABC):
 
         :returns: A JSON serialisable dict representing the expected effect.
         """
-        return {"name": self.__class__.__name__, "effect_type": self.effect_type}
+        return {"effect_type": self.effect_type}
 
 
 class SomeEffect(CausalEffect):

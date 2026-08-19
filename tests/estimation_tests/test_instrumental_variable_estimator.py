@@ -45,7 +45,6 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         self.assertEqual(
             iv_estimator.to_dict(),
             {
-                "name": "InstrumentalVariableEstimator",
                 "treatment_variable": "X",
                 "outcome_variable": "Y",
                 "alpha": 0.05,

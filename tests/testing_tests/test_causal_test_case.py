@@ -191,14 +191,15 @@ class TestCausalTestCase(unittest.TestCase):
             "skip": False,
             "effect_measure": "coefficient",
             "query": None,
-            "expected_effect": {"name": "ExactValue", "effect_type": "direct", "value": 4, "atol": 0},
+            "expected_effect": {"ExactValue": {"effect_type": "direct", "value": 4, "atol": 0}},
             "estimator": {
-                "name": "LinearRegressionEstimator",
-                "treatment_variable": "A",
-                "outcome_variable": "C",
-                "alpha": 0.05,
-                "adjustment_set": ["D"],
-                "formula": "C ~ A + D",
+                "LinearRegressionEstimator": {
+                    "treatment_variable": "A",
+                    "outcome_variable": "C",
+                    "alpha": 0.05,
+                    "adjustment_set": ["D"],
+                    "formula": "C ~ A + D",
+                }
             },
             "result": {
                 "outcome": "PASS",

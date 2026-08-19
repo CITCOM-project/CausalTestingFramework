@@ -308,7 +308,6 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(
             linear_regression_estimator.to_dict(),
             {
-                "name": "LinearRegressionEstimator",
                 "treatment_variable": "X",
                 "outcome_variable": "Y",
                 "alpha": 0.05,

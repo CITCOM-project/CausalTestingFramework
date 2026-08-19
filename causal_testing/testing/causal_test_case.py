@@ -183,12 +183,13 @@ class CausalTestCase:
             "query": self.query,
         }
 
-        for label, attribute in [
-            ("expected_effect", self.expected_causal_effect),
-            ("estimator", self.estimator),
-            ("result", self.result),
-        ]:
-            if attribute is not None:
-                test_case[label] = attribute.to_dict()
+        if self.expected_causal_effect is not None:
+            test_case["expected_effect"] = {
+                self.expected_causal_effect.__class__.__name__: self.expected_causal_effect.to_dict()
+            }
+        if self.estimator is not None:
+            test_case["estimator"] = {self.estimator.__class__.__name__: self.estimator.to_dict()}
+        if self.result is not None:
+            test_case["result"] = self.result.to_dict()
 
         return test_case
