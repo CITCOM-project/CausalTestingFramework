@@ -80,7 +80,7 @@ class VisualisationPlotter:
 
         return result_dag
 
-    def data_adequacy_heatmap(self) -> hv.HeatMap:
+    def data_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
         """
         Visualise data adequacy as an adjacency matrix heatmap of the kurtosis.
         """
@@ -126,17 +126,15 @@ class VisualisationPlotter:
             clim=(vmin, vmax),
             clipping_colors={"NaN": "grey"},  # Grey out invalid tests
             colorbar=True,
-            xrotation=90,
-            width=600,
-            height=500,
             tools=["hover"],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             clabel="Causal test adequacy",
             title="Data Adequacy",
+            **kwargs,
         )
 
-    def dag_adequacy_heatmap(self) -> hv.HeatMap:
+    def dag_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
         """
         Visualise dag adequacy as an adjacency matrix heatmap of the percentage of passing test cases.
         """
@@ -159,17 +157,15 @@ class VisualisationPlotter:
             clim=(0, 100),
             clipping_colors={"NaN": "grey"},  # Grey out invalid tests
             colorbar=True,
-            xrotation=90,
-            width=600,
-            height=500,
             tools=["hover"],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             clabel="Percentage passing test cases",
             title="DAG Adequacy",
+            **kwargs,
         )
 
-    def test_outcome_adjacency(self) -> hv.HeatMap:
+    def test_outcome_adjacency(self, **kwargs) -> hv.HeatMap:
         """
         Visualise causal test results as an adjacency matrix.
         """
@@ -204,17 +200,15 @@ class VisualisationPlotter:
         ).opts(
             cmap=colour_map,
             clipping_colors={"NaN": "grey"},
-            xrotation=90,
-            width=500,
-            height=500,
             tools=["hover"],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             hooks=[add_discrete_legend],
             title="Test Outcomes",
+            **kwargs,
         )
 
-    def interactive_results_dag(self) -> hv.Overlay:
+    def interactive_results_dag(self, **kwargs) -> hv.Overlay:
         """
         Generate an interactive holoview graph of the causal DAG showing failing tests.
 
@@ -284,8 +278,6 @@ class VisualisationPlotter:
             edge_line_width=1.5,
             edge_color="color",
             edge_hover_line_color="color",
-            width=900,
-            height=450,
             hooks=[style_graph_hook],
             xaxis=None,
             yaxis=None,
@@ -301,6 +293,7 @@ class VisualisationPlotter:
                 )
             ],
             inspection_policy="edges",
+            **kwargs,
         )
 
         # Label layers

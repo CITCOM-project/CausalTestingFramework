@@ -31,8 +31,29 @@ class Dashboard(param.Parameterized):
         Main panel with content.
         """
         return pn.Column(
-            pn.Row(self.plotter.interactive_results_dag(), self.plotter.test_outcome_adjacency()),
-            pn.Row(self.plotter.data_adequacy_heatmap(), self.plotter.dag_adequacy_heatmap()),
+            pn.Row(
+                self.plotter.interactive_results_dag(
+                    width=900,
+                    height=450,
+                ),
+                self.plotter.test_outcome_adjacency(
+                    xrotation=45,
+                    width=450,
+                    height=450,
+                ),
+            ),
+            pn.Row(
+                self.plotter.data_adequacy_heatmap(
+                    xrotation=45,
+                    width=500,
+                    height=380,
+                ),
+                self.plotter.dag_adequacy_heatmap(
+                    xrotation=45,
+                    width=500,
+                    height=380,
+                ),
+            ),
         )
 
     def serve(self):
