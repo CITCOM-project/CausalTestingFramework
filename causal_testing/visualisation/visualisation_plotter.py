@@ -8,6 +8,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from bokeh.models import Div, HoverTool
+from bokeh.palettes import RdYlGn
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.testing.causal_test_result import TestOutcome
@@ -85,7 +86,12 @@ class VisualisationPlotter:
         """
         adequacy = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
 
-        for col in ["effect_estimate", "ci_low", "ci_high", "adequacy.kurtosis"]:
+        for col in [
+            "effect_estimate.effect_estimate",
+            "effect_estimate.ci_low",
+            "effect_estimate.ci_high",
+            "adequacy.kurtosis",
+        ]:
             columns = [c for c in adequacy.columns if c.startswith(f"result.{col}.")]
             adequacy[f"result.{col}"] = adequacy[columns].bfill(axis=1).iloc[:, 0]
             adequacy = adequacy.drop(columns=columns)
@@ -127,6 +133,7 @@ class VisualisationPlotter:
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             clabel="Causal test adequacy",
+            title="Data Adequacy",
         )
 
     def dag_adequacy_heatmap(self) -> hv.HeatMap:
@@ -159,6 +166,7 @@ class VisualisationPlotter:
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             clabel="Percentage passing test cases",
+            title="DAG Adequacy",
         )
 
     def test_outcome_adjacency(self) -> hv.HeatMap:
@@ -168,14 +176,18 @@ class VisualisationPlotter:
         results = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
         results["result.outcome.value"] = results["result.outcome"].apply(lambda x: TestOutcome[x].value)
 
-        colour_map = {"FAIL": "red", "INESTIMABLE": "orange", "PASS": "green"}
+        red = RdYlGn[11][0]
+        yellow = RdYlGn[11][7]
+        green = RdYlGn[11][10]
+
+        colour_map = {"FAIL": red, "INESTIMABLE": yellow, "PASS": green}
 
         def add_discrete_legend(plot, _):
-            legend_html = """
+            legend_html = f"""
             <div style="text-align: center; font-family: sans-serif; font-size: 14px; padding: 4px;">
-                <span style="color: red; font-weight: bold;">■ Pass</span>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <span style="color: green; font-weight: bold;">■ Fail</span>
+                <span style="color: {red}; font-weight: bold;">■ Pass</span>
+                <span style="color: {yellow}; font-weight: bold;">■ Inestimable</span>
+                <span style="color: {green}; font-weight: bold;">■ Fail</span>
             </div>
             """
             div = Div(text=legend_html)
@@ -198,7 +210,8 @@ class VisualisationPlotter:
             tools=["hover"],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
-            hooks=[add_discrete_legend],  # <--- Attach the hook here
+            hooks=[add_discrete_legend],
+            title="Test Outcomes",
         )
 
     def interactive_results_dag(self) -> hv.Overlay:

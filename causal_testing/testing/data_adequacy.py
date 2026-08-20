@@ -28,7 +28,7 @@ class DataAdequacy:
         successful: int = None,
         bootstrap_size: int = None,
     ):
-        self.kurtosis = kurtosis
+        self.kurtosis = Series(kurtosis)
         self.passing = passing
         self.results = results
         self.successful = successful
@@ -40,7 +40,7 @@ class DataAdequacy:
         :param include_results: Whether to serialise the results.
         """
         result = {
-            "kurtosis": self.kurtosis.to_dict() if self.kurtosis else None,
+            "kurtosis": self.kurtosis.to_dict() if self.kurtosis is not None else None,
             "passing": self.passing,
             "successful": self.successful,
             "bootstrap_size": self.bootstrap_size,

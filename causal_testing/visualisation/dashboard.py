@@ -30,7 +30,10 @@ class Dashboard(param.Parameterized):
         """
         Main panel with content.
         """
-        return pn.Row(self.plotter.interactive_results_dag(), self.plotter.test_outcome_adjacency())
+        return pn.Column(
+            pn.Row(self.plotter.interactive_results_dag(), self.plotter.test_outcome_adjacency()),
+            pn.Row(self.plotter.data_adequacy_heatmap(), self.plotter.dag_adequacy_heatmap()),
+        )
 
     def serve(self):
         """
