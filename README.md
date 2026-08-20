@@ -21,8 +21,8 @@ the inputs and outputs of the system under test, supported by mathematical found
 enable causal inference. Each causal test case targets the causal effect of a specific intervention on the system under test--that is,
 a deliberate modification to the input configuration expected to produce a corresponding change in one or more outputs.
 
-![Causal Testing Workflow](images/schematic-dark.png#gh-dark-mode-only)
-![Causal Testing Workflow](images/schematic.png#gh-light-mode-only)
+![Causal Testing Workflow](docs/source/_static/images/testing-workflow-dark.png#gh-dark-mode-only)
+![Causal Testing Workflow](docs/source/_static/images/testing-workflow.png#gh-light-mode-only)
 
 ## Installation
 

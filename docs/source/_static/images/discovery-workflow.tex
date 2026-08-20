@@ -1,0 +1,114 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes,calc,fit,overlay-beamer-styles, backgrounds}
+\usepackage{dsfont,pifont}
+\newcommand*{\expe}{\mathds{E}}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{fontawesome7}
+
+\usepackage[default]{FiraSans}
+\usepackage[mathrm=sym]{unicode-math}
+\setmathfont{Fira Math}
+
+\newcommand{\indep}{\perp \!\!\! \perp}
+
+\begin{document}
+\tikzset{
+  node/.style={circle, draw, minimum size=3ex, inner sep=0.2},
+  edge/.style={-{Stealth[length=3mm]}},
+}
+
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+\begin{tikzpicture}[background rectangle/.style={fill=none}, show background rectangle, color=black]
+
+  % Data
+  \begin{scope}[name prefix=data-, local bounding box=test-data]
+    \node[draw=none, rectangle] (title) {Test Data};
+    \node[anchor=north] (table) at (title.south) {
+      \begin{tabular}{rrrrrr}
+        \toprule
+        $X_1$ & $X_2$  & $I$ & $Y_1$ & $Y_2$ & $Y_3$ \\
+        \midrule
+        1.2   & ``UK'' & 0.3 & 7.8   & 4     & True  \\
+        3.2   & ``UK'' & 0.1 & 7.6   & 8     & False \\
+        \multicolumn{6}{c}{$\vdots$}                 \\
+        \bottomrule
+      \end{tabular}
+    };
+    \node[draw, rectangle] [fit=(title) (table)] {};
+  \end{scope}
+
+
+  % ci
+  \begin{scope}[name prefix=ci-, local bounding box=ci, anchor=west, shift={($(data-test-data.east) + (1, 0)$)}]
+    \node[draw=none, rectangle, shift={(0, -0.05)}] (title) at ({(0, 0)} |- data-title) {Causal Discovery};
+      \begin{scope}[shift={($(title.south) + (-0.65, -0.3)$)}, local bounding box=brain]
+      \path[draw,line width=0.025cm] (0.9871, -0.2624) circle (0.066cm);
+      \path[draw,line width=0.025cm] (0.8736, -0.5912) circle (0.066cm);
+      \path[draw,line width=0.025cm] (0.8597, -0.8965) circle (0.066cm);
+      \path[draw,line width=0.025cm] (1.0417, -1.1239) circle (0.066cm);
+      \path[draw,line width=0.025cm] (0.4807, -1.1496) circle (0.066cm);
+      \path[draw,line width=0.025cm] (0.4566, -0.876) circle (0.066cm);
+      \path[draw,line width=0.025cm] (0.2702, -0.5893) circle (0.066cm);
+      \path[draw,line width=0.025cm] (0.4498, -0.313) circle (0.066cm);
+
+      \path[draw,line width=0.025cm,miter limit=4.0] (0.5183, 0) -- (0.1888, -0.1903) -- (0.1888, -0.4236) -- (0, -0.5325) -- (0, -0.8925) -- (0.1592, -0.9844) -- (0.1592, -1.2186) -- (0.5134, -1.4231) -- (0.6931, -1.3338) -- (0.8729, -1.4231) -- (1.227, -1.2186) -- (1.227, -0.9844) -- (1.3862, -0.8925) -- (1.3862, -0.5325) -- (1.1975, -0.4236) -- (1.1975, -0.1903) -- (0.868, 0) -- (0.6931, -0.101) -- cycle;
+      \path[draw,line width=0.025cm,miter limit=4.0] (0.6931, -1.3338) -- (0.6931, -0.101);
+      \path[draw,line width=0.025cm] (0.3839, -0.313) -- (0.1888, -0.313);
+      \path[draw,line width=0.025cm] (0.2702, -0.5234) -- (0.2702, -0.313);
+      \path[draw,line width=0.025cm] (0.4567, -0.81) -- (0.4567, -0.5785) -- (0.6931, -0.5785);
+      \path[draw,line width=0.025cm] (0.4148, -1.1496) -- (0.2428, -1.1496) -- (0.2428, -0.8899) -- (0, -0.8899);
+      \path[draw,line width=0.025cm] (0.9871, -0.3283) -- (0.9871, -0.4203) -- (0.6931, -0.4203);
+      \path[draw,line width=0.025cm] (0.8736, -0.5253) -- (0.8736, -0.4203);
+      \path[draw,line width=0.025cm] (0.9256, -0.8965) -- (1.1381, -0.8965) -- (1.1381, -0.7111) -- (1.3862, -0.7111);
+      \path[draw,line width=0.025cm] (0.9758, -1.1239) -- (0.8728, -1.1239) -- (0.8728, -1.423);
+    \end{scope}
+
+    \coordinate (bot) at ({(0, 0)} |- data-table.south);
+
+    \node[draw, rectangle] [fit=(title) (brain) (bot)] {};
+  \end{scope}
+
+  % Causal DAG
+  \begin{scope}[name prefix=dag-, anchor=west, shift={($(ci-ci.east) + (1.275, 0)$)}]
+    \node[draw=none, rectangle, shift={(0, -0.05)}] (title) at ({(0, 0)} |- data-title) {Causal DAG};
+
+    % Shift origin to title's bottom edge, then push down by 1cm
+    \begin{scope}[anchor=north, shift={([yshift=-1.5cm]title.south)}, local bounding box=dag]
+      \node[node] (x1) at (-1, 0) {$X_1$};
+      \node[node] (x2) at (-1, 1.4) {$X_2$};
+      \node[node] (i) at (0, 0.7) {$I$};
+      \node[node] (y1) at (1,0) {$Y_{1}$};
+      \node[node] (y2) at (1,0.7) {$Y_2$};
+      \node[node] (y3) at (1,1.4) {$Y_3$};
+
+      \draw[edge] (x1) to (i);
+      \draw[edge] (x2) to (i);
+      \draw[edge] (i) to (y1);
+      \draw[edge] (i) to (y2);
+      \draw[edge] (i) to (y3);
+      \draw[edge] (x1) to (y1);
+      \draw[edge] (x2) to (y3);
+    \end{scope}
+
+    \node[draw=none, rectangle] (nodes) [fit=(x1) (x2) (y1) (y2) (y3) (i)] {};
+
+    % DAG outline
+    \coordinate (top) at ({(0, 0)} |- data-title.north);
+    \coordinate (bot) at ({(0, 0)} |- data-table.south);
+    \node[draw, rectangle] (dag) [fit=(dag-title) (dag) (top) (bot)] {};
+  \end{scope}
+
+
+
+
+
+  %Information flow
+  \draw[edge,dashed] (data-test-data) -- (ci-ci);
+  \draw[edge, dashed] (ci-ci) -- (dag-dag);
+\end{tikzpicture}
+\end{document}

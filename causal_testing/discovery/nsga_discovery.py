@@ -39,7 +39,7 @@ class NSGADiscovery(Discovery):
         Converts a binary string representation of a causal DAG to a CausalDAG object.
 
         :param individual: Bitstring of the same length as `possible_edges` such that 1 at position `i` represents
-        possible_edges[i] being an edge in the graph and 0 represents it not being.
+                           possible_edges[i] being an edge in the graph and 0 represents it not being.
         :returns: The converted CausalDAG instance.
         """
         causal_dag = CausalDAG(ignore_cycles=True)

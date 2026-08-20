@@ -20,6 +20,7 @@ class CausalTestCase:
     variables, a CausalTestCase stores the values of these variables. Also the outcome variable and value are
     specified. The goal of a CausalTestCase is to test whether the intervention made to the control via the treatment
     causes the model-under-test to produce the expected change.
+
     :param base_test_case: A BaseTestCase object consisting of a treatment variable, outcome variable and effect
     :param expected_causal_effect: The expected causal effect (Positive, Negative, No Effect).
     :param effect_measure: A string which denotes the type of estimate to return.
@@ -70,10 +71,11 @@ class CausalTestCase:
     ) -> DataAdequacy:
         """
         Calculate the adequacy measurement, and populate the data_adequacy field.
+
         :param df: The original dataset to use.
         :param bootstrap_size: The number of bootstrap samples to use. (Defaults to 100)
         :param group_by: For IPCWEstimator - the "id" column to ensure that entire individuals are sampled rather than
-        random rows.
+                         random rows.
         """
         results = []
         outcomes = []
@@ -130,8 +132,7 @@ class CausalTestCase:
         :param suppress_estimation_errors: Set to True to suppress estimation errors. (Defaults to False)
         :param bootstrap_size: The number of bootstrap samples to use. (Defaults to 100)
         :param group_by: For IPCWEstimator - the "id" column to ensure that entire individuals are sampled rather than
-        random rows.
-        :return causal_test_result: A CausalTestResult for the executed causal test case.
+                         random rows.
         """
         if not self.skip:
             try:
@@ -161,7 +162,8 @@ class CausalTestCase:
         Execute a causal test case and return the causal test result.
 
         :param df: The data to use.
-        :return causal_test_result: A CausalTestResult for the executed causal test case.
+
+        :returns: A CausalTestResult for the executed causal test case.
         """
         if self.query:
             df = df.query(self.query)
