@@ -3,7 +3,7 @@ Causal Test Cases
 
 A :term:`causal test case` asserts the expected change in an :term:`outcome variable` that applying an :term:`intervention` to the :term:`treatment variable` should cause.
 Causal test cases can be as simple as `X has a causal effect on Y` or as complex as `Y should triple when we change X from 3 to 4 while Z is held constant at 8`.
-Interested readers can find a formal definition and extended explanation in `this paper <https://dl.acm.org/doi/10.1145/3607184>`.
+Interested readers can find a formal definition and extended explanation in `this paper <https://dl.acm.org/doi/10.1145/3607184>`_.
 
 A key difference between causal testing and traditional testing is that, with causal testing, the test cases are completely separate entities from the data used to evaluate them.
 In traditional testing, the two are almost synonymous.
