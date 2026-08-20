@@ -11,9 +11,11 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_result import TestOutcome
+from causal_testing.testing.causal_test_result import CausalTestResult, TestOutcome
+from causal_testing.testing.data_adequacy import DataAdequacy
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +63,9 @@ class CausalTestingFramework:
 
     def setup(
         self,
-        dag_path: str,
-        data_paths: list[str],
-        test_cases_path: str,
+        dag_path: str = None,
+        data_paths: list[str] = None,
+        test_cases_path: str = None,
         ignore_cycles: bool = False,
         query: str = None,
         **kwargs: dict,
@@ -78,9 +80,12 @@ class CausalTestingFramework:
         :param query: Optional pandas query string to filter the loaded data
         :param kwargs: Keyword arguments to be passed to the `read_` function.
         """
-        self.load_dag(dag_path, ignore_cycles)
-        self.load_data(data_paths, query, **kwargs)
-        self.load_test_cases_from_json(test_cases_path)
+        if dag_path is not None:
+            self.load_dag(dag_path, ignore_cycles)
+        if data_paths is not None:
+            self.load_data(data_paths, query, **kwargs)
+        if test_cases_path is not None:
+            self.load_test_cases_from_json(test_cases_path)
 
     def load_dag(self, dag_path: str, ignore_cycles: bool = False):
         """
@@ -120,15 +125,15 @@ class CausalTestingFramework:
         """
         logger.info(f"Loading test configurations from {test_cases_path}")
 
-        if self.dag is None or self.df is None:
-            raise ValueError("Please load DAG and data before attempting to load tests.")
+        if self.dag is None:
+            raise ValueError("Please load DAG before attempting to load tests.")
 
         with open(test_cases_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
         test_cases = []
 
-        for test in test_configs.get("tests", []):
+        for test in test_configs:
 
             # Create causal test case
             causal_test = self.create_causal_test(test)
@@ -145,54 +150,49 @@ class CausalTestingFramework:
         :return: CausalTestCase object
         :raises: ValueError if invalid estimator or configuration is provided
         """
+        # Create the estimator with correct parameters
         estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
-        effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
 
         if "estimator" not in test:
             raise ValueError("Test configuration must specify an estimator")
 
-        if test["estimator"] not in estimator_map:
+        estimator_class = test["estimator"].pop("name")
+        if estimator_class not in estimator_map:
             raise ValueError(
-                f"Unsupported estimator {test['estimator']}. Supported: {sorted(estimator_map)}. "
+                f"Unsupported estimator {estimator_class}. Supported: {sorted(estimator_map)}. "
                 "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
                 "pyproject.toml file."
             )
 
-        # Create the estimator with correct parameters
-        treatment_variable = test.get("treatment_variable")
-        outcome_variable = test.get("outcome_variable")
-        estimator_class = estimator_map.get(test["estimator"]).load()
-        estimator_kwargs = test.get("estimator_kwargs", {})
-        effect_type = test.get("expected_effect", {}).get("effect_type", "direct")
+        estimator_class = estimator_map.get(estimator_class).load()
+        test["estimator"] = estimator_class(**test["estimator"])
 
-        estimator = estimator_class(
-            treatment_variable=treatment_variable,
-            outcome_variable=outcome_variable,
-            treatment_value=test.get("treatment_value"),
-            control_value=test.get("control_value"),
-            alpha=test.get("alpha", 0.05),
-            **estimator_kwargs,
-        )
+        # Create the expected effect with correct parameters
+        effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
 
-        # Get effect type and create expected effect
-        expected_effect = test["expected_effect"]
-        effect_type = expected_effect.pop("name")
-        if effect_type not in effect_map:
+        if "expected_causal_effect" not in test:
+            raise ValueError("Test configuration must specify an expected causal effect.")
+
+        effect_class = test["expected_causal_effect"].pop("name")
+        if effect_class not in effect_map:
             raise ValueError(
-                f"Unsupported causal effect {effect_type}. Supported: {sorted(effect_map)}. "
+                f"Unsupported causal effect {effect_class}. Supported: {sorted(effect_map)}. "
                 "If you have implemented a custom causal effect, you will need to add this to your entrypoints via "
                 "your pyproject.toml file."
             )
-        expected_effect = effect_map[effect_type].load()(**expected_effect)
+        effect_class = effect_map.get(effect_class).load()
+        test["expected_causal_effect"] = effect_class(**test["expected_causal_effect"])
 
-        return CausalTestCase(
-            name=test.get("name"),
-            effect_measure=test.get("effect_measure"),
-            query=test.get("query"),
-            expected_causal_effect=expected_effect,
-            estimator=estimator,
-            skip=test.get("skip", False),
-        )
+        if "result" in test:
+            outcome = getattr(TestOutcome, test["result"]["outcome"]) if "outcome" in test["result"] else None
+            effect_estimate = (
+                EffectEstimate(**test["result"]["effect_estimate"]) if "effect_estimate" in test["result"] else None
+            )
+            adequacy = DataAdequacy(**test["result"]["adequacy"]) if "adequacy" in test["result"] else None
+
+            test["result"] = CausalTestResult(outcome=outcome, effect_estimate=effect_estimate, adequacy=adequacy)
+
+        return CausalTestCase(**test)
 
     def run_tests(self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100):
         """

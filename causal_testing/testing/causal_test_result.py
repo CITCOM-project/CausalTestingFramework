@@ -50,7 +50,7 @@ class CausalTestResult:
 
         adequacy = self.adequacy.to_dict() if self.adequacy else {}
 
-        return outcome | effect_estimate | {"adequacy": adequacy}
+        return outcome | {"effect_estimate": effect_estimate, "adequacy": adequacy}
 
     def effect_direction(self) -> str:
         """
@@ -58,7 +58,7 @@ class CausalTestResult:
 
         :returns: Whether the estimated causal effect is positive or negative (or no effect).
         """
-        if len(self.effect_estimate.value) > 1:
+        if len(self.effect_estimate.effect_estimate) > 1:
             # Don't bother checking categorical estimates since they're not numeric
             return "categorical"
         if Negative().apply(self.effect_estimate):

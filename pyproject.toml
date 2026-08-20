@@ -51,11 +51,14 @@ dev = [
 "pandoc",
 "pre-commit",
 "tox",
-]
-test = [
 "nbclient",
 "nbformat",
 "ipykernel",
+]
+visualise = [
+  "holoviews>=1.23",
+  "bokeh>=3.9",
+  "pygraphviz>=2"
 ]
 
 [project.urls]

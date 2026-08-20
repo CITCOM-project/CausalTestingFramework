@@ -40,7 +40,7 @@ class DataAdequacy:
         :param include_results: Whether to serialise the results.
         """
         result = {
-            "kurtosis": self.kurtosis.to_dict(),
+            "kurtosis": self.kurtosis.to_dict() if self.kurtosis else None,
             "passing": self.passing,
             "successful": self.successful,
             "bootstrap_size": self.bootstrap_size,

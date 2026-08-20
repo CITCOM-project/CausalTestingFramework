@@ -13,7 +13,7 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.visualisation.causal_test_result_visualiser import results_dag
+from causal_testing.visualisation.dashboard import Dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,7 @@ class Command(Enum):
     GENERATE = "generate"
     DISCOVER = "discover"
     EVALUATE = "evaluate"
+    VISUALISE = "visualise"
 
 
 def setup_logging(level: str) -> None:
@@ -82,6 +83,13 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="Do not crash on error. If set to true, errors are recorded as test results.",
         default=False,
+    )
+
+    # Visualisation
+    parser_visualise = subparsers.add_parser(Command.VISUALISE.value, help="Visualise causal test results")
+    parser_visualise.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
+    parser_visualise.add_argument(
+        "-t", "--result-config", help="Path to causal test result file (.json)", required=True
     )
 
     # DAG evaluation
@@ -140,7 +148,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=[],
     )
 
-    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate]:
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate, parser_visualise]:
         parser.add_argument(
             "-l",
             "--log_level",
@@ -149,6 +157,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
             choices=["NONE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             help="Set the logging level (default: WARNING).",
         )
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate]:
         parser.add_argument(
             "-a",
             "--alpha",
@@ -195,7 +204,7 @@ def main() -> None:
                 skip=False,
             )
             with open(args.output, "w", encoding="utf-8") as f:
-                json.dump({"tests": [test.to_dict() for test in causal_tests]}, f)
+                json.dump([test.to_dict() for test in causal_tests], f)
             logging.info("Causal test generation completed successfully.")
 
         case Command.DISCOVER:
@@ -238,7 +247,8 @@ def main() -> None:
                 **kwargs,
             )
             evolved_dag = discover.discover()
-            results_dag(test_cases=evolved_dag.test_cases, dag=evolved_dag, output_file=args.output)
+            if args.output is not None:
+                nx.drawing.nx_pydot.write_dot(evolved_dag, args.output)
             logging.info("Causal structure discovery completed successfully.")
         case Command.TEST:
             # Create and setup framework
@@ -257,6 +267,11 @@ def main() -> None:
             framework.save_results(args.output)
 
             logging.info("Causal testing completed successfully.")
+        case Command.VISUALISE:
+            framework = CausalTestingFramework()
+            framework.setup(dag_path=args.dag_path, test_cases_path=args.result_config)
+            dashboard = Dashboard(framework)
+            dashboard.serve()
         case Command.EVALUATE:
             # Create and setup framework
             framework = CausalTestingFramework()

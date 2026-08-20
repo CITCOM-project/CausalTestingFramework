@@ -35,11 +35,12 @@ class CausalTestCase:
         name: str = None,
         query: str = None,
         skip: bool = False,
+        result: CausalTestResult = None,
     ):
         self.expected_causal_effect = expected_causal_effect
         self.effect_measure = effect_measure
         self.estimator = estimator
-        self.result = None
+        self.result = result
         self.name = name
         self.query = query
         self.skip = skip
@@ -184,11 +185,9 @@ class CausalTestCase:
         }
 
         if self.expected_causal_effect is not None:
-            test_case["expected_effect"] = {
-                self.expected_causal_effect.__class__.__name__: self.expected_causal_effect.to_dict()
-            }
+            test_case["expected_causal_effect"] = self.expected_causal_effect.to_dict()
         if self.estimator is not None:
-            test_case["estimator"] = {self.estimator.__class__.__name__: self.estimator.to_dict()}
+            test_case["estimator"] = self.estimator.to_dict()
         if self.result is not None:
             test_case["result"] = self.result.to_dict()
 

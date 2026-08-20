@@ -31,19 +31,19 @@ class CausalEffect(ABC):
 
         :returns: A JSON serialisable dict representing the expected effect.
         """
-        return {"effect_type": self.effect_type}
+        return {"name": self.__class__.__name__, "effect_type": self.effect_type}
 
 
 class SomeEffect(CausalEffect):
     """An extension of CausalEffect representing that the expected causal effect should not be zero."""
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:
-        if effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
+        if effect_estimate.effect_measure in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
             value_to_check = 1
-        elif effect_estimate.type in ("coefficient", "ate"):
+        elif effect_estimate.effect_measure in ("coefficient", "ate"):
             value_to_check = 0
         else:
-            raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
+            raise ValueError(f"Test Value type {effect_estimate.effect_measure} is not valid for this CausalEffect")
 
         return (~((effect_estimate.ci_low <= value_to_check) & (value_to_check <= effect_estimate.ci_high))).any()
 
@@ -62,17 +62,17 @@ class NoEffect(CausalEffect):
         self.ctol = ctol
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:
-        if effect_estimate.type in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
+        if effect_estimate.effect_measure in ("risk_ratio", "hazard_ratio", "unit_odds_ratio", "odds_ratio"):
             value_to_check = 1
-        elif effect_estimate.type in ("coefficient", "ate"):
+        elif effect_estimate.effect_measure in ("coefficient", "ate"):
             value_to_check = 0
         else:
-            raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
+            raise ValueError(f"Test Value type {effect_estimate.effect_measure} is not valid for this CausalEffect")
 
         return sum(
             ((effect_estimate.ci_low <= value_to_check) & (value_to_check <= effect_estimate.ci_high))
-            | (np.isclose(effect_estimate.value, value_to_check, atol=self.atol))
-        ) / len(effect_estimate.value) >= (1 - self.ctol)
+            | (np.isclose(effect_estimate.effect_estimate, value_to_check, atol=self.atol))
+        ) / len(effect_estimate.effect_estimate) >= (1 - self.ctol)
 
     def to_dict(self):
         """
@@ -110,7 +110,7 @@ class ExactValue(CausalEffect):
                 )
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:
-        close = np.isclose(effect_estimate.value, self.value, atol=self.atol)
+        close = np.isclose(effect_estimate.effect_estimate, self.value, atol=self.atol)
         if effect_estimate.ci_valid and self.ci_low is not None and self.ci_high is not None:
             return (
                 close.all()
@@ -142,13 +142,13 @@ class Positive(SomeEffect):
     Currently only single values are supported for the test value"""
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:
-        if len(effect_estimate.value) > 1:
+        if len(effect_estimate.effect_estimate) > 1:
             raise ValueError("Positive Effects are currently only supported on single float datatypes")
-        if effect_estimate.type in {"ate", "coefficient"}:
+        if effect_estimate.effect_measure in {"ate", "coefficient"}:
             return any(0 < ci_low < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
-        if effect_estimate.type in ["risk_ratio", "unit_odds_ratio"]:
+        if effect_estimate.effect_measure in ["risk_ratio", "unit_odds_ratio"]:
             return any(1 < ci_low < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
-        raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
+        raise ValueError(f"Test Value type {effect_estimate.effect_measure} is not valid for this CausalEffect")
 
 
 class Negative(SomeEffect):
@@ -156,11 +156,11 @@ class Negative(SomeEffect):
     Currently only single values are supported for the test value"""
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:
-        if len(effect_estimate.value) > 1:
+        if len(effect_estimate.effect_estimate) > 1:
             raise ValueError("Negative Effects are currently only supported on single float datatypes")
-        if effect_estimate.type in {"ate", "coefficient"}:
+        if effect_estimate.effect_measure in {"ate", "coefficient"}:
             return any(ci_low < ci_high < 0 for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
-        if effect_estimate.type in ["risk_ratio", "unit_odds_ratio"]:
+        if effect_estimate.effect_measure in ["risk_ratio", "unit_odds_ratio"]:
             return any(ci_low < ci_high < 1 for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
         # Dead code but necessary for pylint
-        raise ValueError(f"Test Value type {effect_estimate.type} is not valid for this CausalEffect")
+        raise ValueError(f"Test Value type {effect_estimate.effect_measure} is not valid for this CausalEffect")
