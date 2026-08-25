@@ -19,34 +19,36 @@ from causal_testing.testing.data_adequacy import DataAdequacy
 
 logger = logging.getLogger(__name__)
 
+data_readers = {
+    ".csv": pd.read_csv,
+    ".xlsx": pd.read_excel,
+    ".xls": pd.read_excel,
+    ".html": pd.read_html,
+    ".xml": pd.read_xml,
+    ".feather": pd.read_feather,
+    ".parquet": pd.read_parquet,
+    ".pq": pd.read_parquet,
+    ".pqt": pd.read_parquet,
+    ".json": pd.read_json,
+    ".stata": pd.read_stata,
+}
 
-def read_dataframe(file_path: str, **kwargs: dict) -> pd.DataFrame:
+
+def read_dataframe(file_path: str, content: bytes = None, **kwargs: dict) -> pd.DataFrame:
     """
     Read data into a dataframe.
 
     :param file_path: The path to the data.
+    :param content: The bytes content of the file.
     :param kwargs: Keyword arguments to be passed to the `read_` function.
 
     :returns: The read-in DataFrame.
     """
-    readers = {
-        ".csv": pd.read_csv,
-        ".xlsx": pd.read_excel,
-        ".xls": pd.read_excel,
-        ".html": pd.read_html,
-        ".xml": pd.read_xml,
-        ".feather": pd.read_feather,
-        ".parquet": pd.read_parquet,
-        ".pq": pd.read_parquet,
-        ".pqt": pd.read_parquet,
-        ".json": pd.read_json,
-        ".stata": pd.read_stata,
-    }
 
     suffix = Path(file_path).suffix.lower()
 
-    if suffix in readers:
-        return readers[suffix](file_path, **kwargs)
+    if suffix in data_readers:
+        return data_readers[suffix](content if content is not None else file_path, **kwargs)
     raise ValueError(f"Unsupported file extension: '{suffix}'")
 
 
@@ -279,3 +281,10 @@ class CausalTestingFramework:
             json.dump([test.to_dict() for test in self.test_cases], f, indent=2)
 
         logger.info("Results saved successfully")
+
+    def test_dataframe(self) -> pd.DataFrame:
+        """
+        :returns: The causal test cases as a dataframe. Nested objects such as results are indexed as, e.g.
+        `result.outcome`.
+        """
+        return pd.json_normalize(map(lambda t: t.to_dict(), self.test_cases))

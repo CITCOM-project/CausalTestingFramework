@@ -165,7 +165,7 @@ def style_graph_hook(plot: GraphPlot, element: hv.Graph):
     # Supply widths and heights to the node source
     node_source = graph_renderer.node_renderer.data_source
     node_source.data["width"] = element.nodes.data["node_id"].apply(node_width)
-    node_source.data["height"] = [32] * len(element.nodes.data)
+    node_source.data["height"] = [32] * len(element.nodes.data)  # 32 px high looks about right
 
     # Define primary Ellipse glyph
     graph_renderer.node_renderer.glyph = Ellipse(
@@ -185,7 +185,7 @@ def style_graph_hook(plot: GraphPlot, element: hv.Graph):
 
     # Add Arrowheads with matching edge colors
     for _, row in element.data.iterrows():
-        color = row["color"]
+        color = row.get("color", "black")
         arrow = Arrow(
             end=NormalHead(fill_color=color, line_color=color, size=8),
             x_start=row["arrow_starts_x"],

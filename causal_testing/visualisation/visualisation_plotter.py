@@ -28,6 +28,7 @@ class VisualisationPlotter:
         output_file: str = None,
         view_independences: bool = True,
         colours: dict[TestOutcome, str] = None,
+        html: bool = False,
     ) -> nx.DiGraph:
         """
         View causal test results as a graph.
@@ -36,6 +37,7 @@ class VisualisationPlotter:
         :param view_independences: Whether to display failed independence tests (defaults to True).
         :param colours: Optional dictionary of colours to display the test outcomes.
                         By default, pass=green, fail=red, inestimable=orange.
+        :param html: Whether to include html representations of the causal effect. (Defaults to false)
         """
         default_colours = {TestOutcome.PASS: "green", TestOutcome.INESTIMABLE: "orange", TestOutcome.FAIL: "red"}
 
@@ -59,21 +61,29 @@ class VisualisationPlotter:
                     axis=1,
                 )
                 effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
-                if (test.treatment_variable, test.outcome_variable) in result_dag.edges:
-                    result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
-                    result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
-                    result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[
-                        test.result.outcome
-                    ]
+                if (test.treatment_variable, test.outcome_variable) in result_dag.edges or (
+                    view_independences and test.result.outcome != TestOutcome.PASS
+                ):
+                    if (test.treatment_variable, test.outcome_variable) not in result_dag.edges:
+                        result_dag.add_edge(test.treatment_variable, test.outcome_variable, ignore_cycles=True)
+                        result_dag[test.treatment_variable][test.outcome_variable]["style"] = "dashed"
 
-                elif view_independences and test.result.outcome != TestOutcome.PASS:
-                    result_dag.add_edge(test.treatment_variable, test.outcome_variable, ignore_cycles=True)
-                    result_dag[test.treatment_variable][test.outcome_variable]["style"] = "dashed"
                     result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
                     result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
                     result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[
                         test.result.outcome
                     ]
+                    if html:
+                        effect_estimate = pd.concat(
+                            [
+                                test.result.effect_estimate.ci_low,
+                                test.result.effect_estimate.effect_estimate,
+                                test.result.effect_estimate.ci_high,
+                            ],
+                            axis=1,
+                        )
+                        effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
+                        result_dag[test.treatment_variable][test.outcome_variable]["title"] = effect_estimate.to_html()
 
         if output_file is not None:
             nx.drawing.nx_pydot.write_dot(result_dag, output_file)
@@ -214,21 +224,7 @@ class VisualisationPlotter:
 
         :returns: Inveractive holoviews graph.
         """
-        results = self.results_dag()
-        for test in self.ctf.test_cases:
-            effect_estimate = pd.concat(
-                [
-                    test.result.effect_estimate.ci_low,
-                    test.result.effect_estimate.effect_estimate,
-                    test.result.effect_estimate.ci_high,
-                ],
-                axis=1,
-            )
-            effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
-            try:
-                results[test.treatment_variable][test.outcome_variable]["title"] = effect_estimate.to_html()
-            except KeyError:
-                continue
+        results = self.results_dag(html=True)
 
         # Use DOT to do the layout
         agraph = nx.nx_agraph.to_agraph(results)
@@ -256,7 +252,6 @@ class VisualisationPlotter:
         edges_df[["arrow_ends_x", "arrow_ends_y"]] = pd.DataFrame(
             [trimmed_path[-1] for trimmed_path in edges_df["trimmed_path"]], index=edges_df.index
         )
-
         nodes_df = pd.DataFrame(
             [(x, y, node_id) for node_id, (x, y) in node_positions.items()], columns=["x", "y", "node_id"]
         )
@@ -274,9 +269,9 @@ class VisualisationPlotter:
             kdims=["source", "target"],
             vdims=[c for c in edges_df.columns if c not in ["source", "target", "trimmed_path"]],
         ).opts(
-            edge_line_dash="style",
+            edge_line_dash="style" if "style" in edges_df else "solid",
             edge_line_width=1.5,
-            edge_color="color",
+            edge_color="color" if "color" in edges_df else "black",
             edge_hover_line_color="color",
             hooks=[style_graph_hook],
             xaxis=None,
@@ -297,6 +292,8 @@ class VisualisationPlotter:
         )
 
         # Label layers
+        if "label" not in edges_df:
+            edges_df["label"] = ""
         node_labels = hv.Labels(nodes_df, kdims=["x", "y"], vdims=["node_id"]).opts(
             text_font_size="9pt",
             text_color="black",
