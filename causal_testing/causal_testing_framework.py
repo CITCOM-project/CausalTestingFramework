@@ -133,15 +133,7 @@ class CausalTestingFramework:
         with open(test_cases_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
-        test_cases = []
-
-        for test in test_configs:
-
-            # Create causal test case
-            causal_test = self.create_causal_test(test)
-            test_cases.append(causal_test)
-
-        self.test_cases = test_cases
+        self.test_cases = [self.create_causal_test(test) for test in test_configs]
 
     def create_causal_test(self, test: dict) -> CausalTestCase:
         """
@@ -195,6 +187,13 @@ class CausalTestingFramework:
             test["result"] = CausalTestResult(outcome=outcome, effect_estimate=effect_estimate, adequacy=adequacy)
 
         return CausalTestCase(**test)
+
+    def ready_to_run(self) -> bool:
+        """
+        Test whether framework is ready to run test cases.
+        :returns: True if the DAG, data, and test cases are defined.
+        """
+        return all(x is not None for x in (self.test_cases, self.dag, self.df)) and bool(self.test_cases)
 
     def run_tests(self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100):
         """

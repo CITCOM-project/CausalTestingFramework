@@ -13,7 +13,7 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.visualisation.dashboard import Dashboard
+from causal_testing.visualisation.visualisation_dashboard import Dashboard
 
 logger = logging.getLogger(__name__)
 

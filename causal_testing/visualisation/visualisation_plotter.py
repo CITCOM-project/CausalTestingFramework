@@ -103,6 +103,8 @@ class VisualisationPlotter:
             "adequacy.kurtosis",
         ]:
             columns = [c for c in adequacy.columns if c.startswith(f"result.{col}.")]
+            if not columns:
+                return None
             adequacy[f"result.{col}"] = adequacy[columns].bfill(axis=1).iloc[:, 0]
             adequacy = adequacy.drop(columns=columns)
         adequacy = sort_df_by_median_split(adequacy, value_col="result.adequacy.kurtosis")
@@ -149,6 +151,8 @@ class VisualisationPlotter:
         Visualise dag adequacy as an adjacency matrix heatmap of the percentage of passing test cases.
         """
         adequacy = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
+        if "result.adequacy.passing" not in adequacy:
+            return None
 
         # Turn passing test cases into a percentage
         adequacy["result.adequacy.passing"] = (
@@ -182,18 +186,18 @@ class VisualisationPlotter:
         results = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
         results["result.outcome.value"] = results["result.outcome"].apply(lambda x: TestOutcome[x].value)
 
-        red = RdYlGn[11][0]
+        green = RdYlGn[11][0]
         yellow = RdYlGn[11][7]
-        green = RdYlGn[11][10]
+        red = RdYlGn[11][10]
 
         colour_map = {"FAIL": red, "INESTIMABLE": yellow, "PASS": green}
 
         def add_discrete_legend(plot, _):
             legend_html = f"""
             <div style="text-align: center; font-family: sans-serif; font-size: 14px; padding: 4px;">
-                <span style="color: {red}; font-weight: bold;">■ Pass</span>
+                <span style="color: {green}; font-weight: bold;">■ Pass</span>
                 <span style="color: {yellow}; font-weight: bold;">■ Inestimable</span>
-                <span style="color: {green}; font-weight: bold;">■ Fail</span>
+                <span style="color: {red}; font-weight: bold;">■ Fail</span>
             </div>
             """
             div = Div(text=legend_html)
