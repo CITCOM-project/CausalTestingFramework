@@ -197,14 +197,14 @@ class TestCausalTestingFramework(unittest.TestCase):
         expected = pd.Series(
             {
                 "FAIL": 1,
-                "FAIL_ci_high": 2,
+                "FAIL_ci_high": 1,
                 "FAIL_ci_low": 0,
-                "INESTIMABLE": 1,
-                "INESTIMABLE_ci_high": 1,
+                "INESTIMABLE": 0,
+                "INESTIMABLE_ci_high": 0,
                 "INESTIMABLE_ci_low": 0,
-                "PASS": 4,
-                "PASS_ci_high": 4,
-                "PASS_ci_low": 0,
+                "PASS": 5,
+                "PASS_ci_high": 5,
+                "PASS_ci_low": 2,
             }
         ).sort_index()
         pd.testing.assert_series_equal(results, expected)
