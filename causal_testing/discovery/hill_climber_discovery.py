@@ -26,14 +26,10 @@ class HillClimberDiscovery(Discovery):
         include_edges: str = None,
         exclude_edges: str = None,
         alpha: float = 0.05,
-        max_iterations: int = 100,
-        max_iterations_without_improvement: int = 10,
     ):
         super().__init__(
             df=df, random_seed=random_seed, include_edges=include_edges, exclude_edges=exclude_edges, alpha=alpha
         )
-        self.max_iterations = int(max_iterations)
-        self.max_iterations_without_improvement = int(max_iterations_without_improvement)
 
     def sum_test_outcomes(self, test_results: pd.DataFrame) -> dict:
         """
@@ -103,22 +99,25 @@ class HillClimberDiscovery(Discovery):
         )
         return fitness_values, problem_edges
 
-    def discover(self) -> CausalDAG:
+    def discover(
+        self, max_iterations: int = 100, max_iterations_without_improvement: int = 10, individual: CausalDAG = None
+    ) -> CausalDAG:
         """
         Discover the causal DAG.
 
         :returns: The inferred causal DAG.
         """
 
-        individual = CausalDAG(ignore_cycles=True)
-        individual.add_nodes_from(self.df.columns)
-        individual.add_edges_from(self.possible_edges)
+        if individual is None:
+            individual = CausalDAG(ignore_cycles=True)
+            individual.add_nodes_from(self.df.columns)
+            individual.add_edges_from(self.possible_edges)
         self.remove_cycles(individual)
         fitness_values, problem_edges = self.evaluate_fitness(individual)
 
         iterations_without_improvement = 0
 
-        for _ in tqdm(range(self.max_iterations)):
+        for _ in tqdm(range(max_iterations)):
             if not problem_edges:
                 break
 
@@ -126,11 +125,7 @@ class HillClimberDiscovery(Discovery):
             for origin, dest in random.sample(
                 # If we've gone over the maximum iterations without improvement
                 problem_edges
-                + (
-                    self.possible_edges
-                    if iterations_without_improvement > self.max_iterations_without_improvement
-                    else []
-                ),
+                + (self.possible_edges if iterations_without_improvement > max_iterations_without_improvement else []),
                 random.randint(1, len(problem_edges)),
             ):
                 if new_individual.has_edge(origin, dest) and (origin, dest) not in self.include_edges:
