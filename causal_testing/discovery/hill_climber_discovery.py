@@ -107,6 +107,9 @@ class HillClimberDiscovery(Discovery):
         """
         Discover the causal DAG.
 
+        :param individual: An initial individual for the hill climber to start from
+                           (defaults to a fully connected graph).
+        
         :returns: The inferred causal DAG.
         """
 
