@@ -103,16 +103,20 @@ class HillClimberDiscovery(Discovery):
         )
         return fitness_values, problem_edges
 
-    def discover(self) -> CausalDAG:
+    def discover(self, individual: CausalDAG = None) -> CausalDAG:
         """
         Discover the causal DAG.
 
+        :param individual: An initial individual for the hill climber to start from
+                           (defaults to a fully connected graph).
+        
         :returns: The inferred causal DAG.
         """
 
-        individual = CausalDAG(ignore_cycles=True)
-        individual.add_nodes_from(self.df.columns)
-        individual.add_edges_from(self.possible_edges)
+        if individual is None:
+            individual = CausalDAG(ignore_cycles=True)
+            individual.add_nodes_from(self.df.columns)
+            individual.add_edges_from(self.possible_edges)
         self.remove_cycles(individual)
         fitness_values, problem_edges = self.evaluate_fitness(individual)
 
