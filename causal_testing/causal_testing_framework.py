@@ -147,7 +147,7 @@ class CausalTestingFramework:
         # Create the estimator with correct parameters
         estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
         if "estimator" not in test:
-            raise ValueError("Test configuration must specify an estimator.")
+            raise ValueError("Test configuration must specify an `estimator`.")
         estimator_kwargs = test["estimator"]
         estimator_name = estimator_kwargs.pop("name")
         if estimator_name not in estimator_map:
@@ -161,7 +161,7 @@ class CausalTestingFramework:
         # Create an effect with the corect parameters
         effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
         if "expected_causal_effect" not in test:
-            raise ValueError("Test configuration must specify an expected effect.")
+            raise ValueError("Test configuration must specify an `expected_causal_effect`.")
         expected_causal_effect_kwargs = test["expected_causal_effect"]
         expected_causal_effect_name = expected_causal_effect_kwargs.pop("name")
         if expected_causal_effect_name not in effect_map:

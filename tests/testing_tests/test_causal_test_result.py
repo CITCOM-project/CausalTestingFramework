@@ -16,7 +16,7 @@ class TestCausalTestCase(unittest.TestCase):
         result = CausalTestResult(
             outcome=None,
             effect_estimate=EffectEstimate(
-                type="ate", value=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
+                effect_measure="ate", effect_estimate=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
             ),
         )
         self.assertEqual(result.effect_direction(), "positive")
@@ -25,7 +25,7 @@ class TestCausalTestCase(unittest.TestCase):
         result = CausalTestResult(
             outcome=None,
             effect_estimate=EffectEstimate(
-                type="ate", value=pd.Series(-5.05), ci_low=pd.Series(-6), ci_high=pd.Series(-5)
+                effect_measure="ate", effect_estimate=pd.Series(-5.05), ci_low=pd.Series(-6), ci_high=pd.Series(-5)
             ),
         )
         self.assertEqual(result.effect_direction(), "negative")
@@ -33,7 +33,9 @@ class TestCausalTestCase(unittest.TestCase):
     def test_effect_direction_none(self):
         result = CausalTestResult(
             outcome=None,
-            effect_estimate=EffectEstimate(type="ate", value=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)),
+            effect_estimate=EffectEstimate(
+                effect_measure="ate", effect_estimate=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)
+            ),
         )
         self.assertEqual(result.effect_direction(), "no effect")
 
@@ -41,8 +43,8 @@ class TestCausalTestCase(unittest.TestCase):
         result = CausalTestResult(
             outcome=None,
             effect_estimate=EffectEstimate(
-                type="ate",
-                value=pd.Series({"color[T.RED]": -5, "color[T.BLUE]": -4}),
+                effect_measure="ate",
+                effect_estimate=pd.Series({"color[T.RED]": -5, "color[T.BLUE]": -4}),
                 ci_low=pd.Series({"color[T.RED]": -4, "color[T.BLUE]": -1}),
                 ci_high=pd.Series({"color[T.RED]": 5, "color[T.BLUE]": 4}),
             ),

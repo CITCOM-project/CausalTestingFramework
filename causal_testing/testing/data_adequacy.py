@@ -28,7 +28,7 @@ class DataAdequacy:
         successful: int = None,
         bootstrap_size: int = None,
     ):
-        self.kurtosis = Series(kurtosis)
+        self.kurtosis = Series(kurtosis) if kurtosis is not None else None
         self.passing = passing
         self.results = results
         self.successful = successful

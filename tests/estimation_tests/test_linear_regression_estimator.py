@@ -169,8 +169,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
         self.assertTrue(
             all(
-                round(effect_estimate.value["treatments"], 1) == round(ate_single, 1)
-                for ate_single in effect_estimate.value
+                round(effect_estimate.effect_estimate["treatments"], 1) == round(ate_single, 1)
+                for ate_single in effect_estimate.effect_estimate
             )
         )
 
@@ -186,8 +186,8 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
         self.assertTrue(
             all(
-                round(effect_estimate.value["treatments"], 3) == round(ate_single, 3)
-                for ate_single in effect_estimate.value
+                round(effect_estimate.effect_estimate["treatments"], 3) == round(ate_single, 3)
+                for ate_single in effect_estimate.effect_estimate
             )
         )
 
@@ -225,7 +225,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
 
         effect_estimate = linear_regression_estimator.estimate_coefficient(df)
-        self.assertEqual(round(effect_estimate.value["qsmk"], 1), 2.6)
+        self.assertEqual(round(effect_estimate.effect_estimate["qsmk"], 1), 2.6)
 
     def test_program_15_no_interaction(self):
         """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
@@ -242,7 +242,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # for term_to_square in terms_to_square:
         effect_estimate = linear_regression_estimator.estimate_coefficient(df)
 
-        self.assertEqual(round(effect_estimate.value.iloc[0], 1), 3.5)
+        self.assertEqual(round(effect_estimate.effect_estimate.iloc[0], 1), 3.5)
         self.assertEqual(round(effect_estimate.ci_low.iloc[0], 1), 2.6)
         self.assertEqual(round(effect_estimate.ci_high.iloc[0], 1), 4.3)
 
@@ -260,7 +260,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         # terms_to_square = ["age", "wt71", "smokeintensity", "smokeyrs"]
         # for term_to_square in terms_to_square:
         effect_estimate = linear_regression_estimator.estimate_ate(df)
-        self.assertEqual(round(effect_estimate.value[0], 1), 3.5)
+        self.assertEqual(round(effect_estimate.effect_estimate[0], 1), 3.5)
         self.assertEqual([round(effect_estimate.ci_low[0], 1), round(effect_estimate.ci_high[0], 1)], [2.6, 4.3])
 
     def test_program_15_no_interaction_ate_calculated(self):
@@ -277,7 +277,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
 
         effect_estimate = linear_regression_estimator.estimate_ate_calculated(df=self.nhefs_df)
-        self.assertEqual(round(effect_estimate.value[0], 1), 3.5)
+        self.assertEqual(round(effect_estimate.effect_estimate[0], 1), 3.5)
         self.assertEqual([round(effect_estimate.ci_low[0], 1), round(effect_estimate.ci_high[0], 1)], [1.9, 5])
 
     def test_program_11_2_with_robustness_validation(self):
@@ -308,6 +308,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         self.assertEqual(
             linear_regression_estimator.to_dict(),
             {
+                "name": "LinearRegressionEstimator",
                 "treatment_variable": "X",
                 "outcome_variable": "Y",
                 "alpha": 0.05,
@@ -336,7 +337,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
         )
         self.assertEqual(linear_regression_estimator.formula, "Y ~ I(1/(X + 1)) - 1")
         effect_estimate = linear_regression_estimator.estimate_ate_calculated(df)
-        self.assertEqual(round(effect_estimate.value[0], 2), 0.50)
+        self.assertEqual(round(effect_estimate.effect_estimate[0], 2), 0.50)
         self.assertEqual(round(effect_estimate.ci_low[0], 2), 0.50)
         self.assertEqual(round(effect_estimate.ci_high[0], 2), 0.50)
 
@@ -359,7 +360,7 @@ class TestLinearRegressionEstimator(unittest.TestCase):
             "Y ~ I(2*X**2) - 1",
         )
         effect_estimate = linear_regression_estimator.estimate_ate_calculated(df)
-        self.assertEqual(round(effect_estimate.value[0], 2), -2.00)
+        self.assertEqual(round(effect_estimate.effect_estimate[0], 2), -2.00)
         self.assertEqual(round(effect_estimate.ci_low[0], 2), -2.00)
         self.assertEqual(round(effect_estimate.ci_high[0], 2), -2.00)
 
@@ -387,7 +388,7 @@ class TestLinearRegressionInteraction(unittest.TestCase):
             formula="Y ~ X1 + X2 + (X1 * X2)",
         )
         effect_estimate = lr_model.estimate_ate(self.df)
-        self.assertAlmostEqual(effect_estimate.value[0], 2.0)
+        self.assertAlmostEqual(effect_estimate.effect_estimate[0], 2.0)
 
     def test_categorical_confidence_intervals(self):
         lr_model = LinearRegressionEstimator(
@@ -397,7 +398,9 @@ class TestLinearRegressionInteraction(unittest.TestCase):
 
         # The precise values don't really matter. This test is primarily intended to make sure the return type is correct.
         self.assertTrue(
-            effect_estimate.value.round(2).equals(pd.Series({"color[T.grey]": 0.92, "color[T.orange]": -4.25}))
+            effect_estimate.effect_estimate.round(2).equals(
+                pd.Series({"color[T.grey]": 0.92, "color[T.orange]": -4.25})
+            )
         )
         self.assertTrue(
             effect_estimate.ci_low.round(2).equals(pd.Series({"color[T.grey]": -22.12, "color[T.orange]": -25.58}))
@@ -422,10 +425,10 @@ class TestLinearRegressionInteraction(unittest.TestCase):
             formula="outcomes ~ cr(treatments, df=3)",
         )
 
-        ate_1 = cublic_spline_estimator.estimate_ate_calculated(df).value
+        ate_1 = cublic_spline_estimator.estimate_ate_calculated(df).effect_estimate
 
         cublic_spline_estimator.treatment_value = 2
-        ate_2 = cublic_spline_estimator.estimate_ate_calculated(df).value
+        ate_2 = cublic_spline_estimator.estimate_ate_calculated(df).effect_estimate
 
         # Doubling the treatemebnt value should roughly but not exactly double the ATE
         self.assertNotEqual(ate_1[0] * 2, ate_2[0])
