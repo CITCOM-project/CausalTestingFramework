@@ -1,23 +1,28 @@
 {
   "tests": [{
     "name": "test1",
-    "treatment_variable": "test_input",
-    "estimator": "LinearRegressionEstimator",
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "outcome_variable": "test_output",
+      "treatment_variable": "test_input",
+      "adjustment_set": []
+    },
     "effect_measure": "coefficient",
-    "outcome_variable": "test_output", "expected_effect": {"name": "NoEffect"},
+    "expected_effect": {"name": "NoEffect"},
     "skip": false,
-    "query": "test_input > 0",
-    "estimator_kwargs": {"adjustment_set": []}
-
+    "query": "test_input > 0"
   },
   {
     "name": "test2",
-    "treatment_variable": "test_input",
-    "estimator": "LinearRegressionEstimator",
+    "estimator": {
+      "name":"LinearRegressionEstimator",
+      "treatment_variable": "test_input",
+      "outcome_variable": "test_output",
+      "adjustment_set": []
+    },
+    "expected_effect": {"name": "NoEffect"},
     "effect_measure": "coefficient",
-    "outcome_variable": "test_output", "expected_effect": {"name": "NoEffect"},
     "skip": true,
-    "query": "test_input <= 5",
-    "estimator_kwargs": {"adjustment_set": []}
+    "query": "test_input <= 5"
   }]
 }
