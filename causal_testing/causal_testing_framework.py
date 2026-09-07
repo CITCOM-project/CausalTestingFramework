@@ -255,8 +255,14 @@ class CausalTestingFramework:
 
         return pd.Series(results).sort_index()
 
-    def save_results(self, output_path) -> list:
-        """Save test results to JSON file in the expected format."""
+    def save_results(self, output_path: str, include_adequacy_results: bool = False):
+        """
+        Save test results to JSON file in the expected format.
+
+        :param output_path: Path for output file (.json).
+        :param include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy
+                                         bootstraps.
+        """
         logger.info(f"Saving results to {output_path}")
 
         # Create parent directory if it doesn't exist
@@ -264,6 +270,10 @@ class CausalTestingFramework:
 
         # Save to file
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump([test.to_dict() for test in self.test_cases], f, indent=2)
+            json.dump(
+                [test.to_dict(include_adequacy_results=include_adequacy_results) for test in self.test_cases],
+                f,
+                indent=2,
+            )
 
         logger.info("Results saved successfully")

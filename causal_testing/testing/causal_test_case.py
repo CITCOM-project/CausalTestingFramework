@@ -172,10 +172,11 @@ class CausalTestCase:
         estimate_effect = getattr(self.estimator, f"estimate_{self.effect_measure}")
         return estimate_effect(df)
 
-    def to_dict(self) -> dict:
+    def to_dict(self, include_adequacy_results: bool = False) -> dict:
         """
         Convert the test case to a python dictionary for easy serialisation as JSON.
 
+        :bool include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy bootstraps.
         :returns: A JSON serialisable dict representing the test case.
         """
         test_case = {
@@ -185,12 +186,11 @@ class CausalTestCase:
             "query": self.query,
         }
 
-        for label, attribute in [
-            ("expected_effect", self.expected_causal_effect),
-            ("estimator", self.estimator),
-            ("result", self.result),
-        ]:
-            if attribute is not None:
-                test_case[label] = attribute.to_dict()
+        if self.expected_causal_effect is not None:
+            test_case["expected_effect"] = self.expected_causal_effect.to_dict()
+        if self.estimator is not None:
+            test_case["estimator"] = self.estimator.to_dict()
+        if self.result is not None:
+            test_case["result"] = self.result.to_dict(include_adequacy_results=include_adequacy_results)
 
         return test_case
