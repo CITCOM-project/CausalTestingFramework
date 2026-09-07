@@ -83,6 +83,27 @@ class TestCausalTestingFramework(unittest.TestCase):
             str(e.exception),
         )
 
+    def test_create_test_case_no_expected_effect(self):
+        framework = CausalTestingFramework()
+        framework.load_dag(self.dag_path)
+        framework.load_data(self.data_paths)
+        test = {
+            "name": "test1",
+            "estimator": {
+                "name": "LinearRegressionEstimator",
+                "treatment_variable": "test_input",
+                "outcome_variable": "test_output",
+                "adjustment_set": [],
+            },
+            "effect_measure": "coefficient",
+        }
+        with self.assertRaises(ValueError) as e:
+            framework.create_causal_test(test)
+            self.assertEqual(
+                "Test configuration must specify an expected effect.",
+                str(e.exception),
+            )
+
     def test_create_test_case_invalid_effect(self):
         framework = CausalTestingFramework()
         framework.load_dag(self.dag_path)
