@@ -95,10 +95,6 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
     # Visualisation
     parser_visualise = subparsers.add_parser(Command.VISUALISE.value, help="Visualise causal test results")
-    parser_visualise.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
-    parser_visualise.add_argument(
-        "-t", "--result-config", help="Path to causal test result file (.json)", required=True
-    )
 
     # DAG evaluation
     parser_evaluate = subparsers.add_parser(
