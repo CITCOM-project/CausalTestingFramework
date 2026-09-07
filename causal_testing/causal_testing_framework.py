@@ -145,45 +145,33 @@ class CausalTestingFramework:
         :return: CausalTestCase object
         :raises: ValueError if invalid estimator or configuration is provided
         """
+        # Create the estimator with correct parameters
         estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
-        effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
-
         if "estimator" not in test:
-            raise ValueError("Test configuration must specify an estimator")
-
-        if test["estimator"] not in estimator_map:
+            raise ValueError("Test configuration must specify an estimator.")
+        estimator_kwargs = test["estimator"]
+        estimator_name = estimator_kwargs.pop("name")
+        if estimator_name not in estimator_map:
             raise ValueError(
-                f"Unsupported estimator {test['estimator']}. Supported: {sorted(estimator_map)}. "
+                f"Unsupported estimator {estimator_name}. Supported: {sorted(estimator_map)}. "
                 "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
                 "pyproject.toml file."
             )
+        estimator = estimator_map.get(estimator_name).load()(**estimator_kwargs)
 
-        # Create the estimator with correct parameters
-        treatment_variable = test.get("treatment_variable")
-        outcome_variable = test.get("outcome_variable")
-        estimator_class = estimator_map.get(test["estimator"]).load()
-        estimator_kwargs = test.get("estimator_kwargs", {})
-        effect_type = test.get("expected_effect", {}).get("effect_type", "direct")
-
-        estimator = estimator_class(
-            treatment_variable=treatment_variable,
-            outcome_variable=outcome_variable,
-            treatment_value=test.get("treatment_value"),
-            control_value=test.get("control_value"),
-            alpha=test.get("alpha", 0.05),
-            **estimator_kwargs,
-        )
-
-        # Get effect type and create expected effect
-        expected_effect = test["expected_effect"]
-        effect_type = expected_effect.pop("name")
-        if effect_type not in effect_map:
+        # Create an effect with the corect parameters
+        effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
+        if "expected_effect" not in test:
+            raise ValueError("Test configuration must specify an expected effect.")
+        expected_effect_kwargs = test["expected_effect"]
+        expected_effect_name = expected_effect_kwargs.pop("name")
+        if expected_effect_name not in effect_map:
             raise ValueError(
-                f"Unsupported causal effect {effect_type}. Supported: {sorted(effect_map)}. "
+                f"Unsupported causal effect {expected_effect_name}. Supported: {sorted(effect_map)}. "
                 "If you have implemented a custom causal effect, you will need to add this to your entrypoints via "
                 "your pyproject.toml file."
             )
-        expected_effect = effect_map[effect_type].load()(**expected_effect)
+        expected_effect = effect_map[expected_effect_name].load()(**expected_effect_kwargs)
 
         return CausalTestCase(
             name=test.get("name"),
