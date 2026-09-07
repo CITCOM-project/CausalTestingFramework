@@ -210,7 +210,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
         # Use json_normalize to avoid rounding errors
         pd.testing.assert_frame_equal(
             pd.json_normalize(expected_dict).round(2),
-            pd.json_normalize(adequacy_metric.to_dict(include_results=True)).round(2),
+            pd.json_normalize(adequacy_metric.to_dict(include_adequacy_results=True)).round(2),
         )
 
     def test_dag_adequacy_dependent(self):
