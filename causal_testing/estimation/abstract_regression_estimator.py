@@ -64,6 +64,7 @@ class RegressionEstimator(Estimator):
     def _get_adjusted_variables(self, tree: ast.AST) -> set[str]:
         """
         Recursively return variables in an AST.
+
         :returns: Set of all variables not used as part of a function.
         """
         if isinstance(tree, ast.Name) and tree.id != self.treatment_variable:
@@ -108,7 +109,9 @@ class RegressionEstimator(Estimator):
         Parse the formula and set up the covariates from the design matrix so we can use them in the statsmodels array
         API. This allows us to only parse the formula once, rather than using the formula API, which parses it every
         time the regression model is fit, which can be a lot if using causal test adequacy.
+
         :param df: The data to use.
+
         :returns: The data and the covariate columns.
         """
         _, covariate_data = dmatrices(self.formula, df, return_type="dataframe")
@@ -154,9 +157,10 @@ class RegressionEstimator(Estimator):
         This is a workaround for statsmodels mangling the names of categorical variables to include the values.
 
         :param model: The fitted model from which to extract the variable names.
+
         :returns: A list of the feature names in the model that represent the treatment. Normally this will just be
-        [treatment_name], but for categorical treatments, you'll have
-        [treatment_name[value_1], treatment_name[value_2]].
+                  [treatment_name], but for categorical treatments, you'll have
+                  [treatment_name[value_1], treatment_name[value_2]].
         """
         return [
             param
@@ -170,7 +174,7 @@ class RegressionEstimator(Estimator):
         :param df: The data to use.
         :param: adjustment_config: The values of the adjustment variables to use.
 
-        :return: The estimated outcome under control and treatment, with confidence intervals in the form of a
+        :returns: The estimated outcome under control and treatment, with confidence intervals in the form of a
                  dataframe with columns "predicted", "se", "ci_lower", and "ci_upper".
         """
         model = self.fit_model(df)

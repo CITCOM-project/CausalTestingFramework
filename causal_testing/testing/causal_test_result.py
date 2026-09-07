@@ -35,10 +35,12 @@ class CausalTestResult:
         """
         return self.outcome == TestOutcome.PASS
 
-    def to_dict(self):
+    def to_dict(self, include_adequacy_results: bool = False):
         """
         Convert the result to a python dictionary for easy serialisation as JSON.
 
+        :param include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy
+                                         bootstraps.
         :returns: A JSON serialisable dict representing the test result.
         """
 
@@ -48,7 +50,7 @@ class CausalTestResult:
 
         effect_estimate = self.effect_estimate.to_dict() if self.effect_estimate else {}
 
-        adequacy = self.adequacy.to_dict() if self.adequacy else {}
+        adequacy = self.adequacy.to_dict(include_adequacy_results=include_adequacy_results) if self.adequacy else {}
 
         return outcome | {"effect_estimate": effect_estimate, "adequacy": adequacy}
 

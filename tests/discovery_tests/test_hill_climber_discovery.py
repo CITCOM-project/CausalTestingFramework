@@ -108,7 +108,7 @@ class TestHillClimber(unittest.TestCase):
 
         hill_climber = HillClimberDiscovery(scarf_df)
         fitness_values, problem_edges = hill_climber.evaluate_fitness(dag)
-        expected_fitness_values = (4, -2, 0)
+        expected_fitness_values = (4 / 6, -2 / 6, 0)
         expected_problem_edges = [
             ("length_in", "completed"),
             ("large_gauge", "completed"),
@@ -123,7 +123,7 @@ class TestHillClimber(unittest.TestCase):
             scarf_df,
             include_edges=[("length_in", "completed")],
             exclude_edges=[("color", "length_in")],
-            max_iterations=10,
+            max_iterations=20,
         )
         dag = hill_climber.discover()
         self.assertTrue(

@@ -4,6 +4,7 @@ This module tests common causal discovery functionality provided within the abst
 
 import unittest
 
+import networkx as nx
 import pandas as pd
 
 from causal_testing.discovery.abstract_discovery import Discovery, simple_cycle
@@ -39,7 +40,7 @@ class TestAbstractHillClimber(unittest.TestCase):
         )
 
     def test_simple_cycle(self):
-        dag = CausalDAG()
+        dag = CausalDAG(ignore_cycles=True)
         dag.add_edges_from([("A", "B"), ("B", "C"), ("C", "A")])
         self.assertEqual(simple_cycle(dag), [("A", "B"), ("B", "C"), ("C", "A")])
 
@@ -56,7 +57,7 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertEqual(abstract_discovery.include_edges, [(f"x_{n}", "y_1") for n in range(1, 4)])
 
     def test_include_edge_cycle(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(nx.exception.HasACycle):
             AbstractDiscovery(
                 df=pd.DataFrame(columns=["x_1", "x_2", "x_3", "y_1", "y_2", "y_3", "z_1", "z_2"]),
                 include_edges=[("x_1", "y_1"), ("y_1", "x_1")],
@@ -70,9 +71,9 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertEqual(abstract_discovery.exclude_edges, [(f"x_{n}", "y_1") for n in range(1, 4)])
 
     def test_remove_cycles(self):
-        dag = CausalDAG()
+        dag = CausalDAG(ignore_cycles=True)
         dag.add_edges_from([("A", "B"), ("B", "C")])
-        dag.add_edge("C", "A", ignore_cycles=True)
+        dag.add_edge("C", "A")
         self.assertFalse(dag.is_acyclic(), "A -> B -> C -> A should form a cycle.")
 
         abstract_discovery = AbstractDiscovery(pd.DataFrame())
@@ -80,9 +81,9 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertTrue(dag.is_acyclic())
 
     def test_remove_cycles_respects_include_edges(self):
-        dag = CausalDAG()
+        dag = CausalDAG(ignore_cycles=True)
         dag.add_edges_from([("A", "B"), ("B", "C")])
-        dag.add_edge("C", "A", ignore_cycles=True)
+        dag.add_edge("C", "A")
 
         include_edges = {("A", "B"), ("B", "C")}
         abstract_discovery = AbstractDiscovery(pd.DataFrame(columns=dag.nodes), include_edges=include_edges)
@@ -101,7 +102,7 @@ class TestAbstractHillClimber(unittest.TestCase):
         self.assertEqual(len(dag.edges()), 1)
 
     def test_remove_cycles_multiple_cycles(self):
-        dag = CausalDAG()
+        dag = CausalDAG(ignore_cycles=True)
         dag.add_edges_from([("A", "B"), ("C", "D"), ("B", "A"), ("D", "C")])
 
         abstract_discovery = AbstractDiscovery(pd.DataFrame())
@@ -184,7 +185,7 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "outcome": "completed",
                 },
                 {
-                    "result": TestOutcome.INESTIMABLE,
+                    "result": TestOutcome.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "completed",

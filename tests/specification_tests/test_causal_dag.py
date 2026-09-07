@@ -88,9 +88,12 @@ class TestCausalDAG(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir_path = tempfile.mkdtemp()
         self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C;}"""
         f = open(self.dag_dot_path, "w")
-        f.write(dag_dot)
+        f.write("digraph G { A -> B; B -> C; D -> A; D -> C;}")
+
+        self.dcg_dot_path = os.path.join(self.temp_dir_path, "dcg.dot")
+        f = open(self.dcg_dot_path, "w")
+        f.write("digraph G { A -> B; B -> A; }")
         f.close()
 
     def test_valid_causal_dag(self):
@@ -103,10 +106,14 @@ class TestCausalDAG(unittest.TestCase):
             ("D", "C"),
         ]
 
-    def test_invalid_causal_dag(self):
-        """Test whether a cycle-containing directed graph is an invalid causal DAG."""
+    def test_add_cycle(self):
+        """Test that adding an edge that introduces a cycle raises an error."""
         causal_dag = CausalDAG(self.dag_dot_path)
         self.assertRaises(nx.HasACycle, causal_dag.add_edge, "C", "A")
+
+    def test_read_cycle(self):
+        """Test that reading a graph that has a cycle raises an error."""
+        self.assertRaises(nx.HasACycle, CausalDAG, self.dcg_dot_path)
 
     def test_empty_casual_dag(self):
         """Test whether an empty dag can be created."""

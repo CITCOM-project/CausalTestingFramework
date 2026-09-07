@@ -146,36 +146,31 @@ class CausalTestingFramework:
         """
         # Create the estimator with correct parameters
         estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
-
         if "estimator" not in test:
-            raise ValueError("Test configuration must specify an estimator")
-
-        estimator_class = test["estimator"].pop("name")
-        if estimator_class not in estimator_map:
+            raise ValueError("Test configuration must specify an estimator.")
+        estimator_kwargs = test["estimator"]
+        estimator_name = estimator_kwargs.pop("name")
+        if estimator_name not in estimator_map:
             raise ValueError(
-                f"Unsupported estimator {estimator_class}. Supported: {sorted(estimator_map)}. "
+                f"Unsupported estimator {estimator_name}. Supported: {sorted(estimator_map)}. "
                 "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
                 "pyproject.toml file."
             )
+        test["estimator"] = estimator_map.get(estimator_name).load()(**estimator_kwargs)
 
-        estimator_class = estimator_map.get(estimator_class).load()
-        test["estimator"] = estimator_class(**test["estimator"])
-
-        # Create the expected effect with correct parameters
+        # Create an effect with the corect parameters
         effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
-
         if "expected_causal_effect" not in test:
-            raise ValueError("Test configuration must specify an expected causal effect.")
-
-        effect_class = test["expected_causal_effect"].pop("name")
-        if effect_class not in effect_map:
+            raise ValueError("Test configuration must specify an expected effect.")
+        expected_causal_effect_kwargs = test["expected_causal_effect"]
+        expected_causal_effect_name = expected_causal_effect_kwargs.pop("name")
+        if expected_causal_effect_name not in effect_map:
             raise ValueError(
-                f"Unsupported causal effect {effect_class}. Supported: {sorted(effect_map)}. "
+                f"Unsupported causal effect {expected_causal_effect_name}. Supported: {sorted(effect_map)}. "
                 "If you have implemented a custom causal effect, you will need to add this to your entrypoints via "
                 "your pyproject.toml file."
             )
-        effect_class = effect_map.get(effect_class).load()
-        test["expected_causal_effect"] = effect_class(**test["expected_causal_effect"])
+        test["expected_causal_effect"] = effect_map[expected_causal_effect_name].load()(**expected_causal_effect_kwargs)
 
         if "result" in test:
             outcome = getattr(TestOutcome, test["result"]["outcome"]) if "outcome" in test["result"] else None
@@ -237,7 +232,7 @@ class CausalTestingFramework:
         }
 
         sample_results = []
-        for sample_index in range(bootstrap_size):
+        for sample_index in tqdm(range(bootstrap_size)):
             test_outcomes = {test_outcome: 0 for test_outcome in TestOutcome}
             for test_case in self.test_cases:
                 if test_case.skip:
@@ -268,8 +263,14 @@ class CausalTestingFramework:
 
         return pd.Series(results).sort_index()
 
-    def save_results(self, output_path) -> list:
-        """Save test results to JSON file in the expected format."""
+    def save_results(self, output_path: str, include_adequacy_results: bool = False):
+        """
+        Save test results to JSON file in the expected format.
+
+        :param output_path: Path for output file (.json).
+        :param include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy
+                                         bootstraps.
+        """
         logger.info(f"Saving results to {output_path}")
 
         # Create parent directory if it doesn't exist
@@ -277,7 +278,11 @@ class CausalTestingFramework:
 
         # Save to file
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump([test.to_dict() for test in self.test_cases], f, indent=2)
+            json.dump(
+                [test.to_dict(include_adequacy_results=include_adequacy_results) for test in self.test_cases],
+                f,
+                indent=2,
+            )
 
         logger.info("Results saved successfully")
 

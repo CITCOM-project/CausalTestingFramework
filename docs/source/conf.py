@@ -33,6 +33,8 @@ extensions = [
     "sphinx.ext.autosummary",
 ]
 
+autosectionlabel_prefix_document = True
+
 autosummary_generate = True
 autosummary_imported_members = False
 
@@ -78,7 +80,7 @@ exclude_patterns = [
 html_theme = "sphinx_rtd_theme"
 
 # Static files such as CSS or images
-html_static_path = ["_static", os.path.abspath("../../images")]
+html_static_path = ["_static"]
 
 # Custom CSS
 html_css_files = ["css/custom.css"]

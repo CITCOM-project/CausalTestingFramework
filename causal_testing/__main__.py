@@ -13,7 +13,7 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.visualisation.visualisation_dashboard import Dashboard
+from causal_testing.visualisation.testing_dashboard import Dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,15 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "-s",
         "--silent",
         action="store_true",
-        help="Do not crash on error. If set to true, errors are recorded as test results.",
+        help="Do not crash on error. If set to true, errors are recorded as test results. (Defaults to False)",
+        default=False,
+    )
+    parser_test.add_argument(
+        "-R",
+        "--include-adequacy-results",
+        action="store_true",
+        help="Include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy "
+        "bootstraps. (Defaults to False)",
         default=False,
     )
 
@@ -124,8 +132,11 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_discover.add_argument(
         "-t",
         "--technique",
-        help="The name of the technique to use. Currently supported are 'HillClimberDiscovery' and 'NSGADiscovery'",
-        required=True,
+        default="HillClimberDiscovery",
+        help=(
+            "The name of the technique to use. Currently supported are 'HillClimberDiscovery' and 'NSGADiscovery'. "
+            "Defaults to HillClimberDiscovery."
+        ),
     )
     parser_discover.add_argument(
         "-V",
@@ -225,7 +236,7 @@ def main() -> None:
             logging.info("Discovering causal structure")
             # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
             # Otherwise you end up with duplicate indices, which causes problems further down the line
-            df = pd.concat([read_dataframe(path) for path in args.data_paths]).reset_index()
+            df = pd.concat([read_dataframe(path) for path in args.data_paths]).reset_index(drop=True)
             if args.variables:
                 df = df[args.variables]
             # Drop unnamed columns
@@ -264,13 +275,11 @@ def main() -> None:
 
             logging.info("Running tests")
             framework.run_tests(silent=args.silent, adequacy=args.adequacy, bootstrap_size=args.bootstrap_size)
-            framework.save_results(args.output)
+            framework.save_results(args.output, include_adequacy_results=args.include_adequacy_results)
 
             logging.info("Causal testing completed successfully.")
         case Command.VISUALISE:
-            framework = CausalTestingFramework()
-            framework.setup(dag_path=args.dag_path, test_cases_path=args.result_config)
-            dashboard = Dashboard(framework)
+            dashboard = Dashboard()
             dashboard.serve()
         case Command.EVALUATE:
             # Create and setup framework
