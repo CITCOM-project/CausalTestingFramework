@@ -138,7 +138,7 @@ class VisualisationPlotter:
             clim=(vmin, vmax),
             clipping_colors={"NaN": "grey"},  # Grey out invalid tests
             colorbar=True,
-            tools=["hover"],
+            tools=["hover", "fullscreen"],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             clabel="Causal test adequacy",
@@ -171,7 +171,7 @@ class VisualisationPlotter:
             clim=(0, 100),
             clipping_colors={"NaN": "grey"},  # Grey out invalid tests
             colorbar=True,
-            tools=["hover"],
+            tools=["hover", "fullscreen"],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             clabel="Percentage passing test cases",
@@ -214,7 +214,7 @@ class VisualisationPlotter:
         ).opts(
             cmap=colour_map,
             clipping_colors={"NaN": "grey"},
-            tools=["hover"],
+            tools=["hover", "fullscreen"],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             hooks=[add_discrete_legend],
@@ -289,7 +289,8 @@ class VisualisationPlotter:
                     <strong>Causal Effect:</strong> <br/> @title{safe}<br>
                 </div>
             """
-                )
+                ),
+                "fullscreen",
             ],
             inspection_policy="edges",
             **kwargs,
