@@ -83,7 +83,29 @@ class Dashboard(param.Parameterized):
             pn.state.notifications.error(str(e), duration=0)
 
     def _run_tests(self, _):
-        self.ctf.run_tests(silent=True, adequacy=self.adequacy)
+        total_steps = len(self.ctf.test_cases)
+        original_label = self.run_tests.label
+        for i, test_case in enumerate(self.ctf.test_cases):
+            pct = int((i / total_steps) * 100)
+            self.run_tests.label = f"Processing... {pct}%"
+            self.run_tests.stylesheets = [
+                f"""
+            button {{
+                background: linear-gradient(to right, #2085ec {pct}%, #e0e0e0 {pct}%);
+            }}
+        """
+            ]
+            test_case.execute_test(
+                self.ctf.df, suppress_estimation_errors=True, adequacy=self.adequacy, bootstrap_size=100
+            )
+        self.run_tests.stylesheets = [
+            """
+        button {{
+            background: #2085ec;
+        }}
+    """
+        ]
+        self.run_tests.label = original_label
         self.param.trigger("ctf")
 
     def test_suite_stats(self) -> pn.Row:
