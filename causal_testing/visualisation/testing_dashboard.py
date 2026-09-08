@@ -15,6 +15,7 @@ from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_result import TestOutcome
 from causal_testing.visualisation.visualisation_plotter import VisualisationPlotter
 
+pn.extension("codeeditor")
 pn.extension(design="material", sizing_mode="stretch_width", notifications=True)
 
 
@@ -48,6 +49,20 @@ class Dashboard(param.Parameterized):
         )
         self.generate_tests.param.watch(self._generate_tests, "value", onlychanged=True)
 
+        # Edit causal tests
+        self.test_editor = pn.widgets.CodeEditor(language="json", value="")
+        self.update_tests = pmui.Button(label="Update", sizing_mode="fixed", align="end", height=37, width=120)
+        self.update_tests.param.watch(self._update_tests, "value", onlychanged=True)
+        self.download_tests = pmui.FileDownload(
+            callback=self._download_tests,
+            filename="causal_tests.json",
+            button_type="primary",
+            label="Download",
+            height=37,
+            width=120,
+            sizing_mode="fixed",
+        )
+
         # Run causal tests
         self.run_tests = pmui.Button(label="Run Tests", color="primary", disabled=True)
         self.run_tests.param.watch(self._run_tests, "value", onlychanged=True)
@@ -64,6 +79,7 @@ class Dashboard(param.Parameterized):
 
     def _load_test_file(self, event):
         self.ctf.test_cases = [self.ctf.create_causal_test(test) for test in json.load(io.BytesIO(event.new))]
+
         self.param.trigger("ctf")
         self.run_tests.disabled = not self.ctf.ready_to_run()
 
@@ -189,8 +205,27 @@ class Dashboard(param.Parameterized):
             self.run_tests,
         )
 
+    def _update_tests(self, _):
+        self.ctf.test_cases = [self.ctf.create_causal_test(test) for test in json.loads(self.test_editor.value)]
+
+    def _download_tests(self):
+        return io.BytesIO(self.test_editor.value.encode("utf-8"))
+
     @pn.depends("ctf")
-    def main_panel(self) -> pn.Row:
+    def test_editor_panel(self) -> pn.Column:
+        """
+        Panel to allow users to edit causal test cases.
+        """
+        if self.ctf and self.ctf.test_cases:
+            self.test_editor.value = json.dumps([test.to_dict() for test in self.ctf.test_cases], indent=2)
+            return pn.Column(
+                pn.Row(self.test_editor),
+                pn.Row(self.update_tests, self.download_tests),
+            )
+        return None
+
+    @pn.depends("ctf")
+    def main_panel(self) -> pn.Column:
         """
         Main panel for content.
         """
@@ -242,7 +277,7 @@ class Dashboard(param.Parameterized):
             title="Causal Testing Framework",
             site="Test Results",
             sidebar=self.sidebar(),
-            main=[self.main_panel],
+            main=[pn.Tabs(("Main", self.main_panel), ("Test Editor", self.test_editor_panel))],
         )
         pn.serve(page_content, port=5006, show=False)
 
