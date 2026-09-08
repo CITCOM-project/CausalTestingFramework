@@ -43,8 +43,8 @@ class EmpiricalMeanEstimator(Estimator):
 
         bootstraps = bootstrap((treatment_results, control_results), risk_ratio, confidence_level=self.alpha)
         return EffectEstimate(
-            type="risk_ratio",
-            value=risk_ratio(treatment_results, control_results),
+            effect_measure="risk_ratio",
+            effect_estimate=risk_ratio(treatment_results, control_results),
             ci_low=bootstraps.confidence_interval.low,
             ci_high=bootstraps.confidence_interval.high,
         )
@@ -101,8 +101,8 @@ def test_poisson_intensity_num_shapes(save=False):
             "height": obs_causal_test.estimator.treatment_value,
             "control": obs_causal_test.estimator.control_value,
             "treatment": obs_causal_test.estimator.treatment_value,
-            "smt_risk_ratio": smt_causal_test.result.effect_estimate.value,
-            "obs_risk_ratio": obs_causal_test.result.effect_estimate.value[0],
+            "smt_risk_ratio": smt_causal_test.result.effect_estimate.effect_estimate,
+            "obs_risk_ratio": obs_causal_test.result.effect_estimate.effect_estimate[0],
         }
         for smt_causal_test, _, obs_causal_test in causal_test_cases
     ]
@@ -138,7 +138,7 @@ def test_poisson_width_num_shapes(save=False):
             "control": causal_test.estimator.control_value,
             "treatment": causal_test.estimator.treatment_value,
             "intensity": causal_test.estimator.adjustment_config["intensity"],
-            "ate": causal_test.result.effect_estimate.value[0],
+            "ate": causal_test.result.effect_estimate.effect_estimate[0],
             "ci_low": causal_test.result.effect_estimate.ci_low,
             "ci_high": causal_test.result.effect_estimate.ci_high,
         }

@@ -25,12 +25,10 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         iv_estimator = InstrumentalVariableEstimator(
             treatment_variable="X",
             outcome_variable="Y",
-            treatment_value=None,
-            control_value=None,
             instrument="Z",
         )
         effect_estimate = iv_estimator.estimate_coefficient(self.df)
-        self.assertEqual(effect_estimate.value[0], 2)
+        self.assertEqual(effect_estimate.effect_estimate[0], 2)
         self.assertEqual(effect_estimate.ci_low[0], 2)
         self.assertEqual(effect_estimate.ci_high[0], 2)
 
@@ -38,8 +36,6 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
         iv_estimator = InstrumentalVariableEstimator(
             treatment_variable="X",
             outcome_variable="Y",
-            control_value=0,
-            treatment_value=1,
             instrument="Z",
         )
         self.assertEqual(
@@ -49,8 +45,6 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
                 "treatment_variable": "X",
                 "outcome_variable": "Y",
                 "alpha": 0.05,
-                "control_value": 0,
-                "treatment_value": 1,
                 "instrument": "Z",
                 "bootstrap_size": 100,
             },

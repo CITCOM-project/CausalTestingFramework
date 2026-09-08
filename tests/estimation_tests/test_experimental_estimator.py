@@ -43,7 +43,7 @@ class TestExperimentalEstimator(unittest.TestCase):
             repeats=200,
         )
         effect_estimate = estimator.estimate_ate()
-        self.assertEqual(effect_estimate.value["X"], 2)
+        self.assertEqual(effect_estimate.effect_estimate["X"], 2)
         self.assertEqual(effect_estimate.ci_low["X"], 2)
         self.assertEqual(effect_estimate.ci_high["X"], 2)
 
@@ -58,6 +58,6 @@ class TestExperimentalEstimator(unittest.TestCase):
             repeats=200,
         )
         effect_estimate = estimator.estimate_risk_ratio()
-        self.assertEqual(effect_estimate.value["X"], 2)
+        self.assertEqual(effect_estimate.effect_estimate["X"], 2)
         self.assertEqual(effect_estimate.ci_low["X"], 2)
         self.assertEqual(effect_estimate.ci_high["X"], 2)

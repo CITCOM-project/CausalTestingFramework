@@ -13,6 +13,7 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.visualisation.testing_dashboard import Dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class Command(Enum):
     GENERATE = "generate"
     DISCOVER = "discover"
     EVALUATE = "evaluate"
+    VISUALISE = "visualise"
 
 
 def setup_logging(level: str) -> None:
@@ -79,9 +81,20 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "-s",
         "--silent",
         action="store_true",
-        help="Do not crash on error. If set to true, errors are recorded as test results.",
+        help="Do not crash on error. If set to true, errors are recorded as test results. (Defaults to False)",
         default=False,
     )
+    parser_test.add_argument(
+        "-R",
+        "--include-adequacy-results",
+        action="store_true",
+        help="Include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy "
+        "bootstraps. (Defaults to False)",
+        default=False,
+    )
+
+    # Visualisation
+    parser_visualise = subparsers.add_parser(Command.VISUALISE.value, help="Visualise causal test results")
 
     # DAG evaluation
     parser_evaluate = subparsers.add_parser(
@@ -142,7 +155,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=[],
     )
 
-    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate]:
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate, parser_visualise]:
         parser.add_argument(
             "-l",
             "--log_level",
@@ -151,6 +164,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
             choices=["NONE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             help="Set the logging level (default: WARNING).",
         )
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate]:
         parser.add_argument(
             "-a",
             "--alpha",
@@ -197,7 +211,7 @@ def main() -> None:
                 skip=False,
             )
             with open(args.output, "w", encoding="utf-8") as f:
-                json.dump({"tests": [test.to_dict() for test in causal_tests]}, f)
+                json.dump([test.to_dict() for test in causal_tests], f)
             logging.info("Causal test generation completed successfully.")
 
         case Command.DISCOVER:
@@ -257,9 +271,12 @@ def main() -> None:
 
             logging.info("Running tests")
             framework.run_tests(silent=args.silent, adequacy=args.adequacy, bootstrap_size=args.bootstrap_size)
-            framework.save_results(args.output)
+            framework.save_results(args.output, include_adequacy_results=args.include_adequacy_results)
 
             logging.info("Causal testing completed successfully.")
+        case Command.VISUALISE:
+            dashboard = Dashboard()
+            dashboard.serve()
         case Command.EVALUATE:
             # Create and setup framework
             framework = CausalTestingFramework()

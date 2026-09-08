@@ -56,8 +56,8 @@ class TestCausalTestingFramework(unittest.TestCase):
                 {
                     "treatment_variable": "test_input",
                     "outcome_variable": "test_output",
-                    "expected_effect": {"name": "NoEffect"},
-                    "estimator": "InvalidEstimator",
+                    "expected_causal_effect": {"name": "NoEffect"},
+                    "estimator": {"name": "InvalidEstimator"},
                 }
             )
         self.assertEqual(
@@ -75,13 +75,34 @@ class TestCausalTestingFramework(unittest.TestCase):
                 {
                     "treatment_variable": "test_input",
                     "outcome_variable": "test_output",
-                    "expected_effect": {"name": "NoEffect"},
+                    "expected_causal_effect": {"name": "NoEffect"},
                 }
             )
         self.assertEqual(
-            "Test configuration must specify an estimator",
+            "Test configuration must specify an `estimator`.",
             str(e.exception),
         )
+
+    def test_create_test_case_no_expected_causal_effect(self):
+        framework = CausalTestingFramework()
+        framework.load_dag(self.dag_path)
+        framework.load_data(self.data_paths)
+        test = {
+            "name": "test1",
+            "estimator": {
+                "name": "LinearRegressionEstimator",
+                "treatment_variable": "test_input",
+                "outcome_variable": "test_output",
+                "adjustment_set": [],
+            },
+            "effect_measure": "coefficient",
+        }
+        with self.assertRaises(ValueError) as e:
+            framework.create_causal_test(test)
+            self.assertEqual(
+                "Test configuration must specify an `expected_causal_effect`.",
+                str(e.exception),
+            )
 
     def test_create_test_case_invalid_effect(self):
         framework = CausalTestingFramework()
@@ -89,12 +110,14 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.load_data(self.data_paths)
         test = {
             "name": "test1",
-            "treatment_variable": "test_input",
-            "estimator": "LinearRegressionEstimator",
+            "estimator": {
+                "name": "LinearRegressionEstimator",
+                "treatment_variable": "test_input",
+                "outcome_variable": "test_output",
+                "adjustment_set": [],
+            },
             "effect_measure": "coefficient",
-            "outcome_variable": "test_output",
-            "expected_effect": {"name": "InvalidEffect"},
-            "estimator_kwargs": {"adjustment_set": []},
+            "expected_causal_effect": {"name": "InvalidEffect"},
         }
         with self.assertRaises(ValueError) as e:
             framework.create_causal_test(test)
@@ -111,12 +134,14 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.load_data(self.data_paths)
         test = {
             "name": "test1",
-            "treatment_variable": "test_input",
-            "estimator": "LinearRegressionEstimator",
+            "estimator": {
+                "name": "LinearRegressionEstimator",
+                "treatment_variable": "test_input",
+                "outcome_variable": "test_output",
+                "adjustment_set": [],
+            },
             "effect_measure": "coefficient",
-            "outcome_variable": "test_output",
-            "expected_effect": {"name": "ExactValue", "value": 4},
-            "estimator_kwargs": {"adjustment_set": []},
+            "expected_causal_effect": {"name": "ExactValue", "value": 4},
         }
         test_case = framework.create_causal_test(test)
         self.assertEqual(test_case.expected_causal_effect.value, 4)
@@ -127,12 +152,14 @@ class TestCausalTestingFramework(unittest.TestCase):
         framework.load_data(self.data_paths)
         test = {
             "name": "test1",
-            "treatment_variable": "test_input",
-            "estimator": "InstrumentalVariableEstimator",
+            "estimator": {
+                "name": "InstrumentalVariableEstimator",
+                "treatment_variable": "test_input",
+                "outcome_variable": "test_output",
+                "instrument": "instrumental_variable",
+            },
             "effect_measure": "coefficient",
-            "outcome_variable": "test_output",
-            "expected_effect": {"name": "SomeEffect"},
-            "estimator_kwargs": {"instrument": "instrumental_variable"},
+            "expected_causal_effect": {"name": "SomeEffect"},
         }
         test_case = framework.create_causal_test(test)
         self.assertEqual(test_case.estimator.instrument, "instrumental_variable")
@@ -159,7 +186,7 @@ class TestCausalTestingFramework(unittest.TestCase):
         with open(self.test_cases_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
-            non_skipped_configs = [t for t in test_configs["tests"] if not t.get("skip", False)]
+            non_skipped_configs = [t for t in test_configs if not t.get("skip", False)]
             non_skipped_results = [test.result for test in framework.test_cases if not test.skip]
 
             self.assertEqual(len(non_skipped_results), len(non_skipped_configs))
@@ -197,14 +224,14 @@ class TestCausalTestingFramework(unittest.TestCase):
         expected = pd.Series(
             {
                 "FAIL": 1,
-                "FAIL_ci_high": 2,
+                "FAIL_ci_high": 1,
                 "FAIL_ci_low": 0,
-                "INESTIMABLE": 1,
-                "INESTIMABLE_ci_high": 1,
+                "INESTIMABLE": 0,
+                "INESTIMABLE_ci_high": 0,
                 "INESTIMABLE_ci_low": 0,
-                "PASS": 4,
-                "PASS_ci_high": 4,
-                "PASS_ci_low": 0,
+                "PASS": 5,
+                "PASS_ci_high": 5,
+                "PASS_ci_low": 2,
             }
         ).sort_index()
         pd.testing.assert_series_equal(results, expected)
