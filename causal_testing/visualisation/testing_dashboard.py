@@ -85,19 +85,24 @@ class Dashboard(param.Parameterized):
     def _run_tests(self, _):
         total_steps = len(self.ctf.test_cases)
         original_label = self.run_tests.label
+        theme_var = f"var(--bs-{self.run_tests.button_type}, var(--panel-primary-color, #2085ec))"
+        self.run_tests.disabled = True
         for i, test_case in enumerate(self.ctf.test_cases):
             pct = int((i / total_steps) * 100)
             self.run_tests.label = f"Processing... {pct}%"
             self.run_tests.stylesheets = [
                 f"""
             button {{
-                background: linear-gradient(to right, #2085ec {pct}%, #e0e0e0 {pct}%);
+                background-image: linear-gradient(to right, {theme_var} {pct}%, #e0e0e0 {pct}%) !important;
+                background-color: transparent !important;
+                border-color: #ccc !important;
             }}
-        """
+            """
             ]
             test_case.execute_test(
                 self.ctf.df, suppress_estimation_errors=True, adequacy=self.adequacy, bootstrap_size=100
             )
+        self.run_tests.disabled = False
         self.run_tests.stylesheets = [
             """
         button {{
