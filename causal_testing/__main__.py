@@ -13,7 +13,7 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.visualisation.testing_dashboard import Dashboard
+from causal_testing.visualisation.testing_dashboard import serve_dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -275,8 +275,7 @@ def main() -> None:
 
             logging.info("Causal testing completed successfully.")
         case Command.VISUALISE:
-            dashboard = Dashboard()
-            dashboard.serve()
+            serve_dashboard()
         case Command.EVALUATE:
             # Create and setup framework
             framework = CausalTestingFramework()

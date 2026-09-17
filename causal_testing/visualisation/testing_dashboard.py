@@ -269,17 +269,31 @@ class Dashboard(param.Parameterized):
 
         return content
 
-    def serve(self):
+    def build_template(self):
         """
-        Serve the dashboard.
+        Set up the dashboard view.
         """
-        page_content = pn.template.MaterialTemplate(
+        return pn.template.MaterialTemplate(
             title="Causal Testing Framework",
             site="Test Results",
             sidebar=self.sidebar(),
             main=[pn.Tabs(("Main", self.main_panel), ("Test Editor", self.test_editor_panel))],
         )
-        pn.serve(page_content, port=5006, show=False)
+
+
+def dashboard_session():
+    """
+    Set up the dashboard session instance.
+    """
+    dashboard = Dashboard()
+    return dashboard.build_template()
+
+
+def serve_dashboard():
+    """
+    Serve the dashboard.
+    """
+    pn.serve(dashboard_session, port=5006, show=False)
 
 
 if __name__ == "__main__":
