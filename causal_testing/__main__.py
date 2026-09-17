@@ -27,7 +27,7 @@ class Command(Enum):
     GENERATE = "generate"
     DISCOVER = "discover"
     EVALUATE = "evaluate"
-    VISUALISE = "visualise"
+    DASHBOARD = "dashboard"
 
 
 def setup_logging(level: str) -> None:
@@ -94,7 +94,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
 
     # Visualisation
-    parser_visualise = subparsers.add_parser(Command.VISUALISE.value, help="Visualise causal test results")
+    parser_dashboard = subparsers.add_parser(Command.DASHBOARD.value, help="Visualise causal test results")
 
     # DAG evaluation
     parser_evaluate = subparsers.add_parser(
@@ -155,7 +155,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=[],
     )
 
-    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate, parser_visualise]:
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate, parser_dashboard]:
         parser.add_argument(
             "-l",
             "--log_level",
@@ -274,7 +274,7 @@ def main() -> None:
             framework.save_results(args.output, include_adequacy_results=args.include_adequacy_results)
 
             logging.info("Causal testing completed successfully.")
-        case Command.VISUALISE:
+        case Command.DASHBOARD:
             serve_dashboard()
         case Command.EVALUATE:
             # Create and setup framework
