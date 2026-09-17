@@ -79,6 +79,8 @@ class Dashboard(param.Parameterized):
 
     def _load_test_file(self, event):
         self.ctf.test_cases = [self.ctf.create_causal_test(test) for test in json.load(io.BytesIO(event.new))]
+        if any(test.result is not None and test.result.adequacy is not None for test in self.ctf.test_cases):
+            self.adequacy = True
 
         self.param.trigger("ctf")
         self.run_tests.disabled = not self.ctf.ready_to_run()
@@ -224,7 +226,7 @@ class Dashboard(param.Parameterized):
             )
         return None
 
-    @pn.depends("ctf")
+    @pn.depends("ctf", "adequacy")
     def main_panel(self) -> pn.Column:
         """
         Main panel for content.
