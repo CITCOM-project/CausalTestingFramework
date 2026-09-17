@@ -9,10 +9,44 @@ import numpy as np
 import pandas as pd
 from bokeh.models import Div, HoverTool
 from bokeh.palettes import RdYlGn
+from holoviews.plotting.bokeh.graphs import GraphPlot
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.testing.causal_test_result import TestOutcome
 from causal_testing.visualisation.geometry import edge_spline, node_width, sort_df_by_median_split, style_graph_hook
+
+green = RdYlGn[11][0]
+yellow = RdYlGn[11][7]
+red = RdYlGn[11][9]
+
+colour_map = {"FAIL": red, "INESTIMABLE": yellow, "PASS": green}
+
+
+def add_discrete_legend(plot: GraphPlot, element: hv.Graph):
+    """
+    Add a pass/fail/inestimable legend to plots.
+
+    :param plot: The current plot figure.
+    :param element: The Graph element.
+    """
+    elements = [
+        f'<span style="color: {green};">■ Pass</span>',
+        f'<span style="color: {yellow};">■ Inestimable</span>',
+        f'<span style="color: {red};">■ Fail</span>',
+    ]
+    if isinstance(element, hv.Graph):
+        elements += [
+            '<span style= "margin-left: 5ex;">— Expected dependent</span>',
+            "<span>--- Expected indepednent</span>",
+        ]
+    legend_html = (
+        '<div style="text-align: center; font-family: sans-serif; font-size: 14px; padding: 4px;">'
+        + "\n".join(elements)
+        + "</div>"
+    )
+
+    div = Div(text=legend_html)
+    plot.state.add_layout(div, "above")
 
 
 class VisualisationPlotter:
@@ -36,10 +70,10 @@ class VisualisationPlotter:
         :param output_file: Optional output file to write to (.dot).
         :param view_independences: Whether to display failed independence tests (defaults to True).
         :param colours: Optional dictionary of colours to display the test outcomes.
-                        By default, pass=green, fail=red, inestimable=orange.
+                        By default, pass=green, fail=red, inestimable=yellow.
         :param html: Whether to include html representations of the causal effect. (Defaults to false)
         """
-        default_colours = {TestOutcome.PASS: "green", TestOutcome.INESTIMABLE: "orange", TestOutcome.FAIL: "red"}
+        default_colours = {TestOutcome.PASS: green, TestOutcome.INESTIMABLE: yellow, TestOutcome.FAIL: red}
 
         if colours is not None:
             colours = default_colours | colours
@@ -186,23 +220,6 @@ class VisualisationPlotter:
         results = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
         results["result.outcome.value"] = results["result.outcome"].apply(lambda x: TestOutcome[x].value)
 
-        green = RdYlGn[11][0]
-        yellow = RdYlGn[11][7]
-        red = RdYlGn[11][10]
-
-        colour_map = {"FAIL": red, "INESTIMABLE": yellow, "PASS": green}
-
-        def add_discrete_legend(plot, _):
-            legend_html = f"""
-            <div style="text-align: center; font-family: sans-serif; font-size: 14px; padding: 4px;">
-                <span style="color: {green}; font-weight: bold;">■ Pass</span>
-                <span style="color: {yellow}; font-weight: bold;">■ Inestimable</span>
-                <span style="color: {red}; font-weight: bold;">■ Fail</span>
-            </div>
-            """
-            div = Div(text=legend_html)
-            plot.state.add_layout(div, "above")
-
         # Apply to your HeatMap
         return hv.HeatMap(
             sort_df_by_median_split(results, value_col="result.outcome.value", vdims=["result.outcome"]),
@@ -260,6 +277,10 @@ class VisualisationPlotter:
             [(x, y, node_id) for node_id, (x, y) in node_positions.items()], columns=["x", "y", "node_id"]
         )
 
+        hooks = [style_graph_hook]
+        if any(test.result is not None for test in self.ctf.test_cases):
+            hooks.append(add_discrete_legend)
+
         # Build the graph from the nodes and edges
         graph = hv.Graph(
             (
@@ -277,7 +298,7 @@ class VisualisationPlotter:
             edge_line_width=1.5,
             edge_color="color" if "color" in edges_df else "black",
             edge_hover_line_color="color",
-            hooks=[style_graph_hook],
+            hooks=hooks,
             xaxis=None,
             yaxis=None,
             tools=[
