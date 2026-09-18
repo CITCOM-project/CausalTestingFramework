@@ -12,6 +12,7 @@ import networkx as nx
 import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
+from causal_testing.minimisation.minimisation import minimise_test
 from causal_testing.specification.causal_dag import CausalDAG
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class Command(Enum):
     GENERATE = "generate"
     DISCOVER = "discover"
     EVALUATE = "evaluate"
+    MINIMISE = "minimise"
 
 
 def setup_logging(level: str) -> None:
@@ -87,7 +89,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_evaluate = subparsers.add_parser(
         Command.EVALUATE.value, help="Evaluate how well a causal DAG fits a dataset"
     )
-    parser_evaluate.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
+    # parser_evaluate.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
     parser_evaluate.add_argument("-o", "--output", help="Path for output file (.csv)", required=True)
     parser_evaluate.add_argument(
         "-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False
@@ -142,7 +144,69 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=[],
     )
 
-    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate]:
+    # Minimisation
+    parser_minimise = subparsers.add_parser(Command.MINIMISE.value, help="Causal test case minimisation.")
+    parser_minimise.add_argument("-t", "--test_config", type=str, help="Path to JSON tests file.", required=True)
+    parser_minimise.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
+    parser_minimise.add_argument(
+        "-s",
+        "--safe_ranges",
+        type=str,
+        help="Path to JSON file defining safe ranges for the output variables.",
+        required=True,
+    )
+    parser_minimise.add_argument(
+        "-i", "--timesteps_per_intervention", type=int, help="Timesteps per intervention (defaults to 1).", default=1
+    )
+    parser_minimise.add_argument(
+        "-o",
+        "--outfile",
+        type=str,
+        help="Path to save JSON results file (defaults to `logs/log.json`).",
+        default="logs/log.json",
+    )
+    parser_minimise.add_argument("-b", "--background", nargs="+", help="The background confounders.", default=[])
+    parser_minimise.add_argument(
+        "-A",
+        "--adequacy",
+        help="Specify this flag to record the causal test adequacy. (This will significantly increase the runtime.)",
+        action="store_true",
+    )
+    parser_minimise.add_argument(
+        "-S",
+        "--silent",
+        help="Silence exceptions and store them as part of the result rather than crashing early.",
+        action="store_true",
+    )
+    parser_minimise.add_argument(
+        "-I",
+        "--intervention_index",
+        type=int,
+        help="The index of the intervention to execute.",
+        required=False,
+    )
+    parser_minimise.add_argument(
+        "-T",
+        "--total_time",
+        type=int,
+        help="The total time of the study.",
+        required=True,
+    )
+    parser_minimise.add_argument(
+        "-n",
+        "--num_individuals",
+        type=int,
+        help="The number of individuals in the study.",
+        default=None,
+    )
+    parser_minimise.add_argument(
+        "--start_time",
+        type=int,
+        help="The start time.",
+        default=0,
+    )
+
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate, parser_minimise]:
         parser.add_argument(
             "-l",
             "--log_level",
@@ -158,6 +222,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
                 "The significance level of the confidence intervals used to determine causality. "
                 "This should be a value between 0 and 1. Defaults to 0.05 for 95%% confidence intervals."
             ),
+            type=float,
             default=0.05,
         )
         parser.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
@@ -277,6 +342,34 @@ def main() -> None:
             logging.info("Causal testing completed successfully.")
             logging.info("Running tests on bootstrap samples")
             results.to_csv(args.output)
+        case Command.MINIMISE:
+            args = parse_args()
+
+            framework = CausalTestingFramework()
+            framework.load_data(args.data_paths)
+            framework.load_dag(args.dag_path, ignore_cycles=True)
+
+            framework.df = framework.df.loc[framework.df["time"].between(args.start_time, args.total_time)]
+
+            with open(args.test_config) as f:
+                tests = json.load(f)
+            with open(args.safe_ranges) as f:
+                safe_ranges = json.load(f)
+
+            for test in tests:
+                if test.get("skip", False):
+                    continue
+                minimise_test(
+                    ctf=framework,
+                    test=test,
+                    safe_ranges=safe_ranges,
+                    start_time=args.start_time,
+                    total_time=args.total_time,
+                    timesteps_per_intervention=args.timesteps_per_intervention,
+                    ci_alpha=args.alpha,
+                )
+            with open(args.outfile, "w") as f:
+                json.dump(tests, f, indent=2)
 
 
 if __name__ == "__main__":
