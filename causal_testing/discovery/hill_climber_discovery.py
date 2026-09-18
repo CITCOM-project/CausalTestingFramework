@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from causal_testing.discovery.abstract_discovery import Discovery, is_match
+from causal_testing.discovery.abstract_discovery import Discovery
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_result import TestOutcome
 
@@ -102,7 +102,7 @@ class HillClimberDiscovery(Discovery):
             individual = CausalDAG(ignore_cycles=True)
             individual.add_nodes_from(self.df.columns)
             for treatment, outcome in self.possible_edges:
-                if is_match(treatment, outcome, self.include_edges):
+                if (treatment, outcome) in self.include_edges:
                     individual.add_edge(treatment, outcome)
         self.remove_cycles(individual)
         fitness_values, problem_edges = self.evaluate_fitness(individual)
