@@ -274,7 +274,7 @@ class TestAbstractHillClimber(unittest.TestCase):
                     "outcome": "completed",
                 },
                 {
-                    "result": TestOutcome.INESTIMABLE,
+                    "result": TestOutcome.PASS,
                     "expected_effect": "NoEffect",
                     "treatment": "color",
                     "outcome": "completed",
