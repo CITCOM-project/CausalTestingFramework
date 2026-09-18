@@ -4,6 +4,7 @@ This module implements a hill climbing algorithm to optimise causal DAGs based o
 
 import random
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -26,40 +27,18 @@ class HillClimberDiscovery(Discovery):
         include_edges: str = None,
         exclude_edges: str = None,
         alpha: float = 0.05,
-        max_iterations: int = 100,
+        max_iterations: int = 30,
         max_iterations_without_improvement: int = 10,
     ):
         super().__init__(
-            df=df, random_seed=random_seed, include_edges=include_edges, exclude_edges=exclude_edges, alpha=alpha
+            df=df,
+            random_seed=random_seed,
+            include_edges=include_edges,
+            exclude_edges=exclude_edges,
+            alpha=alpha,
         )
         self.max_iterations = int(max_iterations)
         self.max_iterations_without_improvement = int(max_iterations_without_improvement)
-
-    def sum_test_outcomes(self, test_results: pd.DataFrame) -> dict:
-        """
-        Aggregate the number of passing, failing, and inestimable tests
-        :param test_results: Dataframe containing the raw pass/fail/inestimable outcome of each test case.
-        :returns: Dictionary containing the number of pass/fail/inestimable outcomes.
-        """
-        counts = pd.concat(
-            [
-                pd.DataFrame(np.sort(test_results[["treatment", "outcome"]], axis=1), columns=["treatment", "outcome"]),
-                pd.get_dummies(test_results["result"]).astype(int),
-            ],
-            axis=1,
-        )
-        # Ensure every column is initialised - Test outcomes that never occurred won't be in the dataframe otherwise
-        for col in TestOutcome:
-            if col not in counts.columns:
-                counts[col] = 0
-        counts = counts.groupby(["treatment", "outcome"]).sum().reset_index()[list(TestOutcome)]
-        # The below line normalises by the number of tests *for each edge*
-        # Independence tests X _||_ Y get two tests (X _||_ Y and Y _||_ X) because we don't know which way the
-        # causality flows. We need to normalise this (e.g. if X _||_ Y and Y _||_ X both pass, then the score should be
-        # 1 rather than 2) otherwise we end up unintentionally optimising for more independences.
-        counts = counts.apply(lambda col: col / counts.sum(axis=1))
-
-        return counts.sum(axis=0).to_dict()
 
     def evaluate_fitness(
         self,
@@ -76,7 +55,6 @@ class HillClimberDiscovery(Discovery):
                   inestimable tests respectively, and Y is a list of failing edges.
         """
         self.evaluate_tests(individual)
-        counts = self.sum_test_outcomes(individual.test_results)
 
         # Add extra "var1" and "var2" columns to serve as order independent "treatment" and "outcome"
         query_df = pd.concat(
@@ -94,12 +72,19 @@ class HillClimberDiscovery(Discovery):
             or ~(group["result"] == TestOutcome.PASS).any()
         )
         problem_edges = problem_tests[["treatment", "outcome"]].apply(tuple, axis=1).tolist()
-        num_tests = sum(counts.values())
+
+        counts = {key: len(group) for key, group in query_df.groupby(["result", "expected_effect"], sort=False)}
+
+        no_effect_normalisation = len(list(nx.non_edges(individual))) or 1
+        some_effect_normalisation = len(individual.edges) or 1
 
         fitness_values = (
-            counts.get(TestOutcome.PASS, 0) / num_tests,
-            -counts.get(TestOutcome.FAIL, 0) / num_tests,
-            -counts.get(TestOutcome.INESTIMABLE, 0) / num_tests,
+            (counts.get((TestOutcome.PASS, "NoEffect"), 0)) / no_effect_normalisation,
+            -(counts.get((TestOutcome.FAIL, "NoEffect"), 0)) / no_effect_normalisation,
+            (counts.get((TestOutcome.PASS, "SomeEffect"), 0)) / some_effect_normalisation,
+            -(counts.get((TestOutcome.FAIL, "SomeEffect"), 0)) / some_effect_normalisation,
+            -(counts.get((TestOutcome.INESTIMABLE, "NoEffect"), 0)) / no_effect_normalisation,
+            -(counts.get((TestOutcome.INESTIMABLE, "SomeEffect"), 0)) / some_effect_normalisation,
         )
         return fitness_values, problem_edges
 
@@ -109,14 +94,13 @@ class HillClimberDiscovery(Discovery):
 
         :param individual: An initial individual for the hill climber to start from
                            (defaults to a fully connected graph).
-        
+
         :returns: The inferred causal DAG.
         """
 
         if individual is None:
             individual = CausalDAG(ignore_cycles=True)
             individual.add_nodes_from(self.df.columns)
-            individual.add_edges_from(self.possible_edges)
         self.remove_cycles(individual)
         fitness_values, problem_edges = self.evaluate_fitness(individual)
 
