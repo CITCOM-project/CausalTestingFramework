@@ -220,8 +220,16 @@ class VisualisationPlotter:
         results = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
         results["result.outcome.value"] = results["result.outcome"].apply(lambda x: TestOutcome[x].value)
 
+        data = sort_df_by_median_split(results, value_col="result.outcome.value", vdims=["result.outcome"])
+
+        xticks = list(enumerate(data["estimator.treatment_variable"].unique()))
+        yticks = list(enumerate(data["estimator.outcome_variable"].unique()))
+
+        data["estimator.treatment_variable"] = data["estimator.treatment_variable"].map({v: k for k, v in xticks})
+        data["estimator.outcome_variable"] = data["estimator.outcome_variable"].map({v: k for k, v in yticks})
+
         return hv.HeatMap(
-            sort_df_by_median_split(results, value_col="result.outcome.value", vdims=["result.outcome"]),
+            data,
             kdims=[
                 ("estimator.treatment_variable", "Treatment variable"),
                 ("estimator.outcome_variable", "Outcome variable"),
@@ -234,6 +242,11 @@ class VisualisationPlotter:
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             hooks=[add_discrete_legend],
+            xticks=xticks,
+            yticks=yticks,
+            data_aspect=1,
+            xlim=(-0.5, len(xticks) - 0.5),
+            ylim=(-0.5, len(yticks) - 0.5),
             **kwargs,
         )
 

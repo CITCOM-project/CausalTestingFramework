@@ -5,10 +5,12 @@ This module implements the Dashboard class to provide a panel dashboard to visua
 import io
 import json
 
+import holoviews as hv
 import networkx as nx
 import panel as pn
 import panel_material_ui as pmui
 import param
+from bokeh.io import export_png
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, data_readers, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
@@ -20,47 +22,71 @@ pn.extension(design="material", sizing_mode="stretch_width", notifications=True)
 
 pn.config.raw_css.append(
     """
-.test_suite_stats bk-panel-models-markup-HTML {
-    background: rgb(248, 249, 250);
-    padding: 15px;
-    border-radius: 8px;
-    width: calc(100% - 20px);
-}
-
-
-@media screen {
-    .test_suite_stat_title {
-        font-size: 18pt;
-    }
-    .test_suite_stat_value {
-        font-size: 54pt;
-    }
-}
-
-@media print {
-    #sidebar,
-    button,
-    .bk-header {
-        display: none !important;
-    }
-
-    :root {
-        --sidebar-width: 0px !important;
-    }
-
     .test_suite_stats bk-panel-models-markup-HTML {
-        width: 25% !important;
-        margin: 0 !important;
+        background: rgb(248, 249, 250);
+        padding: 15px;
+        border-radius: 8px;
+        width: calc(100% - 20px);
     }
 
-    .test_suite_stat_title {
-        font-size: 10pt;
+
+    @media screen {
+        .test_suite_stat_title {
+            font-size: 18pt;
+        }
+        .test_suite_stat_value {
+            font-size: 54pt;
+        }
+        .print_only {
+            display: none;
+        }
     }
-    .test_suite_stat_value {
-        font-size: 20pt;
+
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
+    /* 1. Reset all parent wrappers and template containers */
+        html, body,
+        #container, #content, .main, .main-content,
+        .bk-root, .bk-root *,
+        .template-container, .pn-template {
+            height: auto !important;
+            flex: none !important;
+        }
+
+        .page_break_before {
+            break-before: page !important;
+            page-break-before: always !important;
+        }
+
+
+        .screen_only {
+            display: none;
+        }
+
+        #sidebar,
+        button,
+        .bk-header {
+            display: none !important;
+        }
+
+        :root {
+            --sidebar-width: 0px !important;
+        }
+
+        .bk-toolbar {
+            display: none !important;
+        }
+
+        .test_suite_stats bk-panel-models-markup-HTML {
+            width: 25% !important;
+            margin: 0 !important;
+        }
     }
-}
-"""
+    """
 )
 
 
@@ -317,28 +343,80 @@ class Dashboard(param.Parameterized):
         if self.ctf.dag is None:
             content.append(pn.pane.Markdown("Please select the causal DAG."))
         else:
-            results = pn.Row(
-                self.plotter.interactive_results_dag(
-                    width=800,
-                    height=450,
-                )
+            results = pn.FlexBox(
+                pn.pane.PNG(
+                    export_png(
+                        hv.render(self.plotter.interactive_results_dag(frame_height=250, width=600), backend="bokeh"),
+                        webdriver=None,
+                    ),
+                    css_classes=["print_only"],
+                ),
+                pn.pane.HoloViews(
+                    self.plotter.interactive_results_dag(frame_height=300),
+                    styles={"flex": "1 1 800px"},
+                    css_classes=["screen_only"],
+                ),
+                flex_direction="row",
+                flex_wrap="wrap",
+                sizing_mode="stretch_width",
             )
 
             if any(test.result for test in self.ctf.test_cases):
-                content.append(pn.pane.Markdown("# Test Outcomes"))
+                content.append(
+                    pn.pane.Markdown(
+                        """
+                # Test Outcomes
+
+                Passing causal tests are shown in green.
+                Failing tests are shown in red.
+                Inestimable tests are shown in yellow.
+                These occur the test data violates the
+                [positivity](https://causal-testing-framework.readthedocs.io/en/latest/modules/test_data.html)
+                assumption, especially for categorical variables, where the data is split based on variable values.
+
+                In the adjacency matrix, the treatments and outcomes have been ordered such that failing tests appear
+                closer to the bottom left corner and passing tests appear closer to the top right corner.
+                This makes it easier to spot patterns in the data, e.g. variables involved in many failing tests, or
+                clusters of failing tests.
+                """
+                    )
+                )
                 results.append(
-                    self.plotter.test_outcome_adjacency(
-                        xrotation=45,
-                        width=450,
-                        height=450,
+                    pn.pane.HoloViews(
+                        self.plotter.test_outcome_adjacency(
+                            xrotation=45,
+                            frame_height=300,
+                        ),
+                        styles={"flex": "1 1 400px"},
+                        css_classes=["test_outcome_adjacency"],
                     ),
                 )
             content.append(results)
 
             if self.adequacy:
-                content.append(pn.pane.Markdown("# Test Adequacy"))
                 content.append(
-                    pn.Row(
+                    pn.pane.Markdown(
+                        """
+            # Test Adequacy
+
+            [Causal test adequacy](https://causal-testing-framework.readthedocs.io/en/latest/modules/test_adequacy.html)
+            essentially gives an indication as to whether the causal test cases have been evaluated with sufficient
+            data to make the test outcomes trustworthy.
+            For Data Adequacy, values close to zero are desirable.
+            Larger values indicate an "unstable" causal estimate, i.e. individual data points have a large effect on
+            the estimate (and therefore the test outcome), indicating that the test outcome may not be trustworthy
+            and more data is desirable.
+            Values smaller than zero indicate a "suspiciously stable" causal estimate, indicating that the dataset
+            may not capture the full stochasticity of the model (or that the model is deterministic).
+
+            DAG adequacy indicates how well the DAG fits the dataset, and how "stable" the test outcomes are,
+            i.e. how affected the outcomes are by individual data points.
+            Higher percentage pass rates indicate more reliable test outcomes.
+                """
+                    )
+                )
+                content.append(
+                    pn.FlexBox(
                         self.plotter.data_adequacy_heatmap(
                             xrotation=45,
                             width=500,

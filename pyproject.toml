@@ -31,6 +31,7 @@ dependencies = [
     "fastparquet>=2024.11.0",
     "tqdm~=4.67.1",
     "rustworkx>=0.18.0",
+    "selenium>=4.49.0",
 ]
 dynamic = ["version"]
 

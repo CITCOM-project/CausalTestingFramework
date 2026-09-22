@@ -43,7 +43,8 @@ def sort_df_by_median_split(
     # Fill missing (treatment, outcome) combinations with empty rows
     # We need this to ensure that it's possible to obtain the correct ordering in the heatmap
     df = (
-        df.set_index([treatment_col, outcome_col])
+        df.copy()
+        .set_index([treatment_col, outcome_col])
         .reindex(
             pd.MultiIndex.from_product(
                 [
