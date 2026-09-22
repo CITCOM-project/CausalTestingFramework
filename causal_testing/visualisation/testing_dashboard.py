@@ -18,6 +18,51 @@ from causal_testing.visualisation.visualisation_plotter import VisualisationPlot
 pn.extension("codeeditor")
 pn.extension(design="material", sizing_mode="stretch_width", notifications=True)
 
+pn.config.raw_css.append(
+    """
+.test_suite_stats bk-panel-models-markup-HTML {
+    background: rgb(248, 249, 250);
+    padding: 15px;
+    border-radius: 8px;
+    width: calc(100% - 20px);
+}
+
+
+@media screen {
+    .test_suite_stat_title {
+        font-size: 18pt;
+    }
+    .test_suite_stat_value {
+        font-size: 54pt;
+    }
+}
+
+@media print {
+    #sidebar,
+    button,
+    .bk-header {
+        display: none !important;
+    }
+
+    :root {
+        --sidebar-width: 0px !important;
+    }
+
+    .test_suite_stats bk-panel-models-markup-HTML {
+        width: 25% !important;
+        margin: 0 !important;
+    }
+
+    .test_suite_stat_title {
+        font-size: 10pt;
+    }
+    .test_suite_stat_value {
+        font-size: 20pt;
+    }
+}
+"""
+)
+
 
 class Dashboard(param.Parameterized):
     """
@@ -131,7 +176,41 @@ class Dashboard(param.Parameterized):
         self.run_tests.label = original_label
         self.param.trigger("ctf")
 
-    def test_suite_stats(self) -> pn.Row:
+    def _test_suite_stat(
+        self,
+        name: str,
+        value: int,
+        percentage: float = None,
+        colors: list[tuple[int, str]] = None,
+        default_color: str = None,
+    ):
+        color = "" if default_color is None else f"color: {default_color};"
+        if value is not None and colors is not None:
+            for threshold, c in colors:
+                if value < threshold:
+                    color = f"color: {c};"
+                    break
+        if percentage is not None:
+            value_html = f"""
+            <span>{value if value is not None else "-"}
+                <span style="font-size: 0.5em;">({percentage:.1f}%)</span>
+            </span>
+            """
+        else:
+            value_html = f"""<span>{value if value is not None else "-"}</span>"""
+
+        return pn.pane.HTML(
+            f"""
+        <div class="bk-panel-models-markup-HTML">
+            <div style="width: 100%; min-width: 0px; visibility: visible; {color}">
+                <div class="test_suite_stat_title">{name}</div>
+                <div class="test_suite_stat_value">{value_html}</div>
+            </div>
+        </div>
+        """
+        )
+
+    def test_suite_stats(self) -> pn.GridBox:
         """
         Key figures about the test suite: Total, Passing, Failing, Inestimable
         """
@@ -139,42 +218,39 @@ class Dashboard(param.Parameterized):
         if "result.outcome" not in test_df:
             test_df["result.outcome"] = None
 
-        num_tests = pn.indicators.Number(
+        num_tests = self._test_suite_stat(
             name="Test Cases",
             value=None if test_df.empty else len(test_df),
             colors=[(0, "black")],
-            styles={"background": "#f8f9fa", "padding": "15px", "border-radius": "8px"},
-            sizing_mode="stretch_width",
         )
 
         totals = {outcome: (test_df["result.outcome"] == outcome.name).sum() for outcome in TestOutcome}
 
-        def format_result(outcome: TestOutcome) -> str:
-            if test_df.empty or test_df["result.outcome"].isnull().any():
-                return "-"
-            return f"{{value}} <span style='font-size: 0.5em;'>({(totals[outcome]/len(test_df))*100:.1f}%)</span>"
-
-        return pn.Row(
+        return pn.GridBox(
             num_tests,
-            pn.indicators.Number(
+            self._test_suite_stat(
                 name="Passing tests",
                 value=None if test_df.empty or test_df["result.outcome"].isnull().any() else totals[TestOutcome.PASS],
                 colors=[(1, "red")],  # Color red if everything fails
                 default_color="green",
-                format=format_result(TestOutcome.PASS),
-                styles={"background": "#f8f9fa", "padding": "15px", "border-radius": "8px"},
-                sizing_mode="stretch_width",
+                percentage=(
+                    None
+                    if test_df.empty or test_df["result.outcome"].isnull().any()
+                    else (totals[TestOutcome.PASS] / len(test_df)) * 100
+                ),
             ),
-            pn.indicators.Number(
+            self._test_suite_stat(
                 name="Failing tests",
                 value=None if test_df.empty or test_df["result.outcome"].isnull().any() else totals[TestOutcome.FAIL],
-                styles={"background": "#f8f9fa", "padding": "15px", "border-radius": "8px"},
                 colors=[(1, "green")],  # Color red if anything fails
                 default_color="red",
-                format=format_result(TestOutcome.FAIL),
-                sizing_mode="stretch_width",
+                percentage=(
+                    None
+                    if test_df.empty or test_df["result.outcome"].isnull().any()
+                    else (totals[TestOutcome.FAIL] / len(test_df)) * 100
+                ),
             ),
-            pn.indicators.Number(
+            self._test_suite_stat(
                 name="Inestimable tests",
                 value=(
                     None
@@ -183,10 +259,15 @@ class Dashboard(param.Parameterized):
                 ),
                 colors=[(1, "green")],  # Color green if everything is estimable
                 default_color="orange",
-                format=format_result(TestOutcome.INESTIMABLE),
-                styles={"background": "#f8f9fa", "padding": "15px", "border-radius": "8px"},
-                sizing_mode="stretch_width",
+                percentage=(
+                    None
+                    if test_df.empty or test_df["result.outcome"].isnull().any()
+                    else (totals[TestOutcome.INESTIMABLE] / len(test_df)) * 100
+                ),
             ),
+            ncols=4,
+            sizing_mode="stretch_width",
+            css_classes=["test_suite_stats"],
         )
 
     def sidebar(self) -> pn.Param:
@@ -244,6 +325,7 @@ class Dashboard(param.Parameterized):
             )
 
             if any(test.result for test in self.ctf.test_cases):
+                content.append(pn.pane.Markdown("# Test Outcomes"))
                 results.append(
                     self.plotter.test_outcome_adjacency(
                         xrotation=45,
@@ -254,6 +336,7 @@ class Dashboard(param.Parameterized):
             content.append(results)
 
             if self.adequacy:
+                content.append(pn.pane.Markdown("# Test Adequacy"))
                 content.append(
                     pn.Row(
                         self.plotter.data_adequacy_heatmap(

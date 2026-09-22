@@ -220,7 +220,6 @@ class VisualisationPlotter:
         results = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
         results["result.outcome.value"] = results["result.outcome"].apply(lambda x: TestOutcome[x].value)
 
-        # Apply to your HeatMap
         return hv.HeatMap(
             sort_df_by_median_split(results, value_col="result.outcome.value", vdims=["result.outcome"]),
             kdims=[
@@ -235,7 +234,6 @@ class VisualisationPlotter:
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             hooks=[add_discrete_legend],
-            title="Test Outcomes",
             **kwargs,
         )
 
