@@ -81,7 +81,15 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "-s",
         "--silent",
         action="store_true",
-        help="Do not crash on error. If set to true, errors are recorded as test results.",
+        help="Do not crash on error. If set to true, errors are recorded as test results. (Defaults to False)",
+        default=False,
+    )
+    parser_test.add_argument(
+        "-R",
+        "--include-adequacy-results",
+        action="store_true",
+        help="Include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy "
+        "bootstraps. (Defaults to False)",
         default=False,
     )
 

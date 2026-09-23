@@ -110,6 +110,47 @@ class TestMain(unittest.TestCase):
             executed_tests = [test for test in log if not test.get("skip", False)]
             assert all(test["result"].get("bootstrap_size", 50) == 50 for test in executed_tests)
 
+    def test_parse_args_generate_and_test(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "generate",
+                    "--dag-path",
+                    str(self.dag_path),
+                    "--data-paths",
+                    str(self.data_paths[0]),
+                    "--output",
+                    os.path.join(tmp, "tests.json"),
+                ],
+            ):
+                main()
+                self.assertTrue(os.path.exists(os.path.join(tmp, "tests.json")))
+            with patch(
+                "sys.argv",
+                [
+                    "causal_testing",
+                    "test",
+                    "--dag-path",
+                    str(self.dag_path),
+                    "--data-paths",
+                    str(self.data_paths[0]),
+                    "--test-config",
+                    os.path.join(tmp, "tests.json"),
+                    "--output",
+                    str(self.output_path.parent / "main.json"),
+                    "-A",
+                    "-b",
+                    "50",
+                ],
+            ):
+                main()
+                with open(self.output_path.parent / "main.json", encoding="utf-8") as f:
+                    log = json.load(f)
+                executed_tests = [test for test in log if not test.get("skip", False)]
+                assert all(test["result"].get("bootstrap_size", 50) == 50 for test in executed_tests)
+
     def test_parse_args_generation(self):
         with tempfile.TemporaryDirectory() as tmp:
             with patch(
