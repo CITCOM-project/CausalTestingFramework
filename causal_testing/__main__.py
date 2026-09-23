@@ -97,7 +97,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_evaluate = subparsers.add_parser(
         Command.EVALUATE.value, help="Evaluate how well a causal DAG fits a dataset"
     )
-    # parser_evaluate.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
+    parser_evaluate.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
     parser_evaluate.add_argument("-o", "--output", help="Path for output file (.csv)", required=True)
     parser_evaluate.add_argument(
         "-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False
