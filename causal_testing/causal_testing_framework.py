@@ -74,11 +74,12 @@ class CausalTestingFramework:
     ):
         """
         Shortcut for loading in the DAG, data, and test cases.
+
         :param dag_path: Path to the DAG definition file.
         :param data_paths: List of paths to input data files.
         :param test_cases_path: Path to the test configuration file
         :param ignore_cycles: Whether to ignore cycles in the causal graph.
-        NOTE: Setting this to True severely limits the testing that can be performed.
+            NOTE: Setting this to True severely limits the testing that can be performed.
         :param query: Optional pandas query string to filter the loaded data
         :param kwargs: Keyword arguments to be passed to the `read_` function.
         """
@@ -269,7 +270,7 @@ class CausalTestingFramework:
 
         :param output_path: Path for output file (.json).
         :param include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy
-                                         bootstraps.
+            bootstraps.
         """
         logger.info(f"Saving results to {output_path}")
 
@@ -289,6 +290,6 @@ class CausalTestingFramework:
     def test_dataframe(self) -> pd.DataFrame:
         """
         :returns: The causal test cases as a dataframe. Nested objects such as results are indexed as, e.g.
-        `result.outcome`.
+            `result.outcome`.
         """
         return pd.json_normalize(map(lambda t: t.to_dict(), self.test_cases))
