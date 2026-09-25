@@ -71,6 +71,7 @@ def sort_df_by_median_split(
     # Need to convert the values back to strings, otherwise holoviz thinks they're not unique
     df_sorted[treatment_col] = df_sorted[treatment_col].astype(str)
     df_sorted[outcome_col] = df_sorted[outcome_col].astype(str)
+
     return df_sorted
 
 
