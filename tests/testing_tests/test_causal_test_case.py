@@ -1,6 +1,3 @@
-import os
-import shutil
-import tempfile
 import unittest
 
 import numpy as np
@@ -72,13 +69,13 @@ class TestCausalTestCase(unittest.TestCase):
             effect_measure="ate",
         )
         effect_estimate = causal_test_case.estimate_effect(self.df)
-        pd.testing.assert_series_equal(effect_estimate.value, pd.Series(4.0), atol=1e-10)
+        pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series(4.0), atol=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_direct_effect(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
         regression estimator."""
         effect_estimate = self.causal_test_case.estimate_effect(self.df)
-        pd.testing.assert_series_equal(effect_estimate.value, pd.Series(4.0), atol=1e-10)
+        pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series(4.0), atol=1e-10)
 
     def test_execute_test_observational_linear_regression_estimator_coefficient(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -95,7 +92,7 @@ class TestCausalTestCase(unittest.TestCase):
             effect_measure="coefficient",
         )
         effect_estimate = causal_test_case.estimate_effect(self.df)
-        pd.testing.assert_series_equal(effect_estimate.value, pd.Series({"D": 0.0}), atol=1e-1)
+        pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series({"D": 0.0}), atol=1e-1)
 
     def test_execute_test_observational_linear_regression_estimator_risk_ratio(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -112,7 +109,7 @@ class TestCausalTestCase(unittest.TestCase):
             effect_measure="risk_ratio",
         )
         effect_estimate = causal_test_case.estimate_effect(self.df)
-        pd.testing.assert_series_equal(effect_estimate.value, pd.Series(0.0), atol=1)
+        pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series(0.0), atol=1)
 
     def test_invalid_effect_measure(self):
         """Check that executing the causal test case returns the correct results for dummy data using a linear
@@ -147,7 +144,7 @@ class TestCausalTestCase(unittest.TestCase):
             effect_measure="ate",
         )
         effect_estimate = causal_test_case.estimate_effect(self.df)
-        pd.testing.assert_series_equal(effect_estimate.value, pd.Series(4.0), atol=1)
+        pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series(4.0), atol=1)
 
     def test_estimate_params_with_formula(self):
         """Ensure estimate params is handled correctly when a formula is passed into the estimator object"""
@@ -166,7 +163,7 @@ class TestCausalTestCase(unittest.TestCase):
         )
         self.assertEqual(
             round(
-                causal_test_case.estimate_effect(self.df).value[0],
+                causal_test_case.estimate_effect(self.df).effect_estimate[0],
                 3,
             ),
             1.444,
@@ -191,7 +188,7 @@ class TestCausalTestCase(unittest.TestCase):
             "skip": False,
             "effect_measure": "coefficient",
             "query": None,
-            "expected_effect": {"name": "ExactValue", "effect_type": "direct", "value": 4, "atol": 0},
+            "expected_causal_effect": {"name": "ExactValue", "effect_type": "direct", "value": 4, "atol": 0},
             "estimator": {
                 "name": "LinearRegressionEstimator",
                 "treatment_variable": "A",
@@ -203,13 +200,18 @@ class TestCausalTestCase(unittest.TestCase):
             "result": {
                 "outcome": "PASS",
                 "passed": True,
-                "effect_measure": "coefficient",
-                "effect_estimate": {"A": 4.0},
-                "ci_low": {"A": 4.0},
-                "ci_high": {"A": 4.0},
+                "effect_estimate": {
+                    "effect_measure": "coefficient",
+                    "effect_estimate": {"A": 4.0},
+                    "ci_low": {"A": 4.0},
+                    "ci_high": {"A": 4.0},
+                },
                 "adequacy": {"kurtosis": {"A": 0.0}, "passing": 100, "successful": 100, "bootstrap_size": 100},
             },
         }
+
+        print([k for k in expected if k not in test_case_dict])
+        print([k for k in test_case_dict if k not in expected])
 
         # Use json_normalize to avoid rounding errors
         pd.testing.assert_frame_equal(

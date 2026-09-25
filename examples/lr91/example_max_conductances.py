@@ -101,7 +101,7 @@ def effects_on_APD90(observational_data_path, treatment_var, control_val, treatm
     # Run the causal test and print results
     causal_test_case.execute_test(pd.read_csv(observational_data_path))
     logger.info("%s", causal_test_case.result)
-    return causal_test_case.result.effect_estimate.value, (
+    return causal_test_case.result.effect_estimate.effect_estimate, (
         causal_test_case.result.effect_estimate.ci_low,
         causal_test_case.result.effect_estimate.ci_high,
     )
