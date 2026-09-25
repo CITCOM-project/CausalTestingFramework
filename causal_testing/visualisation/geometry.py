@@ -177,12 +177,11 @@ def style_graph_hook(plot: GraphPlot, element: hv.Graph):
     )
 
     # Define hover / inspection Ellipse glyph (prevents reverting to green circles)
-    graph_renderer.node_renderer.hover_glyph = Ellipse(
-        width="width",
-        height="height",
-        fill_color="skyblue",
-        line_color="gray",
-    )
+    graph_renderer.node_renderer.hover_glyph = graph_renderer.node_renderer.glyph.clone()
+    graph_renderer.node_renderer.hover_glyph.fill_color = "skyblue"
+
+    # Stops edges disappearing when you over over them
+    graph_renderer.edge_renderer.hover_glyph = graph_renderer.edge_renderer.glyph.clone()
 
     # Add Arrowheads with matching edge colors
     for _, row in element.data.iterrows():
