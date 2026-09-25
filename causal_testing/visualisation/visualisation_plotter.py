@@ -7,6 +7,7 @@ import holoviews as hv
 import networkx as nx
 import numpy as np
 import pandas as pd
+import pydot
 from bokeh.models import Div, HoverTool
 from bokeh.palettes import RdYlGn
 from holoviews.plotting.bokeh.graphs import GraphPlot
@@ -63,6 +64,7 @@ class VisualisationPlotter:
         view_independences: bool = True,
         colours: dict[TestOutcome, str] = None,
         html: bool = False,
+        layout_engine: str = None,
     ) -> nx.DiGraph:
         """
         View causal test results as a graph.
@@ -72,6 +74,8 @@ class VisualisationPlotter:
         :param colours: Optional dictionary of colours to display the test outcomes.
                         By default, pass=green, fail=red, inestimable=yellow.
         :param html: Whether to include html representations of the causal effect. (Defaults to false)
+        :param layout_engine: The layout engine to use. (Defaults to None for concise output)
+                              See https://graphviz.org/docs/layouts/ for a list of supported engines.
         """
         default_colours = {TestOutcome.PASS: green, TestOutcome.INESTIMABLE: yellow, TestOutcome.FAIL: red}
 
@@ -117,7 +121,16 @@ class VisualisationPlotter:
                             axis=1,
                         )
                         effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
-                        result_dag[test.treatment_variable][test.outcome_variable]["title"] = effect_estimate.to_html()
+                        result_dag[test.treatment_variable][test.outcome_variable][
+                            "title"
+                        ] = f"<{effect_estimate.to_html()}>"
+
+        if layout_engine:
+            result_dag = nx.drawing.nx_pydot.from_pydot(
+                pydot.graph_from_dot_data(
+                    nx.drawing.nx_pydot.to_pydot(result_dag).create_dot(prog=layout_engine).decode("utf-8")
+                )[0]
+            )
 
         if output_file is not None:
             nx.drawing.nx_pydot.write_dot(result_dag, output_file)
@@ -256,23 +269,24 @@ class VisualisationPlotter:
 
         :returns: Inveractive holoviews graph.
         """
-        results = self.results_dag(html=True)
-
-        # Use DOT to do the layout
-        agraph = nx.nx_agraph.to_agraph(results)
-        agraph.layout(prog="dot")
+        results = self.results_dag(html=True, layout_engine="dot")
 
         node_positions = {}
-        for node in agraph.nodes():
-            x, y = map(float, node.attr["pos"].split(","))
-            node_positions[node.name] = (x, y)
+        for node, attributes in results.nodes(data=True):
+            x, y = map(float, attributes["pos"].strip('"').split(","))
+            node_positions[node] = (x, y)
 
         # Build the edges
-        edges_df = pd.DataFrame([{"source": u, "target": v} | data for u, v, data in results.edges(data=True)])
+        edges_df = pd.DataFrame(
+            [
+                {"source": u, "target": v} | {k: v.strip('"') for k, v in data.items()}
+                for u, v, data in results.edges(data=True)
+            ]
+        )
 
         edges_df["trimmed_path"] = edges_df[["source", "target"]].apply(
             lambda row: edge_spline(
-                dot_pos=agraph.get_edge(row["source"], row["target"]).attr["pos"],
+                dot_pos=results[row["source"]][row["target"]]["pos"],
                 target_node_centre=node_positions[row["target"]],
                 target_node_width=node_width(row["target"]) / 2,
             ),

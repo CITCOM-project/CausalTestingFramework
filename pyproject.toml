@@ -36,7 +36,12 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
+visualise = [
+  "holoviews>=1.23",
+  "bokeh>=3.9",
+]
 dev = [
+"causal-testing-framework[visualise]",
 "astroid==3.3.8",
 "isort",
 "pytest",
@@ -55,11 +60,6 @@ dev = [
 "nbclient",
 "nbformat",
 "ipykernel",
-]
-visualise = [
-  "holoviews>=1.23",
-  "bokeh>=3.9",
-  "pygraphviz>=2"
 ]
 
 [project.urls]
