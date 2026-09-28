@@ -461,28 +461,8 @@
       "formula": "num_shapes_unit ~ num_lines_abs + height + num_shapes_abs + width"
     },
     "result": {
-      "outcome": "FAIL",
-      "passed": false,
-      "effect_estimate": {
-        "effect_measure": "coefficient",
-        "effect_estimate": {
-          "num_lines_abs": 2.8189143372947383
-        },
-        "ci_low": {
-          "num_lines_abs": 2.6483685244548774
-        },
-        "ci_high": {
-          "num_lines_abs": 2.989460150134599
-        }
-      },
-      "adequacy": {
-        "kurtosis": {
-          "num_lines_abs": 0.3780846212326505
-        },
-        "passing": 0,
-        "successful": 100,
-        "bootstrap_size": 100
-      }
+      "outcome": "INESTIMABLE",
+      "passed": false
     }
   },
   {

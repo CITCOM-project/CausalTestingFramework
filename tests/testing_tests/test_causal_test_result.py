@@ -19,7 +19,7 @@ class TestCausalTestCase(unittest.TestCase):
                 effect_measure="ate", effect_estimate=pd.Series(5.05), ci_low=pd.Series(5), ci_high=pd.Series(6)
             ),
         )
-        self.assertEqual(result.effect_direction(), "positive")
+        self.assertEqual(result.effect_direction(), "Positive")
 
     def test_effect_direction_negative(self):
         result = CausalTestResult(
@@ -28,7 +28,7 @@ class TestCausalTestCase(unittest.TestCase):
                 effect_measure="ate", effect_estimate=pd.Series(-5.05), ci_low=pd.Series(-6), ci_high=pd.Series(-5)
             ),
         )
-        self.assertEqual(result.effect_direction(), "negative")
+        self.assertEqual(result.effect_direction(), "Negative")
 
     def test_effect_direction_none(self):
         result = CausalTestResult(
@@ -37,7 +37,7 @@ class TestCausalTestCase(unittest.TestCase):
                 effect_measure="ate", effect_estimate=pd.Series(0), ci_low=pd.Series(-1), ci_high=pd.Series(1)
             ),
         )
-        self.assertEqual(result.effect_direction(), "no effect")
+        self.assertEqual(result.effect_direction(), "")
 
     def test_effect_direction_categorical(self):
         result = CausalTestResult(
@@ -49,4 +49,4 @@ class TestCausalTestCase(unittest.TestCase):
                 ci_high=pd.Series({"color[T.RED]": 5, "color[T.BLUE]": 4}),
             ),
         )
-        self.assertEqual(result.effect_direction(), "categorical")
+        self.assertEqual(result.effect_direction(), "")

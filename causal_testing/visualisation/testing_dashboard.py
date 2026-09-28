@@ -383,12 +383,11 @@ class Dashboard(param.Parameterized):
                 )
                 results.append(
                     pn.pane.HoloViews(
-                        self.plotter.test_outcome_adjacency(
+                        self.plotter.outcome_adjacency(
                             xrotation=45,
                             frame_height=300,
                         ),
                         styles={"flex": "1 1 400px"},
-                        css_classes=["test_outcome_adjacency"],
                     ),
                 )
             content.append(results)

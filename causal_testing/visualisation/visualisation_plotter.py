@@ -89,16 +89,7 @@ class VisualisationPlotter:
         result_dag.add_edges_from(self.ctf.dag.edges)
 
         for test in self.ctf.test_cases:
-            if test.result:
-                effect_estimate = pd.concat(
-                    [
-                        test.result.effect_estimate.ci_low,
-                        test.result.effect_estimate.effect_estimate,
-                        test.result.effect_estimate.ci_high,
-                    ],
-                    axis=1,
-                )
-                effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
+            if test.result is not None:
                 if (test.treatment_variable, test.outcome_variable) in result_dag.edges or (
                     view_independences and test.result.outcome != TestOutcome.PASS
                 ):
@@ -111,7 +102,7 @@ class VisualisationPlotter:
                     result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[
                         test.result.outcome
                     ]
-                    if html:
+                    if html and test.result.effect_estimate is not None:
                         effect_estimate = pd.concat(
                             [
                                 test.result.effect_estimate.ci_low,
@@ -198,8 +189,10 @@ class VisualisationPlotter:
         Visualise dag adequacy as an adjacency matrix heatmap of the percentage of passing test cases.
         """
         adequacy = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
-        if "result.adequacy.passing" not in adequacy:
-            return None
+
+        # TODO: Check this isn't needed for the dashboard
+        # if "result.adequacy.passing" not in adequacy:
+        #     return None
 
         # Turn passing test cases into a percentage
         adequacy["result.adequacy.passing"] = (
@@ -226,7 +219,7 @@ class VisualisationPlotter:
             **kwargs,
         )
 
-    def test_outcome_adjacency(self, **kwargs) -> hv.HeatMap:
+    def outcome_adjacency(self, **kwargs) -> hv.HeatMap:
         """
         Visualise causal test results as an adjacency matrix.
         """
@@ -305,6 +298,9 @@ class VisualisationPlotter:
         hooks = [style_graph_hook]
         if any(test.result is not None for test in self.ctf.test_cases):
             hooks.append(add_discrete_legend)
+
+        if "label" in edges_df.columns:
+            edges_df["label"].fillna("", inplace=True)
 
         # Build the graph from the nodes and edges
         graph = hv.Graph(
