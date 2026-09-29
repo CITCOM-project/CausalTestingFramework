@@ -7,7 +7,7 @@ import pytest
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_result import TestOutcome
-from causal_testing.visualisation.visualisation_plotter import VisualisationPlotter, colour_map
+from causal_testing.visualisation.visualisation_plotter import VisualisationPlotter
 
 
 @pytest.fixture(name="plotter")
@@ -45,11 +45,20 @@ def test_results_dag(plotter):
         outcome_variable = test.estimator.outcome_variable
         edge_data = results_dag.get_edge_data(treatment_variable, outcome_variable)
         if test.result.outcome == TestOutcome.FAIL:
-            assert edge_data.get("color") == colour_map["FAIL"], "Expected failing tests to map to red."
+            assert edge_data is not None, "Expected edge for failing test."
+            assert (
+                edge_data.get("color") == plotter.colour_map[TestOutcome.FAIL]
+            ), "Expected failing tests to map to red."
         elif test.result.outcome == TestOutcome.INESTIMABLE:
-            assert edge_data.get("color") == colour_map["INESTIMABLE"], "Expected inestimable tests to map to yellow."
+            assert edge_data is not None, "Expected edge for inestimable test."
+            assert (
+                edge_data.get("color") == plotter.colour_map[TestOutcome.INESTIMABLE]
+            ), "Expected inestimable tests to map to yellow."
         elif (treatment_variable, outcome_variable) in plotter.ctf.dag.edges:
-            assert edge_data.get("color") == colour_map["PASS"], "Expected passing tests to map to green."
+            assert edge_data is not None, "Expected edge for passing causal test."
+            assert (
+                edge_data.get("color") == plotter.colour_map[TestOutcome.PASS]
+            ), "Expected passing tests to map to green."
         else:
             assert edge_data is None, "Passing independence tests should not have edges in the result DAG."
 
@@ -72,13 +81,19 @@ def test_interactive_results_dag(plotter):
 
         if test.result.outcome == TestOutcome.FAIL:
             assert edge_data is not None, "Expected edge for failing test."
-            assert edge_data.get("color") == colour_map["FAIL"], "Expected failing tests to map to red."
+            assert (
+                edge_data.get("color") == plotter.colour_map[TestOutcome.FAIL]
+            ), "Expected failing tests to map to red."
         elif test.result.outcome == TestOutcome.INESTIMABLE:
             assert edge_data is not None, "Expected edge for inestimable test."
-            assert edge_data.get("color") == colour_map["INESTIMABLE"], "Expected inestimable tests to map to yellow."
+            assert (
+                edge_data.get("color") == plotter.colour_map[TestOutcome.INESTIMABLE]
+            ), "Expected inestimable tests to map to yellow."
         elif (treatment_variable, outcome_variable) in plotter.ctf.dag.edges:
             assert edge_data is not None, "Expected edge for passing causal test."
-            assert edge_data.get("color") == colour_map["PASS"], "Expected passing tests to map to green."
+            assert (
+                edge_data.get("color") == plotter.colour_map[TestOutcome.PASS]
+            ), "Expected passing tests to map to green."
         else:
             assert edge_data is None, "Passing independence tests should not have edges in the result DAG."
 
@@ -108,7 +123,9 @@ def test_outcome_adjacency(plotter):
     df["rendered_color"] = df[fill_color_transform.field].apply(lambda c: category_color_map.get(c))
 
     test_df = pd.json_normalize([test.to_dict() for test in plotter.ctf.test_cases])
-    test_df["expected_color"] = [colour_map[outcome] for outcome in test_df["result.outcome"]]
+    test_df["expected_color"] = [
+        plotter.colour_map[getattr(TestOutcome, outcome)] for outcome in test_df["result.outcome"]
+    ]
 
     merged_df = pd.merge(
         df,

@@ -60,6 +60,7 @@ dev = [
 "nbclient",
 "nbformat",
 "ipykernel",
+"pytest-playwright",
 ]
 
 [project.urls]

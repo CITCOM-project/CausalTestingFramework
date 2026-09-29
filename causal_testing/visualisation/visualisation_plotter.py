@@ -16,74 +16,41 @@ from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.testing.causal_test_result import TestOutcome
 from causal_testing.visualisation.geometry import edge_spline, node_width, sort_df_by_median_split, style_graph_hook
 
-green = RdYlGn[11][0]
-yellow = RdYlGn[11][7]
-red = RdYlGn[11][9]
-
-colour_map = {"FAIL": red, "INESTIMABLE": yellow, "PASS": green}
-
-
-def add_discrete_legend(plot: GraphPlot, element: hv.Graph):
-    """
-    Add a pass/fail/inestimable legend to plots.
-
-    :param plot: The current plot figure.
-    :param element: The Graph element.
-    """
-    elements = [
-        f'<span style="color: {green};">■ Pass</span>',
-        f'<span style="color: {yellow};">■ Inestimable</span>',
-        f'<span style="color: {red};">■ Fail</span>',
-    ]
-    if isinstance(element, hv.Graph):
-        elements += [
-            '<span style= "margin-left: 5ex;">— Expected dependent</span>',
-            "<span>--- Expected indepednent</span>",
-        ]
-    legend_html = (
-        '<div style="text-align: center; font-family: sans-serif; font-size: 14px; padding: 4px;">'
-        + "\n".join(elements)
-        + "</div>"
-    )
-
-    div = Div(text=legend_html)
-    plot.state.add_layout(div, "above")
-
 
 class VisualisationPlotter:
     """
     Class to generate plots to visualise CausalTestingFramework test results.
+
+    :ivar ctf: CausalTestingFramework instance from which to visualise the tests.
+    :ivar colour_map: Dictionary mapping TestOutcomes PASS, FAIL, and INESTIMABLE test outcomes to colours.
     """
 
-    def __init__(self, ctf: CausalTestingFramework):
+    def __init__(self, ctf: CausalTestingFramework, colour_map: dict[TestOutcome, str] = None):
         self.ctf = ctf
+        self.colour_map = (
+            colour_map
+            if colour_map is not None
+            else {
+                TestOutcome.PASS: RdYlGn[11][0],
+                TestOutcome.INESTIMABLE: RdYlGn[11][7],
+                TestOutcome.FAIL: RdYlGn[11][9],
+            }
+        )
 
     def results_dag(
         self,
-        output_file: str = None,
         view_independences: bool = True,
-        colours: dict[TestOutcome, str] = None,
         html: bool = False,
         layout_engine: str = None,
     ) -> nx.DiGraph:
         """
         View causal test results as a graph.
 
-        :param output_file: Optional output file to write to (.dot).
         :param view_independences: Whether to display failed independence tests (defaults to True).
-        :param colours: Optional dictionary of colours to display the test outcomes.
-                        By default, pass=green, fail=red, inestimable=yellow.
         :param html: Whether to include html representations of the causal effect. (Defaults to false)
         :param layout_engine: The layout engine to use. (Defaults to None for concise output)
                               See https://graphviz.org/docs/layouts/ for a list of supported engines.
         """
-        default_colours = {TestOutcome.PASS: green, TestOutcome.INESTIMABLE: yellow, TestOutcome.FAIL: red}
-
-        if colours is not None:
-            colours = default_colours | colours
-        else:
-            colours = default_colours
-
         result_dag = nx.DiGraph()
         result_dag.add_nodes_from(self.ctf.dag.nodes)
         result_dag.add_edges_from(self.ctf.dag.edges)
@@ -98,8 +65,10 @@ class VisualisationPlotter:
                         result_dag[test.treatment_variable][test.outcome_variable]["style"] = "dashed"
 
                     result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
-                    result_dag[test.treatment_variable][test.outcome_variable]["color"] = colours[test.result.outcome]
-                    result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = colours[
+                    result_dag[test.treatment_variable][test.outcome_variable]["color"] = self.colour_map[
+                        test.result.outcome
+                    ]
+                    result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = self.colour_map[
                         test.result.outcome
                     ]
                     if html and test.result.effect_estimate is not None:
@@ -123,9 +92,6 @@ class VisualisationPlotter:
                 )[0]
             )
 
-        if output_file is not None:
-            nx.drawing.nx_pydot.write_dot(result_dag, output_file)
-
         return result_dag
 
     def data_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
@@ -141,8 +107,6 @@ class VisualisationPlotter:
             "adequacy.kurtosis",
         ]:
             columns = [c for c in adequacy.columns if c.startswith(f"result.{col}.")]
-            if not columns:
-                return None
             adequacy[f"result.{col}"] = adequacy[columns].bfill(axis=1).iloc[:, 0]
             adequacy = adequacy.drop(columns=columns)
         adequacy = sort_df_by_median_split(adequacy, value_col="result.adequacy.kurtosis")
@@ -190,10 +154,6 @@ class VisualisationPlotter:
         """
         adequacy = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
 
-        # TODO: Check this isn't needed for the dashboard
-        # if "result.adequacy.passing" not in adequacy:
-        #     return None
-
         # Turn passing test cases into a percentage
         adequacy["result.adequacy.passing"] = (
             adequacy["result.adequacy.passing"] / adequacy["result.adequacy.bootstrap_size"]
@@ -219,6 +179,32 @@ class VisualisationPlotter:
             **kwargs,
         )
 
+    def add_discrete_legend(self, plot: GraphPlot, element: hv.Graph):
+        """
+        Add a pass/fail/inestimable legend to plots.
+
+        :param plot: The current plot figure.
+        :param element: The Graph element.
+        """
+        elements = [
+            f'<span style="color: {self.color_map[TestOutcome.PASS]};">■ Pass</span>',
+            f'<span style="color: {self.color_map[TestOutcome.INESTIMABLE]};">■ Inestimable</span>',
+            f'<span style="color: {self.color_map[TestOutcome.FAIL]};">■ Fail</span>',
+        ]
+        if isinstance(element, hv.Graph):
+            elements += [
+                '<span style= "margin-left: 5ex;">— Expected dependent</span>',
+                "<span>--- Expected indepednent</span>",
+            ]
+        legend_html = (
+            '<div style="text-align: center; font-family: sans-serif; font-size: 14px; padding: 4px;">'
+            + "\n".join(elements)
+            + "</div>"
+        )
+
+        div = Div(text=legend_html)
+        plot.state.add_layout(div, "above")
+
     def outcome_adjacency(self, **kwargs) -> hv.HeatMap:
         """
         Visualise causal test results as an adjacency matrix.
@@ -242,12 +228,12 @@ class VisualisationPlotter:
             ],
             vdims=[("result.outcome", "Outcome")],
         ).opts(
-            cmap=colour_map,
+            cmap={k.name: v for k, v in self.colour_map.items()},
             clipping_colors={"NaN": "grey"},
             tools=["hover", "fullscreen"],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
-            hooks=[add_discrete_legend],
+            hooks=[self.add_discrete_legend],
             xticks=xticks,
             yticks=yticks,
             data_aspect=1,
@@ -297,7 +283,7 @@ class VisualisationPlotter:
 
         hooks = [style_graph_hook]
         if any(test.result is not None for test in self.ctf.test_cases):
-            hooks.append(add_discrete_legend)
+            hooks.append(self.add_discrete_legend)
 
         if "label" in edges_df.columns:
             edges_df["label"].fillna("", inplace=True)
@@ -339,8 +325,7 @@ class VisualisationPlotter:
         )
 
         # Label layers
-        if "label" not in edges_df:
-            edges_df["label"] = ""
+        edges_df["label"] = "" if "label" not in edges_df else edges_df["label"]
         node_labels = hv.Labels(nodes_df, kdims=["x", "y"], vdims=["node_id"]).opts(
             text_font_size="9pt",
             text_color="black",

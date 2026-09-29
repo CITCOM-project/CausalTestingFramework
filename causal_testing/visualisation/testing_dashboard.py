@@ -106,6 +106,7 @@ class Dashboard(param.Parameterized):
         # DAG
         self.dag_file_input = pmui.FileInput(accept=".dot,.gv", mime_type="text/vnd.graphviz", label="DAG file")
         self.dag_file_input.param.watch(self._load_dag_file, "value", onlychanged=True)
+
         # Data
         self.data_file_input = pmui.FileInput(accept=",".join(data_readers), label="Data file")
         self.data_file_input.param.watch(self._load_data_file, "value", onlychanged=True)
@@ -140,6 +141,7 @@ class Dashboard(param.Parameterized):
 
     def _load_dag_file(self, event):
         """Parses uploaded DOT bytes into a CausalDAG and initialises the CTF with it."""
+
         parsed_multigraph = nx.nx_pydot.read_dot(io.StringIO(event.new.decode("utf-8")))
         dag = CausalDAG()
         dag.update(nx.DiGraph(parsed_multigraph))
@@ -159,15 +161,14 @@ class Dashboard(param.Parameterized):
     def _load_data_file(self, event):
         """Parses uploaded data bytes into a pandas DataFrame and initialises the CTF with it"""
         self.ctf.df = read_dataframe(file_path=self.data_file_input.filename, content=io.BytesIO(event.new))
-        self.ctf.dag.datatypes = self.ctf.df.dtypes
         self.run_tests.disabled = not self.ctf.ready_to_run()
 
     def _generate_tests(self, _):
         """Generates causal test cases from a DAG."""
         try:
-            self.ctf.test_cases = self.ctf.dag.generate_causal_tests()
-            self.param.trigger("ctf")
+            self.ctf.generate_causal_tests()
             self.run_tests.disabled = not self.ctf.ready_to_run()
+            self.param.trigger("ctf")
         except ValueError as e:
             pn.state.notifications.error(str(e), duration=0)
 
@@ -308,7 +309,6 @@ class Dashboard(param.Parameterized):
                 self.param.adequacy,
                 widgets={
                     "adequacy": pmui.Switch,
-                    # "styles": {"transform": "scale(1.5)", "transform-origin": "left center"},
                 },
             ),
             self.run_tests,
@@ -451,12 +451,8 @@ def dashboard_session():
     return dashboard.build_template()
 
 
-def serve_dashboard():
+def serve_dashboard(port=5006, show=False, **kwargs):
     """
     Serve the dashboard.
     """
-    pn.serve(dashboard_session, port=5006, show=False)
-
-
-if __name__ == "__main__":
-    Dashboard().serve()
+    return pn.serve(dashboard_session, show=show, port=port, **kwargs)
