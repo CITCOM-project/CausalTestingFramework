@@ -187,9 +187,9 @@ class VisualisationPlotter:
         :param element: The Graph element.
         """
         elements = [
-            f'<span style="color: {self.color_map[TestOutcome.PASS]};">■ Pass</span>',
-            f'<span style="color: {self.color_map[TestOutcome.INESTIMABLE]};">■ Inestimable</span>',
-            f'<span style="color: {self.color_map[TestOutcome.FAIL]};">■ Fail</span>',
+            f'<span style="color: {self.colour_map[TestOutcome.PASS]};">■ Pass</span>',
+            f'<span style="color: {self.colour_map[TestOutcome.INESTIMABLE]};">■ Inestimable</span>',
+            f'<span style="color: {self.colour_map[TestOutcome.FAIL]};">■ Fail</span>',
         ]
         if isinstance(element, hv.Graph):
             elements += [
@@ -286,7 +286,7 @@ class VisualisationPlotter:
             hooks.append(self.add_discrete_legend)
 
         if "label" in edges_df.columns:
-            edges_df["label"].fillna("", inplace=True)
+            edges_df["label"] = edges_df["label"].fillna("")
 
         # Build the graph from the nodes and edges
         graph = hv.Graph(
