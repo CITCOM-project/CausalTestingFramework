@@ -275,7 +275,8 @@ def main() -> None:
 
             logging.info("Causal testing completed successfully.")
         case Command.DASHBOARD:
-            serve_dashboard()
+            # Can't really cover this one in tests since it spins up a server
+            serve_dashboard()  # pragma: no cover
         case Command.EVALUATE:
             # Create and setup framework
             framework = CausalTestingFramework()
