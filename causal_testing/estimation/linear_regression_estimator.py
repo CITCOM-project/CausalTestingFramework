@@ -155,7 +155,7 @@ class LinearRegressionEstimator(RegressionEstimator):
         return EffectEstimate("ate", pd.Series(treatment_outcome["mean"] - control_outcome["mean"]), ci_low, ci_high)
 
     def _get_confidence_intervals(self, model, treatment):
-        confidence_intervals = model.conf_int(alpha=self.alpha, cols=None)
+        confidence_intervals = model.conf_int(alpha=self.alpha)
         ci_low, ci_high = (
             pd.Series(confidence_intervals[0].loc[treatment]),
             pd.Series(confidence_intervals[1].loc[treatment]),
