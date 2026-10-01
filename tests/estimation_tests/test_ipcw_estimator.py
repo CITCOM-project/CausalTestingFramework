@@ -100,5 +100,51 @@ class TestIPCWEstimator(unittest.TestCase):
             fit_bltd_switch_formula=self.fit_bl_switch_formula,
             eligibility=None,
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as e:
+            estimation_model.preprocess_data(self.df.assign(ok=False))
+            self.assertEqual(e.exception, "No safe runs with outcome. Cannot perform estimation.")
+
+    def test_preprocess_data_only_faults(self):
+        estimation_model = IPCWEstimator(
+            timesteps_per_observation=self.timesteps_per_observation,
+            control_strategy=self.control_strategy,
+            treatment_strategy=self.treatment_strategy,
+            outcome_variable="outcome",
+            status_column=self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaises(ValueError) as e:
             estimation_model.preprocess_data(self.df.assign(ok=True))
+            self.assertEqual(e.exception, "Only safe runs with outcome. Cannot perform estimation.")
+
+    def test_preprocess_data_missing_control(self):
+        estimation_model = IPCWEstimator(
+            timesteps_per_observation=self.timesteps_per_observation,
+            control_strategy=self.control_strategy + [(0, "invalid", 1)],
+            treatment_strategy=self.treatment_strategy,
+            outcome_variable="outcome",
+            status_column=self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaises(ValueError) as e:
+            estimation_model.preprocess_data(self.df.assign(ok=True))
+            self.assertEqual(e.exception, "Missing data for control strategy.")
+
+    def test_preprocess_data_missing_treatment(self):
+        estimation_model = IPCWEstimator(
+            timesteps_per_observation=self.timesteps_per_observation,
+            control_strategy=self.control_strategy,
+            treatment_strategy=self.treatment_strategy + [(0, "invalid", 1)],
+            outcome_variable="outcome",
+            status_column=self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaises(ValueError) as e:
+            estimation_model.preprocess_data(self.df.assign(ok=True))
+            self.assertEqual(e.exception, "Missing data for treatment strategy.")

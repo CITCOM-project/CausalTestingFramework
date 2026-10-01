@@ -154,8 +154,12 @@ class IPCWEstimator(Estimator):
         Return the time at which the event of interest (i.e. a fault) occurred.
         """
         fault = individual[~individual[self.status_column]]
-        if (individual[self.status_column]).all():
-            raise ValueError("No recorded faults")
+        if individual[self.status_column].all():
+            pd.DataFrame(
+                {
+                    "fault_time": np.repeat(np.nan, len(individual)),
+                }
+            )
         fault_time = (
             individual["time"].loc[fault.index[0]]
             if not fault.empty
@@ -174,6 +178,15 @@ class IPCWEstimator(Estimator):
         :param df: The data to use.
         :returns: The preprocessed DataFrame.
         """
+
+        if df[self.status_column].all():
+            raise ValueError(f"No faults with {self.outcome_variable}. Cannot perform estimation.")
+        if (~df[self.status_column]).all():
+            raise ValueError(f"No safe runs with {self.outcome_variable}. Cannot perform estimation.")
+        if any(var not in df for _, var, _ in self.control_strategy):
+            raise ValueError("Missing data for control strategy.")
+        if any(var not in df for _, var, _ in self.treatment_strategy):
+            raise ValueError("Missing data for treatment strategy.")
 
         df = df.sort_values(["id", "time"])
 
@@ -195,8 +208,10 @@ class IPCWEstimator(Estimator):
         assert len(fault_t_do_df) == len(df), "Fault t_do error"
         df["fault_t_do"] = fault_t_do_df["fault_t_do"].values
 
-        living_runs = df.query("fault_time > 0").loc[
-            (df["time"] % self.timesteps_per_observation == 0) & (df["time"] <= self.total_time)
+        living_runs = df.loc[
+            (df["fault_time"] > 0)
+            & (df["time"] % self.timesteps_per_observation == 0)
+            & (df["time"] <= self.total_time)
         ]
 
         logging.debug("  Preprocessing groups")

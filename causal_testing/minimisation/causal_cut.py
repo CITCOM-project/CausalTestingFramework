@@ -56,25 +56,11 @@ class CausalCut:
         lo = self.safe_ranges.loc[outcome_variable, "low"]
         hi = self.safe_ranges.loc[outcome_variable, "high"]
 
-        logging.debug(f"CONTROL STRATEGY   {interventions}")
+        logging.debug(f"Control strategy {interventions}")
 
-        if not (~self.df[outcome_variable].between(lo, hi)).any():
-            raise ValueError(
-                f"No faults with {outcome_variable}. Cannot perform estimation.\n"
-                f"Observed range [{self.df[outcome_variable].min()}, {self.df[outcome_variable].max()}].\n"
-                f"Safe range {self.safe_ranges[outcome_variable]}"
-            )
-        if self.df[outcome_variable].between(lo, hi).all():
-            raise ValueError(
-                f"All faults with {outcome_variable}. Cannot perform estimation.\n"
-                f"Observed range [{self.df[outcome_variable].min()}, {self.df[outcome_variable].max()}].\n"
-                f"Safe range {self.safe_ranges[outcome_variable]}"
-            )
-        if any(var not in self.df for _, var, _ in interventions):
-            raise ValueError("Missing data for control strategy")
         if any(var not in self.dag.nodes for _, var, _ in interventions):
             missing = [var for _, var, _ in interventions if var not in self.dag.nodes]
-            raise ValueError(f"Missing nodes {missing} for control_strategy. Valid nodes {self.dag.nodes}")
+            raise ValueError(f"DAG missing nodes {missing} for control_strategy.")
 
         causal_tests = {}
 
@@ -86,9 +72,9 @@ class CausalCut:
             treatment_strategy = [x[:] for x in interventions]
             treatment_strategy[i][2] = int(not value)
 
-            logging.debug(f"  TREATMENT STRATEGY {treatment_strategy}")
-            logging.debug(f"  outcome_variable {outcome_variable}")
-            logging.debug(f"  SAFE RANGE {lo} {hi}")
+            logging.debug(f"  Treatment strategy {treatment_strategy}")
+            logging.debug(f"  Outcome variable {outcome_variable}")
+            logging.debug(f"  Safe range {lo} {hi}")
 
             neighbours = list(self.dag.predecessors(variable))
             neighbours += list(self.dag.successors(variable))
@@ -147,15 +133,13 @@ class CausalCut:
         )
         treatment_strategies["time"] = [time for time, _, _ in treatment_strategies["intervention"]]
 
-        treatment_strategies.to_csv("/tmp/treatment_strategies.csv")
-
         if "result.ci_low.trtrand" in treatment_strategies and "result.ci_high.trtrand" in treatment_strategies:
             treatment_strategies["result.ci_low.trtrand"] = treatment_strategies["result.ci_low.trtrand"]
             treatment_strategies["result.ci_high.trtrand"] = treatment_strategies["result.ci_high.trtrand"]
             treatment_strategies["significant"] = (treatment_strategies["result.ci_low.trtrand"] > 1) | (
                 treatment_strategies["result.ci_high.trtrand"] < 1
             )
-            treatment_strategies = treatment_strategies.loc[~treatment_strategies["significant"]]
+            # treatment_strategies = treatment_strategies.loc[~treatment_strategies["significant"]]
             treatment_strategies["below_1"] = (1 - treatment_strategies["result.ci_low.trtrand"]) / (
                 treatment_strategies["result.ci_high.trtrand"] - treatment_strategies["result.ci_low.trtrand"]
             )
@@ -170,22 +154,20 @@ class CausalCut:
 
         interventions = treatment_strategies.loc[treatment_strategies["result.passed"], "intervention"].to_list()
 
-        treatment_strategies.to_csv("/tmp/treatment_strategies_sorted.csv")
-
         estimated_interventions = list(interventions)
 
         # Check whether the pruned test yields the original fault
         still_fault = self.reproduce_fault(interventions=interventions, **kwargs)
 
         # Phase 2 - add interventions back to the test until the original fault is yielded
-        interventions_to_add = treatment_strategies.loc[
-            ~treatment_strategies["result.passed"], "intervention"
-        ].to_list()
-        while not still_fault and interventions_to_add:
-            next_intervention = interventions_to_add.pop(0)
-            if next_intervention in interventions:
-                continue
-            interventions.append(next_intervention)
+        interventions_to_add = filter(
+            lambda i: i not in interventions,
+            treatment_strategies.loc[~treatment_strategies["result.passed"], "intervention"].to_list(),
+        )
+        for intervention in interventions_to_add:
+            if still_fault:
+                break
+            interventions.append(intervention)
             still_fault = self.reproduce_fault(interventions=interventions, **kwargs)
         interventions.sort()
 
