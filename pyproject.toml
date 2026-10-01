@@ -33,14 +33,11 @@ dependencies = [
     "rustworkx>=0.18.0",
     "selenium>=4.49.0",
     "holoviews>=1.23.2",
+    "bokeh>=3.9",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-visualise = [
-  "holoviews>=1.23",
-  "bokeh>=3.9",
-]
 dev = [
 "causal-testing-framework[visualise]",
 "astroid==3.3.8",
