@@ -13,6 +13,7 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
+from causal_testing.visualisation.testing_dashboard import serve_dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class Command(Enum):
     GENERATE = "generate"
     DISCOVER = "discover"
     EVALUATE = "evaluate"
+    DASHBOARD = "dashboard"
 
 
 def setup_logging(level: str) -> None:
@@ -63,7 +65,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser_test.add_argument("-D", "--dag-path", help="Path to the DAG file (.dot)", required=True)
     parser_test.add_argument("-o", "--output", help="Path for output file (.json)", required=True)
     parser_test.add_argument("-i", "--ignore-cycles", help="Ignore cycles in DAG", action="store_true", default=False)
-    parser_test.add_argument("-t", "--test-config", help="Path to test configuration file (.json)", required=True)
+    parser_test.add_argument("-t", "--test-config", help="Path to test configuration file (.json)")
     parser_test.add_argument("-q", "--query", help="Query string to filter data (e.g. 'age > 18')", type=str)
     parser_test.add_argument(
         "-A", "--adequacy", help="Calculate causal test adequacy for each test case", action="store_true", default=False
@@ -83,6 +85,17 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=False,
     )
     parser_test.add_argument(
+        "-g",
+        "--generate",
+        action="store_true",
+        help=(
+            "Generate the tests prior to running. This saves calling `causal-testing generate` first, although you are "
+            "strongly encouraged to inspect your tests prior to running them."
+            "(Defaults to False)"
+        ),
+        default=False,
+    )
+    parser_test.add_argument(
         "-R",
         "--include-adequacy-results",
         action="store_true",
@@ -90,6 +103,9 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "bootstraps. (Defaults to False)",
         default=False,
     )
+
+    # Visualisation
+    parser_dashboard = subparsers.add_parser(Command.DASHBOARD.value, help="Visualise causal test results")
 
     # DAG evaluation
     parser_evaluate = subparsers.add_parser(
@@ -150,7 +166,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=[],
     )
 
-    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate]:
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate, parser_dashboard]:
         parser.add_argument(
             "-l",
             "--log_level",
@@ -159,6 +175,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
             choices=["NONE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             help="Set the logging level (default: WARNING).",
         )
+    for parser in [parser_generate, parser_discover, parser_test, parser_evaluate]:
         parser.add_argument(
             "-a",
             "--alpha",
@@ -205,7 +222,7 @@ def main() -> None:
                 skip=False,
             )
             with open(args.output, "w", encoding="utf-8") as f:
-                json.dump({"tests": [test.to_dict() for test in causal_tests]}, f)
+                json.dump([test.to_dict() for test in causal_tests], f)
             logging.info("Causal test generation completed successfully.")
 
         case Command.DISCOVER:
@@ -258,16 +275,25 @@ def main() -> None:
             framework.setup(
                 dag_path=args.dag_path,
                 data_paths=args.data_paths,
-                test_cases_path=args.test_config,
                 query=args.query,
                 ignore_cycles=args.ignore_cycles,
             )
+            if args.test_config:
+                framework.load_test_cases_from_json(args.test_config)
+            else:
+                logging.info("Generating causal tests")
+                framework.dag.datatypes = framework.df.dtypes
+                framework.test_cases = framework.dag.generate_causal_tests(skip=False)
+                logging.info("Causal test generation completed successfully.")
 
             logging.info("Running tests")
             framework.run_tests(silent=args.silent, adequacy=args.adequacy, bootstrap_size=args.bootstrap_size)
             framework.save_results(args.output, include_adequacy_results=args.include_adequacy_results)
 
             logging.info("Causal testing completed successfully.")
+        case Command.DASHBOARD:
+            # Can't really cover this one in tests since it spins up a server
+            serve_dashboard()  # pragma: no cover
         case Command.EVALUATE:
             # Create and setup framework
             framework = CausalTestingFramework()

@@ -11,40 +11,44 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from causal_testing.estimation.effect_estimate import EffectEstimate
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
-from causal_testing.testing.causal_test_result import TestOutcome
+from causal_testing.testing.causal_test_result import CausalTestResult, TestOutcome
+from causal_testing.testing.data_adequacy import DataAdequacy
 
 logger = logging.getLogger(__name__)
 
+data_readers = {
+    ".csv": pd.read_csv,
+    ".xlsx": pd.read_excel,
+    ".xls": pd.read_excel,
+    ".html": pd.read_html,
+    ".xml": pd.read_xml,
+    ".feather": pd.read_feather,
+    ".parquet": pd.read_parquet,
+    ".pq": pd.read_parquet,
+    ".pqt": pd.read_parquet,
+    ".json": pd.read_json,
+    ".stata": pd.read_stata,
+}
 
-def read_dataframe(file_path: str, **kwargs: dict) -> pd.DataFrame:
+
+def read_dataframe(file_path: str, content: bytes = None, **kwargs: dict) -> pd.DataFrame:
     """
     Read data into a dataframe.
 
     :param file_path: The path to the data.
+    :param content: The bytes content of the file.
     :param kwargs: Keyword arguments to be passed to the `read_` function.
 
     :returns: The read-in DataFrame.
     """
-    readers = {
-        ".csv": pd.read_csv,
-        ".xlsx": pd.read_excel,
-        ".xls": pd.read_excel,
-        ".html": pd.read_html,
-        ".xml": pd.read_xml,
-        ".feather": pd.read_feather,
-        ".parquet": pd.read_parquet,
-        ".pq": pd.read_parquet,
-        ".pqt": pd.read_parquet,
-        ".json": pd.read_json,
-        ".stata": pd.read_stata,
-    }
 
     suffix = Path(file_path).suffix.lower()
 
-    if suffix in readers:
-        return readers[suffix](file_path, **kwargs)
+    if suffix in data_readers:
+        return data_readers[suffix](content if content is not None else file_path, **kwargs)
     raise ValueError(f"Unsupported file extension: '{suffix}'")
 
 
@@ -61,26 +65,30 @@ class CausalTestingFramework:
 
     def setup(
         self,
-        dag_path: str,
-        data_paths: list[str],
-        test_cases_path: str,
+        dag_path: str = None,
+        data_paths: list[str] = None,
+        test_cases_path: str = None,
         ignore_cycles: bool = False,
         query: str = None,
         **kwargs: dict,
     ):
         """
         Shortcut for loading in the DAG, data, and test cases.
+
         :param dag_path: Path to the DAG definition file.
         :param data_paths: List of paths to input data files.
         :param test_cases_path: Path to the test configuration file
         :param ignore_cycles: Whether to ignore cycles in the causal graph.
-        NOTE: Setting this to True severely limits the testing that can be performed.
+            NOTE: Setting this to True severely limits the testing that can be performed.
         :param query: Optional pandas query string to filter the loaded data
         :param kwargs: Keyword arguments to be passed to the `read_` function.
         """
-        self.load_dag(dag_path, ignore_cycles)
-        self.load_data(data_paths, query, **kwargs)
-        self.load_test_cases_from_json(test_cases_path)
+        if dag_path is not None:
+            self.load_dag(dag_path, ignore_cycles)
+        if data_paths is not None:
+            self.load_data(data_paths, query, **kwargs)
+        if test_cases_path is not None:
+            self.load_test_cases_from_json(test_cases_path)
 
     def load_dag(self, dag_path: str, ignore_cycles: bool = False):
         """
@@ -120,21 +128,13 @@ class CausalTestingFramework:
         """
         logger.info(f"Loading test configurations from {test_cases_path}")
 
-        if self.dag is None or self.df is None:
-            raise ValueError("Please load DAG and data before attempting to load tests.")
+        if self.dag is None:
+            raise ValueError("Please load DAG before attempting to load tests.")
 
         with open(test_cases_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
-        test_cases = []
-
-        for test in test_configs.get("tests", []):
-
-            # Create causal test case
-            causal_test = self.create_causal_test(test)
-            test_cases.append(causal_test)
-
-        self.test_cases = test_cases
+        self.test_cases = [self.create_causal_test(test) for test in test_configs]
 
     def create_causal_test(self, test: dict) -> CausalTestCase:
         """
@@ -148,7 +148,7 @@ class CausalTestingFramework:
         # Create the estimator with correct parameters
         estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
         if "estimator" not in test:
-            raise ValueError("Test configuration must specify an estimator.")
+            raise ValueError("Test configuration must specify an `estimator`.")
         estimator_kwargs = test["estimator"]
         estimator_name = estimator_kwargs.pop("name")
         if estimator_name not in estimator_map:
@@ -157,30 +157,47 @@ class CausalTestingFramework:
                 "If you have implemented a custom estimator, you will need to add this to your entrypoints via your "
                 "pyproject.toml file."
             )
-        estimator = estimator_map.get(estimator_name).load()(**estimator_kwargs)
+        test["estimator"] = estimator_map.get(estimator_name).load()(**estimator_kwargs)
 
         # Create an effect with the corect parameters
         effect_map = {ff.name: ff for ff in entry_points(group="causal_effects")}
-        if "expected_effect" not in test:
-            raise ValueError("Test configuration must specify an expected effect.")
-        expected_effect_kwargs = test["expected_effect"]
-        expected_effect_name = expected_effect_kwargs.pop("name")
-        if expected_effect_name not in effect_map:
+        if "expected_causal_effect" not in test:
+            raise ValueError("Test configuration must specify an `expected_causal_effect`.")
+        expected_causal_effect_kwargs = test["expected_causal_effect"]
+        expected_causal_effect_name = expected_causal_effect_kwargs.pop("name")
+        if expected_causal_effect_name not in effect_map:
             raise ValueError(
-                f"Unsupported causal effect {expected_effect_name}. Supported: {sorted(effect_map)}. "
+                f"Unsupported causal effect {expected_causal_effect_name}. Supported: {sorted(effect_map)}. "
                 "If you have implemented a custom causal effect, you will need to add this to your entrypoints via "
                 "your pyproject.toml file."
             )
-        expected_effect = effect_map[expected_effect_name].load()(**expected_effect_kwargs)
+        test["expected_causal_effect"] = effect_map[expected_causal_effect_name].load()(**expected_causal_effect_kwargs)
 
-        return CausalTestCase(
-            name=test.get("name"),
-            effect_measure=test.get("effect_measure"),
-            query=test.get("query"),
-            expected_causal_effect=expected_effect,
-            estimator=estimator,
-            skip=test.get("skip", False),
-        )
+        if "result" in test:
+            outcome = getattr(TestOutcome, test["result"]["outcome"]) if "outcome" in test["result"] else None
+            effect_estimate = (
+                EffectEstimate(**test["result"]["effect_estimate"]) if "effect_estimate" in test["result"] else None
+            )
+            adequacy = DataAdequacy(**test["result"]["adequacy"]) if "adequacy" in test["result"] else None
+
+            test["result"] = CausalTestResult(outcome=outcome, effect_estimate=effect_estimate, adequacy=adequacy)
+
+        return CausalTestCase(**test)
+
+    def ready_to_run(self) -> bool:
+        """
+        Test whether framework is ready to run test cases.
+        :returns: True if the DAG, data, and test cases are defined.
+        """
+        return all(x is not None for x in (self.test_cases, self.dag, self.df)) and bool(self.test_cases)
+
+    def generate_causal_tests(self):
+        """
+        Automatically generate the suite of causal tests that corresponds to the DAG.
+        """
+        if self.dag is not None and not self.dag.datatypes is not None and self.df is not None:
+            self.dag.datatypes = self.df.dtypes
+        self.test_cases = self.dag.generate_causal_tests()
 
     def run_tests(self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100):
         """
@@ -261,7 +278,7 @@ class CausalTestingFramework:
 
         :param output_path: Path for output file (.json).
         :param include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy
-                                         bootstraps.
+            bootstraps.
         """
         logger.info(f"Saving results to {output_path}")
 
@@ -277,3 +294,10 @@ class CausalTestingFramework:
             )
 
         logger.info("Results saved successfully")
+
+    def test_dataframe(self) -> pd.DataFrame:
+        """
+        :returns: The causal test cases as a dataframe. Nested objects such as results are indexed as, e.g.
+            `result.outcome`.
+        """
+        return pd.json_normalize(map(lambda t: t.to_dict(), self.test_cases))
