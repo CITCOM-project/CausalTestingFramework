@@ -179,14 +179,14 @@ class IPCWEstimator(Estimator):
         :returns: The preprocessed DataFrame.
         """
 
-        if df[self.status_column].all():
-            raise ValueError(f"No faults with {self.outcome_variable}. Cannot perform estimation.")
-        if (~df[self.status_column]).all():
-            raise ValueError(f"No safe runs with {self.outcome_variable}. Cannot perform estimation.")
         if any(var not in df for _, var, _ in self.control_strategy):
             raise ValueError("Missing data for control strategy.")
         if any(var not in df for _, var, _ in self.treatment_strategy):
             raise ValueError("Missing data for treatment strategy.")
+        if df[self.status_column].all():
+            raise ValueError(f"No faults with {self.outcome_variable}. Cannot perform estimation.")
+        if (~df[self.status_column]).all():
+            raise ValueError(f"No safe runs with {self.outcome_variable}. Cannot perform estimation.")
 
         df = df.sort_values(["id", "time"])
 
