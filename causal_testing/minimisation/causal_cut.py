@@ -46,7 +46,7 @@ class CausalCut:
         :param total_time: The maximum number of time steps that a test case can run for.
         :param start_time: The time at which the test case begins. (Defaults to 0)
         :param background_confounders: The names of the non-time-varying confounders. These variables remain constant
-                                       throughout the whole test execution.
+           throughout the whole test execution.
         :param timesteps_per_intervention: The number of time steps each intervention takes. (Defaults to 1)
         """
         background_confounders = background_confounders if background_confounders is not None else []
@@ -192,12 +192,13 @@ class CausalCut:
     ) -> list[tuple[int, str, int]]:
         """
         Search for a subset of the supplied interventions that still yields the originally observed failure.
+
         :param interventions: The list of interventions to prune, of the form [(time, variable, value)].
         :param outcome_variable: The name of the outcome variable.
         :param total_time: The maximum number of time steps that a test case can run for.
         :param start_time: The time at which the test case begins. (Defaults to 0)
-        :param background_confounders: The names of the non-time-varying confounders. These variables remain constant
-                                       throughout the whole test execution.
+        :param background_confounders: The names of the non-time-varying confounders.
+            These variables remain constant throughout the whole test execution.
         :param timesteps_per_intervention: The number of time steps each intervention takes. (Defaults to 1)
         :param greedy_minimise: Whether to apply additional greedy minimisation. (Defaults to False)
         :param kwargs: Keyword arguments for `self.reproduce_fault`.
