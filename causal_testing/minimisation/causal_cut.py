@@ -51,7 +51,7 @@ class CausalCut:
         """
         background_confounders = background_confounders if background_confounders is not None else []
 
-        interventions = list(filter(lambda x: start_time <= x[0] <= total_time, interventions))
+        interventions = [[time, var, val] for time, var, val in interventions if time >= start_time]
 
         lo = self.safe_ranges.loc[outcome_variable, "low"]
         hi = self.safe_ranges.loc[outcome_variable, "high"]
@@ -70,7 +70,7 @@ class CausalCut:
             # Treatment strategy is the same, but with one intervention negated
             # i.e. we examine the counterfactual "What if we had not done that?"
             treatment_strategy = [x[:] for x in interventions]
-            treatment_strategy[i][2] = int(not value)
+            treatment_strategy[i][2] = not value
 
             logging.debug(f"  Treatment strategy {treatment_strategy}")
             logging.debug(f"  Outcome variable {outcome_variable}")

@@ -305,8 +305,12 @@ class IPCWEstimator(Estimator):
 
         # Use logistic regression to predict switching given baseline covariates
         logger.debug("Use logistic regression to predict switching given baseline covariates")
-        fit_bl_switch_c = smf.logit(self.fit_bl_switch_formula, data=df.loc[df.trtrand == 0]).fit(method="bfgs")
-        fit_bl_switch_t = smf.logit(self.fit_bl_switch_formula, data=df.loc[df.trtrand == 1]).fit(method="bfgs")
+        fit_bl_switch_c = smf.logit(self.fit_bl_switch_formula, data=df.loc[df.trtrand == 0]).fit(
+            method="bfgs", disp=False, warn_convergence=False
+        )
+        fit_bl_switch_t = smf.logit(self.fit_bl_switch_formula, data=df.loc[df.trtrand == 1]).fit(
+            method="bfgs", disp=False, warn_convergence=False
+        )
 
         df.loc[df["trtrand"] == 0, "pxo1"] = fit_bl_switch_c.predict(df.loc[df.trtrand == 0])
         df.loc[df["trtrand"] == 1, "pxo1"] = fit_bl_switch_t.predict(df.loc[df.trtrand == 1])
@@ -318,11 +322,11 @@ class IPCWEstimator(Estimator):
         fit_bltd_switch_c = smf.logit(
             self.fit_bltd_switch_formula,
             data=df.loc[df.trtrand == 0],
-        ).fit(method="bfgs")
+        ).fit(method="bfgs", disp=False, warn_convergence=False)
         fit_bltd_switch_t = smf.logit(
             self.fit_bltd_switch_formula,
             data=df.loc[df.trtrand == 1],
-        ).fit(method="bfgs")
+        ).fit(method="bfgs", disp=False, warn_convergence=False)
 
         df.loc[df["trtrand"] == 0, "pxo2"] = fit_bltd_switch_c.predict(df.loc[df.trtrand == 0])
         df.loc[df["trtrand"] == 1, "pxo2"] = fit_bltd_switch_t.predict(df.loc[df.trtrand == 1])
