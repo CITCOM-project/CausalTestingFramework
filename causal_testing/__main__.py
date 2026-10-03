@@ -12,7 +12,6 @@ import networkx as nx
 import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
-from causal_testing.minimisation.causal_cut import CausalCut
 from causal_testing.specification.causal_dag import CausalDAG
 
 logger = logging.getLogger(__name__)
