@@ -4,6 +4,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+from lifelines.exceptions import ConvergenceError
 
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.testing.causal_effect import CausalEffect
@@ -150,7 +151,7 @@ class CausalTestCase:
                         else None
                     ),
                 )
-            except (np.linalg.LinAlgError, ValueError) as e:
+            except (np.linalg.LinAlgError, ValueError, ConvergenceError) as e:
                 if not suppress_estimation_errors:
                     raise e
                 self.result = CausalTestResult(
