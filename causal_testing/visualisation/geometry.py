@@ -6,7 +6,7 @@ import re
 
 import holoviews as hv
 import numpy as np
-from bokeh.models import Arrow, Ellipse, NormalHead
+from bokeh.models import Arrow, Ellipse, NormalHead, Title
 from holoviews.plotting.bokeh.graphs import GraphPlot
 from scipy.interpolate import make_splprep  # pylint: disable=E0611
 
@@ -90,6 +90,29 @@ def node_width(label: str, text_font_size: int = 9, padding: int = 24) -> float:
     :param padding: Node inner padding in pt.
     """
     return len(label) * text_font_size + padding
+
+
+def add_colorbar_annotations(plot: GraphPlot, element: hv.Graph):  # pylint: disable=unused-argument
+    """
+    Hook to add "Suspiciously (un)stable" annotations for the data adequacy plot.
+
+    :param plot: The current plot figure.
+    :param element: The Graph element (not used).
+    """
+    fig = plot.state
+
+    # Add space for the titles
+    colorbar = plot.handles["colorbar"]
+    colorbar.styles = {"margin-right": "30px"}
+
+    bottom_label = Title(
+        text="Suspiciously unstable", standoff=-10, text_font_size="10pt", text_align="right", vertical_align="top"
+    )
+    top_label = Title(
+        text="Suspiciously stable", standoff=-60, text_font_size="10pt", text_align="right", vertical_align="bottom"
+    )
+    fig.add_layout(bottom_label, "right")
+    fig.add_layout(top_label, "right")
 
 
 def style_graph_hook(plot: GraphPlot, element: hv.Graph):

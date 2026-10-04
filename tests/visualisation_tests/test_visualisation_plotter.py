@@ -45,6 +45,7 @@ def test_results_dag(ctf, plotter):
     tests. Passing edges should be green. Failing edges should be red. Inestimable edges should be yellow.
     """
     results_dag = plotter.results_dag()
+
     for test in ctf.test_cases:
         treatment_variable = test.estimator.treatment_variable
         outcome_variable = test.estimator.outcome_variable
@@ -74,6 +75,8 @@ def test_interactive_results_dag(ctf, plotter):
     tests. Passing edges should be green. Failing edges should be red. Inestimable edges should be yellow.
     """
     interactive_dag = plotter.interactive_results_dag().Graph.I
+    hv.renderer("bokeh").get_plot(interactive_dag)
+
     edges_df = interactive_dag.dframe()
 
     src_col, dst_col = interactive_dag.kdims[0].name, interactive_dag.kdims[1].name
@@ -149,6 +152,7 @@ def test_adequacy_heatmap(ctf, plotter, method_name, expected_vdim):
     """
     # Call the plotter method dynamically
     heatmap = getattr(plotter, method_name)()
+    hv.renderer("bokeh").get_plot(heatmap)
 
     # Check correct axes
     assert [kdim.name for kdim in heatmap.kdims] == [

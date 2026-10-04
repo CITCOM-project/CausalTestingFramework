@@ -8,39 +8,23 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pydot
-from bokeh.models import Div, HoverTool, Title
+from bokeh.models import Div, HoverTool
 from bokeh.palettes import RdYlGn
 from holoviews.plotting.bokeh.graphs import GraphPlot
 
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_result import TestOutcome
-from causal_testing.visualisation.geometry import edge_spline, node_width, style_graph_hook
+from causal_testing.visualisation.geometry import edge_spline, node_width, style_graph_hook, add_colorbar_annotations
 
 hv.extension("bokeh")
-
-
-def add_colorbar_annotations(hv_plot, element):
-    fig = hv_plot.state
-
-    # Add space for the titles
-    colorbar = hv_plot.handles["colorbar"]
-    colorbar.styles = {"margin-right": "30px"}
-
-    bottom_label = Title(
-        text="Suspiciously unstable", standoff=-10, text_font_size="10pt", text_align="right", vertical_align="top"
-    )
-    top_label = Title(
-        text="Suspiciously stable", standoff=-60, text_font_size="10pt", text_align="right", vertical_align="bottom"
-    )
-    fig.add_layout(bottom_label, "right")
-    fig.add_layout(top_label, "right")
 
 
 class VisualisationPlotter:
     """
     Class to generate plots to visualise CausalTestingFramework test results.
 
-    :ivar ctf: CausalTestingFramework instance from which to visualise the tests.
+    :ivar dag: The causal DAG.
+    :ivar df: The causal testing data.
     :ivar colour_map: Dictionary mapping TestOutcomes PASS, FAIL, and INESTIMABLE test outcomes to colours.
     """
 
