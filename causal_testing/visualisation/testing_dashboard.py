@@ -99,7 +99,7 @@ class Dashboard(param.Parameterized):
 
     def __init__(self):
         super().__init__()
-        self.plotter = VisualisationPlotter(self.ctf)
+        self.plotter = VisualisationPlotter()
 
         # DAG
         self.dag_file_input = pmui.FileInput(accept=".dot,.gv", mime_type="text/vnd.graphviz", label="DAG file")
@@ -144,6 +144,7 @@ class Dashboard(param.Parameterized):
         dag = CausalDAG()
         dag.update(nx.DiGraph(parsed_multigraph))
         self.ctf.dag = dag
+        self.plotter.dag = dag
         self.param.trigger("ctf")
         self.run_tests.disabled = not self.ctf.ready_to_run()
         self.generate_tests.disabled = False
@@ -155,6 +156,7 @@ class Dashboard(param.Parameterized):
 
         self.param.trigger("ctf")
         self.run_tests.disabled = not self.ctf.ready_to_run()
+        self.plotter.update_df(self.ctf.test_dataframe())
 
     def _load_data_file(self, event):
         """Parses uploaded data bytes into a pandas DataFrame and initialises the CTF with it"""
@@ -195,6 +197,7 @@ class Dashboard(param.Parameterized):
         }}
     """]
         self.run_tests.label = original_label
+        self.plotter.update_df(self.ctf.test_dataframe())
         self.param.trigger("ctf")
 
     def _test_suite_stat(
@@ -372,14 +375,14 @@ class Dashboard(param.Parameterized):
                 results.append(
                     pn.pane.HoloViews(
                         self.plotter.outcome_adjacency(
-                            frame_height=300,
+                            frame_width=300,
                         ),
                         styles={"flex": "1 1 400px"},
                     ),
                 )
             content.append(results)
 
-            if self.adequacy:
+            if self.adequacy and self.plotter.df is not None and "result.adequacy.kurtosis" in self.plotter.df:
                 content.append(pn.pane.Markdown("""
             # Test Adequacy
 
@@ -400,12 +403,10 @@ class Dashboard(param.Parameterized):
                 content.append(
                     pn.FlexBox(
                         self.plotter.data_adequacy_heatmap(
-                            width=500,
-                            height=380,
+                            frame_width=400,
                         ),
                         self.plotter.dag_adequacy_heatmap(
-                            width=500,
-                            height=380,
+                            frame_width=400,
                         ),
                     ),
                 )

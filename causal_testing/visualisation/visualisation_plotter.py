@@ -27,29 +27,9 @@ class VisualisationPlotter:
     :ivar colour_map: Dictionary mapping TestOutcomes PASS, FAIL, and INESTIMABLE test outcomes to colours.
     """
 
-    def __init__(self, dag: CausalDAG, df: pd.DataFrame, colour_map: dict[TestOutcome, str] = None):
+    def __init__(self, dag: CausalDAG = None, df: pd.DataFrame = None, colour_map: dict[TestOutcome, str] = None):
         self.dag = dag
-        self.df = df
-
-        # Pre-format the data
-        self.df["result.outcome.value"] = self.df["result.outcome"].apply(lambda x: TestOutcome[x].value)
-
-        self.xticks = list(enumerate(self.df["estimator.treatment_variable"].unique()))
-        self.yticks = list(enumerate(self.df["estimator.outcome_variable"].unique()))
-
-        self.df["treatment_variable_inx"] = self.df["estimator.treatment_variable"].map({v: k for k, v in self.xticks})
-        self.df["outcome_variable_inx"] = self.df["estimator.outcome_variable"].map({v: k for k, v in self.yticks})
-
-        for col in [
-            "effect_estimate.effect_estimate",
-            "effect_estimate.ci_low",
-            "effect_estimate.ci_high",
-            "adequacy.kurtosis",
-        ]:
-            columns = [c for c in self.df.columns if c.startswith(f"result.{col}.")]
-            if columns:
-                self.df[f"result.{col}"] = self.df[columns].bfill(axis=1).iloc[:, 0]
-                self.df = self.df.drop(columns=columns)
+        self.df = self.update_df(df) if df is not None else None
 
         self.colour_map = (
             colour_map
@@ -60,6 +40,33 @@ class VisualisationPlotter:
                 TestOutcome.FAIL: RdYlGn[11][9],
             }
         )
+
+    def update_df(self, df: pd.DataFrame):
+        """
+        Update and preformat the data.
+
+        :param df: The new dataframe.
+        """
+        # Pre-format the data
+        df["result.outcome.value"] = df["result.outcome"].apply(lambda x: TestOutcome[x].value)
+
+        self.xticks = list(enumerate(df["estimator.treatment_variable"].unique()))
+        self.yticks = list(enumerate(df["estimator.outcome_variable"].unique()))
+
+        df["treatment_variable_inx"] = df["estimator.treatment_variable"].map({v: k for k, v in self.xticks})
+        df["outcome_variable_inx"] = df["estimator.outcome_variable"].map({v: k for k, v in self.yticks})
+
+        for col in [
+            "effect_estimate.effect_estimate",
+            "effect_estimate.ci_low",
+            "effect_estimate.ci_high",
+            "adequacy.kurtosis",
+        ]:
+            columns = [c for c in df.columns if c.startswith(f"result.{col}.")]
+            if columns:
+                df[f"result.{col}"] = df[columns].bfill(axis=1).iloc[:, 0]
+                df = df.drop(columns=columns)
+        self.df = df
 
     def results_dag(
         self,
@@ -79,7 +86,7 @@ class VisualisationPlotter:
         result_dag.add_nodes_from(self.dag.nodes)
         result_dag.add_edges_from(self.dag.edges)
 
-        if "result.outcome" in self.df:
+        if self.df is not None and "result.outcome" in self.df:
             # Add in edges for non-passing independence tests
             if view_independences:
                 result_dag.add_edges_from(
@@ -196,7 +203,7 @@ class VisualisationPlotter:
         )
 
         hooks = [style_graph_hook]
-        if "result" in self.df:
+        if self.df is not None and "result" in self.df:
             hooks.append(self.add_discrete_legend)
 
         if "label" in edges_df.columns:
