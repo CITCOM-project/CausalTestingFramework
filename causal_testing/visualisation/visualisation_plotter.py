@@ -400,9 +400,9 @@ class VisualisationPlotter:
             xlim=(-0.5, len(self.xticks) - 0.5),
             ylim=(-0.5, len(self.yticks) - 0.5),
             hover_tooltips=[
-                ("Treatment variable", "@{%s}" % "estimator.treatment_variable"),
-                ("Outcome variable", "@{%s}" % "estimator.outcome_variable"),
-                ("Adequacy", "@{%s}" % "result.adequacy.kurtosis"),
+                ("Treatment variable", "@estimator.treatment_variable"),
+                ("Outcome variable", "@estimator.outcome_variable"),
+                ("Adequacy", "@{result.adequacy.kurtosis}"),
             ],
             tools=[
                 "hover",
@@ -450,8 +450,8 @@ class VisualisationPlotter:
             xlim=(-0.5, len(self.xticks) - 0.5),
             ylim=(-0.5, len(self.yticks) - 0.5),
             hover_tooltips=[
-                ("Treatment variable", "@{%s}" % "estimator.treatment_variable"),
-                ("Outcome variable", "@{%s}" % "estimator.outcome_variable"),
+                ("Treatment variable", "@estimator.treatment_variable"),
+                ("Outcome variable", "@estimator.outcome_variable"),
                 ("Passing", "@result.adequacy.passing%"),
             ],
             tools=[
@@ -487,9 +487,9 @@ class VisualisationPlotter:
             cmap={k.name: v for k, v in self.colour_map.items()},
             clipping_colors={"NaN": "grey"},
             hover_tooltips=[
-                ("Treatment variable", "@{%s}" % "estimator.treatment_variable"),
-                ("Outcome variable", "@{%s}" % "estimator.outcome_variable"),
-                ("Test outcome", "@{%s}" % "result.outcome"),
+                ("Treatment variable", "@estimator.treatment_variable"),
+                ("Outcome variable", "@estimator.outcome_variable"),
+                ("Test outcome", "@result.outcome"),
             ],
             tools=[
                 "hover",
