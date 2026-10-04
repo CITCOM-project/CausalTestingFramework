@@ -11,7 +11,7 @@ from causal_testing.visualisation.visualisation_plotter import VisualisationPlot
 
 
 @pytest.fixture(name="ctf")
-def _ctf() -> None:
+def _ctf() -> CausalTestingFramework:
     dag = CausalDAG()
     dag.add_edges_from(
         [
@@ -35,7 +35,7 @@ def _ctf() -> None:
 
 
 @pytest.fixture(name="plotter")
-def _plotter(ctf) -> None:
+def _plotter(ctf) -> VisualisationPlotter:
     return VisualisationPlotter(dag=ctf.dag, df=ctf.test_dataframe())
 
 

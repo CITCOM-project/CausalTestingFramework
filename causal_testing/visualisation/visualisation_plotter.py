@@ -29,7 +29,9 @@ class VisualisationPlotter:
 
     def __init__(self, dag: CausalDAG = None, df: pd.DataFrame = None, colour_map: dict[TestOutcome, str] = None):
         self.dag = dag
-        self.df = self.update_df(df) if df is not None else None
+        self.df = None
+        if df is not None:
+            self.update_df(df)
 
         self.colour_map = (
             colour_map
@@ -48,7 +50,8 @@ class VisualisationPlotter:
         :param df: The new dataframe.
         """
         # Pre-format the data
-        df["result.outcome.value"] = df["result.outcome"].apply(lambda x: TestOutcome[x].value)
+        if "result.outcome" in df:
+            df["result.outcome.value"] = df["result.outcome"].apply(lambda x: TestOutcome[x].value)
 
         self.xticks = list(enumerate(df["estimator.treatment_variable"].unique()))
         self.yticks = list(enumerate(df["estimator.outcome_variable"].unique()))
