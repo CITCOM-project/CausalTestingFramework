@@ -207,11 +207,9 @@ class TestCausalTestCase(unittest.TestCase):
                     "ci_high": {"A": 4.0},
                 },
                 "adequacy": {"kurtosis": {"A": 0.0}, "passing": 100, "successful": 100, "bootstrap_size": 100},
+                "effect_direction": "Positive",
             },
         }
-
-        print([k for k in expected if k not in test_case_dict])
-        print([k for k in test_case_dict if k not in expected])
 
         # Use json_normalize to avoid rounding errors
         pd.testing.assert_frame_equal(

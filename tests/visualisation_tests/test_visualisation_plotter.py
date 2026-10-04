@@ -10,8 +10,8 @@ from causal_testing.testing.causal_test_result import TestOutcome
 from causal_testing.visualisation.visualisation_plotter import VisualisationPlotter
 
 
-@pytest.fixture(name="plotter")
-def _plotter() -> None:
+@pytest.fixture(name="ctf")
+def _ctf() -> None:
     dag = CausalDAG()
     dag.add_edges_from(
         [
@@ -31,16 +31,21 @@ def _plotter() -> None:
     )
     ctf = CausalTestingFramework(dag=dag)
     ctf.load_test_cases_from_json(Path(__file__).parent.parent / "resources" / "data" / "poisson_line_tests.json")
-    return VisualisationPlotter(ctf)
+    return ctf
 
 
-def test_results_dag(plotter):
+@pytest.fixture(name="plotter")
+def _plotter(ctf) -> None:
+    return VisualisationPlotter(dag=ctf.dag, df=ctf.test_dataframe())
+
+
+def test_results_dag(ctf, plotter):
     """
     The result DAG should have the same causal edges as the original, plus dashed edges for failing independence
     tests. Passing edges should be green. Failing edges should be red. Inestimable edges should be yellow.
     """
     results_dag = plotter.results_dag()
-    for test in plotter.ctf.test_cases:
+    for test in ctf.test_cases:
         treatment_variable = test.estimator.treatment_variable
         outcome_variable = test.estimator.outcome_variable
         edge_data = results_dag.get_edge_data(treatment_variable, outcome_variable)
@@ -54,7 +59,7 @@ def test_results_dag(plotter):
             assert (
                 edge_data.get("color") == plotter.colour_map[TestOutcome.INESTIMABLE]
             ), "Expected inestimable tests to map to yellow."
-        elif (treatment_variable, outcome_variable) in plotter.ctf.dag.edges:
+        elif (treatment_variable, outcome_variable) in ctf.dag.edges:
             assert edge_data is not None, "Expected edge for passing causal test."
             assert (
                 edge_data.get("color") == plotter.colour_map[TestOutcome.PASS]
@@ -63,7 +68,7 @@ def test_results_dag(plotter):
             assert edge_data is None, "Passing independence tests should not have edges in the result DAG."
 
 
-def test_interactive_results_dag(plotter):
+def test_interactive_results_dag(ctf, plotter):
     """
     The result DAG should have the same causal edges as the original, plus dashed edges for failing independence
     tests. Passing edges should be green. Failing edges should be red. Inestimable edges should be yellow.
@@ -74,7 +79,7 @@ def test_interactive_results_dag(plotter):
     src_col, dst_col = interactive_dag.kdims[0].name, interactive_dag.kdims[1].name
     edge_map = {(row[src_col], row[dst_col]): row.to_dict() for _, row in edges_df.iterrows()}
 
-    for test in plotter.ctf.test_cases:
+    for test in ctf.test_cases:
         treatment_variable = test.estimator.treatment_variable
         outcome_variable = test.estimator.outcome_variable
         edge_data = edge_map.get((treatment_variable, outcome_variable))
@@ -89,7 +94,7 @@ def test_interactive_results_dag(plotter):
             assert (
                 edge_data.get("color") == plotter.colour_map[TestOutcome.INESTIMABLE]
             ), "Expected inestimable tests to map to yellow."
-        elif (treatment_variable, outcome_variable) in plotter.ctf.dag.edges:
+        elif (treatment_variable, outcome_variable) in ctf.dag.edges:
             assert edge_data is not None, "Expected edge for passing causal test."
             assert (
                 edge_data.get("color") == plotter.colour_map[TestOutcome.PASS]
@@ -98,14 +103,14 @@ def test_interactive_results_dag(plotter):
             assert edge_data is None, "Passing independence tests should not have edges in the result DAG."
 
 
-def test_outcome_adjacency(plotter):
+def test_outcome_adjacency(ctf, plotter):
     heatmap = plotter.outcome_adjacency()
     # Check correct axes
     assert [kdim.name for kdim in heatmap.kdims] == [
-        "estimator.treatment_variable",
-        "estimator.outcome_variable",
+        "treatment_variable_inx",
+        "outcome_variable_inx",
     ], f"Unexpected kdims {heatmap.kdims}"
-    assert [vdim.name for vdim in heatmap.vdims] == ["result.outcome"], f"Unexpected vdims {heatmap.vdims}"
+    assert "result.outcome" in [vdim.name for vdim in heatmap.vdims], f"'result.outcome' not found in {heatmap.vdims}"
 
     bokeh_fig = hv.render(heatmap, backend="bokeh")
     glyph_renderer = [r for r in bokeh_fig.renderers if hasattr(r, "glyph")][0]
@@ -113,16 +118,10 @@ def test_outcome_adjacency(plotter):
     color_mapper = fill_color_transform.transform
 
     df = pd.DataFrame(glyph_renderer.data_source.data)
-    df["estimator_full_stop_treatment_variable"] = df["estimator_full_stop_treatment_variable"].apply(
-        lambda c: bokeh_fig.xaxis[0].major_label_overrides[c]
-    )
-    df["estimator_full_stop_outcome_variable"] = df["estimator_full_stop_outcome_variable"].apply(
-        lambda c: bokeh_fig.yaxis[0].major_label_overrides[c]
-    )
     category_color_map = dict(zip(color_mapper.factors, color_mapper.palette))
     df["rendered_color"] = df[fill_color_transform.field].apply(lambda c: category_color_map.get(c))
 
-    test_df = pd.json_normalize([test.to_dict() for test in plotter.ctf.test_cases])
+    test_df = pd.json_normalize([test.to_dict() for test in ctf.test_cases])
     test_df["expected_color"] = [
         plotter.colour_map[getattr(TestOutcome, outcome)] for outcome in test_df["result.outcome"]
     ]
@@ -144,7 +143,7 @@ def test_outcome_adjacency(plotter):
         ("data_adequacy_heatmap", "result.adequacy.kurtosis"),
     ],
 )
-def test_adequacy_heatmap(plotter, method_name, expected_vdim):
+def test_adequacy_heatmap(ctf, plotter, method_name, expected_vdim):
     """
     Every test with an adequacy value should have a non-grey square.
     """
@@ -153,14 +152,16 @@ def test_adequacy_heatmap(plotter, method_name, expected_vdim):
 
     # Check correct axes
     assert [kdim.name for kdim in heatmap.kdims] == [
-        "estimator.treatment_variable",
-        "estimator.outcome_variable",
+        "treatment_variable_inx",
+        "outcome_variable_inx",
     ], f"Unexpected kdims {heatmap.kdims}"
-    assert [vdim.name for vdim in heatmap.vdims] == [expected_vdim], f"Unexpected vdims {heatmap.vdims}"
+    assert expected_vdim in [
+        vdim.name for vdim in heatmap.vdims
+    ], f"'{expected_vdim}' not found in vdims {heatmap.vdims}"
 
     # Check all tests with results have a square
     # It's very difficult to test that the squares are the right colours or in the right place
-    for test in plotter.ctf.test_cases:
+    for test in ctf.test_cases:
         if test.result.outcome != TestOutcome.INESTIMABLE:
             assert not heatmap.data[
                 (heatmap.data["estimator.treatment_variable"] == test.estimator.treatment_variable)
