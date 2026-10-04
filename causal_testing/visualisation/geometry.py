@@ -6,73 +6,9 @@ import re
 
 import holoviews as hv
 import numpy as np
-import pandas as pd
 from bokeh.models import Arrow, Ellipse, NormalHead
 from holoviews.plotting.bokeh.graphs import GraphPlot
 from scipy.interpolate import make_splprep  # pylint: disable=E0611
-
-
-def _get_split_category_order(df: pd.DataFrame, col: str, value_col: str) -> list:
-    """
-    Partitions categories into two groups relative to overall_median:
-    - Group median < overall_median: sorted by category min (ascending).
-    - Group median >= overall_median: sorted by category max (ascending).
-    """
-    stats = df.groupby(col)[value_col].agg(["median", "min", "max"]).reset_index()
-
-    # Sort lower half by min value, upper half by max value
-    lower_order = stats[stats["median"] < stats["median"].median()].sort_values(by="min", ascending=True)[col].tolist()
-    upper_order = stats[stats["median"] >= stats["median"].median()].sort_values(by="max", ascending=True)[col].tolist()
-
-    return lower_order + upper_order
-
-
-def sort_df_by_median_split(
-    df: pd.DataFrame,
-    value_col: str,
-    treatment_col: str = "estimator.treatment_variable",
-    outcome_col: str = "estimator.outcome_variable",
-    vdims: list[str] = None,
-) -> pd.DataFrame:
-    """
-    Sorts treatment and outcome variables relative to the overall median kurtosis.
-    """
-
-    vdims = [] if vdims is None else vdims
-
-    # Fill missing (treatment, outcome) combinations with empty rows
-    # We need this to ensure that it's possible to obtain the correct ordering in the heatmap
-    df = (
-        df.copy()
-        .set_index([treatment_col, outcome_col])
-        .reindex(
-            pd.MultiIndex.from_product(
-                [
-                    df[treatment_col].dropna().unique(),
-                    df[outcome_col].dropna().unique(),
-                ],
-                names=[treatment_col, outcome_col],
-            )
-        )
-        .reset_index()
-    )
-
-    # Apply ordered categoricals so HoloViews maps the axes to these index positions
-    df_sorted = df[[treatment_col, outcome_col, value_col] + vdims].copy()
-    df_sorted[treatment_col] = pd.Categorical(
-        df[treatment_col], categories=_get_split_category_order(df, treatment_col, value_col), ordered=True
-    )
-    df_sorted[outcome_col] = pd.Categorical(
-        df[outcome_col], categories=_get_split_category_order(df, outcome_col, value_col), ordered=True
-    )
-
-    df_sorted = df_sorted.sort_values(by=[treatment_col, outcome_col]).dropna()
-
-    # Need to convert the values back to strings, otherwise holoviz thinks they're not unique
-    df_sorted[treatment_col] = df_sorted[treatment_col].astype(str)
-    df_sorted[outcome_col] = df_sorted[outcome_col].astype(str)
-
-    return df_sorted
 
 
 def parse_dot_spline(pos_str: str) -> list[tuple[float, float]]:
@@ -82,6 +18,8 @@ def parse_dot_spline(pos_str: str) -> list[tuple[float, float]]:
     NOTE: This will ignore segments separated by ";", but this shouldn't be a problem in our limited context.
 
     :param pos_str: The graphviz position string representing the list of control points.
+
+    :returns: list of the parsed control points.
     """
     end_point = None
     points = []

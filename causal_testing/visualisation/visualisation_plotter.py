@@ -12,9 +12,11 @@ from bokeh.models import Div, HoverTool
 from bokeh.palettes import RdYlGn
 from holoviews.plotting.bokeh.graphs import GraphPlot
 
-from causal_testing.causal_testing_framework import CausalTestingFramework
+from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_result import TestOutcome
-from causal_testing.visualisation.geometry import edge_spline, node_width, sort_df_by_median_split, style_graph_hook
+from causal_testing.visualisation.geometry import edge_spline, node_width, style_graph_hook
+
+hv.extension("bokeh")
 
 
 class VisualisationPlotter:
@@ -25,8 +27,30 @@ class VisualisationPlotter:
     :ivar colour_map: Dictionary mapping TestOutcomes PASS, FAIL, and INESTIMABLE test outcomes to colours.
     """
 
-    def __init__(self, ctf: CausalTestingFramework, colour_map: dict[TestOutcome, str] = None):
-        self.ctf = ctf
+    def __init__(self, dag: CausalDAG, df: pd.DataFrame, colour_map: dict[TestOutcome, str] = None):
+        self.dag = dag
+        self.df = df
+
+        # Pre-format the data
+        self.df["result.outcome.value"] = self.df["result.outcome"].apply(lambda x: TestOutcome[x].value)
+
+        self.xticks = list(enumerate(self.df["estimator.treatment_variable"].unique()))
+        self.yticks = list(enumerate(self.df["estimator.outcome_variable"].unique()))
+
+        self.df["treatment_variable_inx"] = self.df["estimator.treatment_variable"].map({v: k for k, v in self.xticks})
+        self.df["outcome_variable_inx"] = self.df["estimator.outcome_variable"].map({v: k for k, v in self.yticks})
+
+        for col in [
+            "effect_estimate.effect_estimate",
+            "effect_estimate.ci_low",
+            "effect_estimate.ci_high",
+            "adequacy.kurtosis",
+        ]:
+            columns = [c for c in self.df.columns if c.startswith(f"result.{col}.")]
+            if columns:
+                self.df[f"result.{col}"] = self.df[columns].bfill(axis=1).iloc[:, 0]
+                self.df = self.df.drop(columns=columns)
+
         self.colour_map = (
             colour_map
             if colour_map is not None
@@ -51,37 +75,49 @@ class VisualisationPlotter:
         :param layout_engine: The layout engine to use. (Defaults to None for concise output)
                               See https://graphviz.org/docs/layouts/ for a list of supported engines.
         """
-        result_dag = nx.DiGraph()
-        result_dag.add_nodes_from(self.ctf.dag.nodes)
-        result_dag.add_edges_from(self.ctf.dag.edges)
+        result_dag = nx.DiGraph(ignore_cycles=True)
+        result_dag.add_nodes_from(self.dag.nodes)
+        result_dag.add_edges_from(self.dag.edges)
 
-        for test in self.ctf.test_cases:
-            if test.result is not None:
-                if (test.treatment_variable, test.outcome_variable) in result_dag.edges or (
-                    view_independences and test.result.outcome != TestOutcome.PASS
+        if "result.outcome" in self.df:
+            # Add in edges for non-passing independence tests
+            if view_independences:
+                result_dag.add_edges_from(
+                    filter(
+                        lambda edge: edge not in result_dag.edges,
+                        self.df.loc[
+                            self.df["result.outcome"] != TestOutcome.PASS.name,
+                            ["estimator.treatment_variable", "estimator.outcome_variable"],
+                        ].itertuples(index=False),
+                    ),
+                    style="dashed",
+                )
+
+            for _, test in self.df.iterrows():
+                treatment_variable = test["estimator.treatment_variable"]
+                outcome_variable = test["estimator.outcome_variable"]
+
+                if (treatment_variable, outcome_variable) in result_dag.edges or (
+                    view_independences and test["result.outcome"] != TestOutcome.PASS.name
                 ):
-                    if (test.treatment_variable, test.outcome_variable) not in result_dag.edges:
-                        result_dag.add_edge(test.treatment_variable, test.outcome_variable, ignore_cycles=True)
-                        result_dag[test.treatment_variable][test.outcome_variable]["style"] = "dashed"
-
-                    result_dag[test.treatment_variable][test.outcome_variable]["label"] = test.result.effect_direction()
-                    result_dag[test.treatment_variable][test.outcome_variable]["color"] = self.colour_map[
-                        test.result.outcome
+                    result_dag[treatment_variable][outcome_variable]["label"] = test["result.effect_direction"]
+                    result_dag[treatment_variable][outcome_variable]["color"] = self.colour_map[
+                        getattr(TestOutcome, test["result.outcome"])
                     ]
-                    result_dag[test.treatment_variable][test.outcome_variable]["fontcolor"] = self.colour_map[
-                        test.result.outcome
+                    result_dag[treatment_variable][outcome_variable]["fontcolor"] = self.colour_map[
+                        getattr(TestOutcome, test["result.outcome"])
                     ]
-                    if html and test.result.effect_estimate is not None:
+                    if html and "result.effect_estimate" in self.df:
                         effect_estimate = pd.concat(
                             [
-                                test.result.effect_estimate.ci_low,
-                                test.result.effect_estimate.effect_estimate,
-                                test.result.effect_estimate.ci_high,
+                                test["result.effect_estimate.ci_low"],
+                                test["result.effect_estimate.effect_estimate"],
+                                test["result.effect_estimate.ci_high"],
                             ],
                             axis=1,
                         )
                         effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
-                        result_dag[test.treatment_variable][test.outcome_variable][
+                        result_dag[test["treatment_variable"]][test["outcome_variable"]][
                             "title"
                         ] = f"<{effect_estimate.to_html()}>"
 
@@ -93,91 +129,6 @@ class VisualisationPlotter:
             )
 
         return result_dag
-
-    def data_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
-        """
-        Visualise data adequacy as an adjacency matrix heatmap of the kurtosis.
-        """
-        adequacy = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
-
-        for col in [
-            "effect_estimate.effect_estimate",
-            "effect_estimate.ci_low",
-            "effect_estimate.ci_high",
-            "adequacy.kurtosis",
-        ]:
-            columns = [c for c in adequacy.columns if c.startswith(f"result.{col}.")]
-            adequacy[f"result.{col}"] = adequacy[columns].bfill(axis=1).iloc[:, 0]
-            adequacy = adequacy.drop(columns=columns)
-        adequacy = sort_df_by_median_split(adequacy, value_col="result.adequacy.kurtosis")
-
-        # Get data bounds
-        vmin = adequacy["result.adequacy.kurtosis"].min()
-        vmax = adequacy["result.adequacy.kurtosis"].max()
-
-        # Calculate zero position (0.0 to 1.0)
-        zero_ratio = (0 - vmin) / (vmax - vmin)
-
-        # Generate the colour samples from the negative and positive colourmaps
-        num_samples = 1000
-        n_neg = int(num_samples * zero_ratio)
-        n_pos = num_samples - n_neg
-
-        neg_colors = hv.plotting.util.process_cmap("blues_r", provider="bokeh", ncolors=n_neg)
-        pos_colors = hv.plotting.util.process_cmap("YlOrRd", provider="bokeh", ncolors=n_pos)
-        asymmetric_cmap = neg_colors + pos_colors
-
-        # Render
-        return hv.HeatMap(
-            adequacy,
-            kdims=[
-                ("estimator.treatment_variable", "Treatment variable"),
-                ("estimator.outcome_variable", "Outcome variable"),
-            ],
-            vdims=[("result.adequacy.kurtosis", "Kurtosis")],
-        ).opts(
-            cmap=asymmetric_cmap,
-            clim=(vmin, vmax),
-            clipping_colors={"NaN": "grey"},  # Grey out invalid tests
-            colorbar=True,
-            tools=["hover", "fullscreen"],
-            xlabel="Treatment variable",
-            ylabel="Outcome variable",
-            clabel="Causal test adequacy",
-            title="Data Adequacy",
-            **kwargs,
-        )
-
-    def dag_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
-        """
-        Visualise dag adequacy as an adjacency matrix heatmap of the percentage of passing test cases.
-        """
-        adequacy = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
-
-        # Turn passing test cases into a percentage
-        adequacy["result.adequacy.passing"] = (
-            adequacy["result.adequacy.passing"] / adequacy["result.adequacy.bootstrap_size"]
-        ) * 100
-
-        return hv.HeatMap(
-            sort_df_by_median_split(adequacy, value_col="result.adequacy.passing"),
-            kdims=[
-                ("estimator.treatment_variable", "Treatment variable"),
-                ("estimator.outcome_variable", "Outcome variable"),
-            ],
-            vdims=[("result.adequacy.passing", "Passing (%)")],
-        ).opts(
-            cmap="RdYlGn",
-            clim=(0, 100),
-            clipping_colors={"NaN": "grey"},  # Grey out invalid tests
-            colorbar=True,
-            tools=["hover", "fullscreen"],
-            xlabel="Treatment variable",
-            ylabel="Outcome variable",
-            clabel="Percentage passing test cases",
-            title="DAG Adequacy",
-            **kwargs,
-        )
 
     def add_discrete_legend(self, plot: GraphPlot, element: hv.Graph):
         """
@@ -204,43 +155,6 @@ class VisualisationPlotter:
 
         div = Div(text=legend_html)
         plot.state.add_layout(div, "above")
-
-    def outcome_adjacency(self, **kwargs) -> hv.HeatMap:
-        """
-        Visualise causal test results as an adjacency matrix.
-        """
-        results = pd.json_normalize(map(lambda t: t.to_dict(), self.ctf.test_cases))
-        results["result.outcome.value"] = results["result.outcome"].apply(lambda x: TestOutcome[x].value)
-
-        data = sort_df_by_median_split(results, value_col="result.outcome.value", vdims=["result.outcome"])
-
-        xticks = list(enumerate(data["estimator.treatment_variable"].unique()))
-        yticks = list(enumerate(data["estimator.outcome_variable"].unique()))
-
-        data["estimator.treatment_variable"] = data["estimator.treatment_variable"].map({v: k for k, v in xticks})
-        data["estimator.outcome_variable"] = data["estimator.outcome_variable"].map({v: k for k, v in yticks})
-
-        return hv.HeatMap(
-            data,
-            kdims=[
-                ("estimator.treatment_variable", "Treatment variable"),
-                ("estimator.outcome_variable", "Outcome variable"),
-            ],
-            vdims=[("result.outcome", "Outcome")],
-        ).opts(
-            cmap={k.name: v for k, v in self.colour_map.items()},
-            clipping_colors={"NaN": "grey"},
-            tools=["hover", "fullscreen"],
-            xlabel="Treatment variable",
-            ylabel="Outcome variable",
-            hooks=[self.add_discrete_legend],
-            xticks=xticks,
-            yticks=yticks,
-            data_aspect=1,
-            xlim=(-0.5, len(xticks) - 0.5),
-            ylim=(-0.5, len(yticks) - 0.5),
-            **kwargs,
-        )
 
     def interactive_results_dag(self, **kwargs) -> hv.Overlay:
         """
@@ -282,7 +196,7 @@ class VisualisationPlotter:
         )
 
         hooks = [style_graph_hook]
-        if any(test.result is not None for test in self.ctf.test_cases):
+        if "result" in self.df:
             hooks.append(self.add_discrete_legend)
 
         if "label" in edges_df.columns:
@@ -309,15 +223,13 @@ class VisualisationPlotter:
             xaxis=None,
             yaxis=None,
             tools=[
-                HoverTool(
-                    tooltips="""
+                HoverTool(tooltips="""
                 <div style="padding: 6px; border: 1px solid #ccc; font-family: sans-serif;">
                     <strong>Treatment:</strong> @source<br>
                     <strong>Outcome:</strong> @target<br>
                     <strong>Causal Effect:</strong> <br/> @title{safe}<br>
                 </div>
-            """
-                ),
+            """),
                 "fullscreen",
             ],
             inspection_policy="edges",
@@ -356,3 +268,234 @@ class VisualisationPlotter:
         )
 
         return graph * node_labels * edge_labels
+
+    def _get_split_category_order(self, category_col: str, value_col: str) -> list:
+        """
+        Partitions categories into two groups relative to overall_median:
+        - Group median < overall_median: sorted by category min (ascending).
+        - Group median >= overall_median: sorted by category max (ascending).
+
+        :param category_col: The column to group by.
+        :param value_col: The column containing the value to display.
+
+        :returns: sorted list of the values in category_col.
+        """
+        stats = self.df.groupby(category_col)[value_col].agg(["median", "min", "max"]).reset_index()
+
+        # Sort lower half by min value, upper half by max value
+        lower_order = (
+            stats[stats["median"] < stats["median"].median()]
+            .sort_values(by="min", ascending=True)[category_col]
+            .tolist()
+        )
+        upper_order = (
+            stats[stats["median"] >= stats["median"].median()]
+            .sort_values(by="max", ascending=True)[category_col]
+            .tolist()
+        )
+
+        return lower_order + upper_order
+
+    def sort_df_by_median_split(
+        self,
+        value_col: str,
+        treatment_col: str = "estimator.treatment_variable",
+        outcome_col: str = "estimator.outcome_variable",
+    ) -> pd.DataFrame:
+        """
+        Sorts treatment and outcome variables relative to the overall median.
+
+        :param value_col: The column containing the value to display.
+        :param treatment_col: The column containing the data to display on the x-axis.
+        :param outcome_col: The column containing the data to display on the y-axis.
+
+        :returns: Sorted dataframe containing the treatment_col, outcome_col, and vdims.
+        """
+
+        # Fill missing (treatment, outcome) combinations with empty rows
+        # We need this to ensure that it's possible to obtain the correct ordering in the heatmap
+        df = (
+            self.df.copy()
+            .set_index([treatment_col, outcome_col])
+            .reindex(
+                pd.MultiIndex.from_product(
+                    [
+                        self.df[treatment_col].dropna().unique(),
+                        self.df[outcome_col].dropna().unique(),
+                    ],
+                    names=[treatment_col, outcome_col],
+                )
+            )
+            .reset_index()
+        )
+
+        # Apply ordered categoricals so HoloViews maps the axes to these index positions
+        df[treatment_col] = pd.Categorical(
+            df[treatment_col], categories=self._get_split_category_order(treatment_col, value_col), ordered=True
+        )
+        df[outcome_col] = pd.Categorical(
+            df[outcome_col], categories=self._get_split_category_order(outcome_col, value_col), ordered=True
+        )
+
+        df = df.sort_values(by=[treatment_col, outcome_col]).dropna(subset=[value_col])
+
+        # Need to convert the values back to strings, otherwise holoviz thinks they're not unique
+        df[treatment_col] = df[treatment_col].astype(str)
+        df[outcome_col] = df[outcome_col].astype(str)
+
+        return df
+
+    def data_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
+        """
+        Visualise data adequacy as an adjacency matrix heatmap of the kurtosis.
+        """
+
+        data = self.sort_df_by_median_split(value_col="result.adequacy.kurtosis")
+
+        # Get data bounds
+        vmin = data["result.adequacy.kurtosis"].min()
+        vmax = data["result.adequacy.kurtosis"].max()
+
+        # Calculate relative zero position on the colourmap (0.0 to 1.0)
+        zero_ratio = (0 - vmin) / (vmax - vmin)
+
+        # Generate the colour samples from the negative and positive colourmaps
+        num_samples = 1000
+        n_neg = int(num_samples * zero_ratio)
+        n_pos = num_samples - n_neg
+
+        neg_colors = hv.plotting.util.process_cmap("blues_r", provider="bokeh", ncolors=n_neg)
+        pos_colors = hv.plotting.util.process_cmap("YlOrRd", provider="bokeh", ncolors=n_pos)
+        asymmetric_cmap = neg_colors + pos_colors
+
+        # Render
+        return hv.HeatMap(
+            data,
+            kdims=[
+                ("treatment_variable_inx", "Treatment variable"),
+                ("outcome_variable_inx", "Outcome variable"),
+            ],
+            vdims=[
+                ("result.adequacy.kurtosis", "Kurtosis"),
+                "estimator.treatment_variable",
+                "estimator.outcome_variable",
+                "result.adequacy.kurtosis",
+            ],
+        ).opts(
+            cmap=asymmetric_cmap,
+            clim=(vmin, vmax),
+            clipping_colors={"NaN": "grey"},  # Grey out invalid tests
+            colorbar=True,
+            xrotation=45,
+            data_aspect=1,
+            xticks=self.xticks,
+            yticks=self.yticks,
+            xlim=(-0.5, len(self.xticks) - 0.5),
+            ylim=(-0.5, len(self.yticks) - 0.5),
+            hover_tooltips=[
+                ("Treatment variable", "@{%s}" % "estimator.treatment_variable"),
+                ("Outcome variable", "@{%s}" % "estimator.outcome_variable"),
+                ("Adequacy", "@{%s}" % "result.adequacy.kurtosis"),
+            ],
+            tools=[
+                "hover",
+                "fullscreen",
+            ],
+            xlabel="Treatment variable",
+            ylabel="Outcome variable",
+            clabel="Causal test adequacy",
+            title="Data Adequacy",
+            **kwargs,
+        )
+
+    def dag_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
+        """
+        Visualise dag adequacy as an adjacency matrix heatmap of the percentage of passing test cases.
+        """
+        data = self.sort_df_by_median_split(value_col="result.adequacy.passing")
+
+        # Turn passing test cases into a percentage
+        data["result.adequacy.passing"] = (
+            data["result.adequacy.passing"] / data["result.adequacy.bootstrap_size"]
+        ) * 100
+
+        return hv.HeatMap(
+            data,
+            kdims=[
+                ("treatment_variable_inx", "Treatment variable"),
+                ("outcome_variable_inx", "Outcome variable"),
+            ],
+            vdims=[
+                ("result.adequacy.passing", "Passing (%)"),
+                "estimator.treatment_variable",
+                "estimator.outcome_variable",
+                "result.adequacy.passing",
+            ],
+        ).opts(
+            cmap="RdYlGn",
+            clim=(0, 100),
+            clipping_colors={"NaN": "grey"},  # Grey out invalid tests
+            colorbar=True,
+            xrotation=45,
+            data_aspect=1,
+            xticks=self.xticks,
+            yticks=self.yticks,
+            xlim=(-0.5, len(self.xticks) - 0.5),
+            ylim=(-0.5, len(self.yticks) - 0.5),
+            hover_tooltips=[
+                ("Treatment variable", "@{%s}" % "estimator.treatment_variable"),
+                ("Outcome variable", "@{%s}" % "estimator.outcome_variable"),
+                ("Passing", "@result.adequacy.passing%"),
+            ],
+            tools=[
+                "hover",
+                "fullscreen",
+            ],
+            xlabel="Treatment variable",
+            ylabel="Outcome variable",
+            clabel="Percentage passing test cases",
+            title="DAG Adequacy",
+            **kwargs,
+        )
+
+    def outcome_adjacency(self, **kwargs) -> hv.HeatMap:
+        """
+        Visualise causal test results as an adjacency matrix.
+        """
+        data = self.sort_df_by_median_split(value_col="result.outcome.value")
+
+        return hv.HeatMap(
+            data,
+            kdims=[
+                ("treatment_variable_inx", "Treatment variable"),
+                ("outcome_variable_inx", "Outcome variable"),
+            ],
+            vdims=[
+                ("result.outcome", "Outcome"),
+                "estimator.treatment_variable",
+                "estimator.outcome_variable",
+                "result.outcome",
+            ],
+        ).opts(
+            cmap={k.name: v for k, v in self.colour_map.items()},
+            clipping_colors={"NaN": "grey"},
+            hover_tooltips=[
+                ("Treatment variable", "@{%s}" % "estimator.treatment_variable"),
+                ("Outcome variable", "@{%s}" % "estimator.outcome_variable"),
+                ("Test outcome", "@{%s}" % "result.outcome"),
+            ],
+            tools=[
+                "hover",
+                "fullscreen",
+            ],
+            xlabel="Treatment variable",
+            ylabel="Outcome variable",
+            hooks=[self.add_discrete_legend],
+            xticks=self.xticks,
+            yticks=self.yticks,
+            data_aspect=1,
+            xlim=(-0.5, len(self.xticks) - 0.5),
+            ylim=(-0.5, len(self.yticks) - 0.5),
+            xrotation=45,
+            **kwargs,
+        )

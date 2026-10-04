@@ -52,7 +52,11 @@ class CausalTestResult:
 
         adequacy = self.adequacy.to_dict(include_adequacy_results=include_adequacy_results) if self.adequacy else {}
 
-        return outcome | {"effect_estimate": effect_estimate, "adequacy": adequacy}
+        return outcome | {
+            "effect_estimate": effect_estimate,
+            "adequacy": adequacy,
+            "effect_direction": self.effect_direction(),
+        }
 
     def effect_direction(self) -> str:
         """

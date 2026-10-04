@@ -20,8 +20,7 @@ from causal_testing.visualisation.visualisation_plotter import VisualisationPlot
 pn.extension("codeeditor")
 pn.extension(design="material", sizing_mode="stretch_width", notifications=True)
 
-pn.config.raw_css.append(
-    """
+pn.config.raw_css.append("""
     .test_suite_stats bk-panel-models-markup-HTML {
         background: rgb(248, 249, 250);
         padding: 15px;
@@ -86,8 +85,7 @@ pn.config.raw_css.append(
             margin: 0 !important;
         }
     }
-    """
-)
+    """)
 
 
 class Dashboard(param.Parameterized):
@@ -180,26 +178,22 @@ class Dashboard(param.Parameterized):
         for i, test_case in enumerate(self.ctf.test_cases):
             pct = int((i / total_steps) * 100)
             self.run_tests.label = f"Processing... {pct}%"
-            self.run_tests.stylesheets = [
-                f"""
+            self.run_tests.stylesheets = [f"""
             button {{
                 background-image: linear-gradient(to right, {theme_var} {pct}%, #e0e0e0 {pct}%) !important;
                 background-color: transparent !important;
                 border-color: #ccc !important;
             }}
-            """
-            ]
+            """]
             test_case.execute_test(
                 self.ctf.df, suppress_estimation_errors=True, adequacy=self.adequacy, bootstrap_size=100
             )
         self.run_tests.disabled = False
-        self.run_tests.stylesheets = [
-            """
+        self.run_tests.stylesheets = ["""
         button {{
             background: #2085ec;
         }}
-    """
-        ]
+    """]
         self.run_tests.label = original_label
         self.param.trigger("ctf")
 
@@ -226,16 +220,14 @@ class Dashboard(param.Parameterized):
         else:
             value_html = f"""<span>{value if value is not None else "-"}</span>"""
 
-        return pn.pane.HTML(
-            f"""
+        return pn.pane.HTML(f"""
         <div class="bk-panel-models-markup-HTML">
             <div style="width: 100%; min-width: 0px; visibility: visible; {color}">
                 <div class="test_suite_stat_title">{name}</div>
                 <div class="test_suite_stat_value">{value_html}</div>
             </div>
         </div>
-        """
-        )
+        """)
 
     def test_suite_stats(self) -> pn.GridBox:
         """
@@ -362,9 +354,7 @@ class Dashboard(param.Parameterized):
             )
 
             if any(test.result for test in self.ctf.test_cases):
-                content.append(
-                    pn.pane.Markdown(
-                        """
+                content.append(pn.pane.Markdown("""
                 # Test Outcomes
 
                 Passing causal tests are shown in green.
@@ -378,13 +368,10 @@ class Dashboard(param.Parameterized):
                 closer to the bottom left corner and passing tests appear closer to the top right corner.
                 This makes it easier to spot patterns in the data, e.g. variables involved in many failing tests, or
                 clusters of failing tests.
-                """
-                    )
-                )
+                """))
                 results.append(
                     pn.pane.HoloViews(
                         self.plotter.outcome_adjacency(
-                            xrotation=45,
                             frame_height=300,
                         ),
                         styles={"flex": "1 1 400px"},
@@ -393,9 +380,7 @@ class Dashboard(param.Parameterized):
             content.append(results)
 
             if self.adequacy:
-                content.append(
-                    pn.pane.Markdown(
-                        """
+                content.append(pn.pane.Markdown("""
             # Test Adequacy
 
             [Causal test adequacy](https://causal-testing-framework.readthedocs.io/en/latest/modules/test_adequacy.html)
@@ -411,18 +396,14 @@ class Dashboard(param.Parameterized):
             DAG adequacy indicates how well the DAG fits the dataset, and how "stable" the test outcomes are,
             i.e. how affected the outcomes are by individual data points.
             Higher percentage pass rates indicate more reliable test outcomes.
-                """
-                    )
-                )
+                """))
                 content.append(
                     pn.FlexBox(
                         self.plotter.data_adequacy_heatmap(
-                            xrotation=45,
                             width=500,
                             height=380,
                         ),
                         self.plotter.dag_adequacy_heatmap(
-                            xrotation=45,
                             width=500,
                             height=380,
                         ),
