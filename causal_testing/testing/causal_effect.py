@@ -146,7 +146,7 @@ class Positive(SomeEffect):
             raise ValueError("Positive Effects are currently only supported on single float datatypes")
         if effect_estimate.effect_measure in {"ate", "coefficient"}:
             return any(0 < ci_low < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
-        if effect_estimate.effect_measure in ["risk_ratio", "unit_odds_ratio"]:
+        if effect_estimate.effect_measure in ["hazard_ratio", "risk_ratio", "unit_odds_ratio"]:
             return any(1 < ci_low < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
         raise ValueError(f"Test Value type {effect_estimate.effect_measure} is not valid for this CausalEffect")
 
@@ -160,7 +160,7 @@ class Negative(SomeEffect):
             raise ValueError("Negative Effects are currently only supported on single float datatypes")
         if effect_estimate.effect_measure in {"ate", "coefficient"}:
             return any(ci_low < ci_high < 0 for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
-        if effect_estimate.effect_measure in ["risk_ratio", "unit_odds_ratio"]:
+        if effect_estimate.effect_measure in ["hazard_ratio", "risk_ratio", "unit_odds_ratio"]:
             return any(ci_low < ci_high < 1 for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
         # Dead code but necessary for pylint
         raise ValueError(f"Test Value type {effect_estimate.effect_measure} is not valid for this CausalEffect")

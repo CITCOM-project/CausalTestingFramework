@@ -148,6 +148,7 @@ class CausalTestingFramework:
         # Create the estimator with correct parameters
         estimator_map = {ff.name: ff for ff in entry_points(group="estimators")}
         if "estimator" not in test:
+            print(test)
             raise ValueError("Test configuration must specify an `estimator`.")
         estimator_kwargs = test["estimator"]
         estimator_name = estimator_kwargs.pop("name")

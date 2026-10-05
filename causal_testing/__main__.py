@@ -214,7 +214,7 @@ def generate(args: argparse.Namespace):
         skip=False,
     )
     with open(args.output, "w", encoding="utf-8") as f:
-        json.dump({"tests": [test.to_dict() for test in causal_tests]}, f)
+        json.dump([test.to_dict() for test in causal_tests], f)
 
 
 def discover(args: argparse.Namespace):
