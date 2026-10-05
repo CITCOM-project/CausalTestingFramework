@@ -267,7 +267,7 @@ def test(args: argparse.Namespace):
 
     logging.info("Running tests")
     framework.run_tests(silent=args.silent, adequacy=args.adequacy, bootstrap_size=args.bootstrap_size)
-    framework.save_results(args.output)
+    framework.save_results(args.output, include_adequacy_results=args.include_adequacy_results)
 
 
 def evaluate(args: argparse.Namespace):
