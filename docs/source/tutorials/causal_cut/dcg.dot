@@ -1,0 +1,8 @@
+digraph tank {
+  rankdir="LR";
+  
+  pump_on -> tank_level;
+  tank_level -> pump_on;
+  valve_open -> tank_level;
+  tank_level -> valve_open;
+}

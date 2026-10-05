@@ -103,6 +103,7 @@ Note that we do not recommend using discovered DAGs for Causal Testing without c
   tutorials/vaccinating_elderly/vaccinating_elderly_tutorial
   tutorials/poisson_line_process/poisson_line_process_tutorial
   tutorials/visualising_causal_test_results/visualise_causal_test_results
+  tutorials/causal_cut/causal_cut
 
 .. toctree::
    :maxdepth: 2

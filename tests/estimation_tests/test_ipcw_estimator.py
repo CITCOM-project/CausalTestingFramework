@@ -72,7 +72,7 @@ class TestIPCWEstimator(unittest.TestCase):
             fit_bltd_switch_formula=self.fit_bl_switch_formula,
             eligibility=None,
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "No individuals began the control strategy .*"):
             estimation_model.preprocess_data(self.df.assign(t=1))
 
     def test_no_individual_began_treatment_strategy(self):
@@ -86,7 +86,7 @@ class TestIPCWEstimator(unittest.TestCase):
             fit_bltd_switch_formula=self.fit_bl_switch_formula,
             eligibility=None,
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "No individuals began the treatment strategy .*"):
             estimation_model.preprocess_data(self.df.assign(t=0))
 
     def test_preprocess_data_no_faults(self):
@@ -100,5 +100,47 @@ class TestIPCWEstimator(unittest.TestCase):
             fit_bltd_switch_formula=self.fit_bl_switch_formula,
             eligibility=None,
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "No safe runs with outcome. Cannot perform estimation."):
+            estimation_model.preprocess_data(self.df.assign(ok=False))
+
+    def test_preprocess_data_only_faults(self):
+        estimation_model = IPCWEstimator(
+            timesteps_per_observation=self.timesteps_per_observation,
+            control_strategy=self.control_strategy,
+            treatment_strategy=self.treatment_strategy,
+            outcome_variable="outcome",
+            status_column=self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaisesRegex(ValueError, "No faults with outcome. Cannot perform estimation."):
+            estimation_model.preprocess_data(self.df.assign(ok=True))
+
+    def test_preprocess_data_missing_control(self):
+        estimation_model = IPCWEstimator(
+            timesteps_per_observation=self.timesteps_per_observation,
+            control_strategy=self.control_strategy + [(0, "invalid", 1)],
+            treatment_strategy=self.treatment_strategy,
+            outcome_variable="outcome",
+            status_column=self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaisesRegex(ValueError, "Missing data for control strategy."):
+            estimation_model.preprocess_data(self.df.assign(ok=True))
+
+    def test_preprocess_data_missing_treatment(self):
+        estimation_model = IPCWEstimator(
+            timesteps_per_observation=self.timesteps_per_observation,
+            control_strategy=self.control_strategy,
+            treatment_strategy=self.treatment_strategy + [(0, "invalid", 1)],
+            outcome_variable="outcome",
+            status_column=self.status_column,
+            fit_bl_switch_formula=self.fit_bl_switch_formula,
+            fit_bltd_switch_formula=self.fit_bl_switch_formula,
+            eligibility=None,
+        )
+        with self.assertRaisesRegex(ValueError, "Missing data for treatment strategy."):
             estimation_model.preprocess_data(self.df.assign(ok=True))
