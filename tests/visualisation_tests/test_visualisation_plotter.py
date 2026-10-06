@@ -162,6 +162,6 @@ def test_adequacy_heatmap(plotter, method_name, expected_vdim):
                 (heatmap.data["estimator.treatment_variable"] == test["estimator.treatment_variable"])
                 & (heatmap.data["estimator.outcome_variable"] == test["estimator.outcome_variable"])
             ].empty, (
-                f"Test with treatment '{test["estimator.treatment_variable"]}' and "
+                f"Test with treatment '{test['estimator.treatment_variable']}' and "
                 "outcome='{test.estimator.outcome_variable}' should be included."
             )
