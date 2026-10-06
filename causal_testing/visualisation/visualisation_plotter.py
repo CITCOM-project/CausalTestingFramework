@@ -31,6 +31,7 @@ class VisualisationPlotter:
     def __init__(self, dag: CausalDAG = None, df: pd.DataFrame = None, colour_map: dict[TestOutcome, str] = None):
         self.dag = dag
         self.df = None
+        self.results = False
         if df is not None:
             self.update_df(df)
 
@@ -50,6 +51,9 @@ class VisualisationPlotter:
 
         :param df: The new dataframe.
         """
+
+        df.to_csv("/tmp/doubling_beta_results.csv")
+
         # Pre-format the data
         if "result.outcome" in df:
             df["result.outcome.value"] = df["result.outcome"].apply(lambda x: TestOutcome[x].value)
@@ -69,6 +73,7 @@ class VisualisationPlotter:
             prefix = f"result.{col}."
             columns = [c for c in df.columns if c.startswith(prefix)]
             if columns:
+                self.results = True
                 df[f"result.{col}"] = df[columns].apply(
                     lambda row, p=prefix: {k.replace(p, ""): v for k, v in row.dropna().to_dict().items()},
                     axis=1,
@@ -100,7 +105,7 @@ class VisualisationPlotter:
         result_dag.add_nodes_from(self.dag.nodes)
         result_dag.add_edges_from(self.dag.edges)
 
-        if self.df is not None and "result.outcome" in self.df:
+        if self.df is not None and self.results:
             # Add in edges for non-passing independence tests
             if view_independences:
                 result_dag.add_edges_from(
@@ -220,7 +225,7 @@ class VisualisationPlotter:
         )
 
         hooks = [style_graph_hook]
-        if self.df is not None and "result" in self.df:
+        if self.df is not None and self.results:
             hooks.append(self.add_discrete_legend)
 
         if "label" in edges_df.columns:
@@ -306,17 +311,8 @@ class VisualisationPlotter:
 
         :returns: sorted list of the values in category_col.
         """
-        if pd.api.types.is_numeric_dtype(self.df[value_col]):
-            stats = self.df.groupby(category_col)[value_col].agg(["median", "min", "max"]).reset_index()
-        else:
-            stats = (
-                self.df.assign(
-                    temp_val=self.df[value_col].apply(lambda d: max(d.values()) if isinstance(d, dict) and d else None)
-                )
-                .groupby(category_col)["temp_val"]
-                .agg(["median", "min", "max"])
-                .reset_index()
-            )
+
+        stats = self.df.groupby(category_col)[value_col].agg(["median", "min", "max"]).reset_index()
 
         # Sort lower half by min value, upper half by max value
         lower_order = (

@@ -330,10 +330,7 @@ class Dashboard(param.Parameterized):
         """
         if self.ctf and self.ctf.test_cases:
             for test in self.ctf.test_cases:
-                try:
-                    json.dumps(test.to_dict())
-                except TypeError:
-                    print(test.to_dict())
+                json.dumps(test.to_dict())
             self.test_editor.value = json.dumps([test.to_dict() for test in self.ctf.test_cases], indent=2)
             return pn.Column(
                 pn.Row(self.test_editor),
