@@ -52,8 +52,6 @@ class VisualisationPlotter:
         :param df: The new dataframe.
         """
 
-        df.to_csv("/tmp/doubling_beta_results.csv")
-
         # Pre-format the data
         if "result.outcome" in df:
             df["result.outcome.value"] = df["result.outcome"].apply(lambda x: TestOutcome[x].value)
