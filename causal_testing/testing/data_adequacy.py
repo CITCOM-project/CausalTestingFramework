@@ -40,7 +40,7 @@ class DataAdequacy:
         :param include_adequacy_results: Whether to serialise the results.
         """
         result = {
-            "kurtosis": self.kurtosis.to_dict() if self.kurtosis is not None else None,
+            "kurtosis": {str(k): v for k, v in self.kurtosis.to_dict().items()} if self.kurtosis is not None else None,
             "passing": self.passing,
             "successful": self.successful,
             "bootstrap_size": self.bootstrap_size,

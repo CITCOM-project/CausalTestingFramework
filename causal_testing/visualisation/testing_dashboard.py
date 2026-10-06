@@ -20,7 +20,8 @@ from causal_testing.visualisation.visualisation_plotter import VisualisationPlot
 pn.extension("codeeditor")
 pn.extension(design="material", sizing_mode="stretch_width", notifications=True)
 
-pn.config.raw_css.append("""
+pn.config.raw_css.append(
+    """
     .test_suite_stats bk-panel-models-markup-HTML {
         background: rgb(248, 249, 250);
         padding: 15px;
@@ -85,7 +86,8 @@ pn.config.raw_css.append("""
             margin: 0 !important;
         }
     }
-    """)
+    """
+)
 
 
 class Dashboard(param.Parameterized):
@@ -151,12 +153,12 @@ class Dashboard(param.Parameterized):
 
     def _load_test_file(self, event):
         self.ctf.test_cases = [self.ctf.create_causal_test(test) for test in json.load(io.BytesIO(event.new))]
+        self.plotter.update_df(self.ctf.test_dataframe())
         if any(test.result is not None and test.result.adequacy is not None for test in self.ctf.test_cases):
             self.adequacy = True
 
         self.param.trigger("ctf")
         self.run_tests.disabled = not self.ctf.ready_to_run()
-        self.plotter.update_df(self.ctf.test_dataframe())
 
     def _load_data_file(self, event):
         """Parses uploaded data bytes into a pandas DataFrame and initialises the CTF with it"""
@@ -180,22 +182,26 @@ class Dashboard(param.Parameterized):
         for i, test_case in enumerate(self.ctf.test_cases):
             pct = int((i / total_steps) * 100)
             self.run_tests.label = f"Processing... {pct}%"
-            self.run_tests.stylesheets = [f"""
+            self.run_tests.stylesheets = [
+                f"""
             button {{
                 background-image: linear-gradient(to right, {theme_var} {pct}%, #e0e0e0 {pct}%) !important;
                 background-color: transparent !important;
                 border-color: #ccc !important;
             }}
-            """]
+            """
+            ]
             test_case.execute_test(
                 self.ctf.df, suppress_estimation_errors=True, adequacy=self.adequacy, bootstrap_size=100
             )
         self.run_tests.disabled = False
-        self.run_tests.stylesheets = ["""
+        self.run_tests.stylesheets = [
+            """
         button {{
             background: #2085ec;
         }}
-    """]
+    """
+        ]
         self.run_tests.label = original_label
         self.plotter.update_df(self.ctf.test_dataframe())
         self.param.trigger("ctf")
@@ -223,14 +229,16 @@ class Dashboard(param.Parameterized):
         else:
             value_html = f"""<span>{value if value is not None else "-"}</span>"""
 
-        return pn.pane.HTML(f"""
+        return pn.pane.HTML(
+            f"""
         <div class="bk-panel-models-markup-HTML">
             <div style="width: 100%; min-width: 0px; visibility: visible; {color}">
                 <div class="test_suite_stat_title">{name}</div>
                 <div class="test_suite_stat_value">{value_html}</div>
             </div>
         </div>
-        """)
+        """
+        )
 
     def test_suite_stats(self) -> pn.GridBox:
         """
@@ -321,6 +329,11 @@ class Dashboard(param.Parameterized):
         Panel to allow users to edit causal test cases.
         """
         if self.ctf and self.ctf.test_cases:
+            for test in self.ctf.test_cases:
+                try:
+                    json.dumps(test.to_dict())
+                except TypeError:
+                    print(test.to_dict())
             self.test_editor.value = json.dumps([test.to_dict() for test in self.ctf.test_cases], indent=2)
             return pn.Column(
                 pn.Row(self.test_editor),
@@ -341,13 +354,16 @@ class Dashboard(param.Parameterized):
             results = pn.FlexBox(
                 pn.pane.PNG(
                     export_png(
-                        hv.render(self.plotter.interactive_results_dag(frame_height=250, width=600), backend="bokeh"),
+                        hv.render(
+                            self.plotter.interactive_results_dag(frame_height=250, width=600),
+                            backend="bokeh",
+                        ),
                         webdriver=None,
                     ),
                     css_classes=["print_only"],
                 ),
                 pn.pane.HoloViews(
-                    self.plotter.interactive_results_dag(frame_height=300),
+                    self.plotter.interactive_results_dag(frame_height=300, width=600),
                     styles={"flex": "1 1 800px"},
                     css_classes=["screen_only"],
                 ),
@@ -357,7 +373,9 @@ class Dashboard(param.Parameterized):
             )
 
             if any(test.result for test in self.ctf.test_cases):
-                content.append(pn.pane.Markdown("""
+                content.append(
+                    pn.pane.Markdown(
+                        """
                 # Test Outcomes
 
                 Passing causal tests are shown in green.
@@ -371,7 +389,9 @@ class Dashboard(param.Parameterized):
                 closer to the bottom left corner and passing tests appear closer to the top right corner.
                 This makes it easier to spot patterns in the data, e.g. variables involved in many failing tests, or
                 clusters of failing tests.
-                """))
+                """
+                    )
+                )
                 results.append(
                     pn.pane.HoloViews(
                         self.plotter.outcome_adjacency(
@@ -383,7 +403,9 @@ class Dashboard(param.Parameterized):
             content.append(results)
 
             if self.adequacy and self.plotter.df is not None and "result.adequacy.kurtosis" in self.plotter.df:
-                content.append(pn.pane.Markdown("""
+                content.append(
+                    pn.pane.Markdown(
+                        """
             # Test Adequacy
 
             [Causal test adequacy](https://causal-testing-framework.readthedocs.io/en/latest/modules/test_adequacy.html)
@@ -399,7 +421,9 @@ class Dashboard(param.Parameterized):
             DAG adequacy indicates how well the DAG fits the dataset, and how "stable" the test outcomes are,
             i.e. how affected the outcomes are by individual data points.
             Higher percentage pass rates indicate more reliable test outcomes.
-                """))
+                """
+                    )
+                )
                 content.append(
                     pn.FlexBox(
                         self.plotter.data_adequacy_heatmap(

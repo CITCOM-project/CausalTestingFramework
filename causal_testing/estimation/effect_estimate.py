@@ -39,10 +39,13 @@ class EffectEstimate:
         """Return representation as a dict."""
         d = {
             "effect_measure": self.effect_measure,
-            "effect_estimate": self.effect_estimate.to_dict(),
+            "effect_estimate": {str(k): v for k, v in self.effect_estimate.to_dict().items()},
         }
         if self.ci_valid():
-            return d | {"ci_low": self.ci_low.to_dict(), "ci_high": self.ci_high.to_dict()}
+            return d | {
+                "ci_low": {str(k): v for k, v in self.ci_low.to_dict().items()},
+                "ci_high": {str(k): v for k, v in self.ci_high.to_dict().items()},
+            }
         return d
 
     def to_df(self) -> pd.DataFrame:

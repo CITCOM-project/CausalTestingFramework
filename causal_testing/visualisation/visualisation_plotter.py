@@ -14,7 +14,7 @@ from holoviews.plotting.bokeh.graphs import GraphPlot
 
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_result import TestOutcome
-from causal_testing.visualisation.geometry import edge_spline, node_width, style_graph_hook, add_colorbar_annotations
+from causal_testing.visualisation.geometry import add_colorbar_annotations, edge_spline, node_width, style_graph_hook
 
 hv.extension("bokeh")
 
@@ -66,10 +66,20 @@ class VisualisationPlotter:
             "effect_estimate.ci_high",
             "adequacy.kurtosis",
         ]:
-            columns = [c for c in df.columns if c.startswith(f"result.{col}.")]
+            prefix = f"result.{col}."
+            columns = [c for c in df.columns if c.startswith(prefix)]
             if columns:
-                df[f"result.{col}"] = df[columns].bfill(axis=1).iloc[:, 0]
+                df[f"result.{col}"] = df[columns].apply(
+                    lambda row, p=prefix: {k.replace(p, ""): v for k, v in row.dropna().to_dict().items()},
+                    axis=1,
+                )
                 df = df.drop(columns=columns)
+                if "kurtosis" in col:
+                    # Causal test adequacy is displayed as a single number, but categorical treatments get one value
+                    # for each value, e.g. if we've got a variable `Colour` that can be red, blue, or green, we get
+                    # a kurtosis value for each, which we need to aggregate.
+                    # I'm taking this as a max for now, but it'd be nice to do something more meaningful.
+                    df[f"result.{col}"] = df[f"result.{col}"].apply(lambda row: max(row.values(), default=None))
         self.df = df
 
     def results_dag(
@@ -118,17 +128,20 @@ class VisualisationPlotter:
                     result_dag[treatment_variable][outcome_variable]["fontcolor"] = self.colour_map[
                         getattr(TestOutcome, test["result.outcome"])
                     ]
-                    if html and "result.effect_estimate" in self.df:
-                        effect_estimate = pd.concat(
-                            [
-                                test["result.effect_estimate.ci_low"],
-                                test["result.effect_estimate.effect_estimate"],
-                                test["result.effect_estimate.ci_high"],
-                            ],
-                            axis=1,
+                    if (
+                        html
+                        and "result.effect_estimate.effect_estimate" in self.df
+                        and "result.effect_estimate.ci_low" in self.df
+                        and "result.effect_estimate.ci_low" in self.df
+                    ):
+                        effect_estimate = pd.DataFrame(
+                            {
+                                "ci_low": test["result.effect_estimate.ci_low"],
+                                "estimate": test["result.effect_estimate.effect_estimate"],
+                                "ci_high": test["result.effect_estimate.ci_high"],
+                            }
                         )
-                        effect_estimate.columns = ["ci_low", "estimate", "ci_high"]
-                        result_dag[test["treatment_variable"]][test["outcome_variable"]][
+                        result_dag[test["estimator.treatment_variable"]][test["estimator.outcome_variable"]][
                             "title"
                         ] = f"<{effect_estimate.to_html()}>"
 
@@ -234,13 +247,15 @@ class VisualisationPlotter:
             xaxis=None,
             yaxis=None,
             tools=[
-                HoverTool(tooltips="""
+                HoverTool(
+                    tooltips="""
                 <div style="padding: 6px; border: 1px solid #ccc; font-family: sans-serif;">
                     <strong>Treatment:</strong> @source<br>
                     <strong>Outcome:</strong> @target<br>
                     <strong>Causal Effect:</strong> <br/> @title{safe}<br>
                 </div>
-            """),
+            """
+                ),
                 "fullscreen",
             ],
             inspection_policy="edges",
@@ -291,7 +306,17 @@ class VisualisationPlotter:
 
         :returns: sorted list of the values in category_col.
         """
-        stats = self.df.groupby(category_col)[value_col].agg(["median", "min", "max"]).reset_index()
+        if pd.api.types.is_numeric_dtype(self.df[value_col]):
+            stats = self.df.groupby(category_col)[value_col].agg(["median", "min", "max"]).reset_index()
+        else:
+            stats = (
+                self.df.assign(
+                    temp_val=self.df[value_col].apply(lambda d: max(d.values()) if isinstance(d, dict) and d else None)
+                )
+                .groupby(category_col)["temp_val"]
+                .agg(["median", "min", "max"])
+                .reset_index()
+            )
 
         # Sort lower half by min value, upper half by max value
         lower_order = (
