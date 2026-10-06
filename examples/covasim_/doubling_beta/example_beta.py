@@ -69,12 +69,12 @@ def doubling_beta_CATE_on_csv(
 
     # Store results for plotting
     results_dict["association"] = {
-        "ate": causal_test_case.result.effect_estimate.value,
+        "ate": causal_test_case.result.effect_estimate.effect_estimate,
         "cis": [causal_test_case.result.effect_estimate.ci_low, causal_test_case.result.effect_estimate.ci_high],
         "df": past_execution_df,
     }
     results_dict["causation"] = {
-        "ate": causal_test_case.result.effect_estimate.value,
+        "ate": causal_test_case.result.effect_estimate.effect_estimate,
         "cis": [causal_test_case.result.effect_estimate.ci_low, causal_test_case.result.effect_estimate.ci_high],
         "df": past_execution_df,
     }
@@ -89,7 +89,7 @@ def doubling_beta_CATE_on_csv(
         causal_test_case.execute_test(past_execution_df)
 
         results_dict["counterfactual"] = {
-            "ate": causal_test_case.result.effect_estimate.value,
+            "ate": causal_test_case.result.effect_estimate.effect_estimate,
             "cis": [
                 causal_test_case.result.effect_estimate.ci_low,
                 causal_test_case.result.effect_estimate.ci_high,

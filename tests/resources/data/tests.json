@@ -1,28 +1,31 @@
-{
-  "tests": [{
-    "name": "test1",
-    "estimator": {
-      "name": "LinearRegressionEstimator",
-      "outcome_variable": "test_output",
-      "treatment_variable": "test_input",
-      "adjustment_set": []
+  [{
+      "name": "test1",
+      "estimator": {
+        "name": "LinearRegressionEstimator",
+        "outcome_variable": "test_output",
+        "treatment_variable": "test_input",
+        "adjustment_set": []
+      },
+      "effect_measure": "coefficient",
+      "expected_causal_effect": {
+        "name": "NoEffect"
+      },
+      "skip": false,
+      "query": "test_input > 0"
     },
-    "effect_measure": "coefficient",
-    "expected_effect": {"name": "NoEffect"},
-    "skip": false,
-    "query": "test_input > 0"
-  },
-  {
-    "name": "test2",
-    "estimator": {
-      "name":"LinearRegressionEstimator",
-      "treatment_variable": "test_input",
-      "outcome_variable": "test_output",
-      "adjustment_set": []
-    },
-    "expected_effect": {"name": "NoEffect"},
-    "effect_measure": "coefficient",
-    "skip": true,
-    "query": "test_input <= 5"
-  }]
-}
+    {
+      "name": "test2",
+      "estimator": {
+        "name": "LinearRegressionEstimator",
+        "treatment_variable": "test_input",
+        "outcome_variable": "test_output",
+        "adjustment_set": []
+      },
+      "expected_causal_effect": {
+        "name": "NoEffect"
+      },
+      "effect_measure": "coefficient",
+      "skip": true,
+      "query": "test_input <= 5"
+    }
+  ]

@@ -31,11 +31,15 @@ dependencies = [
     "fastparquet>=2024.11.0",
     "tqdm~=4.67.1",
     "rustworkx>=0.18.0",
+    "selenium>=4.49.0",
+    "holoviews>=1.23.2",
+    "bokeh>=3.9",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
+"causal-testing-framework[visualise]",
 "astroid==3.3.8",
 "isort",
 "pytest",
@@ -54,7 +58,8 @@ dev = [
 "nbclient",
 "nbformat",
 "ipykernel",
-"jupyterlab"
+"jupyterlab>=4.6.4",
+"jupyter>=1.1.1",
 ]
 
 [project.urls]

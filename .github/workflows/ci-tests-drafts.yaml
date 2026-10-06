@@ -20,6 +20,22 @@ jobs:
       uses: actions/setup-python@v5
       with:
        python-version: ${{ matrix.python-version }}
+    - name: Install Graphviz (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y graphviz
+
+    - name: Install Graphviz (macOS)
+      if: runner.os == 'macOS'
+      run: brew install graphviz
+
+    - name: Install Graphviz (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        choco install graphviz --no-progress
+        echo "C:\Program Files\Graphviz\bin" >> $GITHUB_PATH
     - name: Install dependencies
       run: |
           python --version

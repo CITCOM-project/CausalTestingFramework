@@ -8,15 +8,12 @@ import warnings
 from abc import ABC, abstractmethod
 from itertools import permutations
 
-import networkx as nx
 import numpy as np
 import pandas as pd
 import rustworkx as rx
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.testing.causal_effect import Negative, Positive
-from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_test_result import TestOutcome
 
 # Ignore warnings from statsmodels when we try to evaluate test cases
@@ -97,22 +94,6 @@ class Discovery(ABC):
         :returns: The inferred causal DAG.
         """
 
-    def effect_direction(self, test_case: CausalTestCase) -> str:
-        """
-        Check whether the estimated causal effect is negative or positive.
-
-        :param test_case: The causal test case.
-        :returns: Whether the estimated causal test is positive or negative (or no effect).
-        """
-        if pd.api.types.is_numeric_dtype(self.df[test_case.treatment_variable]) and pd.api.types.is_numeric_dtype(
-            self.df[test_case.outcome_variable]
-        ):
-            if Negative().apply(test_case.result.effect_estimate):
-                return "negative"
-            if Positive().apply(test_case.result.effect_estimate):
-                return "positive"
-        return None
-
     def remove_cycles(self, causal_dag: CausalDAG):
         """
         Remove cycles from individuals by iteratively deleting a random edge from each cycle until there are no more
@@ -130,52 +111,6 @@ class Discovery(ABC):
             cycle = simple_cycle(causal_dag)
         causal_dag.add_nodes_from(nodes)
 
-    def write_dot(self, individual: CausalDAG, output_file: str):
-        """
-        Write the given individual to the given output file.
-
-        :param individual: The causal DAG to output.
-        :param output_file: The name of the file to write to.
-        """
-        if hasattr(individual, "test_results"):
-            for _, test in individual.test_results.iterrows():
-                if (test["treatment"], test["outcome"]) in individual.edges:
-                    individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
-
-                    print(test)
-
-                    if test["result"] == TestOutcome.PASS:
-                        print("  GREEN")
-                        individual[test["treatment"]][test["outcome"]]["color"] = "green"
-                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "green"
-                    elif test["result"] == TestOutcome.INESTIMABLE:
-                        print("  ORANGE")
-                        individual[test["treatment"]][test["outcome"]]["color"] = "orange"
-                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
-                    elif test["result"] == TestOutcome.FAIL:
-                        print("  RED")
-                        individual[test["treatment"]][test["outcome"]]["color"] = "red"
-                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
-                    else:
-                        raise ValueError(f"Invalid test outcome {test['result']}")
-                else:
-                    individual.add_edge(test["treatment"], test["outcome"], ignore_cycles=True)
-                    individual[test["treatment"]][test["outcome"]]["style"] = "dashed"
-                    individual[test["treatment"]][test["outcome"]]["label"] = test["effect"]
-                    if test["result"] == TestOutcome.PASS:
-                        individual[test["treatment"]][test["outcome"]]["style"] = "invis"
-                        individual[test["treatment"]][test["outcome"]]["constraint"] = False
-                    elif test["result"] == TestOutcome.INESTIMABLE:
-                        individual[test["treatment"]][test["outcome"]]["color"] = "orange"
-                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "orange"
-                    elif test["result"] == TestOutcome.FAIL:
-                        individual[test["treatment"]][test["outcome"]]["color"] = "red"
-                        individual[test["treatment"]][test["outcome"]]["fontcolor"] = "red"
-                    else:
-                        raise ValueError(f"Invalid test outcome {test['result']}")
-
-        nx.drawing.nx_pydot.write_dot(individual, output_file)
-
     def evaluate_tests(self, causal_dag: CausalDAG) -> pd.DataFrame:
         """
         Generate and evaluate causal test cases from the supplied CausalDAG and return a list of edges for which the
@@ -190,6 +125,7 @@ class Discovery(ABC):
         ctf = CausalTestingFramework(dag=causal_dag, df=self.df)
         causal_dag.datatypes = self.df.dtypes
         ctf.test_cases = causal_dag.generate_causal_tests()
+        causal_dag.test_cases = ctf.test_cases
 
         results = []
 
@@ -206,7 +142,6 @@ class Discovery(ABC):
                         "expected_effect": test_case.expected_causal_effect.__class__.__name__,
                         "treatment": test_case.treatment_variable,
                         "outcome": test_case.outcome_variable,
-                        "effect": self.effect_direction(test_case),
                     }
                 )
             except np.linalg.LinAlgError:
@@ -219,7 +154,4 @@ class Discovery(ABC):
                     }
                 )
 
-        causal_dag.test_results = pd.DataFrame(results)
-
-        results = pd.DataFrame(results)
         return pd.DataFrame(results)

@@ -23,4 +23,4 @@ class TestLogisticRegressionEstimator(unittest.TestCase):
             adjustment_set=set(),
         )
         effect_estimate = logistic_regression_estimator.estimate_unit_odds_ratio(self.scarf_df)
-        self.assertEqual(round(effect_estimate.value.iloc[0], 4), 0.8948)
+        self.assertEqual(round(effect_estimate.effect_estimate.iloc[0], 4), 0.8948)

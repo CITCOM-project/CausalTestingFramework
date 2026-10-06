@@ -73,6 +73,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
             ),
         )
         adequacy_metric = causal_test_case.measure_adequacy(df.loc[df["color"] == "grey"])
+        print(adequacy_metric.kurtosis)
 
         self.assertEqual(adequacy_metric.kurtosis, None, f"Expected passing None not {adequacy_metric.kurtosis}")
         self.assertEqual(adequacy_metric.passing, 0, f"Expected passing 0 not {adequacy_metric.passing}")
