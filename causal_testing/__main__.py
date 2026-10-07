@@ -79,7 +79,15 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "-s",
         "--silent",
         action="store_true",
-        help="Do not crash on error. If set to true, errors are recorded as test results.",
+        help="Do not crash on error. If set to true, errors are recorded as test results. (Defaults to False)",
+        default=False,
+    )
+    parser_test.add_argument(
+        "-R",
+        "--include-adequacy-results",
+        action="store_true",
+        help="Include_adequacy_results: Whether to include the effect estimate and test outcome for adequacy "
+        "bootstraps. (Defaults to False)",
         default=False,
     )
 
@@ -158,6 +166,7 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
                 "The significance level of the confidence intervals used to determine causality. "
                 "This should be a value between 0 and 1. Defaults to 0.05 for 95%% confidence intervals."
             ),
+            type=float,
             default=0.05,
         )
         parser.add_argument("-d", "--data-paths", help="Paths to data files (.csv)", nargs="+", required=True)
@@ -175,11 +184,118 @@ def parse_args(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     return args
 
 
-def main() -> None:
+def generate(args: argparse.Namespace):
     """
+    Generate causal test cases.
 
+    :param args: Commandline arguments.
+    """
+    df = pd.concat(read_dataframe(path) for path in args.data_paths)
+    causal_dag = CausalDAG(args.dag_path, ignore_cycles=args.ignore_cycles, datatypes=df.dtypes)
+    causal_tests = causal_dag.generate_causal_tests(
+        threads=args.threads,
+        skip=False,
+    )
+    with open(args.output, "w", encoding="utf-8") as f:
+        json.dump({"tests": [test.to_dict() for test in causal_tests]}, f)
+
+
+def discover(args: argparse.Namespace):
+    """
+    Discover a causal DAG from test data.
+
+    :param args: Commandline arguments.
+    """
+    discover_map = {ff.name: ff for ff in entry_points(group="discovery")}
+    if args.technique not in discover_map:
+        raise ValueError(
+            f"Unsupported technique {args.technique}. Supported: {sorted(discover_map)}. "
+            "If you have implemented a custom technique, you will need to add this to your entrypoints via "
+            "your pyproject.toml file."
+        )
+    kwargs = {}
+    for argument in args.technique_kwargs:
+        split = argument.split("=")
+        if len(split) != 2:
+            raise ValueError(f"Malformed argument {argument}. Should be specified as `arg_name=arg_value`")
+        kwargs[split[0]] = split[1]
+
+    logging.info("Discovering causal structure")
+    # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
+    # Otherwise you end up with duplicate indices, which causes problems further down the line
+    df = pd.concat([read_dataframe(path) for path in args.data_paths]).reset_index(drop=True)
+    if args.variables:
+        df = df[args.variables]
+    # Drop unnamed columns
+    unnamed_columns = [c for c in df.columns if c.startswith("Unnamed: ")]
+    if unnamed_columns:
+        warn(f"Dropping unnamed columns: {unnamed_columns}")
+    df = df.drop(unnamed_columns, axis=1)
+
+    discover_class = discover_map[args.technique].load()
+    discovery = discover_class(
+        df=df,
+        exclude_edges=(
+            list(nx.nx_pydot.read_dot(args.exclude_edges).edges()) if args.exclude_edges is not None else []
+        ),
+        include_edges=(
+            list(nx.nx_pydot.read_dot(args.include_edges).edges()) if args.include_edges is not None else []
+        ),
+        alpha=args.alpha,
+        **kwargs,
+    )
+    evolved_dag = discovery.discover()
+    if args.output is not None:
+        nx.drawing.nx_pydot.write_dot(evolved_dag, args.output)
+
+
+def test(args: argparse.Namespace):
+    """
+    Execute causal test cases.
+
+    :param args: Commandline arguments.
+    """
+    framework = CausalTestingFramework()
+
+    framework.setup(
+        dag_path=args.dag_path,
+        data_paths=args.data_paths,
+        test_cases_path=args.test_config,
+        query=args.query,
+        ignore_cycles=args.ignore_cycles,
+    )
+
+    logging.info("Running tests")
+    framework.run_tests(silent=args.silent, adequacy=args.adequacy, bootstrap_size=args.bootstrap_size)
+    framework.save_results(args.output, include_adequacy_results=args.include_adequacy_results)
+
+
+def evaluate(args: argparse.Namespace):
+    """
+    Evaluate how well a causal DAG fits a given dataset.
+
+    :param args: Commandline arguments.
+    """
+    framework = CausalTestingFramework()
+    framework.load_data(args.data_paths, query=args.query)
+    framework.load_dag(args.dag_path, args.ignore_cycles)
+    framework.dag.datatypes = framework.df.dtypes
+
+    if args.test_config:
+        framework.load_test_cases_from_json(args.test_config)
+    else:
+        framework.test_cases = framework.dag.generate_causal_tests()
+
+    logging.info("Running tests on entire dataset")
+    results = framework.evaluate_dag(alpha=args.alpha, bootstrap_size=args.bootstrap_size)
+    logging.info("Causal testing completed successfully.")
+    logging.info("Running tests on bootstrap samples")
+    results.to_csv(args.output)
+
+
+def main():
+    """
     Main entry point for the Causal Testing Framework
-
     """
 
     # Parse arguments
@@ -189,94 +305,21 @@ def main() -> None:
 
     match args.command:
         case Command.GENERATE:
-            logging.info("Generating causal tests")
-            df = pd.concat(read_dataframe(path) for path in args.data_paths)
-            causal_dag = CausalDAG(args.dag_path, ignore_cycles=args.ignore_cycles, datatypes=df.dtypes)
-            causal_tests = causal_dag.generate_causal_tests(
-                threads=args.threads,
-                skip=False,
-            )
-            with open(args.output, "w", encoding="utf-8") as f:
-                json.dump({"tests": [test.to_dict() for test in causal_tests]}, f)
+            logging.info("Generating causal tests...")
+            generate(args)
             logging.info("Causal test generation completed successfully.")
-
         case Command.DISCOVER:
-            discover_map = {ff.name: ff for ff in entry_points(group="discovery")}
-            if args.technique not in discover_map:
-                raise ValueError(
-                    f"Unsupported technique {args.technique}. Supported: {sorted(discover_map)}. "
-                    "If you have implemented a custom technique, you will need to add this to your entrypoints via "
-                    "your pyproject.toml file."
-                )
-            kwargs = {}
-            for argument in args.technique_kwargs:
-                split = argument.split("=")
-                if len(split) != 2:
-                    raise ValueError(f"Malformed argument {argument}. Should be specified as `arg_name=arg_value`")
-                kwargs[split[0]] = split[1]
-
-            logging.info("Discovering causal structure")
-            # Need to reset index to allow for multiple files having the same index (i.e. starting at zero).
-            # Otherwise you end up with duplicate indices, which causes problems further down the line
-            df = pd.concat([read_dataframe(path) for path in args.data_paths]).reset_index(drop=True)
-            if args.variables:
-                df = df[args.variables]
-            # Drop unnamed columns
-            unnamed_columns = [c for c in df.columns if c.startswith("Unnamed: ")]
-            if unnamed_columns:
-                warn(f"Dropping unnamed columns: {unnamed_columns}")
-            df = df.drop(unnamed_columns, axis=1)
-
-            discover_class = discover_map[args.technique].load()
-            discover = discover_class(
-                df=df,
-                exclude_edges=(
-                    list(nx.nx_pydot.read_dot(args.exclude_edges).edges()) if args.exclude_edges is not None else []
-                ),
-                include_edges=(
-                    list(nx.nx_pydot.read_dot(args.include_edges).edges()) if args.include_edges is not None else []
-                ),
-                alpha=args.alpha,
-                **kwargs,
-            )
-            evolved_dag = discover.discover()
-            if args.output is not None:
-                nx.drawing.nx_pydot.write_dot(evolved_dag, args.output)
+            logging.info("Discovering causal DAG...")
+            discover(args)
             logging.info("Causal structure discovery completed successfully.")
         case Command.TEST:
-            # Create and setup framework
-            framework = CausalTestingFramework()
-
-            framework.setup(
-                dag_path=args.dag_path,
-                data_paths=args.data_paths,
-                test_cases_path=args.test_config,
-                query=args.query,
-                ignore_cycles=args.ignore_cycles,
-            )
-
-            logging.info("Running tests")
-            framework.run_tests(silent=args.silent, adequacy=args.adequacy, bootstrap_size=args.bootstrap_size)
-            framework.save_results(args.output)
-
+            logging.info("Running causal tests...")
+            test(args)
             logging.info("Causal testing completed successfully.")
         case Command.EVALUATE:
-            # Create and setup framework
-            framework = CausalTestingFramework()
-            framework.load_data(args.data_paths, query=args.query)
-            framework.load_dag(args.dag_path, args.ignore_cycles)
-            framework.dag.datatypes = framework.df.dtypes
-
-            if args.test_config:
-                framework.load_test_cases_from_json(args.test_config)
-            else:
-                framework.test_cases = framework.dag.generate_causal_tests()
-
-            logging.info("Running tests on entire dataset")
-            results = framework.evaluate_dag(alpha=args.alpha, bootstrap_size=args.bootstrap_size)
-            logging.info("Causal testing completed successfully.")
-            logging.info("Running tests on bootstrap samples")
-            results.to_csv(args.output)
+            logging.info("Evaluating causal DAG...")
+            evaluate(args)
+            logging.info("DAG evaluation completed successfully.")
 
 
 if __name__ == "__main__":

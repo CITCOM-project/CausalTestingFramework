@@ -34,10 +34,10 @@ class DataAdequacy:
         self.successful = successful
         self.bootstrap_size = bootstrap_size
 
-    def to_dict(self, include_results: bool = False):
+    def to_dict(self, include_adequacy_results: bool = False):
         """
         :returns: the adequacy object as a dictionary.
-        :param include_results: Whether to serialise the results.
+        :param include_adequacy_results: Whether to serialise the results.
         """
         result = {
             "kurtosis": self.kurtosis.to_dict(),
@@ -45,6 +45,6 @@ class DataAdequacy:
             "successful": self.successful,
             "bootstrap_size": self.bootstrap_size,
         }
-        if include_results:
+        if include_adequacy_results:
             return result | {"results": self.results.reset_index(drop=True).to_dict()}
         return result

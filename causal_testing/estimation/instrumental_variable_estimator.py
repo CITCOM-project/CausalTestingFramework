@@ -25,8 +25,6 @@ class InstrumentalVariableEstimator(Estimator):
         self,
         outcome_variable: str,
         treatment_variable: str,
-        treatment_value: float,
-        control_value: float,
         instrument: str,
         alpha: float = 0.05,
         bootstrap_size=100,
@@ -34,8 +32,6 @@ class InstrumentalVariableEstimator(Estimator):
         super().__init__(
             treatment_variable=treatment_variable,
             outcome_variable=outcome_variable,
-            treatment_value=treatment_value,
-            control_value=control_value,
             alpha=alpha,
         )
 
@@ -47,13 +43,17 @@ class InstrumentalVariableEstimator(Estimator):
         Add modelling assumptions to the estimator. This is a list of strings which list the modelling assumptions that
         must hold if the resulting causal inference is to be considered valid.
         """
-        self.modelling_assumptions.append("""The instrument and the treatment, and the treatment and the outcome must be
-        related linearly in the form Y = aX + b.""")
-        self.modelling_assumptions.append("""The three IV conditions must hold
+        self.modelling_assumptions.append(
+            """The instrument and the treatment, and the treatment and the outcome must be
+        related linearly in the form Y = aX + b."""
+        )
+        self.modelling_assumptions.append(
+            """The three IV conditions must hold
             (i) Instrument is associated with treatment
             (ii) Instrument does not affect outcome except through its potential effect on treatment
             (iii) Instrument and outcome do not share causes
-        """)
+        """
+        )
 
     def iv_coefficient(self, df) -> float:
         """

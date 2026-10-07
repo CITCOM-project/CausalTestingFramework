@@ -54,6 +54,7 @@ dev = [
 "nbclient",
 "nbformat",
 "ipykernel",
+"jupyterlab"
 ]
 
 [project.urls]
