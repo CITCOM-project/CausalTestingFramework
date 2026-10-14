@@ -4,7 +4,6 @@ import logging
 
 import pandas as pd
 import statsmodels.api as sm
-from patsy import ModelDesc, dmatrix  # pylint: disable = no-name-in-module
 
 from causal_testing.estimation.abstract_regression_estimator import RegressionEstimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
@@ -72,28 +71,17 @@ class LinearRegressionEstimator(RegressionEstimator):
         :return: The unit average treatment effect and the Wald confidence intervals.
         """
         model = self.fit_model(df)
-        newline = "\n"
-        patsy_md = ModelDesc.from_formula(self.treatment_variable)
 
-        if any(
-            (
-                not pd.api.types.is_numeric_dtype(df.dtypes[factor.name()])
-                for factor in patsy_md.rhs_termlist[1].factors
-                # We want to remove this long term as it prevents us from discovering categoricals within I(...) blocks
-                if factor.name() in df.dtypes
-            )
-        ):
-            design_info = dmatrix(self.formula.split("~")[1], df).design_info
-            treatment = design_info.column_names[design_info.term_name_slices[self.treatment_variable]]
-        else:
-            treatment = [self.treatment_variable]
-        assert set(treatment).issubset(
-            model.params.index.tolist()
-        ), f"{treatment} not in\n{'  ' + str(model.params.index).replace(newline, newline + '  ')}"
-        unit_effect = model.params[treatment]  # Unit effect is the coefficient of the treatment
-        [ci_low, ci_high] = self._get_confidence_intervals(model, treatment)
+        treatment_columns = self.treatment_columns(model)
+        confidence_intervals = model.conf_int(self.alpha).loc[treatment_columns]
 
-        return EffectEstimate("coefficient", unit_effect, ci_low, ci_high)
+        result = EffectEstimate(
+            "coefficient",
+            pd.Series(model.params[treatment_columns]),
+            pd.Series(confidence_intervals[0]),
+            pd.Series(confidence_intervals[1]),
+        )
+        return result
 
     def estimate_ate(self, df: pd.DataFrame) -> EffectEstimate:
         """Estimate the average treatment effect of the treatment on the outcome. That is, the change in outcome caused
