@@ -95,7 +95,6 @@ class Dashboard(param.Parameterized):
     Class to contain the main app.
     """
 
-    df = param.DataFrame(default=None)
     ctf = param.ClassSelector(class_=CausalTestingFramework, default=CausalTestingFramework(test_cases=[]))
     adequacy = param.Boolean(default=False)
 
