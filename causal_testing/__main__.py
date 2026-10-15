@@ -13,7 +13,6 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework, read_dataframe
 from causal_testing.specification.causal_dag import CausalDAG
-from causal_testing.visualisation.testing_dashboard import serve_dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -343,6 +342,7 @@ def main():
             logging.info("Causal testing completed successfully.")
         case Command.DASHBOARD:
             # Can't really cover this one in tests since it spins up a server
+            from causal_testing.visualisation.testing_dashboard import serve_dashboard
             serve_dashboard()  # pragma: no cover
         case Command.EVALUATE:
             logging.info("Evaluating causal DAG...")
