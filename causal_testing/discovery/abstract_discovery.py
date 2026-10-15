@@ -125,7 +125,6 @@ class Discovery(ABC):
         ctf = CausalTestingFramework(dag=causal_dag, df=self.df)
         causal_dag.datatypes = self.df.dtypes
         ctf.test_cases = causal_dag.generate_causal_tests()
-        causal_dag.test_cases = ctf.test_cases
 
         results = []
 
