@@ -151,6 +151,8 @@ class Dashboard(param.Parameterized):
         self.generate_tests.disabled = False
 
     def _load_test_file(self, event):
+        """Load an uploaded test JSON file and assign the tests to the CTF."""
+
         self.ctf.test_cases = [self.ctf.create_causal_test(test) for test in json.load(io.BytesIO(event.new))]
         self.plotter.update_df(self.ctf.test_dataframe())
         if any(test.result is not None and test.result.adequacy is not None for test in self.ctf.test_cases):
