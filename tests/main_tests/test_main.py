@@ -19,7 +19,7 @@ class TestMain(unittest.TestCase):
         self.include_edges_path = "tests/resources/data/include_edges.dot"
         self.exclude_edges_path = "tests/resources/data/exclude_edges.dot"
 
-    def test_parse_args(self):
+    def test_parse_args_test(self):
         with patch(
             "sys.argv",
             [
@@ -31,6 +31,24 @@ class TestMain(unittest.TestCase):
                 str(self.data_paths[0]),
                 "--test-config",
                 str(self.test_cases_path),
+                "--output",
+                str(self.output_path.parent / "main.json"),
+            ],
+        ):
+            main()
+            self.assertTrue((self.output_path.parent / "main.json").exists())
+
+    def test_parse_args_generate_and_test(self):
+        with patch(
+            "sys.argv",
+            [
+                "causal_testing",
+                "test",
+                "--dag-path",
+                str(self.dag_path),
+                "--data-paths",
+                str(self.data_paths[0]),
+                "--generate",
                 "--output",
                 str(self.output_path.parent / "main.json"),
             ],
@@ -110,7 +128,7 @@ class TestMain(unittest.TestCase):
             executed_tests = [test for test in log if not test.get("skip", False)]
             assert all(test["result"].get("bootstrap_size", 50) == 50 for test in executed_tests)
 
-    def test_parse_args_generate_and_test(self):
+    def test_parse_args_generate_then_test(self):
         with tempfile.TemporaryDirectory() as tmp:
             with patch(
                 "sys.argv",

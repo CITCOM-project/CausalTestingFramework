@@ -55,7 +55,7 @@ def run_test_case(verbose: bool = False):
         if verbose:
             logging.info("Causation:\n%s", causal_test_case.result)
 
-        results_dict[outcome_variable]["ate"] = causal_test_case.result.effect_estimate.value
+        results_dict[outcome_variable]["ate"] = causal_test_case.result.effect_estimate.effect_estimate
 
         results_dict[outcome_variable]["cis"] = [
             causal_test_case.result.effect_estimate.ci_low,

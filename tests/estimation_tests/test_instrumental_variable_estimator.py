@@ -28,7 +28,7 @@ class TestInstrumentalVariableEstimator(unittest.TestCase):
             instrument="Z",
         )
         effect_estimate = iv_estimator.estimate_coefficient(self.df)
-        self.assertEqual(effect_estimate.value[0], 2)
+        self.assertEqual(effect_estimate.effect_estimate[0], 2)
         self.assertEqual(effect_estimate.ci_low[0], 2)
         self.assertEqual(effect_estimate.ci_high[0], 2)
 

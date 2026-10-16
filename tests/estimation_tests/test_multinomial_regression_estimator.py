@@ -24,7 +24,7 @@ class TestMultinomialRegressionEstimator(unittest.TestCase):
             adjustment_set=set(),
         )
         effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio(self.scarf_df)
-        self.assertEqual(round(effect_estimate.value.iloc[0], 4), 0.8948)
+        self.assertEqual(round(effect_estimate.effect_estimate.iloc[0], 4), 0.8948)
 
     def test_odds_ratio_category(self):
         multinomial_regression_estimator = MultinomialRegressionEstimator(
@@ -35,7 +35,7 @@ class TestMultinomialRegressionEstimator(unittest.TestCase):
             adjustment_set=set(),
         )
         effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio(self.scarf_df)
-        self.assertTrue(effect_estimate.value.round(4).equals, pd.Series({"grey": 1.0072, "orange": 0.9668}))
+        self.assertTrue(effect_estimate.effect_estimate.round(4).equals, pd.Series({"grey": 1.0072, "orange": 0.9668}))
 
     def test_odds_ratio_data(self):
         multinomial_regression_estimator = MultinomialRegressionEstimator(
@@ -46,4 +46,4 @@ class TestMultinomialRegressionEstimator(unittest.TestCase):
             adjustment_set=set(),
         )
         effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio(self.scarf_df)
-        self.assertEqual(round(effect_estimate.value.iloc[0], 4), 0.8948)
+        self.assertEqual(round(effect_estimate.effect_estimate.iloc[0], 4), 0.8948)
