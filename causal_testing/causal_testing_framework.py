@@ -195,7 +195,7 @@ class CausalTestingFramework:
         """
         Automatically generate the suite of causal tests that corresponds to the DAG.
         """
-        if self.dag is not None and not self.dag.datatypes is not None and self.df is not None:
+        if self.dag is not None and self.dag.datatypes is None and self.df is not None:
             self.dag.datatypes = self.df.dtypes
         self.test_cases = self.dag.generate_causal_tests()
 

@@ -1,0 +1,1198 @@
+[
+  {
+    "name": "width -> num_lines_abs",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "width",
+      "outcome_variable": "num_lines_abs",
+      "alpha": 0.05,
+      "formula": "num_lines_abs ~ width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "width": 16.18375590573588
+        },
+        "ci_low": {
+          "width": 13.747971098660594
+        },
+        "ci_high": {
+          "width": 18.619540712811162
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "width": 1.1534913399737472
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "width -> num_shapes_abs",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "width",
+      "outcome_variable": "num_shapes_abs",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_lines_abs"
+      ],
+      "formula": "num_shapes_abs ~ width + height + num_lines_abs"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "width": 239.50794600060954
+        },
+        "ci_low": {
+          "width": 138.1925888697769
+        },
+        "ci_high": {
+          "width": 340.8233031314422
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "width": 0.1283294229062335
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "width -> num_lines_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "width",
+      "outcome_variable": "num_lines_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_lines_abs"
+      ],
+      "formula": "num_lines_unit ~ width + height + num_lines_abs"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "width": -4.717031235758286
+        },
+        "ci_low": {
+          "width": -6.294318578303965
+        },
+        "ci_high": {
+          "width": -3.139743893212607
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "width": 0.8797588461333765
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Negative"
+    }
+  },
+  {
+    "name": "width -> num_shapes_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "width",
+      "outcome_variable": "num_shapes_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_shapes_abs"
+      ],
+      "formula": "num_shapes_unit ~ width + height + num_shapes_abs"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "width": -33.806037481946454
+        },
+        "ci_low": {
+          "width": -38.5153639950834
+        },
+        "ci_high": {
+          "width": -29.09671096880951
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "width": 0.8123839145219169
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Negative"
+    }
+  },
+  {
+    "name": "width _||_ height",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "width",
+      "outcome_variable": "height",
+      "alpha": 0.05,
+      "formula": "height ~ width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "width": 0.022151815511329165
+        },
+        "ci_low": {
+          "width": -0.040204731337149406
+        },
+        "ci_high": {
+          "width": 0.08450836235980774
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "width": -0.18866841625904263
+        },
+        "passing": 85,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": ""
+    }
+  },
+  {
+    "name": "height _||_ width",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "height",
+      "outcome_variable": "width",
+      "alpha": 0.05,
+      "formula": "width ~ height"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "height": 0.021971184076620694
+        },
+        "ci_low": {
+          "height": -0.039876891919212405
+        },
+        "ci_high": {
+          "height": 0.0838192600724538
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "height": -0.23516573868504542
+        },
+        "passing": 85,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": ""
+    }
+  },
+  {
+    "name": "width _||_ intensity",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "width",
+      "outcome_variable": "intensity",
+      "alpha": 0.05,
+      "formula": "intensity ~ width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "width": -0.024348906149491555
+        },
+        "ci_low": {
+          "width": -0.12379673452082654
+        },
+        "ci_high": {
+          "width": 0.07509892222184342
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "width": 0.14484248804615385
+        },
+        "passing": 87,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": ""
+    }
+  },
+  {
+    "name": "intensity _||_ width",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "intensity",
+      "outcome_variable": "width",
+      "alpha": 0.05,
+      "formula": "width ~ intensity"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "intensity": -0.009497473239186104
+        },
+        "ci_low": {
+          "intensity": -0.0482878436506161
+        },
+        "ci_high": {
+          "intensity": 0.029292897172243888
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "intensity": 0.16645467221711296
+        },
+        "passing": 87,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": ""
+    }
+  },
+  {
+    "name": "num_lines_abs -> num_shapes_abs",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "num_lines_abs",
+      "outcome_variable": "num_shapes_abs",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "width"
+      ],
+      "formula": "num_shapes_abs ~ num_lines_abs + height + width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "num_lines_abs": 73.89182496368372
+        },
+        "ci_low": {
+          "num_lines_abs": 71.24839538210504
+        },
+        "ci_high": {
+          "num_lines_abs": 76.53525454526239
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "num_lines_abs": 0.5577898437444286
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "num_lines_abs -> num_lines_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "num_lines_abs",
+      "outcome_variable": "num_lines_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "width"
+      ],
+      "formula": "num_lines_unit ~ num_lines_abs + height + width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "num_lines_abs": 0.07624574227325093
+        },
+        "ci_low": {
+          "num_lines_abs": 0.035092573217639006
+        },
+        "ci_high": {
+          "num_lines_abs": 0.11739891132886285
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "num_lines_abs": 2.0769553876793325
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "num_lines_abs _||_ num_shapes_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "num_lines_abs",
+      "outcome_variable": "num_shapes_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_shapes_abs",
+        "width"
+      ],
+      "formula": "num_shapes_unit ~ num_lines_abs + height + num_shapes_abs + width"
+    },
+    "result": {
+      "outcome": "FAIL",
+      "passed": false,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "num_lines_abs": 2.818914337294781
+        },
+        "ci_low": {
+          "num_lines_abs": 2.6483685244549178
+        },
+        "ci_high": {
+          "num_lines_abs": 2.989460150134644
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "num_lines_abs": 0.3780846212325475
+        },
+        "passing": 0,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "height -> num_lines_abs",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "height",
+      "outcome_variable": "num_lines_abs",
+      "alpha": 0.05,
+      "formula": "num_lines_abs ~ height"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "height": 18.12739623975854
+        },
+        "ci_low": {
+          "height": 15.756930254570264
+        },
+        "ci_high": {
+          "height": 20.497862224946815
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "height": -0.2144852828323529
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "intensity -> num_lines_abs",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "intensity",
+      "outcome_variable": "num_lines_abs",
+      "alpha": 0.05,
+      "formula": "num_lines_abs ~ intensity"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "intensity": 20.265050878195773
+        },
+        "ci_low": {
+          "intensity": 19.20493881171308
+        },
+        "ci_high": {
+          "intensity": 21.325162944678464
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "intensity": -0.16876199145418536
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "num_shapes_abs _||_ num_lines_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "num_shapes_abs",
+      "outcome_variable": "num_lines_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_lines_abs",
+        "width"
+      ],
+      "formula": "num_lines_unit ~ num_shapes_abs + height + num_lines_abs + width"
+    },
+    "result": {
+      "outcome": "FAIL",
+      "passed": false,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "num_shapes_abs": -0.0018693634182416837
+        },
+        "ci_low": {
+          "num_shapes_abs": -0.0028308583387408764
+        },
+        "ci_high": {
+          "num_shapes_abs": -0.0009078684977424909
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "num_shapes_abs": 1.6234371541915862
+        },
+        "passing": 8,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Negative"
+    }
+  },
+  {
+    "name": "num_lines_unit _||_ num_shapes_abs",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "num_lines_unit",
+      "outcome_variable": "num_shapes_abs",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_lines_abs",
+        "width"
+      ],
+      "formula": "num_shapes_abs ~ num_lines_unit + height + num_lines_abs + width"
+    },
+    "result": {
+      "outcome": "FAIL",
+      "passed": false,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "num_lines_unit": -7.7129881221379755
+        },
+        "ci_low": {
+          "num_lines_unit": -11.680113416737946
+        },
+        "ci_high": {
+          "num_lines_unit": -3.745862827538004
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "num_lines_unit": 0.7420863120206338
+        },
+        "passing": 8,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Negative"
+    }
+  },
+  {
+    "name": "num_shapes_abs -> num_shapes_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "num_shapes_abs",
+      "outcome_variable": "num_shapes_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "width"
+      ],
+      "formula": "num_shapes_unit ~ num_shapes_abs + height + width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "num_shapes_abs": 0.020656191123235537
+        },
+        "ci_low": {
+          "num_shapes_abs": 0.01922591547132165
+        },
+        "ci_high": {
+          "num_shapes_abs": 0.022086466775149423
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "num_shapes_abs": 0.07369541288177439
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "height -> num_shapes_abs",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "height",
+      "outcome_variable": "num_shapes_abs",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "num_lines_abs",
+        "width"
+      ],
+      "formula": "num_shapes_abs ~ height + num_lines_abs + width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "height": 202.48693096372492
+        },
+        "ci_low": {
+          "height": 99.22871769177193
+        },
+        "ci_high": {
+          "height": 305.7451442356779
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "height": 0.1120007898046258
+        },
+        "passing": 97,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "intensity _||_ num_shapes_abs",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "intensity",
+      "outcome_variable": "num_shapes_abs",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_lines_abs",
+        "width"
+      ],
+      "formula": "num_shapes_abs ~ intensity + height + num_lines_abs + width"
+    },
+    "result": {
+      "outcome": "FAIL",
+      "passed": false,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "intensity": -1212.5538454740813
+        },
+        "ci_low": {
+          "intensity": -1336.9646106998437
+        },
+        "ci_high": {
+          "intensity": -1088.143080248319
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "intensity": -0.531547400469353
+        },
+        "passing": 0,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Negative"
+    }
+  },
+  {
+    "name": "num_lines_unit _||_ num_shapes_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "num_lines_unit",
+      "outcome_variable": "num_shapes_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_shapes_abs",
+        "width"
+      ],
+      "formula": "num_shapes_unit ~ num_lines_unit + height + num_shapes_abs + width"
+    },
+    "result": {
+      "outcome": "FAIL",
+      "passed": false,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "num_lines_unit": 1.4957588253603027
+        },
+        "ci_low": {
+          "num_lines_unit": 1.3378895576350485
+        },
+        "ci_high": {
+          "num_lines_unit": 1.653628093085557
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "num_lines_unit": 1.1278396075582742
+        },
+        "passing": 0,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "num_shapes_unit _||_ num_lines_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "num_shapes_unit",
+      "outcome_variable": "num_lines_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_lines_abs",
+        "width"
+      ],
+      "formula": "num_lines_unit ~ num_shapes_unit + height + num_lines_abs + width"
+    },
+    "result": {
+      "outcome": "FAIL",
+      "passed": false,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "num_shapes_unit": 0.27186172880073883
+        },
+        "ci_low": {
+          "num_shapes_unit": 0.24802756650869173
+        },
+        "ci_high": {
+          "num_shapes_unit": 0.29569589109278593
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "num_shapes_unit": -0.08515053320043098
+        },
+        "passing": 0,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "height -> num_lines_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "height",
+      "outcome_variable": "num_lines_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "num_lines_abs",
+        "width"
+      ],
+      "formula": "num_lines_unit ~ height + num_lines_abs + width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "height": -6.166516199301752
+        },
+        "ci_low": {
+          "height": -7.774050115383355
+        },
+        "ci_high": {
+          "height": -4.558982283220148
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "height": 0.456390929431159
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Negative"
+    }
+  },
+  {
+    "name": "intensity _||_ num_lines_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "intensity",
+      "outcome_variable": "num_lines_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_lines_abs",
+        "width"
+      ],
+      "formula": "num_lines_unit ~ intensity + height + num_lines_abs + width"
+    },
+    "result": {
+      "outcome": "FAIL",
+      "passed": false,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "intensity": 5.877007107688772
+        },
+        "ci_low": {
+          "intensity": 3.641655528399317
+        },
+        "ci_high": {
+          "intensity": 8.112358686978228
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "intensity": -0.06333806697074262
+        },
+        "passing": 0,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "height -> num_shapes_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "SomeEffect",
+      "effect_type": "direct"
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "height",
+      "outcome_variable": "num_shapes_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "num_shapes_abs",
+        "width"
+      ],
+      "formula": "num_shapes_unit ~ height + num_shapes_abs + width"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "height": -33.29877520390406
+        },
+        "ci_low": {
+          "height": -38.06196274875407
+        },
+        "ci_high": {
+          "height": -28.535587659054045
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "height": 0.25049957798124156
+        },
+        "passing": 100,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Negative"
+    }
+  },
+  {
+    "name": "intensity _||_ num_shapes_unit",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "intensity",
+      "outcome_variable": "num_shapes_unit",
+      "alpha": 0.05,
+      "adjustment_set": [
+        "height",
+        "num_shapes_abs",
+        "width"
+      ],
+      "formula": "num_shapes_unit ~ intensity + height + num_shapes_abs + width"
+    },
+    "result": {
+      "outcome": "FAIL",
+      "passed": false,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "intensity": 49.98879942627775
+        },
+        "ci_low": {
+          "intensity": 47.99656014594542
+        },
+        "ci_high": {
+          "intensity": 51.98103870661008
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "intensity": -0.6902253300543202
+        },
+        "passing": 0,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": "Positive"
+    }
+  },
+  {
+    "name": "height _||_ intensity",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "height",
+      "outcome_variable": "intensity",
+      "alpha": 0.05,
+      "formula": "intensity ~ height"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "height": 0.059310445615843324
+        },
+        "ci_low": {
+          "height": -0.03967400689330432
+        },
+        "ci_high": {
+          "height": 0.15829489812499098
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "height": -0.07491368366085283
+        },
+        "passing": 73,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": ""
+    }
+  },
+  {
+    "name": "intensity _||_ height",
+    "skip": false,
+    "effect_measure": "coefficient",
+    "query": null,
+    "expected_causal_effect": {
+      "name": "NoEffect",
+      "effect_type": "direct",
+      "atol": 0,
+      "ctol": 0.0
+    },
+    "estimator": {
+      "name": "LinearRegressionEstimator",
+      "treatment_variable": "intensity",
+      "outcome_variable": "height",
+      "alpha": 0.05,
+      "formula": "height ~ intensity"
+    },
+    "result": {
+      "outcome": "PASS",
+      "passed": true,
+      "effect_estimate": {
+        "effect_measure": "coefficient",
+        "effect_estimate": {
+          "intensity": 0.023324678857223464
+        },
+        "ci_low": {
+          "intensity": -0.015602369197482164
+        },
+        "ci_high": {
+          "intensity": 0.062251726911929095
+        }
+      },
+      "adequacy": {
+        "kurtosis": {
+          "intensity": -0.06420136256663467
+        },
+        "passing": 73,
+        "successful": 100,
+        "bootstrap_size": 100
+      },
+      "effect_direction": ""
+    }
+  }
+]

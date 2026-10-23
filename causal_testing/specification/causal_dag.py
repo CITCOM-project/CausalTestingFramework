@@ -134,9 +134,9 @@ class CausalDAG(nx.DiGraph):
         self.ignore_cycles = ignore_cycles
         self.datatypes = datatypes
         if file_path:
-            if file_path.endswith(".dot"):
+            if str(file_path).endswith(".dot"):
                 graph = nx.DiGraph(nx.nx_pydot.read_dot(file_path))
-            elif file_path.endswith(".xml"):
+            elif str(file_path).endswith(".xml"):
                 graph = nx.graphml.read_graphml(file_path)
             else:
                 raise ValueError(f"Unsupported file extension {file_path}. We only support .dot and .xml files.")
