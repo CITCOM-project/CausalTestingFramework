@@ -24,8 +24,12 @@ def parse_dot_spline(pos_str: str) -> list[tuple[float, float]]:
     end_point = None
     points = []
 
-    for point_type, x, y in re.findall(r"(?:(s|e),)?(\d+(?:.\d+)?),(\d+(?:\.\d+)?)", pos_str):
-        x, y = float(x), float(y)
+    for point_type, x, y in re.findall(r"(?:(s|e),)?(\-?\d+(?:.\d+)?),(-?\d+(?:\.\d+)?)", pos_str):
+        try:
+            x, y = float(x), float(y)
+        except ValueError as e:
+            print("BAD POINTS", x, y, "for pos=", pos_str)
+            raise e
         if point_type == "s":
             points = [(x, y)] + points
         elif point_type == "e":

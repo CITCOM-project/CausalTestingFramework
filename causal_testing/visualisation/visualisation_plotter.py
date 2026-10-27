@@ -197,37 +197,41 @@ class VisualisationPlotter:
             node_positions[node] = (x, y)
 
         # Build the edges
-        edges_df = pd.DataFrame(
-            [
-                {"source": u, "target": v} | {k: v.strip('"') for k, v in data.items()}
-                for u, v, data in results.edges(data=True)
-            ]
-        )
 
-        edges_df["trimmed_path"] = edges_df[["source", "target"]].apply(
-            lambda row: edge_spline(
-                dot_pos=results[row["source"]][row["target"]]["pos"],
-                target_node_centre=node_positions[row["target"]],
-                target_node_width=node_width(row["target"]) / 2,
-            ),
-            axis=1,
-        )
-        edges_df[["arrow_starts_x", "arrow_starts_y"]] = pd.DataFrame(
-            [trimmed_path[-2] for trimmed_path in edges_df["trimmed_path"]], index=edges_df.index
-        )
-        edges_df[["arrow_ends_x", "arrow_ends_y"]] = pd.DataFrame(
-            [trimmed_path[-1] for trimmed_path in edges_df["trimmed_path"]], index=edges_df.index
-        )
-        nodes_df = pd.DataFrame(
-            [(x, y, node_id) for node_id, (x, y) in node_positions.items()], columns=["x", "y", "node_id"]
-        )
+        if not results.edges:
+            edges_df = pd.DataFrame(columns=["source", "target", "trimmed_path"])
+        else:
+            edges_df = pd.DataFrame(
+                [
+                    {"source": u, "target": v} | {k: v.strip('"') for k, v in data.items()}
+                    for u, v, data in results.edges(data=True)
+                ]
+            )
+            edges_df["trimmed_path"] = edges_df[["source", "target"]].apply(
+                lambda row: edge_spline(
+                    dot_pos=results[row["source"]][row["target"]]["pos"],
+                    target_node_centre=node_positions[row["target"]],
+                    target_node_width=node_width(row["target"]) / 2,
+                ),
+                axis=1,
+            )
+            edges_df[["arrow_starts_x", "arrow_starts_y"]] = pd.DataFrame(
+                [trimmed_path[-2] for trimmed_path in edges_df["trimmed_path"]], index=edges_df.index
+            )
+            edges_df[["arrow_ends_x", "arrow_ends_y"]] = pd.DataFrame(
+                [trimmed_path[-1] for trimmed_path in edges_df["trimmed_path"]], index=edges_df.index
+            )
+
+            if "label" in edges_df.columns:
+                edges_df["label"] = edges_df["label"].fillna("")
 
         hooks = [style_graph_hook]
         if self.df is not None and self.results:
             hooks.append(self.add_discrete_legend)
 
-        if "label" in edges_df.columns:
-            edges_df["label"] = edges_df["label"].fillna("")
+        nodes_df = pd.DataFrame(
+            [(x, y, node_id) for node_id, (x, y) in node_positions.items()], columns=["x", "y", "node_id"]
+        )
 
         # Build the graph from the nodes and edges
         graph = hv.Graph(
@@ -265,8 +269,6 @@ class VisualisationPlotter:
             **kwargs,
         )
 
-        # Label layers
-        edges_df["label"] = "" if "label" not in edges_df else edges_df["label"]
         node_labels = hv.Labels(nodes_df, kdims=["x", "y"], vdims=["node_id"]).opts(
             text_font_size="9pt",
             text_color="black",
@@ -275,6 +277,10 @@ class VisualisationPlotter:
             yoffset=0,
         )
 
+        if edges_df.empty:
+            return graph * node_labels
+
+        edges_df["label"] = "" if "label" not in edges_df else edges_df["label"]
         edge_labels = hv.Labels(
             pd.concat(
                 [
