@@ -1,10 +1,21 @@
-digraph CausalDAG {
-    rankdir=LR;
-    "variants" -> "beta";
-    "beta" -> "cum_infections";
-    "location" -> "variants";
-    "location" -> "avg_age";
-    "location" -> "contacts";
-    "contacts" -> "cum_infections";
-    "avg_age" -> "cum_infections";
+strict digraph "expected_relationships" {
+location;
+average_age;
+household_size;
+contacts_work;
+contacts_school;
+contacts_community;
+beta;
+infections;
+location -> average_age;
+location -> household_size;
+location -> beta;
+average_age -> contacts_work;
+average_age -> contacts_school;
+average_age -> contacts_community;
+household_size -> infections;
+contacts_work -> infections;
+contacts_school -> infections;
+contacts_community -> infections;
+beta -> infections;
 }
