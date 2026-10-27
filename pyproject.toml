@@ -15,22 +15,22 @@ requires-python = ">=3.11,<3.15"
 license = { text = "MIT" }
 keywords = ["causal inference","verification"]
 dependencies = [
-"lifelines",
-"networkx>=3.4",
-"numpy>=1.26.0",
-"pandas>=2.1",
-"scikit_learn>=1.4",
-"scipy>=1.12.0",
-"statsmodels>=0.15",
-"tabulate>=0.9",
-"pydot>=2.0",
-"pygad>=3.3",
-"deap>=1.4.1",
-"sympy>=1.14.0",
-"pyarrow>=19.0.1",
-"fastparquet>=2024.11.0",
-"tqdm>=4.67.1",
-"rustworkx>=0.18.0",
+    "lifelines",
+    "networkx>=3.4",
+    "numpy>=1.26.0",
+    "pandas>=2.1",
+    "scikit_learn>=1.4",
+    "scipy>=1.12.0",
+    "statsmodels>=0.15",
+    "tabulate>=0.9",
+    "pydot>=2.0",
+    "pygad>=3.3",
+    "deap>=1.4.1",
+    "sympy>=1.14.0",
+    "pyarrow>=19.0.1",
+    "fastparquet>=2024.11.0",
+    "tqdm>=4.67.1",
+    "rustworkx>=0.18.0",
 ]
 dynamic = ["version"]
 
@@ -63,6 +63,7 @@ dev = [
 "ipykernel",
 "jupyterlab>=4.6.4",
 "jupyter>=1.1.1",
+"shapely>=2.2.0",
 ]
 
 [project.urls]
