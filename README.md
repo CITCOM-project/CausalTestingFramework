@@ -83,7 +83,7 @@ For more information on how to use the Causal Testing Framework, please refer to
 
 ## Usage
 >[!NOTE]
-> Step-by-step tutorials can be found on our [documentation](https://causal-testing-framework.readthedocs.io/en/latest/tutorials.html).
+> Step-by-step tutorials can be found on our [documentation](https://causal-testing-framework.readthedocs.io/en/latest/).
 
 1. To run the causal testing framework, you need some runtime data from your system, some causal test cases, and a causal DAG that specifies the expected causal relationships between the variables in your runtime data (and any other relevant variables that are _not_ recorded in the data but are known to be relevant).
 
