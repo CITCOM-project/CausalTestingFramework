@@ -3,16 +3,47 @@ import logging
 
 import pandas as pd
 from scipy.stats import bootstrap
+import pytest
 
-from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.testing.causal_test_case import CausalTestCase
 from causal_testing.testing.causal_effect import ExactValue, Positive
 from causal_testing.estimation.linear_regression_estimator import LinearRegressionEstimator
 from causal_testing.estimation.abstract_estimator import Estimator
 from causal_testing.estimation.effect_estimate import EffectEstimate
 
+from poisson_line_process import run
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+ROOT = os.path.realpath(os.path.dirname(__file__))
+
+
+@pytest.fixture(name="observational_df")
+def _observational_df():
+    return pd.read_csv(f"{ROOT}/data/random/data_random_1000.csv", index_col=0).astype(float)
+
+
+@pytest.fixture(name="empirical_df")
+def _empirical_df():
+    data = []
+    size = 2
+    for _ in range(30):
+        for intensity in [1, 2, 4, 8, 16]:
+            num_lines, num_polygons, num_lines_unit, num_polygons_unit = run(
+                width=size, height=size, intensity=intensity
+            )
+            data.append(
+                {
+                    "width": size,
+                    "height": size,
+                    "intensity": intensity,
+                    "num_lines": num_lines,
+                    "num_shapes": num_polygons,
+                    "num_lines_unit": num_lines_unit,
+                    "num_shapes_unit": num_polygons_unit,
+                }
+            )
+    return pd.DataFrame(data).astype(float)
 
 
 class EmpiricalMeanEstimator(Estimator):
@@ -50,16 +81,8 @@ class EmpiricalMeanEstimator(Estimator):
         )
 
 
-# Read in the Causal DAG
-ROOT = os.path.realpath(os.path.dirname(__file__))
-causal_dag = CausalDAG(f"{ROOT}/dag.dot")
-
-OBSERVATIONAL_DATA_PATH = f"{ROOT}/data/random/data_random_1000.csv"
-
-
-def test_poisson_intensity_num_shapes(save=False):
+def test_poisson_intensity_num_shapes(observational_df: pd.DataFrame, save=False):
     intensity_num_shapes_results = []
-    observational_df = pd.read_csv(OBSERVATIONAL_DATA_PATH, index_col=0).astype(float)
     causal_test_cases = [
         (
             CausalTestCase(
@@ -112,8 +135,9 @@ def test_poisson_intensity_num_shapes(save=False):
     logger.info("%s", intensity_num_shapes_results)
 
 
-def test_poisson_width_num_shapes(save=False):
-    df = pd.read_csv(OBSERVATIONAL_DATA_PATH, index_col=0).astype(float)
+@pytest.mark.parametrize("df_fixture_name", ["observational_df", "empirical_df"])
+def test_poisson_width_num_shapes(df_fixture_name, request, save=False):
+    df: pd.DataFrame = request.getfixturevalue(df_fixture_name)
     causal_test_cases = [
         CausalTestCase(
             expected_causal_effect=Positive(),
@@ -146,10 +170,5 @@ def test_poisson_width_num_shapes(save=False):
     ]
     width_num_shapes_results = pd.DataFrame(width_num_shapes_results)
     if save:
-        width_num_shapes_results.to_csv("width_num_shapes_results_random_1000.csv")
+        width_num_shapes_results.to_csv(f"width_num_shapes_results_{df_fixture_name}.csv")
     logger.info("%s", width_num_shapes_results)
-
-
-if __name__ == "__main__":
-    test_poisson_intensity_num_shapes(save=False)
-    test_poisson_width_num_shapes(save=True)
