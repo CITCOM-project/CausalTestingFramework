@@ -8,7 +8,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pydot
-from bokeh.models import Div, HoverTool
+from bokeh.models import Div
 from bokeh.palettes import RdYlGn
 from holoviews.plotting.bokeh.graphs import GraphPlot
 
@@ -83,19 +83,29 @@ class VisualisationPlotter:
                     # a kurtosis value for each, which we need to aggregate.
                     # I'm taking this as a max for now, but it'd be nice to do something more meaningful.
                     df[f"result.{col}"] = df[f"result.{col}"].apply(lambda row: max(row.values(), default=None))
+
+        if "result.outcome" in df:
+            df["effect_estimate_tooltip"] = df.apply(
+                lambda test: pd.DataFrame(
+                    {
+                        "ci_low": test["result.effect_estimate.ci_low"],
+                        "estimate": test["result.effect_estimate.effect_estimate"],
+                        "ci_high": test["result.effect_estimate.ci_high"],
+                    }
+                ).to_html(),
+                axis=1,
+            )
         self.df = df
 
     def results_dag(
         self,
         view_independences: bool = True,
-        html: bool = False,
         layout_engine: str = None,
     ) -> nx.DiGraph:
         """
         View causal test results as a graph.
 
         :param view_independences: Whether to display failed independence tests (defaults to True).
-        :param html: Whether to include html representations of the causal effect. (Defaults to false)
         :param layout_engine: The layout engine to use. (Defaults to None for concise output)
                               See https://graphviz.org/docs/layouts/ for a list of supported engines.
         """
@@ -117,36 +127,28 @@ class VisualisationPlotter:
                     style="dashed",
                 )
 
-            for _, test in self.df.iterrows():
-                treatment_variable = test["estimator.treatment_variable"]
-                outcome_variable = test["estimator.outcome_variable"]
+            for treatment_variable, outcome_variable, outcome_str, effect_direction in self.df.loc[
+                # Either the edge is already in the DAG or we've got a failed (or inestimable) independence test
+                self.df.apply(
+                    lambda test: (
+                        (test["estimator.treatment_variable"], test["estimator.outcome_variable"]) in result_dag.edges
+                    )
+                    | (view_independences and test["result.outcome"] != TestOutcome.PASS.name),
+                    axis=1,
+                ),
+                [
+                    "estimator.treatment_variable",
+                    "estimator.outcome_variable",
+                    "result.outcome",
+                    "result.effect_direction",
+                ],
+            ].itertuples(index=False):
+                color = self.colour_map[getattr(TestOutcome, outcome_str)]
 
-                if (treatment_variable, outcome_variable) in result_dag.edges or (
-                    view_independences and test["result.outcome"] != TestOutcome.PASS.name
-                ):
-                    result_dag[treatment_variable][outcome_variable]["label"] = test["result.effect_direction"]
-                    result_dag[treatment_variable][outcome_variable]["color"] = self.colour_map[
-                        getattr(TestOutcome, test["result.outcome"])
-                    ]
-                    result_dag[treatment_variable][outcome_variable]["fontcolor"] = self.colour_map[
-                        getattr(TestOutcome, test["result.outcome"])
-                    ]
-                    if (
-                        html
-                        and "result.effect_estimate.effect_estimate" in self.df
-                        and "result.effect_estimate.ci_low" in self.df
-                        and "result.effect_estimate.ci_low" in self.df
-                    ):
-                        effect_estimate = pd.DataFrame(
-                            {
-                                "ci_low": test["result.effect_estimate.ci_low"],
-                                "estimate": test["result.effect_estimate.effect_estimate"],
-                                "ci_high": test["result.effect_estimate.ci_high"],
-                            }
-                        )
-                        result_dag[test["estimator.treatment_variable"]][test["estimator.outcome_variable"]][
-                            "title"
-                        ] = f"<{effect_estimate.to_html()}>"
+                edge_data = result_dag[treatment_variable][outcome_variable]
+                edge_data["label"] = effect_direction
+                edge_data["color"] = color
+                edge_data["fontcolor"] = color
 
         if layout_engine:
             result_dag = nx.drawing.nx_pydot.from_pydot(
@@ -189,7 +191,7 @@ class VisualisationPlotter:
 
         :returns: Inveractive holoviews graph.
         """
-        results = self.results_dag(html=True, layout_engine="dot")
+        results = self.results_dag(layout_engine="dot")
 
         node_positions = {}
         for node, attributes in results.nodes(data=True):
@@ -233,8 +235,28 @@ class VisualisationPlotter:
             [(x, y, node_id) for node_id, (x, y) in node_positions.items()], columns=["x", "y", "node_id"]
         )
 
-        for column, default in [("color", "black"), ("fontcolor", "black"), ("label", ""), ("style", "solid")]:
+        for column, default in [("color", "gray"), ("fontcolor", "gray"), ("label", ""), ("style", "solid")]:
             edges_df[column] = edges_df[column].fillna(default) if column in edges_df else default
+
+        if self.df is not None:
+            edges_df = (
+                edges_df.merge(
+                    self.df[
+                        [
+                            "estimator.treatment_variable",
+                            "estimator.outcome_variable",
+                            "expected_causal_effect.name",
+                            "effect_estimate_tooltip",
+                            "result.outcome",
+                        ]
+                    ],
+                    left_on=["source", "target"],
+                    right_on=["estimator.treatment_variable", "estimator.outcome_variable"],
+                    how="left",
+                )
+                .drop(columns=["estimator.treatment_variable", "estimator.outcome_variable"])
+                .rename({"result.outcome": "result", "expected_causal_effect.name": "expected_causal_effect"}, axis=1)
+            )
 
         # Build the graph from the nodes and edges
         graph = hv.Graph(
@@ -256,16 +278,15 @@ class VisualisationPlotter:
             hooks=hooks,
             xaxis=None,
             yaxis=None,
+            hover_tooltips=[
+                ("Treatment variable", "@source"),
+                ("Outcome variable", "@target"),
+                ("Expected effect", "@expected_causal_effect"),
+                ("Test outcome", "@result"),
+                ("Causal effect", "@effect_estimate_tooltip{safe}"),
+            ],
             tools=[
-                HoverTool(
-                    tooltips="""
-                <div style="padding: 6px; border: 1px solid #ccc; font-family: sans-serif;">
-                    <strong>Treatment:</strong> @source<br>
-                    <strong>Outcome:</strong> @target<br>
-                    <strong>Causal Effect:</strong> <br/> @title{safe}<br>
-                </div>
-            """
-                ),
+                "hover",
                 "fullscreen",
             ],
             inspection_policy="edges",
@@ -515,6 +536,8 @@ class VisualisationPlotter:
                 "estimator.treatment_variable",
                 "estimator.outcome_variable",
                 "result.outcome",
+                "expected_causal_effect.name",
+                "effect_estimate_tooltip",
             ],
         ).opts(
             cmap={k.name: v for k, v in self.colour_map.items()},
@@ -522,7 +545,9 @@ class VisualisationPlotter:
             hover_tooltips=[
                 ("Treatment variable", "@estimator.treatment_variable"),
                 ("Outcome variable", "@estimator.outcome_variable"),
+                ("Expected effect", "@expected_causal_effect.name"),
                 ("Test outcome", "@result.outcome"),
+                ("Causal effect", "@effect_estimate_tooltip{safe}"),
             ],
             tools=[
                 "hover",
