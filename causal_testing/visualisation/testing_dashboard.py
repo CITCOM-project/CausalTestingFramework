@@ -311,16 +311,12 @@ class Dashboard(param.Parameterized):
         """
         :returns: Parameters to go in the sidebar.
         """
-        print("DAG", self.ctf.dag is None, list(self.ctf.dag.nodes)[:5] if self.ctf.dag is not None else [])
         return pn.Column(
-            self.dag_file_input,
+            pn.Row(self.dag_file_input, self.param.ignore_cycles),
             self.data_file_input,
-            pn.Row(self.test_file_input, self.generate_tests),
             pn.Param(
                 self.param,
                 widgets={
-                    "adequacy": pmui.Switch,
-                    "ignore_cycles": pmui.Switch,
                     "nodes_to_test": {
                         "type": pmui.MultiChoice,
                         # "options": list(self.ctf.dag.nodes) if self.ctf.dag is not None else [],
@@ -329,10 +325,20 @@ class Dashboard(param.Parameterized):
                         "chip": False,
                     },
                 },
-                parameters=["ignore_cycles", "adequacy", "nodes_to_test"],
+                parameters=["nodes_to_test"],
+                show_name=False,
+                styles={"margin": "0", "width": "100%"},
+            ),
+            pn.Param(
+                self.param,
+                widgets={
+                    "adequacy": pmui.Switch,
+                },
+                parameters=["adequacy"],
                 show_name=False,
                 styles={"margin": "0"},
             ),
+            pn.Row(self.test_file_input, self.generate_tests),
             self.run_tests,
         )
 
