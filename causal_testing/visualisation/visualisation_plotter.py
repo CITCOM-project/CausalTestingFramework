@@ -233,6 +233,9 @@ class VisualisationPlotter:
             [(x, y, node_id) for node_id, (x, y) in node_positions.items()], columns=["x", "y", "node_id"]
         )
 
+        for column, default in [("color", "black"), ("fontcolor", "black"), ("label", ""), ("style", "solid")]:
+            edges_df[column] = edges_df[column].fillna(default) if column in edges_df else default
+
         # Build the graph from the nodes and edges
         graph = hv.Graph(
             (
@@ -246,9 +249,9 @@ class VisualisationPlotter:
             kdims=["source", "target"],
             vdims=[c for c in edges_df.columns if c not in ["source", "target", "trimmed_path"]],
         ).opts(
-            edge_line_dash="style" if "style" in edges_df else "solid",
+            edge_line_dash="style",
             edge_line_width=1.5,
-            edge_color="color" if "color" in edges_df else "black",
+            edge_color="color",
             edge_hover_line_color="color",
             hooks=hooks,
             xaxis=None,

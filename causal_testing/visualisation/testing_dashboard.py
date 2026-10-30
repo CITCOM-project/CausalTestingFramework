@@ -97,6 +97,8 @@ class Dashboard(param.Parameterized):
 
     ctf = param.ClassSelector(class_=CausalTestingFramework, default=CausalTestingFramework(test_cases=[]))
     adequacy = param.Boolean(default=False)
+    ignore_cycles = param.Boolean(default=False)
+    nodes_to_test = param.ListSelector(objects=[])
 
     def __init__(self):
         super().__init__()
@@ -142,13 +144,14 @@ class Dashboard(param.Parameterized):
         """Parses uploaded DOT bytes into a CausalDAG and initialises the CTF with it."""
 
         parsed_multigraph = nx.nx_pydot.read_dot(io.StringIO(event.new.decode("utf-8")))
-        dag = CausalDAG()
+        dag = CausalDAG(ignore_cycles=self.ignore_cycles)
         dag.update(nx.DiGraph(parsed_multigraph))
         self.ctf.dag = dag
         self.plotter.dag = dag
         self.param.trigger("ctf")
         self.run_tests.disabled = not self.ctf.ready_to_run()
         self.generate_tests.disabled = False
+        self.param.nodes_to_test.objects = list(self.ctf.dag.nodes)
 
     def _load_test_file(self, event):
         """Load an uploaded test JSON file and assign the tests to the CTF."""
@@ -169,7 +172,9 @@ class Dashboard(param.Parameterized):
     def _generate_tests(self, _):
         """Generates causal test cases from a DAG."""
         try:
-            self.ctf.generate_causal_tests()
+            self.ctf.generate_causal_tests(
+                nodes_to_test=self.nodes_to_test if self.nodes_to_test else self.ctf.dag.nodes
+            )
             self.run_tests.disabled = not self.ctf.ready_to_run()
             self.param.trigger("ctf")
         except ValueError as e:
@@ -301,19 +306,32 @@ class Dashboard(param.Parameterized):
             css_classes=["test_suite_stats"],
         )
 
+    @pn.depends("ctf", watch=True)
     def sidebar(self) -> pn.Param:
         """
         :returns: Parameters to go in the sidebar.
         """
+        print("DAG", self.ctf.dag is None, list(self.ctf.dag.nodes)[:5] if self.ctf.dag is not None else [])
         return pn.Column(
             self.dag_file_input,
             self.data_file_input,
             pn.Row(self.test_file_input, self.generate_tests),
             pn.Param(
-                self.param.adequacy,
+                self.param,
                 widgets={
                     "adequacy": pmui.Switch,
+                    "ignore_cycles": pmui.Switch,
+                    "nodes_to_test": {
+                        "type": pmui.MultiChoice,
+                        # "options": list(self.ctf.dag.nodes) if self.ctf.dag is not None else [],
+                        "disabled": pn.bind(lambda ctf: ctf.dag is None, self.param.ctf),
+                        "searchable": True,
+                        "chip": False,
+                    },
                 },
+                parameters=["ignore_cycles", "adequacy", "nodes_to_test"],
+                show_name=False,
+                styles={"margin": "0"},
             ),
             self.run_tests,
         )

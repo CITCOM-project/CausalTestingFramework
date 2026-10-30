@@ -191,13 +191,13 @@ class CausalTestingFramework:
         """
         return all(x is not None for x in (self.test_cases, self.dag, self.df)) and bool(self.test_cases)
 
-    def generate_causal_tests(self):
+    def generate_causal_tests(self, **kwargs):
         """
         Automatically generate the suite of causal tests that corresponds to the DAG.
         """
         if self.dag is not None and self.dag.datatypes is None and self.df is not None:
             self.dag.datatypes = self.df.dtypes
-        self.test_cases = self.dag.generate_causal_tests()
+        self.test_cases = self.dag.generate_causal_tests(**kwargs)
 
     def run_tests(self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100):
         """
