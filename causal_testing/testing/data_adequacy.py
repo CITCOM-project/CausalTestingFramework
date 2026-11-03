@@ -55,7 +55,7 @@ class DataAdequacy:
             return result | {"results": self.results.reset_index(drop=True).to_dict()}
         return result
 
-    def kurtosis_simplified(self, halfway: float = -0.8):
+    def kurtosis_simplified(self, halfway: float = -0.8) -> float:
         """
         Converts raw kurtosis value to a 0-100% score for easier interpretation.
         Kurtosis value 0 represents 100%.
@@ -65,6 +65,10 @@ class DataAdequacy:
             Since a uniform distribution has kurtosis value -1.2, which represents pretty much the worst case that it's
             possible to achieve in this setting, a kurtosis of -0.8 corresponds to a curve that is visually about
             "halfway" between a normal distribution and a uniform one.
+        :returns: The kurtosis value converted to a "percentage", indicating how "likely" it is that we have enough data
+            to be able to trust the causal effect estimates.
+            NOTE: "percentage" and "likely" don't correspond to anything concrete, it's an artificial scale designed to
+            make interpretation easier for people without a statistical background.
         """
         # Scaling factor so that |x| = halfway yields exactly 50%
         scaling_factor = np.log(3) / abs(halfway)  # ~1.0986 / threshold
