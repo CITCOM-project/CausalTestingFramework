@@ -435,7 +435,7 @@ class VisualisationPlotter:
             hover_tooltips=[
                 ("Treatment variable", "@estimator.treatment_variable"),
                 ("Outcome variable", "@estimator.outcome_variable"),
-                (value_label, f"@{value_col}%"),
+                (value_label, f"@{value_col}{{0.00}}"),
             ],
             tools=[
                 "hover",
