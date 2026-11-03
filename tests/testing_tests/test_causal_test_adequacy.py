@@ -140,6 +140,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
 
         expected_dict = {
             "kurtosis": {"test_input": 0.0},
+            "kurtosis_simplified": {"test_input": 100.0},
             "passing": 10,
             "successful": 10,
             "bootstrap_size": 10,
@@ -207,6 +208,7 @@ class TestCausalTestAdequacy(unittest.TestCase):
                 },
             },
         }
+
         # Use json_normalize to avoid rounding errors
         pd.testing.assert_frame_equal(
             pd.json_normalize(expected_dict).round(2),

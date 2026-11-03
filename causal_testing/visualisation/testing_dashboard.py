@@ -409,12 +409,6 @@ class Dashboard(param.Parameterized):
             [Causal test adequacy](https://causal-testing-framework.readthedocs.io/en/latest/modules/test_adequacy.html)
             essentially gives an indication as to whether the causal test cases have been evaluated with sufficient
             data to make the test outcomes trustworthy.
-            For Data Adequacy, values close to zero are desirable.
-            Larger values indicate an "unstable" causal estimate, i.e. individual data points have a large effect on
-            the estimate (and therefore the test outcome), indicating that the test outcome may not be trustworthy
-            and more data is desirable.
-            Values smaller than zero indicate a "suspiciously stable" causal estimate, indicating that the dataset
-            may not capture the full stochasticity of the model (or that the model is deterministic).
 
             DAG adequacy indicates how well the DAG fits the dataset, and how "stable" the test outcomes are,
             i.e. how affected the outcomes are by individual data points.
@@ -423,14 +417,52 @@ class Dashboard(param.Parameterized):
                     )
                 )
                 content.append(
-                    pn.FlexBox(
-                        self.plotter.data_adequacy_heatmap(
-                            frame_width=400,
+                    pn.Tabs(
+                        (
+                            "Simplified",
+                            pn.Column(
+                                pn.pane.Markdown(
+                                    """For simplified data adequacy, values close to 100 indicate that you
+                                probably have enough data for your causal effect estimates to be trustworthy. Values
+                                close to zero indicate that you should collect additional runs of your software if you
+                                can."""
+                                ),
+                                pn.FlexBox(
+                                    self.plotter.data_adequacy_heatmap(
+                                        simplified=True,
+                                        frame_width=400,
+                                    ),
+                                    self.plotter.dag_adequacy_heatmap(
+                                        frame_width=400,
+                                    ),
+                                ),
+                            ),
                         ),
-                        self.plotter.dag_adequacy_heatmap(
-                            frame_width=400,
+                        (
+                            "Raw",
+                            pn.Column(
+                                pn.pane.Markdown(
+                                    """Raw data adequacy values represent the distribution of resampled causal
+                                effect estimates (specifically the [kurtosis](https://en.wikipedia.org/wiki/Kurtosis).
+                                Values close to zero are desirable. Larger values indicate an "unstable" causal
+                                estimate, i.e. individual data points have a large effect on the estimate (and therefore
+                                the test outcome), indicating that the test outcome may not be trustworthy and more data
+                                is desirable. Values smaller than zero indicate a "suspiciously stable" causal estimate,
+                                indicating that the dataset may not capture the full stochasticity of the model (or that
+                                the model is deterministic)."""
+                                ),
+                                pn.FlexBox(
+                                    self.plotter.data_adequacy_heatmap(
+                                        simplified=False,
+                                        frame_width=400,
+                                    ),
+                                    self.plotter.dag_adequacy_heatmap(
+                                        frame_width=400,
+                                    ),
+                                ),
+                            ),
                         ),
-                    ),
+                    )
                 )
 
         return content
