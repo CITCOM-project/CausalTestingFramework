@@ -131,18 +131,19 @@ def test_outcome_adjacency(dag, plotter):
 
 
 @pytest.mark.parametrize(
-    "method_name, expected_vdim",
+    "method_name, expected_vdim, kwargs",
     [
-        ("dag_adequacy_heatmap", "result.adequacy.passing"),
-        ("data_adequacy_heatmap", "result.adequacy.kurtosis"),
+        ("dag_adequacy_heatmap", "result.adequacy.passing", {}),
+        ("data_adequacy_heatmap", "result.adequacy.kurtosis_simplified", {"simplified": True}),
+        ("data_adequacy_heatmap", "result.adequacy.kurtosis", {"simplified": False}),
     ],
 )
-def test_adequacy_heatmap(plotter, method_name, expected_vdim):
+def test_adequacy_heatmap(plotter, method_name, expected_vdim, kwargs):
     """
     Every test with an adequacy value should have a non-grey square.
     """
     # Call the plotter method dynamically
-    heatmap = getattr(plotter, method_name)()
+    heatmap = getattr(plotter, method_name)(**kwargs)
     hv.renderer("bokeh").get_plot(heatmap)
 
     # Check correct axes

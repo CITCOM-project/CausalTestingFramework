@@ -67,6 +67,7 @@ class VisualisationPlotter:
             "effect_estimate.ci_low",
             "effect_estimate.ci_high",
             "adequacy.kurtosis",
+            "adequacy.kurtosis_simplified",
         ]:
             prefix = f"result.{col}."
             columns = [c for c in df.columns if c.startswith(prefix)]
@@ -375,28 +376,36 @@ class VisualisationPlotter:
 
         return df
 
-    def data_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
+    def data_adequacy_heatmap(self, simplified=True, **kwargs) -> hv.HeatMap:
         """
         Visualise data adequacy as an adjacency matrix heatmap of the kurtosis.
         """
 
-        data = self.sort_df_by_median_split(value_col="result.adequacy.kurtosis")
+        value_col = f"result.adequacy.kurtosis{'_simplified' if simplified else ''}"
+        data = self.sort_df_by_median_split(value_col=value_col)
 
-        # Get data bounds
-        vmin = data["result.adequacy.kurtosis"].min()
-        vmax = data["result.adequacy.kurtosis"].max()
+        if simplified:
+            cmap = "RdYlGn"
+            clim = (0, 100)
+            value_label = "Adequacy"
+        else:
+            # Get data bounds
+            vmin = data["result.adequacy.kurtosis"].min()
+            vmax = data["result.adequacy.kurtosis"].max()
 
-        # Calculate relative zero position on the colourmap (0.0 to 1.0)
-        zero_ratio = (0 - vmin) / (vmax - vmin)
+            # Calculate relative zero position on the colourmap (0.0 to 1.0)
+            zero_ratio = (0 - vmin) / (vmax - vmin)
 
-        # Generate the colour samples from the negative and positive colourmaps
-        num_samples = 1000
-        n_neg = int(num_samples * zero_ratio)
-        n_pos = num_samples - n_neg
+            # Generate the colour samples from the negative and positive colourmaps
+            num_samples = 1000
+            n_neg = int(num_samples * zero_ratio)
+            n_pos = num_samples - n_neg
 
-        neg_colors = hv.plotting.util.process_cmap("blues_r", provider="bokeh", ncolors=n_neg)
-        pos_colors = hv.plotting.util.process_cmap("YlOrRd", provider="bokeh", ncolors=n_pos)
-        asymmetric_cmap = neg_colors + pos_colors
+            neg_colors = hv.plotting.util.process_cmap("YlGnBu_r", provider="bokeh", ncolors=n_neg)
+            pos_colors = hv.plotting.util.process_cmap("YlOrRd", provider="bokeh", ncolors=n_pos)
+            cmap = neg_colors + pos_colors
+            clim = (vmin, vmax)
+            value_label = "Kurtosis"
 
         # Render
         return hv.HeatMap(
@@ -406,14 +415,14 @@ class VisualisationPlotter:
                 ("outcome_variable_inx", "Outcome variable"),
             ],
             vdims=[
-                ("result.adequacy.kurtosis", "Kurtosis"),
+                value_col,
                 "estimator.treatment_variable",
                 "estimator.outcome_variable",
                 "result.adequacy.kurtosis",
             ],
         ).opts(
-            cmap=asymmetric_cmap,
-            clim=(vmin, vmax),
+            cmap=cmap,
+            clim=clim,
             clipping_colors={"NaN": "grey"},  # Grey out invalid tests
             colorbar=True,
             xrotation=45,
@@ -422,11 +431,11 @@ class VisualisationPlotter:
             yticks=self.yticks,
             xlim=(-0.5, len(self.xticks) - 0.5),
             ylim=(-0.5, len(self.yticks) - 0.5),
-            hooks=[add_colorbar_annotations],
+            hooks=[] if simplified else [add_colorbar_annotations],
             hover_tooltips=[
                 ("Treatment variable", "@estimator.treatment_variable"),
                 ("Outcome variable", "@estimator.outcome_variable"),
-                ("Adequacy", "@{result.adequacy.kurtosis}"),
+                (value_label, f"@{value_col}%"),
             ],
             tools=[
                 "hover",

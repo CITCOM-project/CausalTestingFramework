@@ -423,14 +423,32 @@ class Dashboard(param.Parameterized):
                     )
                 )
                 content.append(
-                    pn.FlexBox(
-                        self.plotter.data_adequacy_heatmap(
-                            frame_width=400,
+                    pn.Tabs(
+                        (
+                            "Simplified",
+                            pn.FlexBox(
+                                self.plotter.data_adequacy_heatmap(
+                                    simplified=True,
+                                    frame_width=400,
+                                ),
+                                self.plotter.dag_adequacy_heatmap(
+                                    frame_width=400,
+                                ),
+                            ),
                         ),
-                        self.plotter.dag_adequacy_heatmap(
-                            frame_width=400,
+                        (
+                            "Raw",
+                            pn.FlexBox(
+                                self.plotter.data_adequacy_heatmap(
+                                    simplified=False,
+                                    frame_width=400,
+                                ),
+                                self.plotter.dag_adequacy_heatmap(
+                                    frame_width=400,
+                                ),
+                            ),
                         ),
-                    ),
+                    )
                 )
 
         return content
