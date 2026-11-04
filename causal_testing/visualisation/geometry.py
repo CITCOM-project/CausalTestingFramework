@@ -106,10 +106,10 @@ def add_colorbar_annotations(plot: GraphPlot, element: hv.Graph):  # pylint: dis
     colorbar.styles = {"margin-right": "30px"}
 
     bottom_label = Title(
-        text="Suspiciously unstable", standoff=-10, text_font_size="10pt", text_align="right", vertical_align="top"
+        text="Suspiciously stable", standoff=-10, text_font_size="10pt", text_align="right", vertical_align="top"
     )
     top_label = Title(
-        text="Suspiciously stable", standoff=-60, text_font_size="10pt", text_align="right", vertical_align="bottom"
+        text="Suspiciously unstable", standoff=-60, text_font_size="10pt", text_align="right", vertical_align="bottom"
     )
     fig.add_layout(bottom_label, "right")
     fig.add_layout(top_label, "right")
