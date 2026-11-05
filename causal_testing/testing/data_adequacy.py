@@ -71,7 +71,7 @@ class DataAdequacy:
             make interpretation easier for people without a statistical background.
         """
         # Scaling factor so that |x| = halfway yields exactly 50%
-        scaling_factor = np.log(3) / abs(halfway)  # ~1.0986 / threshold
+        scaling_factor = np.log(3) / abs(halfway)
 
         # Sigmoid decay function: 2 / (1 + exp(k * |x|))
         score = 2.0 / (1.0 + np.exp(scaling_factor * np.abs(self.kurtosis)))

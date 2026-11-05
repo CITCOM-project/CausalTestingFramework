@@ -78,13 +78,38 @@ class VisualisationPlotter:
                     axis=1,
                 )
                 df = df.drop(columns=columns)
-                if "kurtosis" in col:
-                    # Causal test adequacy is displayed as a single number, but categorical treatments get one value
-                    # for each value, e.g. if we've got a variable `Colour` that can be red, blue, or green, we get
-                    # a kurtosis value for each, which we need to aggregate.
-                    # I'm taking this as a max for now, but it'd be nice to do something more meaningful.
-                    df[f"result.{col}"] = df[f"result.{col}"].apply(lambda row: max(row.values(), default=None))
+        if "result.adequacy.kurtosis" in df:
+            # Causal test adequacy is displayed as a single number, but categorical treatments get one value
+            # for each value, e.g. if we've got a variable `Colour` that can be red, blue, or green, we get
+            # a kurtosis value for each, which we need to aggregate.
+            # I'm taking this as a max to represent worst case for now, but it'd be nice to do something more
+            # meaningful.
+            # df["result.adequacy.kurtosis"] = df["result.adequacy.kurtosis"].apply(
+            #     lambda row: max(row.values(), key=abs, default=None)
+            # )
+            # df["corresponding_val"] = # corresponding maximum value
+            def extract_max_and_target(row):
+                d_val = row["result.adequacy.kurtosis"]
+                d_target = row["result.adequacy.kurtosis_simplified"]
 
+                if not d_val:  # handles None or empty dictionary {}
+                    return None, None
+
+                # Find the key associated with the maximum absolute value
+                max_key = max(d_val, key=lambda k: abs(d_val[k]))
+
+                # Retrieve the raw value and the corresponding value from the target dict
+                raw_val = d_val[max_key]
+                corr_val = d_target.get(max_key) if d_target else None
+
+                return raw_val, corr_val
+
+            # Assign both columns simultaneously
+            df[["result.adequacy.kurtosis", "result.adequacy.kurtosis_simplified"]] = df.apply(
+                extract_max_and_target, axis=1, result_type="expand"
+            )
+
+        df.to_csv("/tmp/results.csv")
         if "result.outcome" in df:
             df["effect_estimate_tooltip"] = df.apply(
                 lambda test: pd.DataFrame(
@@ -417,7 +442,6 @@ class VisualisationPlotter:
         if simplified:
             cmap = "RdYlGn"
             clim = (0, 100)
-            value_label = "Adequacy"
         else:
             # Get data bounds
             vmin = data["result.adequacy.kurtosis"].min()
@@ -435,7 +459,6 @@ class VisualisationPlotter:
             pos_colors = hv.plotting.util.process_cmap("YlOrRd", provider="bokeh", ncolors=n_pos)
             cmap = neg_colors + pos_colors
             clim = (vmin, vmax)
-            value_label = "Kurtosis"
 
         # Render
         return hv.HeatMap(
@@ -465,7 +488,8 @@ class VisualisationPlotter:
             hover_tooltips=[
                 ("Treatment variable", "@estimator.treatment_variable"),
                 ("Outcome variable", "@estimator.outcome_variable"),
-                (value_label, f"@{value_col}{{0.00}}"),
+                ("Raw Kurtosis", "@result.adequacy.kurtosis{0.00}"),
+                ("Data Adequacy", "@result.adequacy.kurtosis_simplified{0.00}"),
             ],
             tools=[
                 "hover",

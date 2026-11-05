@@ -97,7 +97,7 @@ class Dashboard(param.Parameterized):
 
     ctf = param.ClassSelector(class_=CausalTestingFramework, default=CausalTestingFramework(test_cases=[]))
     adequacy = param.Boolean(default=False)
-    ignore_cycles = param.Boolean(default=False)
+    allow_cycles = param.Boolean(default=False)
     nodes_to_test = param.ListSelector(objects=[])
 
     def __init__(self):
@@ -144,7 +144,7 @@ class Dashboard(param.Parameterized):
         """Parses uploaded DOT bytes into a CausalDAG and initialises the CTF with it."""
 
         parsed_multigraph = nx.nx_pydot.read_dot(io.StringIO(event.new.decode("utf-8")))
-        dag = CausalDAG(ignore_cycles=self.ignore_cycles)
+        dag = CausalDAG(allow_cycles=self.allow_cycles)
         dag.update(nx.DiGraph(parsed_multigraph))
         self.ctf.dag = dag
         self.plotter.dag = dag
@@ -312,7 +312,17 @@ class Dashboard(param.Parameterized):
         :returns: Parameters to go in the sidebar.
         """
         return pn.Column(
-            pn.Row(self.dag_file_input, self.param.ignore_cycles),
+            pn.Row(
+                self.dag_file_input,
+                pn.Param(
+                    self.param.allow_cycles,
+                    widgets={
+                        "allow_cycles": pmui.Switch,
+                    },
+                    show_name=False,
+                    styles={"margin": "0"},
+                ),
+            ),
             self.data_file_input,
             pn.Param(
                 self.param,

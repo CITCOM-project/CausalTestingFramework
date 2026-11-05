@@ -178,6 +178,8 @@ class CausalTestingFramework:
             effect_estimate = (
                 EffectEstimate(**test["result"]["effect_estimate"]) if "effect_estimate" in test["result"] else None
             )
+            if "kurtosis_simplified" in test["result"]["adequacy"]:
+                test["result"]["adequacy"].pop("kurtosis_simplified")
             adequacy = DataAdequacy(**test["result"]["adequacy"]) if "adequacy" in test["result"] else None
 
             test["result"] = CausalTestResult(outcome=outcome, effect_estimate=effect_estimate, adequacy=adequacy)
