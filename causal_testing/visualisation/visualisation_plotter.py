@@ -460,6 +460,9 @@ class VisualisationPlotter:
             cmap = neg_colors + pos_colors
             clim = (vmin, vmax)
 
+        raw_kurtosis = hv.Dimension("result.adequacy.kurtosis", label="raw_kurtosis")
+        simplified_kurtosis = hv.Dimension("result.adequacy.kurtosis_simplified", label="simplified_kurtosis")
+
         # Render
         return hv.HeatMap(
             data,
@@ -471,7 +474,8 @@ class VisualisationPlotter:
                 value_col,
                 "estimator.treatment_variable",
                 "estimator.outcome_variable",
-                "result.adequacy.kurtosis",
+                raw_kurtosis,
+                simplified_kurtosis,
             ],
         ).opts(
             cmap=cmap,
@@ -488,8 +492,8 @@ class VisualisationPlotter:
             hover_tooltips=[
                 ("Treatment variable", "@estimator.treatment_variable"),
                 ("Outcome variable", "@estimator.outcome_variable"),
-                ("Raw Kurtosis", "@result.adequacy.kurtosis{0.00}"),
-                ("Data Adequacy", "@result.adequacy.kurtosis_simplified{0.00}"),
+                ("Raw Kurtosis", "@raw_kurtosis{0.00}"),
+                ("Data Adequacy", "@simplified_kurtosis{0.00}"),
             ],
             tools=[
                 "hover",
