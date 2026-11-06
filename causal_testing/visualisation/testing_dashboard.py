@@ -466,9 +466,7 @@ class Dashboard(param.Parameterized):
                                         simplified=True,
                                         frame_width=400,
                                     ),
-                                    self.plotter.dag_adequacy_heatmap(
-                                        frame_width=400,
-                                    ),
+                                    self.plotter.dag_adequacy_heatmap(consistency=True, frame_width=400),
                                 ),
                             ),
                         ),
@@ -490,9 +488,7 @@ class Dashboard(param.Parameterized):
                                         simplified=False,
                                         frame_width=400,
                                     ),
-                                    self.plotter.dag_adequacy_heatmap(
-                                        frame_width=400,
-                                    ),
+                                    self.plotter.dag_adequacy_heatmap(consistency=False, frame_width=400),
                                 ),
                             ),
                         ),

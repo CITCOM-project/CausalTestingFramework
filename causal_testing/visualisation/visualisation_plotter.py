@@ -460,9 +460,6 @@ class VisualisationPlotter:
             cmap = neg_colors + pos_colors
             clim = (vmin, vmax)
 
-        raw_kurtosis = hv.Dimension("result.adequacy.kurtosis", label="raw_kurtosis")
-        simplified_kurtosis = hv.Dimension("result.adequacy.kurtosis_simplified", label="simplified_kurtosis")
-
         # Render
         return hv.HeatMap(
             data,
@@ -474,8 +471,8 @@ class VisualisationPlotter:
                 value_col,
                 "estimator.treatment_variable",
                 "estimator.outcome_variable",
-                raw_kurtosis,
-                simplified_kurtosis,
+                hv.Dimension("result.adequacy.kurtosis", label="raw_kurtosis"),
+                hv.Dimension("result.adequacy.kurtosis_simplified", label="simplified_kurtosis"),
             ],
         ).opts(
             cmap=cmap,
@@ -502,20 +499,28 @@ class VisualisationPlotter:
             xlabel="Treatment variable",
             ylabel="Outcome variable",
             clabel="Causal test adequacy",
-            title="Data Adequacy",
+            title="Data adequacy" if simplified else "Kurtosis",
             **kwargs,
         )
 
-    def dag_adequacy_heatmap(self, **kwargs) -> hv.HeatMap:
+    def dag_adequacy_heatmap(self, consistency=True, **kwargs) -> hv.HeatMap:
         """
         Visualise dag adequacy as an adjacency matrix heatmap of the percentage of passing test cases.
         """
         data = self.sort_df_by_median_split(value_col="result.adequacy.passing")
 
         # Turn passing test cases into a percentage
-        data["result.adequacy.passing"] = (
-            data["result.adequacy.passing"] / data["result.adequacy.bootstrap_size"]
-        ) * 100
+        data["result.adequacy.passing"] = data["result.adequacy.passing"] / data["result.adequacy.bootstrap_size"]
+
+        data["result.adequacy.consistency"] = np.abs(data["result.adequacy.passing"] - 0.5) * 200
+        data["result.adequacy.passing_percentage"] = data["result.adequacy.passing"] * 100
+
+        if consistency:
+            value_col = "result.adequacy.consistency"
+            clabel = "Consistency (%)"
+        else:
+            value_col = "result.adequacy.passing_percentage"
+            clabel = "Passing (%)"
 
         return hv.HeatMap(
             data,
@@ -524,10 +529,12 @@ class VisualisationPlotter:
                 ("outcome_variable_inx", "Outcome variable"),
             ],
             vdims=[
-                ("result.adequacy.passing", "Passing (%)"),
+                (value_col, clabel),
                 "estimator.treatment_variable",
                 "estimator.outcome_variable",
                 "result.adequacy.passing",
+                hv.Dimension("result.adequacy.consistency", label="consistency"),
+                hv.Dimension("result.adequacy.passing_percentage", label="passing_percentage"),
             ],
         ).opts(
             cmap="RdYlGn",
@@ -543,7 +550,8 @@ class VisualisationPlotter:
             hover_tooltips=[
                 ("Treatment variable", "@estimator.treatment_variable"),
                 ("Outcome variable", "@estimator.outcome_variable"),
-                ("Passing", "@result.adequacy.passing%"),
+                ("Passing", "@passing_percentage{0.00}%"),
+                ("Consistency", "@consistency%"),
             ],
             tools=[
                 "hover",
@@ -551,8 +559,8 @@ class VisualisationPlotter:
             ],
             xlabel="Treatment variable",
             ylabel="Outcome variable",
-            clabel="Percentage passing test cases",
-            title="DAG Adequacy",
+            clabel=clabel,
+            title="Test outcome consistency" if consistency else "Test pass rate",
             **kwargs,
         )
 
