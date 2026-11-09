@@ -175,7 +175,7 @@ def detect_shapes(lines: list[tuple[float, float]], width: float, height: float)
     return polygons
 
 
-def run(width: float, height: float, intensity: float) -> tuple[float, float, float, float]:
+def run(width: float, height: float, intensity: float, random_seed: int=0) -> tuple[float, float, float, float]:
     """
     Run the Poisson process for the given width and hight sampling window with
     the given intensity.
@@ -183,9 +183,12 @@ def run(width: float, height: float, intensity: float) -> tuple[float, float, fl
     :param width: Width of the sampling window.
     :param height: Height of the sampling window.
     :param intensity: Intensity of the process (higher values lead to more lines and polygons).
+    :param random_seed: Random seed.
 
     :returns: Tuple of (lines, polygones, unit lines, unit polygons)
     """
+    np.random.seed(random_seed)
+    
     orientation_distribution = uniform(loc=0, scale=np.pi)
     lines = realize_poisson_line_process(width, height, intensity, orientation_distribution)
     polygons = detect_shapes(lines, width, height)

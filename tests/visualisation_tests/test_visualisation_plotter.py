@@ -3,6 +3,7 @@ from pathlib import Path
 import holoviews as hv
 import pandas as pd
 import pytest
+from itertools import combinations
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
@@ -32,6 +33,18 @@ def _plotter(dag) -> VisualisationPlotter:
     return VisualisationPlotter(
         dag=dag, df=pd.read_csv(Path(__file__).parent.parent / "resources" / "data" / "doubling_beta_results.csv")
     )
+
+
+def test_empty_results_dag():
+    """
+    Check we can render an empty DAG with no edges.
+    """
+    dag = CausalDAG()
+    dag.add_nodes_from(["X", "Y", "Z"])
+
+    plotter = VisualisationPlotter(dag=dag)
+    results_dag = plotter.results_dag()
+    assert all(results_dag.get_edge_data(x, y) is None for x, y in combinations(dag.nodes, 2))
 
 
 def test_results_dag(dag, plotter):

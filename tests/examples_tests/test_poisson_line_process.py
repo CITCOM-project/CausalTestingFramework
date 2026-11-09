@@ -3,6 +3,7 @@ import pandas as pd
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.examples import poisson_line_process as plp
+from causal_testing.examples.poisson_line_process.poisson_line_process import run
 from causal_testing.specification.causal_dag import CausalDAG
 
 
@@ -45,3 +46,10 @@ def test_load_completed_tests():
     ctf_generate.run_tests(adequacy=True)
 
     pd.testing.assert_frame_equal(ctf_generate.test_dataframe(), ctf_load.test_dataframe())
+
+
+def test_plp_run():
+    """
+    Basic test to check that we can run the PLP and get data out.
+    """
+    assert run(2.0, 2.0, 1.0, 1) == (14, 47, 3.5, 11.75)
