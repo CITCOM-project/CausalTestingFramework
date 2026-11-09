@@ -8,11 +8,13 @@ pp. 404-409, doi: 10.1109/QSIC.2007.4385527.
 
 import numpy as np
 from numpy.random import default_rng
-from scipy.stats import uniform
+from scipy.stats import uniform, rv_continuous
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon
 
 
-def realize_poisson_line_process(width=1, height=1, intensity=1, orientation=uniform(loc=0, scale=np.pi)):
+def realize_poisson_line_process(
+    width: float = 1, height: float = 1, intensity: float = 1, orientation: rv_continuous = uniform(loc=0, scale=np.pi)
+) -> list[tuple[float, float]]:
     """Draw a realization from a poisson line process
     inside a rectangle centered around (0,0) with given
     extent, intensity and orientation distributions.
@@ -21,24 +23,19 @@ def realize_poisson_line_process(width=1, height=1, intensity=1, orientation=uni
     their orientations are drawn from a poisson process
     on [0,infty) x [0,2*pi).
 
-    Parameters
-    ----------
-    width : float, optional
+    :param width: float, optional
         The width of the rectangle, default is 1.0
-    height : float, optional
+    :param height: float, optional
         The height of the rectangle, default is 1.0
-    intensity : float, optional
+    :param intensity: float, optional
         The intensity of the poisson line process,
         default is 1.0.
-    orientation : {`scipy.stats.rv_continuous`,
+    :param orientation: {`scipy.stats.rv_continuous`,
                    `scipy.stats.rv_discrete`}, optional
         The line orientation distribution, default
         is uniform distribution on [0, pi)
 
-    Returns
-    -------
-    lines : list
-        list of poisson lines which intersect the given
+    :returns: list of poisson lines which intersect the given
         rectangle. Each line is given as a pair of
         ``(slope, intercept)``.
     """
@@ -89,10 +86,15 @@ def realize_poisson_line_process(width=1, height=1, intensity=1, orientation=uni
     return lines
 
 
-def convert_line_representation(distance_to_origin, angle):
+def convert_line_representation(distance_to_origin: float, angle: float) -> tuple[float, float]:
     """
     Convert the representation of a line given by the distance to the origin and
     the angle to y=f(x)=m*x+t
+
+    :param distance_to_origin: Distance to the origin.
+    :param angle: Angle of the line
+
+    :returns: Tuple of coeffient and constant.
     """
     m = -np.cos(angle) / np.sin(angle)
     x = distance_to_origin * np.cos(angle)
@@ -101,20 +103,31 @@ def convert_line_representation(distance_to_origin, angle):
     return m, t
 
 
-def side(line, point):
+def side(line: tuple[float, float], point: tuple[float, float]) -> bool:
     """
     Determines on which side (relative to the directional vector (dx,dy) of the
     given line the point p lies. We assume that line is a tuple of m and t
     (f(x)=m*x+t).
+
+    :param line: Tuple of coeffient and constant.
+    :param point: Point to test.
+
+    :returns: True if the point is above the line.
     """
     m, t = line
     px, py = point
     return py - (m * px + t) > 0
 
 
-def detect_shapes(lines, width, height):
+def detect_shapes(lines: list[tuple[float, float]], width: float, height: float) -> list[Polygon]:
     """
     Detect shapes formed by intersecting lines in the sampling window.
+
+    :param lines: List of lines.
+    :param width: Width of the sampling window.
+    :param height: Height of the sampling window.
+
+    :returns: List of polygons within the sampling window.
     """
     high_x = width / 2
     low_x = -high_x
@@ -162,10 +175,16 @@ def detect_shapes(lines, width, height):
     return polygons
 
 
-def run(width, height, intensity):
+def run(width: float, height: float, intensity: float) -> tuple[float, float, float, float]:
     """
     Run the Poisson process for the given width and hight sampling window with
     the given intensity.
+
+    :param width: Width of the sampling window.
+    :param height: Height of the sampling window.
+    :param intensity: Intensity of the process (higher values lead to more lines and polygons).
+
+    :returns: Tuple of (lines, polygones, unit lines, unit polygons)
     """
     orientation_distribution = uniform(loc=0, scale=np.pi)
     lines = realize_poisson_line_process(width, height, intensity, orientation_distribution)

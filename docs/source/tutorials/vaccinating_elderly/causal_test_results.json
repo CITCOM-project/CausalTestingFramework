@@ -55,22 +55,22 @@
       "formula": "max_doses ~ vaccine"
     },
     "result": {
-      "outcome": "FAIL",
-      "passed": false,
+      "outcome": "PASS",
+      "passed": true,
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "vaccine": 7.216449660063518e-16
+          "vaccine": 1.6653345369377348e-16
         },
         "ci_low": {
-          "vaccine": 5.370886080297429e-16
+          "vaccine": -6.691392545481388e-17
         },
         "ci_high": {
-          "vaccine": 9.062013239829607e-16
+          "vaccine": 3.9998083284236084e-16
         }
       },
       "adequacy": {},
-      "effect_direction": "Positive"
+      "effect_direction": ""
     }
   },
   {
@@ -134,13 +134,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_vaccinations": -1.852884572118782e-22
+          "cum_vaccinations": -1.3234889800848443e-22
         },
         "ci_low": {
-          "cum_vaccinations": -1.6378975701800318e-21
+          "cum_vaccinations": -1.100754973320587e-21
         },
         "ci_high": {
-          "cum_vaccinations": 1.2673206557562754e-21
+          "cum_vaccinations": 8.360571773036182e-22
         }
       },
       "adequacy": {},
@@ -208,13 +208,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_vaccinated": 3.044024654195142e-21
+          "cum_vaccinated": 3.0969642133985356e-21
         },
         "ci_low": {
-          "cum_vaccinated": 1.3026039069832e-21
+          "cum_vaccinated": 1.3555434661865938e-21
         },
         "ci_high": {
-          "cum_vaccinated": 4.785445401407084e-21
+          "cum_vaccinated": 4.8383849606104774e-21
         }
       },
       "adequacy": {},
@@ -282,13 +282,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_infections": -3.5575383784680614e-19
+          "cum_infections": -1.7618285302889447e-19
         },
         "ci_low": {
-          "cum_infections": -7.662519553518193e-19
+          "cum_infections": -3.763664055757884e-19
         },
         "ci_high": {
-          "cum_infections": 5.474427965820704e-20
+          "cum_infections": 2.4000699517999446e-20
         }
       },
       "adequacy": {},
@@ -317,13 +317,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "vaccine": 482117.166666667
+          "vaccine": 482117.16666666686
         },
         "ci_low": {
-          "vaccine": 481306.02265171934
+          "vaccine": 481306.0226517192
         },
         "ci_high": {
-          "vaccine": 482928.3106816146
+          "vaccine": 482928.3106816145
         }
       },
       "adequacy": {},
@@ -387,13 +387,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "vaccine": 2520.466666666669
+          "vaccine": 2520.466666666668
         },
         "ci_low": {
-          "vaccine": 2395.520298064243
+          "vaccine": 2395.520298064242
         },
         "ci_high": {
-          "vaccine": 2645.413035269095
+          "vaccine": 2645.413035269094
         }
       },
       "adequacy": {},
@@ -427,13 +427,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_vaccinations": 0.9955241387494738
+          "cum_vaccinations": 0.9955241387494311
         },
         "ci_low": {
-          "cum_vaccinations": 0.9887483408376272
+          "cum_vaccinations": 0.9887483408375851
         },
         "ci_high": {
-          "cum_vaccinations": 1.0022999366613203
+          "cum_vaccinations": 1.002299936661277
         }
       },
       "adequacy": {},
@@ -467,13 +467,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_vaccinated": 1.003834949737211
+          "cum_vaccinated": 1.0038349497372394
         },
         "ci_low": {
-          "cum_vaccinated": 0.9970025862700487
+          "cum_vaccinated": 0.9970025862700764
         },
         "ci_high": {
-          "cum_vaccinated": 1.0106673132043733
+          "cum_vaccinated": 1.0106673132044024
         }
       },
       "adequacy": {},
@@ -507,13 +507,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_vaccinations": 0.0007674041581028357
+          "cum_vaccinations": 0.0007674041581021696
         },
         "ci_low": {
-          "cum_vaccinations": -0.0400878471798411
+          "cum_vaccinations": -0.04008784717984177
         },
         "ci_high": {
-          "cum_vaccinations": 0.041622655496046775
+          "cum_vaccinations": 0.04162265549604611
         }
       },
       "adequacy": {},
@@ -547,13 +547,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_infections": 0.03234244194653968
+          "cum_infections": 0.032342441946600076
         },
         "ci_low": {
-          "cum_infections": -1.6895124381026472
+          "cum_infections": -1.689512438102577
         },
         "ci_high": {
-          "cum_infections": 1.7541973219957265
+          "cum_infections": 1.7541973219957772
         }
       },
       "adequacy": {},
@@ -587,13 +587,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_vaccinated": 0.0017107387725949774
+          "cum_vaccinated": 0.0017107387725957546
         },
         "ci_low": {
-          "cum_vaccinated": -0.039312691411898415
+          "cum_vaccinated": -0.03931269141189759
         },
         "ci_high": {
-          "cum_vaccinated": 0.04273416895708837
+          "cum_vaccinated": 0.0427341689570891
         }
       },
       "adequacy": {},
@@ -627,13 +627,13 @@
       "effect_estimate": {
         "effect_measure": "coefficient",
         "effect_estimate": {
-          "cum_infections": 0.07150260106793382
+          "cum_infections": 0.07150260106789474
         },
         "ci_low": {
-          "cum_infections": -1.6431261954936334
+          "cum_infections": -1.643126195493673
         },
         "ci_high": {
-          "cum_infections": 1.786131397629501
+          "cum_infections": 1.7861313976294624
         }
       },
       "adequacy": {},

@@ -8,7 +8,7 @@ import pandas as pd
 
 from causal_testing.specification.causal_dag import CausalDAG
 
-ROOT = "causal_testing.examples.covasim.doubling_beta"
+ROOT = "causal_testing.examples.covasim.disease_variants"
 
 data_path = resources.files(ROOT).joinpath("observational_data.csv")
 dag_path = resources.files(ROOT).joinpath("dag.dot")
