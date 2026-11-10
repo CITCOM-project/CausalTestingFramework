@@ -34,10 +34,14 @@
         "kurtosis": {
           "width": 1.1534913399737508
         },
+        "kurtosis_simplified": {
+          "width": 34.04454199375819
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -79,10 +83,14 @@
         "kurtosis": {
           "width": 0.12832942290623883
         },
+        "kurtosis_simplified": {
+          "width": 91.21121687542465
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -124,10 +132,14 @@
         "kurtosis": {
           "width": 0.8797588461333565
         },
+        "kurtosis_simplified": {
+          "width": 46.00598117491036
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Negative"
     }
   },
   {
@@ -169,10 +181,14 @@
         "kurtosis": {
           "width": 0.8123839145194958
         },
+        "kurtosis_simplified": {
+          "width": 49.36497514522264
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Negative"
     }
   },
   {
@@ -212,10 +228,14 @@
         "kurtosis": {
           "width": -0.18866841625904085
         },
+        "kurtosis_simplified": {
+          "width": 87.11739535690556
+        },
         "passing": 85,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": ""
     }
   },
   {
@@ -255,10 +275,14 @@
         "kurtosis": {
           "height": -0.23516573868504542
         },
+        "kurtosis_simplified": {
+          "height": 83.99164118886648
+        },
         "passing": 85,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": ""
     }
   },
   {
@@ -298,10 +322,14 @@
         "kurtosis": {
           "width": 0.14484248804615785
         },
+        "kurtosis_simplified": {
+          "width": 90.08730210597507
+        },
         "passing": 87,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": ""
     }
   },
   {
@@ -341,10 +369,14 @@
         "kurtosis": {
           "intensity": 0.16645467221712051
         },
+        "kurtosis_simplified": {
+          "intensity": 88.6201863986858
+        },
         "passing": 87,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": ""
     }
   },
   {
@@ -386,10 +418,14 @@
         "kurtosis": {
           "num_lines_abs": 0.5577898437444779
         },
+        "kurtosis_simplified": {
+          "num_lines_abs": 63.4692871012551
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -431,10 +467,14 @@
         "kurtosis": {
           "num_lines_abs": 2.076955387679218
         },
+        "kurtosis_simplified": {
+          "num_lines_abs": 10.913429192276718
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -462,7 +502,8 @@
     },
     "result": {
       "outcome": "INESTIMABLE",
-      "passed": false
+      "passed": false,
+      "effect_direction": ""
     }
   },
   {
@@ -500,10 +541,14 @@
         "kurtosis": {
           "height": -0.21448528283234491
         },
+        "kurtosis_simplified": {
+          "height": 85.37829809967178
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -541,10 +586,14 @@
         "kurtosis": {
           "intensity": -0.16876199145418624
         },
+        "kurtosis_simplified": {
+          "intensity": 88.46383828410488
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -589,10 +638,14 @@
         "kurtosis": {
           "num_shapes_abs": 1.6234371541916333
         },
+        "kurtosis_simplified": {
+          "num_shapes_abs": 19.42807466021185
+        },
         "passing": 8,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Negative"
     }
   },
   {
@@ -637,10 +690,14 @@
         "kurtosis": {
           "num_lines_unit": 0.7420863120206334
         },
+        "kurtosis_simplified": {
+          "num_lines_unit": 53.041273204879325
+        },
         "passing": 8,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Negative"
     }
   },
   {
@@ -682,10 +739,14 @@
         "kurtosis": {
           "num_shapes_abs": 0.07369541288173886
         },
+        "kurtosis_simplified": {
+          "num_shapes_abs": 94.94414659669515
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -727,10 +788,14 @@
         "kurtosis": {
           "height": 0.11200078980462669
         },
+        "kurtosis_simplified": {
+          "height": 92.32478453559706
+        },
         "passing": 97,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -775,10 +840,14 @@
         "kurtosis": {
           "intensity": -0.5315474004693552
         },
+        "kurtosis_simplified": {
+          "intensity": 65.04089271807062
+        },
         "passing": 0,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Negative"
     }
   },
   {
@@ -823,10 +892,14 @@
         "kurtosis": {
           "num_lines_unit": 1.1278396075582884
         },
+        "kurtosis_simplified": {
+          "num_lines_unit": 35.05126381156263
+        },
         "passing": 0,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -871,10 +944,14 @@
         "kurtosis": {
           "num_shapes_unit": -0.0851505332004252
         },
+        "kurtosis_simplified": {
+          "num_shapes_unit": 94.15993916588525
+        },
         "passing": 0,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -916,10 +993,14 @@
         "kurtosis": {
           "height": 0.456390929431155
         },
+        "kurtosis_simplified": {
+          "height": 69.64975422439011
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Negative"
     }
   },
   {
@@ -964,10 +1045,14 @@
         "kurtosis": {
           "intensity": -0.06333806697073507
         },
+        "kurtosis_simplified": {
+          "intensity": 95.65374112573261
+        },
         "passing": 0,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -1009,10 +1094,14 @@
         "kurtosis": {
           "height": 0.25049957798059896
         },
+        "kurtosis_simplified": {
+          "height": 82.96751533233093
+        },
         "passing": 100,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Negative"
     }
   },
   {
@@ -1057,10 +1146,14 @@
         "kurtosis": {
           "intensity": -0.690225330053936
         },
+        "kurtosis_simplified": {
+          "intensity": 55.86297723235965
+        },
         "passing": 0,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": "Positive"
     }
   },
   {
@@ -1100,10 +1193,14 @@
         "kurtosis": {
           "height": -0.0749136836608506
         },
+        "kurtosis_simplified": {
+          "height": 94.86071351608155
+        },
         "passing": 73,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": ""
     }
   },
   {
@@ -1143,10 +1240,14 @@
         "kurtosis": {
           "intensity": -0.06420136256663422
         },
+        "kurtosis_simplified": {
+          "intensity": 95.59457793347403
+        },
         "passing": 73,
         "successful": 100,
         "bootstrap_size": 100
-      }
+      },
+      "effect_direction": ""
     }
   }
 ]

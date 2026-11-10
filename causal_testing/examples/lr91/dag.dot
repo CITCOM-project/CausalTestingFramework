@@ -1,0 +1,31 @@
+digraph DAG {
+    rankdir=LR;
+    G_Na -> max_voltage;
+    G_Na -> max_voltage_gradient;
+    G_Na -> dome_voltage;
+    G_Na -> APD50;
+
+    G_si -> rest_voltage;
+    G_si -> dome_voltage;
+    G_si -> APD50;
+    G_si -> APD90;
+
+    G_K -> dome_voltage;
+    G_K -> APD50;
+    G_K -> APD90;
+
+    G_K1 -> max_voltage;
+    G_K1 -> rest_voltage;
+    G_K1 -> dome_voltage;
+    G_K1 -> APD50;
+    G_K1 -> APD90;
+
+    G_Kp -> dome_voltage;
+    G_Kp -> APD50;
+
+    G_b -> max_voltage;
+    G_b -> rest_voltage;
+    G_b -> dome_voltage;
+    G_b -> APD50;
+    G_b -> APD90;
+}

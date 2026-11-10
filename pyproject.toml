@@ -31,6 +31,7 @@ dependencies = [
     "fastparquet>=2024.11.0",
     "tqdm>=4.67.1",
     "rustworkx>=0.18.0",
+    "shapely>=2.2.0",
 ]
 dynamic = ["version"]
 

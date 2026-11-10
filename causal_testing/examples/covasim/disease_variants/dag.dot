@@ -1,0 +1,21 @@
+strict digraph "expected_relationships" {
+location;
+average_age;
+household_size;
+contacts_work;
+contacts_school;
+susceptibility;
+beta;
+infections;
+location -> average_age;
+location -> household_size;
+location -> beta;
+average_age -> contacts_work;
+average_age -> contacts_school;
+average_age -> susceptibility;
+household_size -> infections;
+contacts_work -> infections;
+contacts_school -> infections;
+susceptibility -> infections;
+beta -> infections;
+}

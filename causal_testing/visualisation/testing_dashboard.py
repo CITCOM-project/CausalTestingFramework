@@ -20,8 +20,7 @@ from causal_testing.visualisation.visualisation_plotter import VisualisationPlot
 pn.extension("codeeditor")
 pn.extension(design="material", sizing_mode="stretch_width", notifications=True)
 
-pn.config.raw_css.append(
-    """
+pn.config.raw_css.append("""
     .test_suite_stats bk-panel-models-markup-HTML {
         background: rgb(248, 249, 250);
         padding: 15px;
@@ -86,8 +85,7 @@ pn.config.raw_css.append(
             margin: 0 !important;
         }
     }
-    """
-)
+    """)
 
 
 class Dashboard(param.Parameterized):
@@ -97,6 +95,8 @@ class Dashboard(param.Parameterized):
 
     ctf = param.ClassSelector(class_=CausalTestingFramework, default=CausalTestingFramework(test_cases=[]))
     adequacy = param.Boolean(default=False)
+    allow_cycles = param.Boolean(default=False)
+    nodes_to_test = param.ListSelector(objects=[])
 
     def __init__(self):
         super().__init__()
@@ -142,13 +142,14 @@ class Dashboard(param.Parameterized):
         """Parses uploaded DOT bytes into a CausalDAG and initialises the CTF with it."""
 
         parsed_multigraph = nx.nx_pydot.read_dot(io.StringIO(event.new.decode("utf-8")))
-        dag = CausalDAG()
+        dag = CausalDAG(allow_cycles=self.allow_cycles)
         dag.update(nx.DiGraph(parsed_multigraph))
         self.ctf.dag = dag
         self.plotter.dag = dag
         self.param.trigger("ctf")
         self.run_tests.disabled = not self.ctf.ready_to_run()
         self.generate_tests.disabled = False
+        self.param.nodes_to_test.objects = list(self.ctf.dag.nodes)
 
     def _load_test_file(self, event):
         """Load an uploaded test JSON file and assign the tests to the CTF."""
@@ -169,7 +170,9 @@ class Dashboard(param.Parameterized):
     def _generate_tests(self, _):
         """Generates causal test cases from a DAG."""
         try:
-            self.ctf.generate_causal_tests()
+            self.ctf.generate_causal_tests(
+                nodes_to_test=self.nodes_to_test if self.nodes_to_test else self.ctf.dag.nodes
+            )
             self.run_tests.disabled = not self.ctf.ready_to_run()
             self.param.trigger("ctf")
         except ValueError as e:
@@ -183,26 +186,22 @@ class Dashboard(param.Parameterized):
         for i, test_case in enumerate(self.ctf.test_cases):
             pct = int((i / total_steps) * 100)
             self.run_tests.label = f"Processing... {pct}%"
-            self.run_tests.stylesheets = [
-                f"""
+            self.run_tests.stylesheets = [f"""
             button {{
                 background-image: linear-gradient(to right, {theme_var} {pct}%, #e0e0e0 {pct}%) !important;
                 background-color: transparent !important;
                 border-color: #ccc !important;
             }}
-            """
-            ]
+            """]
             test_case.execute_test(
                 self.ctf.df, suppress_estimation_errors=True, adequacy=self.adequacy, bootstrap_size=100
             )
         self.run_tests.disabled = False
-        self.run_tests.stylesheets = [
-            """
+        self.run_tests.stylesheets = ["""
         button {{
             background: #2085ec;
         }}
-    """
-        ]
+    """]
         self.run_tests.label = original_label
         self.plotter.update_df(self.ctf.test_dataframe())
         self.param.trigger("ctf")
@@ -230,16 +229,14 @@ class Dashboard(param.Parameterized):
         else:
             value_html = f"""<span>{value if value is not None else "-"}</span>"""
 
-        return pn.pane.HTML(
-            f"""
+        return pn.pane.HTML(f"""
         <div class="bk-panel-models-markup-HTML">
             <div style="width: 100%; min-width: 0px; visibility: visible; {color}">
                 <div class="test_suite_stat_title">{name}</div>
                 <div class="test_suite_stat_value">{value_html}</div>
             </div>
         </div>
-        """
-        )
+        """)
 
     def test_suite_stats(self) -> pn.GridBox:
         """
@@ -301,20 +298,49 @@ class Dashboard(param.Parameterized):
             css_classes=["test_suite_stats"],
         )
 
+    @pn.depends("ctf", watch=True)
     def sidebar(self) -> pn.Param:
         """
         :returns: Parameters to go in the sidebar.
         """
         return pn.Column(
-            self.dag_file_input,
+            pn.Row(
+                self.dag_file_input,
+                pn.Param(
+                    self.param.allow_cycles,
+                    widgets={
+                        "allow_cycles": pmui.Switch,
+                    },
+                    show_name=False,
+                    styles={"margin": "0"},
+                ),
+            ),
             self.data_file_input,
-            pn.Row(self.test_file_input, self.generate_tests),
             pn.Param(
-                self.param.adequacy,
+                self.param,
+                widgets={
+                    "nodes_to_test": {
+                        "type": pmui.MultiChoice,
+                        # "options": list(self.ctf.dag.nodes) if self.ctf.dag is not None else [],
+                        "disabled": pn.bind(lambda ctf: ctf.dag is None, self.param.ctf),
+                        "searchable": True,
+                        "chip": False,
+                    },
+                },
+                parameters=["nodes_to_test"],
+                show_name=False,
+                styles={"margin": "0", "width": "100%"},
+            ),
+            pn.Param(
+                self.param,
                 widgets={
                     "adequacy": pmui.Switch,
                 },
+                parameters=["adequacy"],
+                show_name=False,
+                styles={"margin": "0"},
             ),
+            pn.Row(self.test_file_input, self.generate_tests),
             self.run_tests,
         )
 
@@ -347,7 +373,7 @@ class Dashboard(param.Parameterized):
         content = pn.Column(self.test_suite_stats())
 
         if self.ctf.dag is None:
-            content.append(pn.pane.Markdown("Please select the causal DAG."))
+            content.append(pn.pane.Markdown("# Please select the causal DAG."))
         else:
             results = pn.FlexBox(
                 pn.pane.PNG(
@@ -371,9 +397,7 @@ class Dashboard(param.Parameterized):
             )
 
             if any(test.result for test in self.ctf.test_cases):
-                content.append(
-                    pn.pane.Markdown(
-                        """
+                content.append(pn.pane.Markdown("""
                 # Test Outcomes
 
                 Passing causal tests are shown in green.
@@ -387,9 +411,7 @@ class Dashboard(param.Parameterized):
                 closer to the bottom left corner and passing tests appear closer to the top right corner.
                 This makes it easier to spot patterns in the data, e.g. variables involved in many failing tests, or
                 clusters of failing tests.
-                """
-                    )
-                )
+                """))
                 results.append(
                     pn.pane.HoloViews(
                         self.plotter.outcome_adjacency(
@@ -401,36 +423,58 @@ class Dashboard(param.Parameterized):
             content.append(results)
 
             if self.adequacy and self.plotter.df is not None and "result.adequacy.kurtosis" in self.plotter.df:
-                content.append(
-                    pn.pane.Markdown(
-                        """
+                content.append(pn.pane.Markdown("""
             # Test Adequacy
 
             [Causal test adequacy](https://causal-testing-framework.readthedocs.io/en/latest/modules/test_adequacy.html)
             essentially gives an indication as to whether the causal test cases have been evaluated with sufficient
             data to make the test outcomes trustworthy.
-            For Data Adequacy, values close to zero are desirable.
-            Larger values indicate an "unstable" causal estimate, i.e. individual data points have a large effect on
-            the estimate (and therefore the test outcome), indicating that the test outcome may not be trustworthy
-            and more data is desirable.
-            Values smaller than zero indicate a "suspiciously stable" causal estimate, indicating that the dataset
-            may not capture the full stochasticity of the model (or that the model is deterministic).
 
             DAG adequacy indicates how well the DAG fits the dataset, and how "stable" the test outcomes are,
             i.e. how affected the outcomes are by individual data points.
             Higher percentage pass rates indicate more reliable test outcomes.
-                """
-                    )
-                )
+                """))
                 content.append(
-                    pn.FlexBox(
-                        self.plotter.data_adequacy_heatmap(
-                            frame_width=400,
+                    pn.Tabs(
+                        (
+                            "Simplified",
+                            pn.Column(
+                                pn.pane.Markdown("""For simplified data adequacy, values close to 100 indicate that you
+                                probably have enough data for your causal effect estimates to be trustworthy. Values
+                                close to zero indicate that you should collect additional runs of your software if you
+                                can."""),
+                                pn.FlexBox(
+                                    self.plotter.data_adequacy_heatmap(
+                                        simplified=True,
+                                        frame_width=400,
+                                    ),
+                                    self.plotter.dag_adequacy_heatmap(consistency=True, frame_width=400),
+                                ),
+                            ),
                         ),
-                        self.plotter.dag_adequacy_heatmap(
-                            frame_width=400,
+                        (
+                            "Raw",
+                            pn.Column(
+                                pn.pane.Markdown(
+                                    """Raw data adequacy values represent the distribution of resampled causal
+                                effect estimates (specifically the [kurtosis](https://en.wikipedia.org/wiki/Kurtosis).
+                                Values close to zero are desirable. Larger values indicate an "unstable" causal
+                                estimate, i.e. individual data points have a large effect on the estimate (and therefore
+                                the test outcome), indicating that the test outcome may not be trustworthy and more data
+                                is desirable. Values smaller than zero indicate a "suspiciously stable" causal estimate,
+                                indicating that the dataset may not capture the full stochasticity of the model (or that
+                                the model is deterministic)."""
+                                ),
+                                pn.FlexBox(
+                                    self.plotter.data_adequacy_heatmap(
+                                        simplified=False,
+                                        frame_width=400,
+                                    ),
+                                    self.plotter.dag_adequacy_heatmap(consistency=False, frame_width=400),
+                                ),
+                            ),
                         ),
-                    ),
+                    )
                 )
 
         return content
@@ -441,7 +485,6 @@ class Dashboard(param.Parameterized):
         """
         return pn.template.MaterialTemplate(
             title="Causal Testing Framework",
-            site="Test Results",
             sidebar=self.sidebar(),
             main=[pn.Tabs(("Main", self.main_panel), ("Test Editor", self.test_editor_panel))],
         )

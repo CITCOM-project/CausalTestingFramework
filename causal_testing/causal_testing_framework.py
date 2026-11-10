@@ -128,9 +128,6 @@ class CausalTestingFramework:
         """
         logger.info(f"Loading test configurations from {test_cases_path}")
 
-        if self.dag is None:
-            raise ValueError("Please load DAG before attempting to load tests.")
-
         with open(test_cases_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
@@ -178,6 +175,8 @@ class CausalTestingFramework:
             effect_estimate = (
                 EffectEstimate(**test["result"]["effect_estimate"]) if "effect_estimate" in test["result"] else None
             )
+            if "kurtosis_simplified" in test["result"].get("adequacy", {}):
+                test["result"]["adequacy"].pop("kurtosis_simplified")
             adequacy = DataAdequacy(**test["result"]["adequacy"]) if "adequacy" in test["result"] else None
 
             test["result"] = CausalTestResult(outcome=outcome, effect_estimate=effect_estimate, adequacy=adequacy)
@@ -191,13 +190,13 @@ class CausalTestingFramework:
         """
         return all(x is not None for x in (self.test_cases, self.dag, self.df)) and bool(self.test_cases)
 
-    def generate_causal_tests(self):
+    def generate_causal_tests(self, **kwargs):
         """
         Automatically generate the suite of causal tests that corresponds to the DAG.
         """
-        if self.dag is not None and not self.dag.datatypes is not None and self.df is not None:
+        if self.dag is not None and self.dag.datatypes is None and self.df is not None:
             self.dag.datatypes = self.df.dtypes
-        self.test_cases = self.dag.generate_causal_tests()
+        self.test_cases = self.dag.generate_causal_tests(**kwargs)
 
     def run_tests(self, silent: bool = False, adequacy: bool = False, bootstrap_size: int = 100):
         """
