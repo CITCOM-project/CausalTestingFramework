@@ -29,10 +29,7 @@ def realize_poisson_line_process(
     :param intensity: float, optional
         The intensity of the poisson line process,
         default is 1.0.
-    :param orientation: {`scipy.stats.rv_continuous`,
-                   `scipy.stats.rv_discrete`}, optional
-        The line orientation distribution, default
-        is uniform distribution on [0, pi)
+    :param orientation: The line orientation distribution, default is uniform distribution on [0, pi)
 
     :returns: list of poisson lines which intersect the given
         rectangle. Each line is given as a pair of
