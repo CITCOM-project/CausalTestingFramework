@@ -109,7 +109,6 @@ class VisualisationPlotter:
                 extract_max_and_target, axis=1, result_type="expand"
             )
 
-        df.to_csv("/tmp/results.csv")
         if "result.outcome" in df:
             df["effect_estimate_tooltip"] = df.apply(
                 lambda test: pd.DataFrame(

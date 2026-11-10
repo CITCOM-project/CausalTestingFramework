@@ -43,8 +43,8 @@ def test_empty_results_dag():
     dag.add_nodes_from(["X", "Y", "Z"])
 
     plotter = VisualisationPlotter(dag=dag)
-    results_dag = plotter.results_dag()
-    assert all(results_dag.get_edge_data(x, y) is None for x, y in combinations(dag.nodes, 2))
+    interactive_results_dag = plotter.interactive_results_dag()
+    assert interactive_results_dag.Graph.I.dframe().empty
 
 
 def test_results_dag(dag, plotter):

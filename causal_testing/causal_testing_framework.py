@@ -128,9 +128,6 @@ class CausalTestingFramework:
         """
         logger.info(f"Loading test configurations from {test_cases_path}")
 
-        if self.dag is None:
-            raise ValueError("Please load DAG before attempting to load tests.")
-
         with open(test_cases_path, "r", encoding="utf-8") as f:
             test_configs = json.load(f)
 
@@ -174,6 +171,7 @@ class CausalTestingFramework:
         test["expected_causal_effect"] = effect_map[expected_causal_effect_name].load()(**expected_causal_effect_kwargs)
 
         if "result" in test:
+            print(test["result"])
             outcome = getattr(TestOutcome, test["result"]["outcome"]) if "outcome" in test["result"] else None
             effect_estimate = (
                 EffectEstimate(**test["result"]["effect_estimate"]) if "effect_estimate" in test["result"] else None

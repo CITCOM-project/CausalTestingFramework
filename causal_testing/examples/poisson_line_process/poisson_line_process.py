@@ -7,7 +7,6 @@ pp. 404-409, doi: 10.1109/QSIC.2007.4385527.
 """
 
 import numpy as np
-from numpy.random import default_rng
 from scipy.stats import uniform, rv_continuous
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon
 
@@ -42,8 +41,6 @@ def realize_poisson_line_process(
     if intensity == 0 or width == 0 or height == 0:
         return []
 
-    rng = default_rng()
-
     # points within inner_radius are always inside the rectangle
     inner_radius = min(width / 2, height / 2)
 
@@ -56,12 +53,12 @@ def realize_poisson_line_process(
 
     # radially simulate the distances between the lines and the origin
     while distance < outer_radius:
-        distance -= np.log(rng.random()) / (2 * np.pi * intensity)
+        distance -= np.log(np.random.rand()) / (2 * np.pi * intensity)
 
         # Draw alpha from the given orientation distribution.
         alpha = orientation.rvs()
 
-        if rng.random() > 0.5:
+        if np.random.rand() > 0.5:
             alpha = alpha + np.pi
 
         current_line = convert_line_representation(distance, alpha)
