@@ -53,3 +53,10 @@ def test_plp_run():
     Basic test to check that we can run the PLP and get data out.
     """
     assert run(2.0, 2.0, 1.0, 1) == (8, 15, 2.0, 3.75)
+
+
+def test_plp_run_zero():
+    """
+    Basic test to check that we can run the PLP and get data out.
+    """
+    assert run(2.0, 2.0, 0) == (0, 0, 0, 0)

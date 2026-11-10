@@ -8,7 +8,7 @@ pp. 404-409, doi: 10.1109/QSIC.2007.4385527.
 
 import numpy as np
 from scipy.stats import uniform, rv_continuous
-from shapely.geometry import MultiLineString, MultiPolygon, Polygon
+from shapely.geometry import MultiLineString, Polygon
 
 
 def realize_poisson_line_process(
@@ -150,21 +150,13 @@ def detect_shapes(lines: list[tuple[float, float]], width: float, height: float)
             [low_x, low_y],
         ]
     )
-    if isinstance(multipolygons, Polygon):
-        polygon = multipolygons.intersection(area)
-        if polygon.is_empty:
-            return []
-        return [polygon]
 
     polygons = []
     for polygon in multipolygons.geoms:
         polygon = polygon.intersection(area)
         if polygon.is_empty:
             continue
-        if isinstance(polygon, Polygon):
-            polygons.append(polygon)
-        elif isinstance(polygon, MultiPolygon):
-            polygons += list(polygon.geoms)
+        polygons.append(polygon)
 
     return polygons
 
