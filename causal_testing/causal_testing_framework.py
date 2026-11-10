@@ -171,7 +171,6 @@ class CausalTestingFramework:
         test["expected_causal_effect"] = effect_map[expected_causal_effect_name].load()(**expected_causal_effect_kwargs)
 
         if "result" in test:
-            print(test["result"])
             outcome = getattr(TestOutcome, test["result"]["outcome"]) if "outcome" in test["result"] else None
             effect_estimate = (
                 EffectEstimate(**test["result"]["effect_estimate"]) if "effect_estimate" in test["result"] else None
