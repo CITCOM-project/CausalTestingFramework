@@ -1,0 +1,7 @@
+digraph CausalDAG {
+    rankdir=LR;
+    "vaccine" -> "cum_vaccinations";
+    "vaccine" -> "cum_vaccinated";
+    "vaccine" -> "cum_infections";
+    "max_doses";
+}

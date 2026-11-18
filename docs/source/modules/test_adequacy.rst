@@ -31,6 +31,11 @@ Kurtosis values larger than zero represent unstable causal effect estimates.
 That is, the estimates are highly dependent on individual data points, meaning that the causal test outcomes are unlikely to be trustworthy.
 While, the acceptable kurtosis values will vary between systems and applications, a general rule would be that kurtosis values between 0 and 1 are mostly acceptable, with negative values being generally undesirable.
 
+To aid interpretation, we also provide a :code:`kurtosis_simplified` option that maps the raw kurtosis values to the range 0-100, to more closely align with traditional test adequacy metrics.
+To do this, we put the absolute kurtosis value through a sigmoid function such that a kurtosis of 0 gives a "simplified" value of 100.
+By default, a kurtosis of -0.8 maps to a simplified value of 50.
+Since a uniform distribution has kurtosis value -1.2, which represents pretty much the worst case that it's possible to achieve in this setting, a kurtosis of -0.8 corresponds to a curve that is visually about "halfway" between a normal distribution and a uniform one.
+
 Configuration Options
 ---------------------
 

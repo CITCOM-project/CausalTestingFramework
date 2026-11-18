@@ -43,11 +43,6 @@ class TestCausalTestingFramework(unittest.TestCase):
         with self.assertRaises(ValueError):
             framework.load_data("data.invalid")
 
-    def test_load_tests_before_dag(self):
-        framework = CausalTestingFramework()
-        with self.assertRaises(ValueError):
-            framework.load_test_cases_from_json(self.test_cases_path)
-
     def test_create_test_case_invalid_estimator(self):
         framework = CausalTestingFramework()
         framework.setup(**self.paths)

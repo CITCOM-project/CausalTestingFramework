@@ -10,34 +10,30 @@ import requests
 from bs4 import BeautifulSoup
 
 from causal_testing.causal_testing_framework import CausalTestingFramework
+from causal_testing.examples import poisson_line_process
 from causal_testing.specification.causal_dag import CausalDAG
 from causal_testing.visualisation.testing_dashboard import Dashboard, serve_dashboard
 
 
 @pytest.fixture(name="dag_path")
 def _dag_path():
-    return Path(__file__).parent.parent.parent / "examples" / "poisson-line-process" / "dag.dot"
+    return poisson_line_process.dag_path
 
 
 @pytest.fixture(name="data_path")
 def _data_path():
-    return (
-        Path(__file__).parent.parent.parent
-        / "examples"
-        / "poisson-line-process"
-        / "data"
-        / "random"
-        / "data_random_1000.csv"
-    )
+    return poisson_line_process.data_path
 
 
 @pytest.fixture(name="test_path")
 def _test_path():
-    return Path(__file__).parent.parent.parent / "examples" / "poisson-line-process" / "causal_tests.json"
+    return poisson_line_process.tests_path
 
 
-@pytest.fixture(name="completed_test_path")
-def _completed_test_path():
+@pytest.fixture(name="completed_tests_path")
+def _completed_tests_path():
+    # Different from the example one to simulate an INESTIMABLE test.
+    # Ideally switch this to using an actual inestimable test rather than a simulated one
     return Path(__file__).parent.parent / "resources" / "data" / "poisson_line_tests.json"
 
 
@@ -164,7 +160,7 @@ def test_run_tests(dag_path, data_path):
     assert [test.to_dict() for test in ctf.test_cases] == [test.to_dict() for test in dashboard.ctf.test_cases]
 
 
-def test_completed_test_suite_stats_text(dag_path, completed_test_path):
+def test_completed_test_suite_stats_text(dag_path, completed_tests_path):
     """
     Test that the executed tests lead to the correct summary.
     """
@@ -173,7 +169,7 @@ def test_completed_test_suite_stats_text(dag_path, completed_test_path):
     with open(dag_path, encoding="utf-8") as f:
         dashboard.dag_file_input.value = f.read().encode()
 
-    with open(completed_test_path, encoding="utf-8") as f:
+    with open(completed_tests_path, encoding="utf-8") as f:
         dashboard.test_file_input.value = f.read().encode()
 
     extracted_texts = [
@@ -191,7 +187,7 @@ def test_completed_test_suite_stats_text(dag_path, completed_test_path):
     assert extracted_texts == expected
 
 
-def test_suite_stats_colour_only_failing(dag_path, completed_test_path):
+def test_suite_stats_colour_only_failing(dag_path, completed_tests_path):
     """
     Test that the executed tests lead to the correct summary.
     """
@@ -200,7 +196,7 @@ def test_suite_stats_colour_only_failing(dag_path, completed_test_path):
     with open(dag_path, encoding="utf-8") as f:
         dashboard.dag_file_input.value = f.read().encode()
 
-    with open(completed_test_path, encoding="utf-8") as f:
+    with open(completed_tests_path, encoding="utf-8") as f:
         tests = json.load(f)
     only_failing = [test for test in tests if test["result"]["outcome"] == "FAIL"]
     dashboard.test_file_input.value = json.dumps(only_failing).encode()
@@ -212,7 +208,7 @@ def test_suite_stats_colour_only_failing(dag_path, completed_test_path):
     assert colours == expected_colours
 
 
-def test_suite_stats_colour_only_passing(dag_path, completed_test_path):
+def test_suite_stats_colour_only_passing(dag_path, completed_tests_path):
     """
     Test that the executed tests lead to the correct summary.
     """
@@ -221,7 +217,7 @@ def test_suite_stats_colour_only_passing(dag_path, completed_test_path):
     with open(dag_path, encoding="utf-8") as f:
         dashboard.dag_file_input.value = f.read().encode()
 
-    with open(completed_test_path, encoding="utf-8") as f:
+    with open(completed_tests_path, encoding="utf-8") as f:
         tests = json.load(f)
     only_passing = [test for test in tests if test["result"]["outcome"] == "PASS"]
     dashboard.test_file_input.value = json.dumps(only_passing).encode()
@@ -298,7 +294,7 @@ def test_download_tests(dag_path, test_path):
     assert json.loads(downloaded_tests) == json.loads(tests_string)
 
 
-def test_build_template_html_structure(dag_path, completed_test_path):
+def test_build_template_html_structure(dag_path, completed_tests_path):
     """
     Test that we have test outcomes and test adequacy on the main tab and a code editor in the test editor tab.
 
@@ -310,7 +306,7 @@ def test_build_template_html_structure(dag_path, completed_test_path):
     with open(dag_path, encoding="utf-8") as f:
         dashboard.dag_file_input.value = f.read().encode()
 
-    with open(completed_test_path, encoding="utf-8") as f:
+    with open(completed_tests_path, encoding="utf-8") as f:
         dashboard.test_file_input.value = f.read().encode()
 
     template = dashboard.build_template()
