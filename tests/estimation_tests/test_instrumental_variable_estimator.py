@@ -1,51 +1,53 @@
-import unittest
+"""
+This module tests the instrumental variable estimator.
+"""
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from causal_testing.estimation.instrumental_variable_estimator import InstrumentalVariableEstimator
 
 
-class TestInstrumentalVariableEstimator(unittest.TestCase):
+@pytest.fixture(name="df")
+def _df():
     """
-    Test the instrumental variable estimator.
+    Noiseless linear data where X = 2Z and Y = 2X.
     """
+    Z = np.linspace(0, 10)
+    X = 2 * Z
+    Y = 2 * X
+    return pd.DataFrame({"Z": Z, "X": X, "Y": Y})
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        Z = np.linspace(0, 10)
-        X = 2 * Z
-        Y = 2 * X
-        cls.df = pd.DataFrame({"Z": Z, "X": X, "Y": Y})
 
-    def test_estimate_coefficient(self):
-        """
-        Test we get the correct coefficient.
-        """
-        iv_estimator = InstrumentalVariableEstimator(
-            treatment_variable="X",
-            outcome_variable="Y",
-            instrument="Z",
-        )
-        effect_estimate = iv_estimator.estimate_coefficient(self.df)
-        self.assertEqual(effect_estimate.effect_estimate[0], 2)
-        self.assertEqual(effect_estimate.ci_low[0], 2)
-        self.assertEqual(effect_estimate.ci_high[0], 2)
+@pytest.fixture(name="iv_estimator")
+def _iv_estimator():
+    """
+    Fresh estimator for each test, using Z as an instrument for the effect of X on Y.
+    """
+    return InstrumentalVariableEstimator(
+        treatment_variable="X",
+        outcome_variable="Y",
+        instrument="Z",
+    )
 
-    def test_to_dict(self):
-        iv_estimator = InstrumentalVariableEstimator(
-            treatment_variable="X",
-            outcome_variable="Y",
-            instrument="Z",
-        )
-        self.assertEqual(
-            iv_estimator.to_dict(),
-            {
-                "name": "InstrumentalVariableEstimator",
-                "treatment_variable": "X",
-                "outcome_variable": "Y",
-                "alpha": 0.05,
-                "instrument": "Z",
-                "bootstrap_size": 100,
-            },
-        )
+
+def test_estimate_coefficient(iv_estimator, df):
+    """
+    Test we get the correct coefficient.
+    """
+    effect_estimate = iv_estimator.estimate_coefficient(df)
+    assert effect_estimate.effect_estimate[0] == 2
+    assert effect_estimate.ci_low[0] == 2
+    assert effect_estimate.ci_high[0] == 2
+
+
+def test_to_dict(iv_estimator):
+    assert iv_estimator.to_dict() == {
+        "name": "InstrumentalVariableEstimator",
+        "treatment_variable": "X",
+        "outcome_variable": "Y",
+        "alpha": 0.05,
+        "instrument": "Z",
+        "bootstrap_size": 100,
+    }
