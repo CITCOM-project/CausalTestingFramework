@@ -7,31 +7,42 @@ import pytest
 from causal_testing.causal_testing_framework import CausalTestingFramework
 from causal_testing.specification.causal_dag import CausalDAG
 
-DAG_PATH = "tests/resources/data/dag.dot"
-DATA_PATHS = ["tests/resources/data/data.csv"]
-TEST_CASES_PATH = "tests/resources/data/tests.json"
-PATHS = {
-    "dag_path": DAG_PATH,
-    "data_paths": DATA_PATHS,
-    "test_cases_path": TEST_CASES_PATH,
-}
+
+@pytest.fixture(name="data_paths")
+def _data_paths(data_path):
+    """
+    The example data path, as a list.
+    """
+    return [data_path]
 
 
-def test_load_data():
+@pytest.fixture(name="paths")
+def _paths(dag_path, data_paths, test_cases_path):
+    """
+    Keyword arguments for `CausalTestingFramework.setup`.
+    """
+    return {
+        "dag_path": dag_path,
+        "data_paths": data_paths,
+        "test_cases_path": test_cases_path,
+    }
+
+
+def test_load_data(data_paths):
     csv_framework = CausalTestingFramework()
-    csv_framework.load_data(DATA_PATHS)
+    csv_framework.load_data(data_paths)
 
     pqt_framework = CausalTestingFramework()
-    pqt_framework.load_data([path.replace(".csv", ".pqt") for path in DATA_PATHS])
+    pqt_framework.load_data([path.replace(".csv", ".pqt") for path in data_paths])
     pd.testing.assert_frame_equal(csv_framework.df, pqt_framework.df)
 
 
-def test_load_data_query():
+def test_load_data_query(data_paths):
     framework = CausalTestingFramework()
-    framework.load_data(data_paths=DATA_PATHS)
+    framework.load_data(data_paths=data_paths)
     assert not (framework.df["test_input"] > 4).all()
 
-    framework.load_data(data_paths=DATA_PATHS, query="test_input > 4")
+    framework.load_data(data_paths=data_paths, query="test_input > 4")
     assert (framework.df["test_input"] > 4).all()
 
 
@@ -41,15 +52,15 @@ def test_load_data_invalid_extension():
         framework.load_data(["data.invalid"])
 
 
-def test_load_tests_before_dag():
+def test_load_tests_before_dag(test_cases_path):
     framework = CausalTestingFramework()
     with pytest.raises(ValueError, match=re.escape("Please load DAG before attempting to load tests.")):
-        framework.load_test_cases_from_json(TEST_CASES_PATH)
+        framework.load_test_cases_from_json(test_cases_path)
 
 
-def test_create_test_case_invalid_estimator():
+def test_create_test_case_invalid_estimator(paths):
     framework = CausalTestingFramework()
-    framework.setup(**PATHS)
+    framework.setup(**paths)
     message = (
         "Unsupported estimator InvalidEstimator. Supported: ['CubicSplineEstimator', 'IPCWEstimator', "
         "'InstrumentalVariableEstimator', 'LinearRegressionEstimator', 'LogisticRegressionEstimator', "
@@ -68,9 +79,9 @@ def test_create_test_case_invalid_estimator():
         )
 
 
-def test_create_test_case_no_estimator():
+def test_create_test_case_no_estimator(paths):
     framework = CausalTestingFramework()
-    framework.setup(**PATHS)
+    framework.setup(**paths)
     with pytest.raises(ValueError, match=re.escape("Test configuration must specify an `estimator`.")):
         framework.create_causal_test(
             {
@@ -81,10 +92,10 @@ def test_create_test_case_no_estimator():
         )
 
 
-def test_create_test_case_no_expected_causal_effect():
+def test_create_test_case_no_expected_causal_effect(dag_path, data_paths):
     framework = CausalTestingFramework()
-    framework.load_dag(DAG_PATH)
-    framework.load_data(DATA_PATHS)
+    framework.load_dag(dag_path)
+    framework.load_data(data_paths)
     test = {
         "name": "test1",
         "estimator": {
@@ -99,10 +110,10 @@ def test_create_test_case_no_expected_causal_effect():
         framework.create_causal_test(test)
 
 
-def test_create_test_case_invalid_effect():
+def test_create_test_case_invalid_effect(dag_path, data_paths):
     framework = CausalTestingFramework()
-    framework.load_dag(DAG_PATH)
-    framework.load_data(DATA_PATHS)
+    framework.load_dag(dag_path)
+    framework.load_data(data_paths)
     test = {
         "name": "test1",
         "estimator": {
@@ -124,10 +135,10 @@ def test_create_test_case_invalid_effect():
         framework.create_causal_test(test)
 
 
-def test_create_test_case_effect_kwargs():
+def test_create_test_case_effect_kwargs(dag_path, data_paths):
     framework = CausalTestingFramework()
-    framework.load_dag(DAG_PATH)
-    framework.load_data(DATA_PATHS)
+    framework.load_dag(dag_path)
+    framework.load_data(data_paths)
     test = {
         "name": "test1",
         "estimator": {
@@ -143,10 +154,10 @@ def test_create_test_case_effect_kwargs():
     assert test_case.expected_causal_effect.value == 4
 
 
-def test_create_test_case_estimator_kwargs():
+def test_create_test_case_estimator_kwargs(dag_path, data_paths):
     framework = CausalTestingFramework()
-    framework.load_dag(DAG_PATH)
-    framework.load_data(DATA_PATHS)
+    framework.load_dag(dag_path)
+    framework.load_data(data_paths)
     test = {
         "name": "test1",
         "estimator": {
@@ -168,9 +179,9 @@ def test_unloaded_tests():
         framework.run_tests()
 
 
-def test_ctf_exception():
-    framework = CausalTestingFramework(PATHS)
-    framework.setup(**PATHS, query="test_input < 0")
+def test_ctf_exception(paths):
+    framework = CausalTestingFramework(paths)
+    framework.setup(**paths, query="test_input < 0")
 
     with pytest.raises(
         ValueError, match=re.escape("zero-size array to reduction operation maximum which has no identity")
@@ -178,13 +189,13 @@ def test_ctf_exception():
         framework.run_tests()
 
 
-def test_ctf_exception_silent(tmp_path):
-    framework = CausalTestingFramework(PATHS)
-    framework.setup(**PATHS, query="test_input < 0")
+def test_ctf_exception_silent(tmp_path, test_cases_path, paths):
+    framework = CausalTestingFramework(paths)
+    framework.setup(**paths, query="test_input < 0")
     framework.run_tests(silent=True)
     framework.save_results(tmp_path / "results.json")
 
-    with open(TEST_CASES_PATH, "r", encoding="utf-8") as f:
+    with open(test_cases_path, "r", encoding="utf-8") as f:
         test_configs = json.load(f)
 
         non_skipped_configs = [t for t in test_configs if not t.get("skip", False)]
@@ -196,9 +207,9 @@ def test_ctf_exception_silent(tmp_path):
             assert result.passed == False
 
 
-def test_ctf_evaluate_dag():
-    framework = CausalTestingFramework(PATHS)
-    framework.setup(**PATHS)
+def test_ctf_evaluate_dag(paths):
+    framework = CausalTestingFramework(paths)
+    framework.setup(**paths)
     results = framework.evaluate_dag()
     expected = pd.Series(
         {
