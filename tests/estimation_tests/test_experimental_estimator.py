@@ -13,6 +13,9 @@ class SystemUnderTest:
     """
 
     def run(self, x):
+        """
+        Return double the input.
+        """
         return x * 2
 
 
@@ -48,6 +51,9 @@ def _estimator():
 
 
 def test_estimate_ate(estimator):
+    """
+    Test ATE estimation.
+    """
     effect_estimate = estimator.estimate_ate()
     assert effect_estimate.effect_estimate["X"] == 2
     assert effect_estimate.ci_low["X"] == 2
@@ -55,6 +61,9 @@ def test_estimate_ate(estimator):
 
 
 def test_estimate_risk_ratio(estimator):
+    """
+    Test risk ratio estimation.
+    """
     effect_estimate = estimator.estimate_risk_ratio()
     assert effect_estimate.effect_estimate["X"] == 2
     assert effect_estimate.ci_low["X"] == 2

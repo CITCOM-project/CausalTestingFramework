@@ -12,6 +12,9 @@ from causal_testing.estimation.genetic_programming_regression_fitter import GP, 
 
 
 def root(x):
+    """
+    Square root, used as an extra GP operator.
+    """
     return x**0.5
 
 
@@ -52,7 +55,7 @@ def test_simplify_string(gp):
 
 def test_fitness(gp):
     """
-    Test GP fitness function for perfect expression.
+    Test GP fitness function for optimal expression.
     """
     assert gp.fitness("add(x1, 1)") == (0,)
 
@@ -65,8 +68,7 @@ def test_fitness_inf(gp):
 
 
 def test_mut_insert_no_primitives():
-    """Test that mut_insert returns the unmodified expression if there are no
-    primitives of the appropriate type."""
+    """Test that mut_insert returns the unmodified expression if there are no primitives of the appropriate type."""
     pset = PrimitiveSet("MAIN", 1)
     pset.addPrimitive(lambda x1, x2: x1 + x2, 1, name="add")
     expression = PrimitiveTree.from_string("add(ARG0, 1)", pset)

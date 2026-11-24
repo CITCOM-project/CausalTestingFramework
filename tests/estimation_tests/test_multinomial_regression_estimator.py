@@ -10,6 +10,9 @@ from causal_testing.estimation.multinomial_regression_estimator import Multinomi
 
 
 def test_odds_ratio(scarf_df):
+    """
+    Test that the unit odds ratio for a binary outcome matches the logistic regression result.
+    """
     multinomial_regression_estimator = MultinomialRegressionEstimator(
         treatment_variable="length_in",
         outcome_variable="completed",
@@ -22,6 +25,9 @@ def test_odds_ratio(scarf_df):
 
 
 def test_odds_ratio_category(scarf_df):
+    """
+    Test that a unit odds ratio is returned for each category of a categorical outcome.
+    """
     multinomial_regression_estimator = MultinomialRegressionEstimator(
         treatment_variable="length_in",
         outcome_variable="color",

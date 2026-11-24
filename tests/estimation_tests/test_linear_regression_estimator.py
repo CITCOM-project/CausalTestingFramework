@@ -37,7 +37,7 @@ def _nhefs_df():
 
 @pytest.fixture(name="chapter_11_df")
 def _chapter_11_df():
-    """Get the data from chapter 11 and put into a dataframe."""
+    """Get chapter 11 data and put into a dataframe."""
 
     treatments, outcomes = zip(
         *(
@@ -66,7 +66,8 @@ def _chapter_11_df():
 @pytest.fixture(name="interaction_df", scope="module")
 def _interaction_df():
     """
-    Synthetic data with an interaction term: Y = 2X1 - 3X2 + 2*X1*X2 + 10
+    Synthetic data with an interaction term: Y = 2X1 - 3X2 + 2*X1*X2 + 10.
+    2*X1*X2 is the interaction term, representing interaction between X1 and X2.
     """
     df = pd.DataFrame({"X1": np.random.uniform(-1000, 1000, 1000), "X2": np.random.uniform(-1000, 1000, 1000)})
     df["Y"] = 2 * df["X1"] - 3 * df["X2"] + 2 * df["X1"] * df["X2"] + 10
@@ -91,6 +92,9 @@ def _interaction_df():
     ids=["complex_formula", "no_c"],
 )
 def test_complex_formula_adjustment_set(formula, expected_adjustment_set):
+    """
+    Test that the correct adjustment set is extracted from a complex formula.
+    """
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="cut", outcome_variable="price", formula=formula
     )
@@ -137,6 +141,10 @@ def test_complex_formula_adjustment_set_no_dependent():
     ids=["wrong_dependent", "adjustment_set_mismatch", "adjustment_config_mismatch", "no_formula_or_adjustment_set"],
 )
 def test_invalid_configuration(kwargs, message):
+    """
+    Test that an invalid combination of formula, adjustment set, and adjustment configuration raises the
+    correct ValueError.
+    """
     with pytest.raises(ValueError, match=re.escape(message)):
         LinearRegressionEstimator(treatment_variable="cut", outcome_variable="price", **kwargs)
 
@@ -152,6 +160,10 @@ def test_formula_from_adjustment_set():
 
 
 def test_linear_regression_categorical_ate(scarf_df):
+    """
+    Test that, with a categorical treatment, the confidence intervals of every category's coefficient contain
+    zero.
+    """
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="color", outcome_variable="completed", adjustment_set=set()
     )
@@ -286,6 +298,9 @@ def test_program_11_2_with_robustness_validation(chapter_11_df):
 
 
 def test_to_dict():
+    """
+    Test that the estimator is correctly serialised to a dictionary.
+    """
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="X",
         outcome_variable="Y",
@@ -328,6 +343,9 @@ def test_to_dict():
     ids=["reciprocal", "power"],
 )
 def test_gp(x_values, y_function, gp_kwargs, expected_formula, expected_estimate):
+    """
+    Test that genetic programming finds the expected formula, and that the resulting ATE is correct.
+    """
     df = pd.DataFrame({"X": x_values, "Y": y_function(x_values)})
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="X",
@@ -360,6 +378,9 @@ def test_X1_effect(interaction_df):
 
 
 def test_categorical_confidence_intervals(scarf_df):
+    """
+    Test that coefficients and confidence intervals are returned per category for a categorical treatment.
+    """
     lr_model = LinearRegressionEstimator(treatment_variable="color", outcome_variable="length_in", adjustment_set=set())
     effect_estimate = lr_model.estimate_coefficient(scarf_df)
 

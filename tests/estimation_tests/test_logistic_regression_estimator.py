@@ -7,6 +7,9 @@ from causal_testing.estimation.logistic_regression_estimator import LogisticRegr
 
 
 def test_odds_ratio(scarf_df):
+    """
+    Test that the unit odds ratio matches the scarf example.
+    """
     logistic_regression_estimator = LogisticRegressionEstimator(
         treatment_variable="length_in",
         outcome_variable="completed",
