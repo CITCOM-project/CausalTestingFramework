@@ -92,12 +92,12 @@ def test_no_individual_began_treatment_strategy(estimation_model, treatment_stra
 
 
 def test_preprocess_data_no_faults(estimation_model, df):
-    with pytest.raises(ValueError, match=re.escape("No safe runs with outcome. Cannot perform estimation.")):
+    with pytest.raises(ValueError, match=re.escape("No faults with outcome. Cannot perform estimation.")):
         estimation_model.preprocess_data(df.assign(**{STATUS_COLUMN: True}))
 
 
 def test_preprocess_data_only_faults(estimation_model, df):
-    with pytest.raises(ValueError, match=re.escape("No faults with outcome. Cannot perform estimation.")):
+    with pytest.raises(ValueError, match=re.escape("No safe runs with outcome. Cannot perform estimation.")):
         estimation_model.preprocess_data(df.assign(**{STATUS_COLUMN: False}))
 
 

@@ -328,7 +328,7 @@ def test_to_dict():
     ids=["reciprocal", "power"],
 )
 def test_gp(x_values, y_function, gp_kwargs, expected_formula, expected_estimate):
-    df = pd.DataFrame({"X": x_values, "Y": y_function(df["X"])})
+    df = pd.DataFrame({"X": x_values, "Y": y_function(x_values)})
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="X",
         outcome_variable="Y",
