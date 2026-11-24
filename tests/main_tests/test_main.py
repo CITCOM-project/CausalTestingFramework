@@ -68,8 +68,8 @@ def test_parse_args_adequacy(tmp_path, monkeypatch, dag_path, data_path, test_ca
     main()
     with open(tmp_path / "main.json", encoding="utf-8") as f:
         log = json.load(f)
-    executed_tests = [test for test in log if not test.get("skip", False)]
-    assert all(test["result"].get("bootstrap_size", 100) == 100 for test in executed_tests)
+    [executed_test] = [test for test in log if not test.get("skip", False)]
+    assert executed_test["result"]["adequacy"]["bootstrap_size"] == 100
 
 
 def test_parse_args_bootstrap_size(tmp_path, monkeypatch, dag_path, data_path, test_cases_path):
@@ -93,8 +93,8 @@ def test_parse_args_bootstrap_size(tmp_path, monkeypatch, dag_path, data_path, t
     main()
     with open(tmp_path / "main.json", encoding="utf-8") as f:
         log = json.load(f)
-    executed_tests = [test for test in log if not test.get("skip", False)]
-    assert all(test["result"].get("bootstrap_size", 50) == 50 for test in executed_tests)
+    [executed_test] = [test for test in log if not test.get("skip", False)]
+    assert executed_test["result"]["adequacy"]["bootstrap_size"] == 50
 
 
 def test_parse_args_bootstrap_size_explicit_adequacy(tmp_path, monkeypatch, dag_path, data_path, test_cases_path):
