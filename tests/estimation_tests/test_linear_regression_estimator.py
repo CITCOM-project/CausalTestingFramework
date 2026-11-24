@@ -1,5 +1,6 @@
 """
-This module tests the linear regression estimator against the programming exercises in Section 2 of Hernán and Robins [1].
+This module tests the linear regression estimator against the programming exercises in Section 2 of Hernán and
+Robins [1].
 
 Reference: Hernán MA, Robins JM (2020). Causal Inference: What If. Boca Raton: Chapman & Hall/CRC.
 Link: https://www.hsph.harvard.edu/miguel-hernan/causal-inference-book/
@@ -205,7 +206,7 @@ def test_program_15_1A(nhefs_df):
         treatment_value=1,
         control_value=0,
         formula=f"""wt82_71 ~ qsmk +
-                         {'+'.join(sorted(list(covariates)))} +
+                         {'+'.join(sorted(covariates))} +
                          I(age ** 2) +
                          I(wt71 ** 2) +
                          I(smokeintensity ** 2) +
@@ -268,7 +269,8 @@ def test_program_15_no_interaction_ate_calculated(nhefs_df):
 
 
 def test_program_11_2_with_robustness_validation(chapter_11_df):
-    """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
+    """Test whether our linear regression estimator, as used in test_program_11 (program 11.2), can correctly estimate
+    robustness."""
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="treatments",
         outcome_variable="outcomes",
@@ -367,13 +369,13 @@ def test_categorical_confidence_intervals(scarf_df):
     assert effect_estimate.ci_high.round(2).equals(pd.Series({"color[T.grey]": 23.95, "color[T.orange]": 17.08}))
 
 
-def test_program_11_3_linear_regression(chapter_11_df):
-    """Test whether the cublic_spline regression implementation produces the same results as program 11.3 (p. 162).
+def test_program_11_3_cubic_spline(chapter_11_df):
+    """Test whether the cubic spline regression implementation produces the same results as program 11.3 (p. 162).
     https://www.hsph.harvard.edu/miguel-hernan/wp-content/uploads/sites/1268/2023/10/hernanrobins_WhatIf_30sep23.pdf
     Slightly modified as Hernan et al. use linear regression for this example.
     """
 
-    cublic_spline_estimator = LinearRegressionEstimator(
+    cubic_spline_estimator = LinearRegressionEstimator(
         treatment_variable="treatments",
         outcome_variable="outcomes",
         treatment_value=1,
@@ -381,11 +383,11 @@ def test_program_11_3_linear_regression(chapter_11_df):
         formula="outcomes ~ cr(treatments, df=3)",
     )
 
-    ate_1 = cublic_spline_estimator.estimate_ate_calculated(chapter_11_df).effect_estimate
+    ate_1 = cubic_spline_estimator.estimate_ate_calculated(chapter_11_df).effect_estimate
 
-    cublic_spline_estimator.treatment_value = 2
-    ate_2 = cublic_spline_estimator.estimate_ate_calculated(chapter_11_df).effect_estimate
+    cubic_spline_estimator.treatment_value = 2
+    ate_2 = cubic_spline_estimator.estimate_ate_calculated(chapter_11_df).effect_estimate
 
-    # Doubling the treatemebnt value should roughly but not exactly double the ATE
+    # Doubling the treatment value should roughly but not exactly double the ATE
     assert ate_1[0] * 2 != ate_2[0]
     assert ate_1[0] * 2 == pytest.approx(ate_2[0], abs=5e-8)
