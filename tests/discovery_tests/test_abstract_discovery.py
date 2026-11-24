@@ -18,24 +18,33 @@ class AbstractDiscovery(Discovery):
 
     def discover(self):
         """
-        Minimal implementation of the abstract method.
+        Minimal implementation of the abstract discover method.
         """
         return CausalDAG()
 
 
 def test_simple_cycle():
+    """
+    Test that simple_cycle returns the edges of a cycle in the graph.
+    """
     dag = CausalDAG(ignore_cycles=True)
     dag.add_edges_from([("A", "B"), ("B", "C"), ("C", "A")])
     assert simple_cycle(dag) == [("A", "B"), ("B", "C"), ("C", "A")]
 
 
 def test_simple_cycle_no_cycles():
+    """
+    Test that simple_cycle returns an empty list for an acyclic graph.
+    """
     dag = CausalDAG()
     dag.add_edges_from([("A", "B"), ("B", "C")])
     assert simple_cycle(dag) == []
 
 
 def test_include_edge_wildcard():
+    """
+    Test that regex wildcards in include_edges are expanded to all matching variables.
+    """
     abstract_discovery = AbstractDiscovery(
         df=pd.DataFrame(columns=["x_1", "x_2", "x_3", "y_1", "y_2", "y_3", "z_1", "z_2"]),
         include_edges=[("x_.*", "y_1")],
@@ -44,6 +53,9 @@ def test_include_edge_wildcard():
 
 
 def test_include_edge_cycle():
+    """
+    Test that specifying include_edges that form a cycle raises a HasACycle error.
+    """
     with pytest.raises(nx.exception.HasACycle):
         AbstractDiscovery(
             df=pd.DataFrame(columns=["x_1", "x_2", "x_3", "y_1", "y_2", "y_3", "z_1", "z_2"]),
@@ -52,6 +64,9 @@ def test_include_edge_cycle():
 
 
 def test_exclude_edge_wildcard():
+    """
+    Test that regex wildcards in exclude_edges are expanded to all matching variables.
+    """
     abstract_discovery = AbstractDiscovery(
         df=pd.DataFrame(columns=["x_1", "x_2", "x_3", "y_1", "y_2", "y_3", "z_1", "z_2"]),
         exclude_edges=[("x_.*", "y_1")],
@@ -60,6 +75,9 @@ def test_exclude_edge_wildcard():
 
 
 def test_remove_cycles():
+    """
+    Test that remove_cycles makes a cyclic graph acyclic.
+    """
     dag = CausalDAG(ignore_cycles=True)
     dag.add_edges_from([("A", "B"), ("B", "C")])
     dag.add_edge("C", "A")
@@ -71,6 +89,9 @@ def test_remove_cycles():
 
 
 def test_remove_cycles_respects_include_edges():
+    """
+    Test that remove_cycles does not remove edges that are in include_edges.
+    """
     dag = CausalDAG(ignore_cycles=True)
     dag.add_edges_from([("A", "B"), ("B", "C")])
     dag.add_edge("C", "A")
@@ -85,6 +106,9 @@ def test_remove_cycles_respects_include_edges():
 
 
 def test_remove_cycles_no_cycles_present():
+    """
+    Test that remove_cycles leaves an acyclic graph unchanged.
+    """
     dag = CausalDAG()
     dag.add_edges_from([("A", "B")])
 
@@ -94,6 +118,9 @@ def test_remove_cycles_no_cycles_present():
 
 
 def test_remove_cycles_multiple_cycles():
+    """
+    Test that remove_cycles removes exactly one edge from each of multiple independent cycles.
+    """
     dag = CausalDAG(ignore_cycles=True)
     dag.add_edges_from([("A", "B"), ("C", "D"), ("B", "A"), ("D", "C")])
 
@@ -105,6 +132,9 @@ def test_remove_cycles_multiple_cycles():
 
 
 def test_evaluate_tests_invalid_datatype(scarf_df):
+    """
+    Test that evaluate_tests raises a ValueError when the data contains an unsupported datatype.
+    """
     scarf_df["completed"] = pd.to_datetime(["2026-01-01" for _ in range(len(scarf_df))], format="%Y-%m-%d")
 
     dag = CausalDAG()
@@ -124,6 +154,10 @@ def test_evaluate_tests_invalid_datatype(scarf_df):
     ],
 )
 def test_evaluate_tests(scarf_df, filter_data, completed_color_outcome):
+    """
+    Test that evaluate_tests produces the expected test outcomes for the scarf example, including
+    inestimable outcomes when the data is insufficient to estimate an effect.
+    """
     if filter_data:
         # Keep only completed, non-grey scarves, so the effect of completed on color cannot be estimated
         scarf_df["completed"] = scarf_df["completed"].astype(bool)

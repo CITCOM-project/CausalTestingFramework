@@ -7,6 +7,9 @@ from causal_testing.specification.causal_dag import CausalDAG
 
 
 def test_evaluate_fitness(scarf_df):
+    """
+    Test that evaluate_fitness returns the expected fitness values and problem edges for the scarf example.
+    """
     dag = CausalDAG()
     dag.add_nodes_from(scarf_df.columns)
     dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
@@ -24,6 +27,9 @@ def test_evaluate_fitness(scarf_df):
 
 
 def test_discovery_edges(scarf_df):
+    """
+    Test that the discovered DAG contains the included edges and not the excluded edges.
+    """
     hill_climber = HillClimberDiscovery(
         scarf_df,
         include_edges=[("length_in", "completed")],

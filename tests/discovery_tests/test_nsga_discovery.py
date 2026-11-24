@@ -9,6 +9,9 @@ from causal_testing.specification.causal_dag import CausalDAG
 
 
 def test_binary_string_to_causal_dag(scarf_df):
+    """
+    Test that converting a CausalDAG to a binary string and back yields the original DAG.
+    """
     dag = CausalDAG()
     dag.add_nodes_from(scarf_df.columns)
     dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
@@ -21,6 +24,9 @@ def test_binary_string_to_causal_dag(scarf_df):
 
 
 def test_multiobjective_fitness(scarf_df):
+    """
+    Test that multi_objective_fitness returns the expected fitness vector for the scarf example.
+    """
     dag = CausalDAG()
     dag.add_nodes_from(scarf_df.columns)
     dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
@@ -32,6 +38,9 @@ def test_multiobjective_fitness(scarf_df):
 
 
 def test_discovery_edges(scarf_df):
+    """
+    Test that the discovered DAG contains the included edges and not the excluded edges.
+    """
     nsga = NSGADiscovery(
         scarf_df,
         include_edges=[("length_in", "completed")],
