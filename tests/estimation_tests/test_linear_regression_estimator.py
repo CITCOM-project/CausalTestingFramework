@@ -62,14 +62,6 @@ def _chapter_11_df():
     return chapter_11_df
 
 
-@pytest.fixture(name="scarf_df", scope="module")
-def _scarf_df():
-    """
-    Scarf data, loaded once for the module.
-    """
-    return pd.read_csv("tests/resources/data/scarf_data.csv")
-
-
 @pytest.fixture(name="interaction_df", scope="module")
 def _interaction_df():
     """
@@ -159,11 +151,10 @@ def test_formula_from_adjustment_set():
 
 
 def test_linear_regression_categorical_ate(scarf_df):
-    df = scarf_df.copy()
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="color", outcome_variable="completed", adjustment_set=set()
     )
-    effect_estimate = linear_regression_estimator.estimate_coefficient(df)
+    effect_estimate = linear_regression_estimator.estimate_coefficient(scarf_df)
     assert all(ci_low < 0 < ci_high for ci_low, ci_high in zip(effect_estimate.ci_low, effect_estimate.ci_high))
 
 
@@ -179,11 +170,10 @@ def test_linear_regression_categorical_ate(scarf_df):
 )
 def test_program_11(chapter_11_df, estimator_kwargs, decimals):
     """Test whether our linear regression implementation produces the same results as programs 11.2 and 11.3."""
-    df = chapter_11_df.copy()
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="treatments", outcome_variable="outcomes", **estimator_kwargs
     )
-    effect_estimate = linear_regression_estimator.estimate_coefficient(df)
+    effect_estimate = linear_regression_estimator.estimate_coefficient(chapter_11_df)
     # Increasing treatments from 90 to 100 should be the same as 10 times the unit ATE
     assert all(
         round(effect_estimate.effect_estimate["treatments"], decimals) == round(ate_single, decimals)
@@ -193,7 +183,6 @@ def test_program_11(chapter_11_df, estimator_kwargs, decimals):
 
 def test_program_15_1A(nhefs_df):
     """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
-    df = nhefs_df
     covariates = {
         "sex",
         "race",
@@ -224,14 +213,13 @@ def test_program_15_1A(nhefs_df):
                          (qsmk * smokeintensity)""",
     )
 
-    effect_estimate = linear_regression_estimator.estimate_coefficient(df)
+    effect_estimate = linear_regression_estimator.estimate_coefficient(nhefs_df)
     assert round(effect_estimate.effect_estimate["qsmk"], 1) == 2.6
 
 
 def test_program_15_no_interaction(nhefs_df):
     """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
     without product parameter."""
-    df = nhefs_df
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="qsmk",
         outcome_variable="wt82_71",
@@ -239,7 +227,7 @@ def test_program_15_no_interaction(nhefs_df):
         control_value=0,
         formula=NO_INTERACTION_FORMULA,
     )
-    effect_estimate = linear_regression_estimator.estimate_coefficient(df)
+    effect_estimate = linear_regression_estimator.estimate_coefficient(nhefs_df)
 
     assert round(effect_estimate.effect_estimate.iloc[0], 1) == 3.5
     assert round(effect_estimate.ci_low.iloc[0], 1) == 2.6
@@ -249,7 +237,6 @@ def test_program_15_no_interaction(nhefs_df):
 def test_program_15_no_interaction_ate(nhefs_df):
     """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)
     without product parameter."""
-    df = nhefs_df
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="qsmk",
         outcome_variable="wt82_71",
@@ -257,7 +244,7 @@ def test_program_15_no_interaction_ate(nhefs_df):
         control_value=0,
         formula=NO_INTERACTION_FORMULA,
     )
-    effect_estimate = linear_regression_estimator.estimate_ate(df)
+    effect_estimate = linear_regression_estimator.estimate_ate(nhefs_df)
     assert round(effect_estimate.effect_estimate[0], 1) == 3.5
     assert [round(effect_estimate.ci_low[0], 1), round(effect_estimate.ci_high[0], 1)] == [2.6, 4.3]
 
@@ -282,7 +269,6 @@ def test_program_15_no_interaction_ate_calculated(nhefs_df):
 
 def test_program_11_2_with_robustness_validation(chapter_11_df):
     """Test whether our linear regression estimator, as used in test_program_11_2 can correctly estimate robustness."""
-    df = chapter_11_df.copy()
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="treatments",
         outcome_variable="outcomes",
@@ -292,7 +278,9 @@ def test_program_11_2_with_robustness_validation(chapter_11_df):
     )
 
     cv = CausalValidator()
-    assert round(cv.estimate_robustness(linear_regression_estimator.fit_model(df))["treatments"], 4) == 0.7353
+    assert (
+        round(cv.estimate_robustness(linear_regression_estimator.fit_model(chapter_11_df))["treatments"], 4) == 0.7353
+    )
 
 
 def test_to_dict():
@@ -338,9 +326,7 @@ def test_to_dict():
     ids=["reciprocal", "power"],
 )
 def test_gp(x_values, y_function, gp_kwargs, expected_formula, expected_estimate):
-    df = pd.DataFrame()
-    df["X"] = x_values
-    df["Y"] = y_function(df["X"])
+    df = pd.DataFrame({"X": x_values, "Y": y_function(df["X"])})
     linear_regression_estimator = LinearRegressionEstimator(
         treatment_variable="X",
         outcome_variable="Y",

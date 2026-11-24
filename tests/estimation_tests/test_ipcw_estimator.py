@@ -38,21 +38,33 @@ def _df():
     return df
 
 
+@pytest.fixture(name="make_estimation_model")
+def _make_estimation_model(control_strategy, treatment_strategy):
+    """
+    Factory for estimators, using the default control and treatment strategies unless others are given.
+    """
+
+    def make(control_strategy=control_strategy, treatment_strategy=treatment_strategy):
+        return IPCWEstimator(
+            timesteps_per_observation=TIMESTEPS_PER_OBSERVATION,
+            control_strategy=control_strategy,
+            treatment_strategy=treatment_strategy,
+            outcome_variable="outcome",
+            status_column=STATUS_COLUMN,
+            fit_bl_switch_formula=FIT_BL_SWITCH_FORMULA,
+            fit_bltd_switch_formula=FIT_BL_SWITCH_FORMULA,
+            eligibility=None,
+        )
+
+    return make
+
+
 @pytest.fixture(name="estimation_model")
-def _estimation_model(control_strategy, treatment_strategy):
+def _estimation_model(make_estimation_model):
     """
     Fresh estimator for each test, using the default control and treatment strategies.
     """
-    return IPCWEstimator(
-        timesteps_per_observation=TIMESTEPS_PER_OBSERVATION,
-        control_strategy=control_strategy,
-        treatment_strategy=treatment_strategy,
-        outcome_variable="outcome",
-        status_column=STATUS_COLUMN,
-        fit_bl_switch_formula=FIT_BL_SWITCH_FORMULA,
-        fit_bltd_switch_formula=FIT_BL_SWITCH_FORMULA,
-        eligibility=None,
-    )
+    return make_estimation_model()
 
 
 def test_estimate_hazard_ratio(estimation_model, df):
@@ -67,7 +79,7 @@ def test_invalid_treatment_strategies(estimation_model, df):
 
 def test_invalid_fault_t_do(estimation_model, df):
     with pytest.raises(ValueError):
-        estimation_model.estimate_hazard_ratio(df.loc[~df["ok"]])
+        estimation_model.estimate_hazard_ratio(df.loc[~df[STATUS_COLUMN]])
 
 
 def test_no_individual_began_control_strategy(estimation_model, df):
@@ -82,39 +94,21 @@ def test_no_individual_began_treatment_strategy(estimation_model, df):
 
 def test_preprocess_data_no_faults(estimation_model, df):
     with pytest.raises(ValueError, match="No safe runs with outcome. Cannot perform estimation."):
-        estimation_model.preprocess_data(df.assign(ok=False))
+        estimation_model.preprocess_data(df.assign(**{STATUS_COLUMN: False}))
 
 
 def test_preprocess_data_only_faults(estimation_model, df):
     with pytest.raises(ValueError, match="No faults with outcome. Cannot perform estimation."):
-        estimation_model.preprocess_data(df.assign(ok=True))
+        estimation_model.preprocess_data(df.assign(**{STATUS_COLUMN: True}))
 
 
-def test_preprocess_data_missing_control(control_strategy, treatment_strategy, df):
-    estimation_model = IPCWEstimator(
-        timesteps_per_observation=TIMESTEPS_PER_OBSERVATION,
-        control_strategy=control_strategy + [(0, "invalid", 1)],
-        treatment_strategy=treatment_strategy,
-        outcome_variable="outcome",
-        status_column=STATUS_COLUMN,
-        fit_bl_switch_formula=FIT_BL_SWITCH_FORMULA,
-        fit_bltd_switch_formula=FIT_BL_SWITCH_FORMULA,
-        eligibility=None,
-    )
+def test_preprocess_data_missing_control(make_estimation_model, control_strategy, df):
+    estimation_model = make_estimation_model(control_strategy=control_strategy + [(0, "invalid", 1)])
     with pytest.raises(ValueError, match="Missing data for control strategy."):
-        estimation_model.preprocess_data(df.assign(ok=True))
+        estimation_model.preprocess_data(df.assign(**{STATUS_COLUMN: True}))
 
 
-def test_preprocess_data_missing_treatment(control_strategy, treatment_strategy, df):
-    estimation_model = IPCWEstimator(
-        timesteps_per_observation=TIMESTEPS_PER_OBSERVATION,
-        control_strategy=control_strategy,
-        treatment_strategy=treatment_strategy + [(0, "invalid", 1)],
-        outcome_variable="outcome",
-        status_column=STATUS_COLUMN,
-        fit_bl_switch_formula=FIT_BL_SWITCH_FORMULA,
-        fit_bltd_switch_formula=FIT_BL_SWITCH_FORMULA,
-        eligibility=None,
-    )
+def test_preprocess_data_missing_treatment(make_estimation_model, treatment_strategy, df):
+    estimation_model = make_estimation_model(treatment_strategy=treatment_strategy + [(0, "invalid", 1)])
     with pytest.raises(ValueError, match="Missing data for treatment strategy."):
-        estimation_model.preprocess_data(df.assign(ok=True))
+        estimation_model.preprocess_data(df.assign(**{STATUS_COLUMN: True}))

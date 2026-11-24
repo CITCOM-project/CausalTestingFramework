@@ -1,5 +1,5 @@
 """
-Shared pytest fixtures for the causal discovery tests.
+Shared pytest fixtures for tests.
 """
 
 import pandas as pd

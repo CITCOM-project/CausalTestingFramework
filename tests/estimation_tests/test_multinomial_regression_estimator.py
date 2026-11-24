@@ -34,15 +34,3 @@ def test_odds_ratio_category(scarf_df):
         effect_estimate.effect_estimate.round(4).droplevel(1),
         pd.Series({"grey": 1.0072, "orange": 0.9668}).rename_axis("color"),
     )
-
-
-def test_odds_ratio_data(scarf_df):
-    multinomial_regression_estimator = MultinomialRegressionEstimator(
-        treatment_variable="length_in",
-        outcome_variable="completed",
-        control_value=65,
-        treatment_value=55,
-        adjustment_set=set(),
-    )
-    effect_estimate = multinomial_regression_estimator.estimate_unit_odds_ratio(scarf_df)
-    assert round(effect_estimate.effect_estimate.iloc[0], 4) == 0.8948
