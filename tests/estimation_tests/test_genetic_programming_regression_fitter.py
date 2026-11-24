@@ -2,6 +2,8 @@
 This module tests the genetic programming regression fitter.
 """
 
+import re
+
 import pandas as pd
 import pytest
 from deap.gp import PrimitiveSet, PrimitiveTree
@@ -17,7 +19,13 @@ def test_init_invalid_fun_name():
     """
     Test that GP raises ValueError if sympy conversions are provided for invalid function names.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "You have provided a function called power_1, which is reserved for raising to power 1. "
+            "Please choose a different name for your function."
+        ),
+    ):
         GP(df=pd.DataFrame(), features=[], outcome="", max_order=2, sympy_conversions={"power_1": ""})
 
 
