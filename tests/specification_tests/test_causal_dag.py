@@ -152,8 +152,8 @@ def test_read_cycle(two_cycle_dcg_path):
 def test_empty_causal_dag():
     """Test whether an empty dag can be created."""
     causal_dag = CausalDAG()
-    assert list(causal_dag.nodes) == []
-    assert list(causal_dag.edges) == []
+    assert not list(causal_dag.nodes)
+    assert not list(causal_dag.edges)
 
 
 def test_to_dot_string(acyclic_dag_path):
