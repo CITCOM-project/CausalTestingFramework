@@ -1,3 +1,7 @@
+"""
+This module implements tests for the CausalCut test minimisation tool.
+"""
+
 import random
 
 import pandas as pd
