@@ -68,9 +68,8 @@ def test_data_adequacy_categorical(df):
     assert adequacy_metric.successful == 100, f"Expected successful 100 not {adequacy_metric.successful}"
 
 
-def test_data_adequacy_categorical_inestimable():
+def test_data_adequacy_categorical_inestimable(scarf_df):
     """Test data adequacy when the categorical effect cannot be estimated at all."""
-    df = pd.read_csv("tests/resources/data/scarf_data.csv")
     causal_test_case = CausalTestCase(
         expected_causal_effect=NoEffect(atol=1e-10),
         effect_measure="coefficient",
@@ -78,7 +77,7 @@ def test_data_adequacy_categorical_inestimable():
             treatment_variable="color", outcome_variable="completed", adjustment_set=set()
         ),
     )
-    adequacy_metric = causal_test_case.measure_adequacy(df.loc[df["color"] == "grey"])
+    adequacy_metric = causal_test_case.measure_adequacy(scarf_df.loc[scarf_df["color"] == "grey"])
 
     assert adequacy_metric.kurtosis is None, f"Expected passing None not {adequacy_metric.kurtosis}"
     assert adequacy_metric.passing == 0, f"Expected passing 0 not {adequacy_metric.passing}"
@@ -86,9 +85,8 @@ def test_data_adequacy_categorical_inestimable():
     assert adequacy_metric.results == []
 
 
-def test_data_adequacy_categorical_partly_inestimable():
+def test_data_adequacy_categorical_partly_inestimable(scarf_df):
     """Test data adequacy when the categorical effect can only sometimes be estimated."""
-    df = pd.read_csv("tests/resources/data/scarf_data.csv")
     causal_test_case = CausalTestCase(
         expected_causal_effect=NoEffect(atol=1e-10),
         effect_measure="coefficient",
@@ -96,9 +94,11 @@ def test_data_adequacy_categorical_partly_inestimable():
             treatment_variable="color", outcome_variable="completed", adjustment_set=set()
         ),
     )
-    adequacy_metric = causal_test_case.measure_adequacy(df.loc[df["length_in"] == 55])
+    adequacy_metric = causal_test_case.measure_adequacy(scarf_df.loc[scarf_df["length_in"] == 55])
 
-    assert adequacy_metric.kurtosis.values == [0], f"Expected [0] not {adequacy_metric.kurtosis.values}"
+    assert adequacy_metric.kurtosis.to_dict() == {
+        "color[T.orange]": 0
+    }, f"Expected {{'color[T.orange]': 0}} not {adequacy_metric.kurtosis.to_dict()}"
     assert adequacy_metric.passing == 63, f"Expected passing 63 not {adequacy_metric.passing}"
     assert adequacy_metric.successful == 63, f"Expected successful 63 not {adequacy_metric.successful}"
 
@@ -224,11 +224,22 @@ def test_to_dict(df):
     )
 
 
-def test_dag_adequacy_dependent(dag):
-    """Test DAG adequacy when the tested pair is causally dependent."""
+@pytest.mark.parametrize(
+    ["treatment", "outcome", "tested_pair"],
+    [
+        pytest.param("test_input", "B", ("test_input", "B"), id="dependent"),
+        pytest.param("test_input", "C", ("test_input", "C"), id="independent"),
+        pytest.param("C", "test_input", ("test_input", "C"), id="independent_other_way"),
+    ],
+)
+def test_dag_adequacy(dag, treatment, outcome, tested_pair):
+    """
+    Test DAG adequacy for a test suite containing a single test case. Exactly one pair should be tested, regardless
+    of whether the treatment and outcome are causally dependent or which way round they are specified.
+    """
     causal_test_case = CausalTestCase(
         estimator=LinearRegressionEstimator(
-            treatment_variable="test_input", outcome_variable="B", adjustment_set=set()
+            treatment_variable=treatment, outcome_variable=outcome, adjustment_set=set()
         ),
         expected_causal_effect=None,
         effect_measure=None,
@@ -236,118 +247,25 @@ def test_dag_adequacy_dependent(dag):
     test_suite = [causal_test_case]
     dag_adequacy = DAGAdequacy(dag, test_suite)
     dag_adequacy.measure_adequacy()
-    assert dag_adequacy.to_dict() == {
-        "causal_dag": dag,
-        "test_suite": test_suite,
-        "tested_pairs": {("test_input", "B")},
-        "pairs_to_test": {
-            ("B", "C"),
-            ("test_input_no_dist", "test_input"),
-            ("C", "test_output"),
-            ("test_input", "B"),
-            ("test_input_no_dist", "B"),
-            ("test_input", "test_output"),
-            ("test_input", "C"),
-            ("test_input_no_dist", "test_output"),
-            ("B", "test_output"),
-            ("test_input_no_dist", "C"),
-        },
-        "untested_pairs": {
-            ("B", "C"),
-            ("test_input_no_dist", "test_input"),
-            ("C", "test_output"),
-            ("test_input_no_dist", "B"),
-            ("test_input", "test_output"),
-            ("test_input", "C"),
-            ("test_input_no_dist", "test_output"),
-            ("B", "test_output"),
-            ("test_input_no_dist", "C"),
-        },
-        "dag_adequacy": 0.1,
+
+    dag_pairs_to_test = {
+        ("B", "C"),
+        ("test_input_no_dist", "test_input"),
+        ("C", "test_output"),
+        ("test_input", "B"),
+        ("test_input_no_dist", "B"),
+        ("test_input", "test_output"),
+        ("test_input", "C"),
+        ("test_input_no_dist", "test_output"),
+        ("B", "test_output"),
+        ("test_input_no_dist", "C"),
     }
 
-
-def test_dag_adequacy_independent(dag):
-    """Test DAG adequacy when the tested pair is causally independent."""
-    causal_test_case = CausalTestCase(
-        estimator=LinearRegressionEstimator(
-            treatment_variable="test_input", outcome_variable="C", adjustment_set=set()
-        ),
-        expected_causal_effect=None,
-        effect_measure=None,
-    )
-    test_suite = [causal_test_case]
-    dag_adequacy = DAGAdequacy(dag, test_suite)
-    dag_adequacy.measure_adequacy()
     assert dag_adequacy.to_dict() == {
         "causal_dag": dag,
         "test_suite": test_suite,
-        "tested_pairs": {("test_input", "C")},
-        "pairs_to_test": {
-            ("B", "C"),
-            ("test_input_no_dist", "test_input"),
-            ("C", "test_output"),
-            ("test_input", "B"),
-            ("test_input_no_dist", "B"),
-            ("test_input", "test_output"),
-            ("test_input", "C"),
-            ("test_input_no_dist", "test_output"),
-            ("B", "test_output"),
-            ("test_input_no_dist", "C"),
-        },
-        "untested_pairs": {
-            ("B", "C"),
-            ("test_input_no_dist", "test_input"),
-            ("C", "test_output"),
-            ("test_input_no_dist", "B"),
-            ("test_input", "test_output"),
-            ("test_input", "B"),
-            ("test_input_no_dist", "test_output"),
-            ("B", "test_output"),
-            ("test_input_no_dist", "C"),
-        },
-        "dag_adequacy": 0.1,
-    }
-
-
-def test_dag_adequacy_independent_other_way(dag):
-    """Test DAG adequacy when the tested pair is causally independent and specified the other way around."""
-    causal_test_case = CausalTestCase(
-        estimator=LinearRegressionEstimator(
-            treatment_variable="C", outcome_variable="test_input", adjustment_set=set()
-        ),
-        expected_causal_effect=None,
-        effect_measure=None,
-    )
-    test_suite = [causal_test_case]
-    dag_adequacy = DAGAdequacy(dag, test_suite)
-    dag_adequacy.measure_adequacy()
-    assert dag_adequacy.to_dict() == {
-        "causal_dag": dag,
-        "test_suite": test_suite,
-        "tested_pairs": {("test_input", "C")},
-        "pairs_to_test": {
-            ("B", "C"),
-            ("test_input_no_dist", "test_input"),
-            ("C", "test_output"),
-            ("test_input", "B"),
-            ("test_input_no_dist", "B"),
-            ("test_input", "test_output"),
-            ("test_input", "C"),
-            ("test_input_no_dist", "test_output"),
-            ("B", "test_output"),
-            ("test_input_no_dist", "C"),
-        },
-        "untested_pairs": {
-            ("B", "C"),
-            ("test_input_no_dist", "test_input"),
-            ("C", "test_output"),
-            ("test_input_no_dist", "B"),
-            ("test_input", "test_output"),
-            ("test_input", "B"),
-            ("test_input_no_dist", "test_output"),
-            ("B", "test_output"),
-            ("test_input_no_dist", "C"),
-        },
+        "tested_pairs": {tested_pair},
+        "pairs_to_test": dag_pairs_to_test,
+        "untested_pairs": dag_pairs_to_test - {tested_pair},
         "dag_adequacy": 0.1,
     }

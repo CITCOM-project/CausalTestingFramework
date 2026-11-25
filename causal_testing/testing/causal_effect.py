@@ -105,8 +105,8 @@ class ExactValue(CausalEffect):
                 raise ValueError("Specified value falls outside the specified confidence intervals.")
             if self.value - self.atol < self.ci_low or self.value + self.atol > self.ci_high:
                 raise ValueError(
-                    "Arithmetic tolerance falls outside the confidence intervals."
-                    f"Try specifying wider intervals or a value of atol smaller than the current vlaue {self.atol}."
+                    "Arithmetic tolerance falls outside the confidence intervals. "
+                    f"Try specifying wider intervals or a value of atol smaller than the current value {self.atol}."
                 )
 
     def apply(self, effect_estimate: EffectEstimate) -> bool:

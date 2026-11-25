@@ -2,6 +2,8 @@
 Test the causal test execution workflow using observational data.
 """
 
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -96,18 +98,6 @@ def test_check_minimum_adjustment_set(minimal_adjustment_set):
     assert minimal_adjustment_set == {"D"}
 
 
-def test_execute_test_observational_linear_regression_estimator(expected_causal_effect, estimator, df):
-    """Check that executing the causal test case returns the correct results for dummy data using a linear
-    regression estimator."""
-    causal_test_case = CausalTestCase(
-        expected_causal_effect=expected_causal_effect,
-        estimator=estimator,
-        effect_measure="ate",
-    )
-    effect_estimate = causal_test_case.estimate_effect(df)
-    pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series(4.0), atol=1e-10)
-
-
 def test_execute_test_observational_linear_regression_estimator_direct_effect(causal_test_case, df):
     """Check that executing the causal test case returns the correct results for dummy data using a linear
     regression estimator."""
@@ -115,11 +105,11 @@ def test_execute_test_observational_linear_regression_estimator_direct_effect(ca
     pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series(4.0), atol=1e-10)
 
 
-def test_execute_test_observational_linear_regression_estimator_coefficient(expected_causal_effect, causal_dag, df):
+def test_execute_test_observational_linear_regression_estimator_coefficient(causal_dag, df):
     """Check that executing the causal test case returns the correct results for dummy data using a linear
     regression estimator."""
     causal_test_case = CausalTestCase(
-        expected_causal_effect=expected_causal_effect,
+        expected_causal_effect=None,
         estimator=LinearRegressionEstimator(
             treatment_variable="D",
             outcome_variable="A",
@@ -133,11 +123,11 @@ def test_execute_test_observational_linear_regression_estimator_coefficient(expe
     pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series({"D": 0.0}), atol=1e-1)
 
 
-def test_execute_test_observational_linear_regression_estimator_risk_ratio(expected_causal_effect, causal_dag, df):
+def test_execute_test_observational_linear_regression_estimator_risk_ratio(causal_dag, df):
     """Check that executing the causal test case returns the correct results for dummy data using a linear
     regression estimator."""
     causal_test_case = CausalTestCase(
-        expected_causal_effect=expected_causal_effect,
+        expected_causal_effect=None,
         estimator=LinearRegressionEstimator(
             treatment_variable="D",
             outcome_variable="A",
@@ -151,11 +141,10 @@ def test_execute_test_observational_linear_regression_estimator_risk_ratio(expec
     pd.testing.assert_series_equal(effect_estimate.effect_estimate, pd.Series(0.0), atol=1)
 
 
-def test_invalid_effect_measure(expected_causal_effect, causal_dag, df):
-    """Check that executing the causal test case returns the correct results for dummy data using a linear
-    regression estimator."""
+def test_invalid_effect_measure(causal_dag, df):
+    """Test invalid causal effect measure raises an error."""
     causal_test_case = CausalTestCase(
-        expected_causal_effect=expected_causal_effect,
+        expected_causal_effect=None,
         estimator=LinearRegressionEstimator(
             treatment_variable="D",
             outcome_variable="A",
@@ -165,7 +154,7 @@ def test_invalid_effect_measure(expected_causal_effect, causal_dag, df):
         ),
         effect_measure="invalid",
     )
-    with pytest.raises(AttributeError):
+    with pytest.raises(AttributeError, match=re.escape(f"{LinearRegressionEstimator} has no invalid method.")):
         causal_test_case.execute_test(df)
 
 
