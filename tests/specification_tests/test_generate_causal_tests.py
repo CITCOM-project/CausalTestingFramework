@@ -1,3 +1,7 @@
+"""
+This module tests the generation of causal tests from a CausalDAG.
+"""
+
 import re
 
 import pytest
@@ -9,6 +13,9 @@ from causal_testing.testing.causal_test_case import CausalTestCase
 
 
 def sort_test_dict(test: dict):
+    """
+    Function for sorting lists of tests to check equivalence.
+    """
     return test["name"]
 
 

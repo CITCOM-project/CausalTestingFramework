@@ -1,3 +1,7 @@
+"""
+This module tests the main functionality of the CausalDAG class, primarily to do with identification.
+"""
+
 import os
 import re
 
@@ -145,7 +149,7 @@ def test_read_cycle(two_cycle_dcg_path):
         CausalDAG(two_cycle_dcg_path)
 
 
-def test_empty_casual_dag():
+def test_empty_causal_dag():
     """Test whether an empty dag can be created."""
     causal_dag = CausalDAG()
     assert list(causal_dag.nodes) == []
@@ -216,7 +220,7 @@ def test_proper_backdoor_graph(identification_dag_path):
 
 
 def test_proper_backdoor_graph_invalid_treatment(identification_dag_path):
-    """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
+    """Test that an invalid treatment variable raises an `IndexError`.."""
     causal_dag = CausalDAG(identification_dag_path)
     with pytest.raises(IndexError):
         causal_dag.get_proper_backdoor_graph(["INVALID"], ["Y"])
@@ -241,7 +245,7 @@ def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_prop
 
 
 def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_causal_path(identification_dag_path):
-    """Test whether the constructive criterion holds when the adjustment set Z contains a descendant of a variable
+    """Test that the constructive criterion does not hold when the adjustment set Z contains a descendant of a variable
     on a proper causal path between X and Y."""
     causal_dag = CausalDAG(identification_dag_path)
     xs, ys, zs = ["X1", "X2"], ["Y"], ["D1"]
@@ -250,21 +254,21 @@ def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_ca
 
 
 def test_is_min_adjustment_for_min_adjustment(identification_dag_path):
-    """Test whether is_min_adjustment can correctly test whether the minimum adjustment set is minimal."""
+    """Test whether the minimum adjustment set is minimal."""
     causal_dag = CausalDAG(identification_dag_path)
     xs, ys, zs = ["X1", "X2"], ["Y"], {"Z"}
     assert causal_dag.adjustment_set_is_minimal(xs, ys, zs)
 
 
 def test_is_min_adjustment_for_not_min_adjustment(identification_dag_path):
-    """Test whether is_min_adjustment can correctly test whether the minimum adjustment set is not minimal."""
+    """Test whether the minimum adjustment set is not minimal."""
     causal_dag = CausalDAG(identification_dag_path)
     xs, ys, zs = ["X1", "X2"], ["Y"], {"Z", "V"}
     assert not causal_dag.adjustment_set_is_minimal(xs, ys, zs)
 
 
 def test_is_min_adjustment_for_invalid_adjustment(identification_dag_path):
-    """Test whether is_min_adjustment can correctly identify that the minimum adjustment set is invalid."""
+    """Test correct identification of an invalid minimum adjustment set."""
     causal_dag = CausalDAG(identification_dag_path)
     xs, ys, zs = ["X1", "X2"], ["Y"], set()
     with pytest.raises(ValueError, match=re.escape("set() is not a valid adjustment set.")):
