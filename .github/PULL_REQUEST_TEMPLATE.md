@@ -4,6 +4,11 @@ What does this PR do?
 ## Main file changes
 Summarise changes to main files to be reviewed.
 
+## AI usage
+(How) have you used AI in this PR?
+
+(How) have you verified the outputs?
+
 ## Checklist
 Before you mark your PR as ready for review, please ensure you have completed the following.
 
