@@ -26,7 +26,7 @@ def _dag_path(tmp_path):
     """
     path = tmp_path / "dag.dot"
     path.write_text("digraph DAG { rankdir=LR; X1 -> Z; Z -> M; M -> Y; X2 -> Z; X3 -> M;}")
-    return str(path)
+    return path
 
 
 @pytest.fixture(name="dcg_path")
@@ -36,7 +36,7 @@ def _dcg_path(tmp_path):
     """
     path = tmp_path / "dcg.dot"
     path.write_text("digraph dct { a -> b -> c -> d; d -> c; }")
-    return str(path)
+    return path
 
 
 # The pairs of variables that should be independent in the DAG from the dag_path fixture once the edge Z -> Y is added.

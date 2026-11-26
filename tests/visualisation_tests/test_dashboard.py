@@ -59,7 +59,7 @@ def test_load_dag_file(dag_path):
     with open(dag_path, encoding="utf-8") as f:
         dashboard.dag_file_input.value = f.read().encode()
 
-    expected_dag = CausalDAG(str(dag_path))
+    expected_dag = CausalDAG(dag_path)
 
     assert (
         dashboard.ctf.dag.nodes == expected_dag.nodes
@@ -88,7 +88,7 @@ def test_load_test_file(dag_path, test_path):
     """
 
     ctf = CausalTestingFramework()
-    ctf.load_dag(str(dag_path))
+    ctf.load_dag(dag_path)
     ctf.load_test_cases_from_json(test_path)
 
     dashboard = Dashboard()
@@ -108,7 +108,7 @@ def test_generate_tests(dag_path, data_path):
     """
 
     ctf = CausalTestingFramework()
-    ctf.load_dag(str(dag_path))
+    ctf.load_dag(dag_path)
     ctf.load_data([data_path])
     ctf.generate_causal_tests()
 
@@ -146,7 +146,7 @@ def test_run_tests(dag_path, data_path):
     """
 
     ctf = CausalTestingFramework()
-    ctf.load_dag(str(dag_path))
+    ctf.load_dag(dag_path)
     ctf.load_data([data_path])
     ctf.generate_causal_tests()
     ctf.run_tests()
