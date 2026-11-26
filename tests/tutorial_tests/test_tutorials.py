@@ -27,9 +27,10 @@ NOTEBOOK_FILES = sorted(list(NOTEBOOK_DIR.rglob("[!.]*/*.ipynb")))
 
 
 @pytest.mark.parametrize("notebook_path", NOTEBOOK_FILES, ids=lambda p: p.name)
-def test_tutorial_notebooks(notebook_path):
+def test_tutorial_notebooks(notebook_path, monkeypatch):
     """Test that each tutorial notebook runs without errors."""
     # Change directory to the location of the notebook since there's no way to get the abspath from the notebook itself
-    os.chdir(os.path.dirname(notebook_path))
+    # monkeypatch restores the original working directory after the test
+    monkeypatch.chdir(notebook_path.parent)
     client = NotebookClient(nbformat.read(notebook_path, as_version=4))
     client.execute()

@@ -15,19 +15,19 @@ from causal_testing.testing.dag_adequacy import DAGAdequacy
 
 
 @pytest.fixture(name="df")
-def _df():
+def _df(resources_dir):
     """
     Data with numeric and categorical inputs.
     """
-    return pd.read_csv("tests/resources/data/data_with_categorical.csv")
+    return pd.read_csv(resources_dir / "data_with_categorical.csv")
 
 
 @pytest.fixture(name="dag")
-def _dag():
+def _dag(resources_dir):
     """
     Causal DAG corresponding to the data with numeric and categorical inputs.
     """
-    return CausalDAG("tests/resources/data/dag.dot")
+    return CausalDAG(str(resources_dir / "dag.dot"))
 
 
 def test_data_adequacy_numeric(df):
@@ -103,13 +103,13 @@ def test_data_adequacy_categorical_partly_inestimable(scarf_df):
     assert adequacy_metric.successful == 63, f"Expected successful 63 not {adequacy_metric.successful}"
 
 
-def test_data_adequacy_group_by():
+def test_data_adequacy_group_by(resources_dir):
     """Test data adequacy for an IPCW estimator with bootstrap samples grouped by individual."""
     timesteps_per_intervention = 1
     control_strategy = [[t, "t", 0] for t in range(1, 4, timesteps_per_intervention)]
     treatment_strategy = [[t, "t", 1] for t in range(1, 4, timesteps_per_intervention)]
     fit_bl_switch_formula = "xo_t_do ~ time"
-    df = pd.read_csv("tests/resources/data/temporal_data.csv")
+    df = pd.read_csv(resources_dir / "temporal_data.csv")
     df["ok"] = df["outcome"] == 1
     estimation_model = IPCWEstimator(
         timesteps_per_observation=timesteps_per_intervention,

@@ -31,11 +31,11 @@ def _treatment_strategy():
 
 
 @pytest.fixture(name="temporal_data")
-def _temporal_data():
+def _temporal_data(resources_dir):
     """
     Fresh copy of the temporal dataset for each test, with the status column added.
     """
-    df = pd.read_csv("tests/resources/data/temporal_data.csv")
+    df = pd.read_csv(resources_dir / "temporal_data.csv")
     df[STATUS_COLUMN] = df["outcome"] == 1
     return df
 

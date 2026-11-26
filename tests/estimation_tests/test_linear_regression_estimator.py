@@ -23,11 +23,11 @@ NO_INTERACTION_FORMULA = (
 
 
 @pytest.fixture(name="nhefs_df")
-def _nhefs_df():
+def _nhefs_df(resources_dir):
     """Get the NHEFS data from chapter 12 and put into a dataframe. NHEFS = National Health and Nutrition Examination
     Survey Data I Epidemiological Follow-up Study."""
 
-    nhefs_df = pd.read_csv("tests/resources/data/nhefs.csv").assign(one=1, zero=0)
+    nhefs_df = pd.read_csv(resources_dir / "nhefs.csv").assign(one=1, zero=0)
     edu_dummies = pd.get_dummies(nhefs_df.education, prefix="edu")
     exercise_dummies = pd.get_dummies(nhefs_df.exercise, prefix="exercise")
     active_dummies = pd.get_dummies(nhefs_df.active, prefix="active")

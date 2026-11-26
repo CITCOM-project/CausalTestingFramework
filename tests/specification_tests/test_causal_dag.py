@@ -2,7 +2,6 @@
 This module tests the main functionality of the CausalDAG class, primarily to do with identification.
 """
 
-import os
 import re
 
 import networkx as nx
@@ -68,10 +67,10 @@ def _identification_dag_path(tmp_path):
     return write_dot(tmp_path, "dag.dot", "digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}")
 
 
-def test_graphml(issue_90_dag_path):
+def test_graphml(issue_90_dag_path, resources_dir):
     """Test that a DAG loaded from a GraphML (.xml) file matches the same DAG loaded from a DOT file."""
     dot_dag = CausalDAG(issue_90_dag_path)
-    xml_dag = CausalDAG(os.path.join("tests", "resources", "data", "dag.xml"))
+    xml_dag = CausalDAG(str(resources_dir / "dag.xml"))
     assert dot_dag.nodes == xml_dag.nodes
     assert dot_dag.edges == xml_dag.edges
 

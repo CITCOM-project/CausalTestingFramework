@@ -39,8 +39,8 @@ def _test_path():
 
 
 @pytest.fixture(name="completed_test_path")
-def _completed_test_path():
-    return Path(__file__).parent.parent / "resources" / "data" / "poisson_line_tests.json"
+def _completed_test_path(resources_dir):
+    return resources_dir / "poisson_line_tests.json"
 
 
 def test_dashboard_initialization():

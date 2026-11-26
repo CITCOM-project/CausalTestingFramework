@@ -1,7 +1,5 @@
 """This module tests the VisualisationPlotter class."""
 
-from pathlib import Path
-
 import holoviews as hv
 import pandas as pd
 import pytest
@@ -30,10 +28,8 @@ def _dag() -> CausalTestingFramework:
 
 
 @pytest.fixture(name="plotter")
-def _plotter(dag) -> VisualisationPlotter:
-    return VisualisationPlotter(
-        dag=dag, df=pd.read_csv(Path(__file__).parent.parent / "resources" / "data" / "doubling_beta_results.csv")
-    )
+def _plotter(dag, resources_dir) -> VisualisationPlotter:
+    return VisualisationPlotter(dag=dag, df=pd.read_csv(resources_dir / "doubling_beta_results.csv"))
 
 
 def test_results_dag(dag, plotter):

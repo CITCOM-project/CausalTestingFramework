@@ -7,9 +7,6 @@ import pytest
 
 from causal_testing.__main__ import main
 
-INCLUDE_EDGES_PATH = "tests/resources/data/include_edges.dot"
-EXCLUDE_EDGES_PATH = "tests/resources/data/exclude_edges.dot"
-
 
 def test_parse_args_test(tmp_path, monkeypatch, dag_path, data_path, test_cases_path):
     """Test that the `test` command runs the given test cases and writes the results file."""
@@ -191,7 +188,9 @@ def test_parse_args_generation(tmp_path, monkeypatch, dag_path, data_path):
     assert (tmp_path / "tests.json").exists()
 
 
-def test_parse_args_discover_malformed_argument(tmp_path, monkeypatch, data_path):
+def test_parse_args_discover_malformed_argument(
+    tmp_path, monkeypatch, data_path, include_edges_path, exclude_edges_path
+):
     """
     Test that `discover` raises an error when a technique keyword argument is not of the form `arg_name=arg_value`.
     """
@@ -207,9 +206,9 @@ def test_parse_args_discover_malformed_argument(tmp_path, monkeypatch, data_path
             "--output",
             str(tmp_path / "discovered_dag.dot"),
             "--include-edges",
-            INCLUDE_EDGES_PATH,
+            include_edges_path,
             "--exclude-edges",
-            EXCLUDE_EDGES_PATH,
+            exclude_edges_path,
             "--technique-kwargs",
             "max_iterations 10",
         ],
@@ -221,7 +220,7 @@ def test_parse_args_discover_malformed_argument(tmp_path, monkeypatch, data_path
         main()
 
 
-def test_parse_args_discover(tmp_path, monkeypatch, data_path):
+def test_parse_args_discover(tmp_path, monkeypatch, data_path, include_edges_path, exclude_edges_path):
     """Test that the `discover` command writes the discovered DAG to file."""
     monkeypatch.setattr(
         "sys.argv",
@@ -235,9 +234,9 @@ def test_parse_args_discover(tmp_path, monkeypatch, data_path):
             "--output",
             str(tmp_path / "discovered_dag.dot"),
             "--include-edges",
-            INCLUDE_EDGES_PATH,
+            include_edges_path,
             "--exclude-edges",
-            EXCLUDE_EDGES_PATH,
+            exclude_edges_path,
             "--technique-kwargs",
             "max_iterations=10",
             "--variables",
@@ -249,7 +248,9 @@ def test_parse_args_discover(tmp_path, monkeypatch, data_path):
     assert (tmp_path / "discovered_dag.dot").exists()
 
 
-def test_parse_args_discover_invalid_technique(tmp_path, monkeypatch, data_path):
+def test_parse_args_discover_invalid_technique(
+    tmp_path, monkeypatch, data_path, include_edges_path, exclude_edges_path
+):
     """Test that `discover` raises an error for an unsupported discovery technique."""
     monkeypatch.setattr(
         "sys.argv",
@@ -263,9 +264,9 @@ def test_parse_args_discover_invalid_technique(tmp_path, monkeypatch, data_path)
             "--output",
             str(tmp_path / "discovered_dag.dot"),
             "--include-edges",
-            INCLUDE_EDGES_PATH,
+            include_edges_path,
             "--exclude-edges",
-            EXCLUDE_EDGES_PATH,
+            exclude_edges_path,
             "--technique-kwargs",
             "max_iterations=10",
             "--variables",
