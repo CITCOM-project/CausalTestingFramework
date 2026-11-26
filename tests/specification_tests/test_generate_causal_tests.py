@@ -64,7 +64,7 @@ def test_all_metamorphic_relations_implied_by_dag(dag_path, threads):
     """Test that generate_causal_tests produces a causal test for each edge and an independence test for each
     (minimal) conditional independence implied by the DAG, both sequentially and in parallel.
     """
-    dag = CausalDAG(dag_path, datatypes={v: float for v in {"X1", "X2", "X3", "Y", "Z", "M"}})
+    dag = CausalDAG(dag_path, datatypes={v: float for v in ["X1", "X2", "X3", "Y", "Z", "M"]})
     dag.add_edge("Z", "Y")  # Add a direct path from Z to Y so M becomes a mediator
 
     expected_tests = []
@@ -111,7 +111,7 @@ def test_all_metamorphic_relations_implied_by_dag_no_datatype(dag_path):
 
 def test_all_metamorphic_relations_implied_by_dag_ignore_cycles(dcg_path):
     """Test that generate_causal_tests excludes nodes that are part of a cycle when ignore_cycles is set."""
-    dcg = CausalDAG(dcg_path, ignore_cycles=True, datatypes={v: float for v in {"a", "b", "c", "d"}})
+    dcg = CausalDAG(dcg_path, ignore_cycles=True, datatypes={v: float for v in ["a", "b", "c", "d"]})
 
     expected_tests = [
         CausalTestCase(

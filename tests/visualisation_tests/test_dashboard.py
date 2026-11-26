@@ -1,3 +1,5 @@
+"""This module tests the interactive testing dashboard."""
+
 import json
 import re
 import time

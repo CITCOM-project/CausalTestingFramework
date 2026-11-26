@@ -1,3 +1,5 @@
+"""This module tests the CausalTestingFramework class."""
+
 import json
 import re
 
@@ -29,6 +31,7 @@ def _paths(dag_path, data_paths, test_cases_path):
 
 
 def test_load_data(data_paths):
+    """Test that CSV and parquet versions of the same data load to identical dataframes."""
     csv_framework = CausalTestingFramework()
     csv_framework.load_data(data_paths)
 
@@ -38,6 +41,7 @@ def test_load_data(data_paths):
 
 
 def test_load_data_query(data_paths):
+    """Test that a query passed to load_data filters the loaded data."""
     framework = CausalTestingFramework()
     framework.load_data(data_paths=data_paths)
     assert not (framework.df["test_input"] > 4).all()
@@ -47,18 +51,21 @@ def test_load_data_query(data_paths):
 
 
 def test_load_data_invalid_extension():
+    """Test that load_data raises an error for an unsupported file extension."""
     framework = CausalTestingFramework()
     with pytest.raises(ValueError, match=re.escape("Unsupported file extension: '.invalid'")):
         framework.load_data(["data.invalid"])
 
 
 def test_load_tests_before_dag(test_cases_path):
+    """Test that loading test cases before the DAG raises an error."""
     framework = CausalTestingFramework()
     with pytest.raises(ValueError, match=re.escape("Please load DAG before attempting to load tests.")):
         framework.load_test_cases_from_json(test_cases_path)
 
 
 def test_create_test_case_invalid_estimator(paths):
+    """Test that creating a test case with an unknown estimator raises an error listing the supported estimators."""
     framework = CausalTestingFramework()
     framework.setup(**paths)
     message = (
@@ -80,6 +87,7 @@ def test_create_test_case_invalid_estimator(paths):
 
 
 def test_create_test_case_no_estimator(paths):
+    """Test that creating a test case without an estimator raises an error."""
     framework = CausalTestingFramework()
     framework.setup(**paths)
     with pytest.raises(ValueError, match=re.escape("Test configuration must specify an `estimator`.")):
@@ -93,6 +101,7 @@ def test_create_test_case_no_estimator(paths):
 
 
 def test_create_test_case_no_expected_causal_effect(dag_path, data_paths):
+    """Test that creating a test case without an expected causal effect raises an error."""
     framework = CausalTestingFramework()
     framework.load_dag(dag_path)
     framework.load_data(data_paths)
@@ -111,6 +120,7 @@ def test_create_test_case_no_expected_causal_effect(dag_path, data_paths):
 
 
 def test_create_test_case_invalid_effect(dag_path, data_paths):
+    """Test that creating a test case with an unknown causal effect raises an error listing the supported effects."""
     framework = CausalTestingFramework()
     framework.load_dag(dag_path)
     framework.load_data(data_paths)
@@ -136,6 +146,7 @@ def test_create_test_case_invalid_effect(dag_path, data_paths):
 
 
 def test_create_test_case_effect_kwargs(dag_path, data_paths):
+    """Test that extra keys in the expected causal effect configuration are passed to its constructor."""
     framework = CausalTestingFramework()
     framework.load_dag(dag_path)
     framework.load_data(data_paths)
@@ -155,6 +166,7 @@ def test_create_test_case_effect_kwargs(dag_path, data_paths):
 
 
 def test_create_test_case_estimator_kwargs(dag_path, data_paths):
+    """Test that extra keys in the estimator configuration are passed to its constructor."""
     framework = CausalTestingFramework()
     framework.load_dag(dag_path)
     framework.load_data(data_paths)
@@ -174,12 +186,14 @@ def test_create_test_case_estimator_kwargs(dag_path, data_paths):
 
 
 def test_unloaded_tests():
+    """Test that running tests before any are loaded raises an error."""
     framework = CausalTestingFramework()
     with pytest.raises(ValueError, match=re.escape("No tests to run.")):
         framework.run_tests()
 
 
 def test_ctf_exception(paths):
+    """Test that an error during test execution is raised when not running silently."""
     framework = CausalTestingFramework(paths)
     framework.setup(**paths, query="test_input < 0")
 
@@ -190,6 +204,10 @@ def test_ctf_exception(paths):
 
 
 def test_ctf_exception_silent(tmp_path, test_cases_path, paths):
+    """
+    Test that, when running silently, errors during test execution are caught and every non-skipped test is recorded as
+    failing.
+    """
     framework = CausalTestingFramework(paths)
     framework.setup(**paths, query="test_input < 0")
     framework.run_tests(silent=True)
@@ -204,10 +222,11 @@ def test_ctf_exception_silent(tmp_path, test_cases_path, paths):
         assert len(non_skipped_results) == len(non_skipped_configs)
 
         for result in non_skipped_results:
-            assert result.passed == False
+            assert not result.passed
 
 
 def test_ctf_evaluate_dag(paths):
+    """Test that evaluate_dag summarises the test outcomes and their confidence intervals."""
     framework = CausalTestingFramework(paths)
     framework.setup(**paths)
     results = framework.evaluate_dag()
@@ -228,6 +247,7 @@ def test_ctf_evaluate_dag(paths):
 
 
 def test_ctf_evaluate_dag_inestimable(scarf_df):
+    """Test evaluate_dag on test cases generated from a DAG with no edges."""
     framework = CausalTestingFramework()
     framework.df = scarf_df.query("length_in > 60")
     framework.dag = CausalDAG(datatypes=framework.df.dtypes)

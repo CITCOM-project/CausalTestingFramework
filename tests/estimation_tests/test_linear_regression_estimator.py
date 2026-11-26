@@ -194,7 +194,7 @@ def test_program_11(chapter_11_df, estimator_kwargs, decimals):
     )
 
 
-def test_program_15_1A(nhefs_df):
+def test_program_15_1a(nhefs_df):
     """Test whether our linear regression implementation produces the same results as program 15.1 (p. 163, 184)."""
     covariates = {
         "sex",
@@ -362,7 +362,7 @@ def test_gp(x_values, y_function, gp_kwargs, expected_formula, expected_estimate
     assert round(effect_estimate.ci_high[0], 2) == expected_estimate
 
 
-def test_X1_effect(interaction_df):
+def test_x1_effect(interaction_df):
     """When we fix the value of X2 to 0, the effect of X1 on Y should become ~2 (because X2 terms are cancelled)."""
     lr_model = LinearRegressionEstimator(
         treatment_variable="X1",

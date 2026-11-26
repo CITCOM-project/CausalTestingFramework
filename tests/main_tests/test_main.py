@@ -1,3 +1,5 @@
+"""This module tests the command line interface."""
+
 import json
 import re
 
@@ -10,6 +12,7 @@ EXCLUDE_EDGES_PATH = "tests/resources/data/exclude_edges.dot"
 
 
 def test_parse_args_test(tmp_path, monkeypatch, dag_path, data_path, test_cases_path):
+    """Test that the `test` command runs the given test cases and writes the results file."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -30,6 +33,7 @@ def test_parse_args_test(tmp_path, monkeypatch, dag_path, data_path, test_cases_
 
 
 def test_parse_args_generate_and_test(tmp_path, monkeypatch, dag_path, data_path):
+    """Test that `test --generate` generates test cases from the DAG, runs them, and writes the results file."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -49,6 +53,7 @@ def test_parse_args_generate_and_test(tmp_path, monkeypatch, dag_path, data_path
 
 
 def test_parse_args_adequacy(tmp_path, monkeypatch, dag_path, data_path, test_cases_path):
+    """Test that `-A` calculates adequacy using the default bootstrap size of 100."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -73,6 +78,7 @@ def test_parse_args_adequacy(tmp_path, monkeypatch, dag_path, data_path, test_ca
 
 
 def test_parse_args_bootstrap_size(tmp_path, monkeypatch, dag_path, data_path, test_cases_path):
+    """Test that `-b` sets the bootstrap size used to calculate adequacy."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -98,6 +104,7 @@ def test_parse_args_bootstrap_size(tmp_path, monkeypatch, dag_path, data_path, t
 
 
 def test_parse_args_bootstrap_size_explicit_adequacy(tmp_path, monkeypatch, dag_path, data_path, test_cases_path):
+    """Test that `-b` sets the bootstrap size when adequacy is also explicitly requested with `-A`."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -124,6 +131,7 @@ def test_parse_args_bootstrap_size_explicit_adequacy(tmp_path, monkeypatch, dag_
 
 
 def test_parse_args_generate_then_test(tmp_path, monkeypatch, dag_path, data_path):
+    """Test that test cases written by the `generate` command can be read and run by the `test` command."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -165,6 +173,7 @@ def test_parse_args_generate_then_test(tmp_path, monkeypatch, dag_path, data_pat
 
 
 def test_parse_args_generation(tmp_path, monkeypatch, dag_path, data_path):
+    """Test that the `generate` command writes the generated test cases to file."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -183,6 +192,9 @@ def test_parse_args_generation(tmp_path, monkeypatch, dag_path, data_path):
 
 
 def test_parse_args_discover_malformed_argument(tmp_path, monkeypatch, data_path):
+    """
+    Test that `discover` raises an error when a technique keyword argument is not of the form `arg_name=arg_value`.
+    """
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -210,6 +222,7 @@ def test_parse_args_discover_malformed_argument(tmp_path, monkeypatch, data_path
 
 
 def test_parse_args_discover(tmp_path, monkeypatch, data_path):
+    """Test that the `discover` command writes the discovered DAG to file."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -237,6 +250,7 @@ def test_parse_args_discover(tmp_path, monkeypatch, data_path):
 
 
 def test_parse_args_discover_invalid_technique(tmp_path, monkeypatch, data_path):
+    """Test that `discover` raises an error for an unsupported discovery technique."""
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -287,6 +301,9 @@ def test_parse_args_discover_drop_unnamed(tmp_path, monkeypatch, data_path):
 
 
 def test_parse_args_evaluation_create_tests(tmp_path, monkeypatch, dag_path, data_path):
+    """
+    Test that the `evaluate` command generates test cases from the DAG when none are given and writes the results file.
+    """
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -305,6 +322,7 @@ def test_parse_args_evaluation_create_tests(tmp_path, monkeypatch, dag_path, dat
 
 
 def test_parse_args_evaluation_read_tests(tmp_path, monkeypatch, dag_path, data_path, test_cases_path):
+    """Test that the `evaluate` command uses the given test cases and writes the results file."""
     monkeypatch.setattr(
         "sys.argv",
         [
