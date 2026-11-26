@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import logging
+import os
 from functools import partial
 from itertools import combinations
 from multiprocessing import Pool
+from pathlib import Path
 from typing import Generator, Set, Union
 
 import networkx as nx
@@ -129,14 +131,17 @@ class CausalDAG(nx.DiGraph):
     ensures it is acyclic. A CausalDAG must be specified as a dot file.
     """
 
-    def __init__(self, file_path: str = None, ignore_cycles: bool = False, datatypes: pd.Series = None, **attr):
+    def __init__(
+        self, file_path: str | os.PathLike = None, ignore_cycles: bool = False, datatypes: pd.Series = None, **attr
+    ):
         super().__init__(**attr)
         self.ignore_cycles = ignore_cycles
         self.datatypes = datatypes
         if file_path:
-            if file_path.endswith(".dot"):
+            suffix = Path(file_path).suffix.lower()
+            if suffix == ".dot":
                 graph = nx.DiGraph(nx.nx_pydot.read_dot(file_path))
-            elif file_path.endswith(".xml"):
+            elif suffix == ".xml":
                 graph = nx.graphml.read_graphml(file_path)
             else:
                 raise ValueError(f"Unsupported file extension {file_path}. We only support .dot and .xml files.")

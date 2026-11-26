@@ -27,7 +27,7 @@ def _dag(resources_dir):
     """
     Causal DAG corresponding to the data with numeric and categorical inputs.
     """
-    return CausalDAG(str(resources_dir / "dag.dot"))
+    return CausalDAG(resources_dir / "dag.dot")
 
 
 def test_data_adequacy_numeric(df):

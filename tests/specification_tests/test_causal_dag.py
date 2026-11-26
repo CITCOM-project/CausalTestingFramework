@@ -3,6 +3,7 @@ This module tests the main functionality of the CausalDAG class, primarily to do
 """
 
 import re
+from pathlib import Path
 
 import networkx as nx
 import pytest
@@ -10,13 +11,13 @@ import pytest
 from causal_testing.specification.causal_dag import CausalDAG
 
 
-def write_dot(tmp_path, filename: str, dot: str) -> str:
+def write_dot(tmp_path: Path, filename: str, dot: str) -> Path:
     """
-    Write a DOT graph to a temporary file and return its path as a string (CausalDAG requires a string path).
+    Write a DOT graph to a temporary file and return its path.
     """
     path = tmp_path / filename
     path.write_text(dot)
-    return str(path)
+    return path
 
 
 @pytest.fixture(name="issue_90_dag_path")
@@ -70,9 +71,26 @@ def _identification_dag_path(tmp_path):
 def test_graphml(issue_90_dag_path, resources_dir):
     """Test that a DAG loaded from a GraphML (.xml) file matches the same DAG loaded from a DOT file."""
     dot_dag = CausalDAG(issue_90_dag_path)
-    xml_dag = CausalDAG(str(resources_dir / "dag.xml"))
+    xml_dag = CausalDAG(resources_dir / "dag.xml")
     assert dot_dag.nodes == xml_dag.nodes
     assert dot_dag.edges == xml_dag.edges
+
+
+@pytest.mark.parametrize("filename", ["dag.dot", "dag.xml"])
+def test_path_object(resources_dir, filename):
+    """Test that loading a CausalDAG from a pathlib.Path gives the same DAG as loading it from a string."""
+    path = resources_dir / filename
+    path_dag = CausalDAG(path)
+    str_dag = CausalDAG(str(path))
+    # graphs_equal also compares graph, node, and edge attributes
+    assert nx.utils.graphs_equal(path_dag, str_dag)
+    assert path_dag.number_of_nodes() > 0, f"Expected {filename} to contain a non-empty DAG"
+
+
+def test_uppercase_file_extension(tmp_path):
+    """Test that file extensions are matched case-insensitively."""
+    dag = CausalDAG(write_dot(tmp_path, "dag.DOT", "digraph DAG { X -> Y; }"))
+    assert set(dag.edges) == {("X", "Y")}
 
 
 def test_invalid_file_extension():

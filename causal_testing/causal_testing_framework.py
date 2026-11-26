@@ -4,6 +4,7 @@ This module implements the CausalTestingFramework class, which is the main inter
 
 import json
 import logging
+import os
 from importlib.metadata import entry_points
 from pathlib import Path
 
@@ -65,7 +66,7 @@ class CausalTestingFramework:
 
     def setup(
         self,
-        dag_path: str = None,
+        dag_path: str | os.PathLike = None,
         data_paths: list[str] = None,
         test_cases_path: str = None,
         ignore_cycles: bool = False,
@@ -90,7 +91,7 @@ class CausalTestingFramework:
         if test_cases_path is not None:
             self.load_test_cases_from_json(test_cases_path)
 
-    def load_dag(self, dag_path: str, ignore_cycles: bool = False):
+    def load_dag(self, dag_path: str | os.PathLike, ignore_cycles: bool = False):
         """
         Load the causal DAG from the specified file path.
 
