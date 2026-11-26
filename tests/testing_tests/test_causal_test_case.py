@@ -234,7 +234,13 @@ def test_to_dict(df):
                 "ci_low": {"A": 4.0},
                 "ci_high": {"A": 4.0},
             },
-            "adequacy": {"kurtosis": {"A": 0.0}, "passing": 100, "successful": 100, "bootstrap_size": 100},
+            "adequacy": {
+                "kurtosis": {"A": 0.0},
+                "kurtosis_simplified": {"A": 100.0},
+                "passing": 100,
+                "successful": 100,
+                "bootstrap_size": 100,
+            },
             "effect_direction": "Positive",
         },
     }

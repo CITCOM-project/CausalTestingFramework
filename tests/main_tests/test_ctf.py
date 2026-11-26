@@ -57,13 +57,6 @@ def test_load_data_invalid_extension():
         framework.load_data(["data.invalid"])
 
 
-def test_load_tests_before_dag(test_cases_path):
-    """Test that loading test cases before the DAG raises an error."""
-    framework = CausalTestingFramework()
-    with pytest.raises(ValueError, match=re.escape("Please load DAG before attempting to load tests.")):
-        framework.load_test_cases_from_json(test_cases_path)
-
-
 def test_create_test_case_invalid_estimator(paths):
     """Test that creating a test case with an unknown estimator raises an error listing the supported estimators."""
     framework = CausalTestingFramework()

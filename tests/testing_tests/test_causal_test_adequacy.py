@@ -151,6 +151,7 @@ def test_to_dict(df):
 
     expected_dict = {
         "kurtosis": {"test_input": 0.0},
+        "kurtosis_simplified": {"test_input": 100.0},
         "passing": bootstrap_size,
         "successful": bootstrap_size,
         "bootstrap_size": bootstrap_size,
