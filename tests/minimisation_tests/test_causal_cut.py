@@ -1,3 +1,7 @@
+"""
+This module implements tests for the CausalCut test minimisation tool.
+"""
+
 import random
 
 import pandas as pd
@@ -75,8 +79,8 @@ def _causal_dag():
 
 
 @pytest.fixture(name="dummy_data")
-def _dummy_data():
-    return pd.read_csv("tests/resources/data/dummy_pump_data.csv", index_col=0)
+def _dummy_data(resources_dir):
+    return pd.read_csv(resources_dir / "dummy_pump_data.csv", index_col=0)
 
 
 def test_estimate_intervention_causality(causal_dag, dummy_data):

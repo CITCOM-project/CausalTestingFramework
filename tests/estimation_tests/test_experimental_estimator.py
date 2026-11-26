@@ -1,4 +1,8 @@
-import unittest
+"""
+This module tests the ExperimentalEstimator.
+"""
+
+import pytest
 
 from causal_testing.estimation.experimental_estimator import ExperimentalEstimator
 
@@ -9,6 +13,9 @@ class SystemUnderTest:
     """
 
     def run(self, x):
+        """
+        Return double the input.
+        """
         return x * 2
 
 
@@ -27,37 +34,37 @@ class ConcreteExperimentalEstimator(ExperimentalEstimator):
         return {"Y": sut.run(configuration["X"])}
 
 
-class TestExperimentalEstimator(unittest.TestCase):
+@pytest.fixture(name="estimator")
+def _estimator():
     """
-    Test the experimental estimator.
+    Fresh estimator for each test.
     """
+    return ConcreteExperimentalEstimator(
+        treatment_variable="X",
+        outcome_variable="Y",
+        treatment_value=2,
+        control_value=1,
+        adjustment_config={},
+        alpha=0.05,
+        repeats=200,
+    )
 
-    def test_estimate_ate(self):
-        estimator = ConcreteExperimentalEstimator(
-            treatment_variable="X",
-            outcome_variable="Y",
-            treatment_value=2,
-            control_value=1,
-            adjustment_config={},
-            alpha=0.05,
-            repeats=200,
-        )
-        effect_estimate = estimator.estimate_ate()
-        self.assertEqual(effect_estimate.effect_estimate["X"], 2)
-        self.assertEqual(effect_estimate.ci_low["X"], 2)
-        self.assertEqual(effect_estimate.ci_high["X"], 2)
 
-    def test_estimate_risk_ratio(self):
-        estimator = ConcreteExperimentalEstimator(
-            treatment_variable="X",
-            outcome_variable="Y",
-            treatment_value=2,
-            control_value=1,
-            adjustment_config={},
-            alpha=0.05,
-            repeats=200,
-        )
-        effect_estimate = estimator.estimate_risk_ratio()
-        self.assertEqual(effect_estimate.effect_estimate["X"], 2)
-        self.assertEqual(effect_estimate.ci_low["X"], 2)
-        self.assertEqual(effect_estimate.ci_high["X"], 2)
+def test_estimate_ate(estimator):
+    """
+    Test ATE estimation.
+    """
+    effect_estimate = estimator.estimate_ate()
+    assert effect_estimate.effect_estimate["X"] == 2
+    assert effect_estimate.ci_low["X"] == 2
+    assert effect_estimate.ci_high["X"] == 2
+
+
+def test_estimate_risk_ratio(estimator):
+    """
+    Test risk ratio estimation.
+    """
+    effect_estimate = estimator.estimate_risk_ratio()
+    assert effect_estimate.effect_estimate["X"] == 2
+    assert effect_estimate.ci_low["X"] == 2
+    assert effect_estimate.ci_high["X"] == 2

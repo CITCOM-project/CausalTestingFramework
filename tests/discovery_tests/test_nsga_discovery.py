@@ -2,55 +2,51 @@
 This module tests the NSGA Discovery algorithm.
 """
 
-import unittest
-
-import networkx as nx
 import numpy as np
-import pandas as pd
 
 from causal_testing.discovery.nsga_discovery import NSGADiscovery
 from causal_testing.specification.causal_dag import CausalDAG
 
 
-class TestNSGA(unittest.TestCase):
+def test_binary_string_to_causal_dag(scarf_df):
+    """
+    Test that converting a CausalDAG to a binary string and back yields the original DAG.
+    """
+    dag = CausalDAG()
+    dag.add_nodes_from(scarf_df.columns)
+    dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
+    nsga = NSGADiscovery(scarf_df)
 
-    def test_binary_string_to_causal_dag(self):
-        scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
-        dag = CausalDAG()
-        dag.add_nodes_from(scarf_df.columns)
-        dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
-        nsga = NSGADiscovery(scarf_df)
+    back_translated_dag = nsga.binary_string_to_causal_dag(nsga.causal_dag_to_binary_string(dag))
 
-        back_translated_dag = nsga.binary_string_to_causal_dag(nsga.causal_dag_to_binary_string(dag))
+    assert dag.nodes == back_translated_dag.nodes
+    assert dag.edges == back_translated_dag.edges
 
-        self.assertEqual(dag.nodes, back_translated_dag.nodes)
-        self.assertEqual(dag.edges, back_translated_dag.edges)
 
-    def test_multiobjective_fitness(self):
-        scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
-        dag = CausalDAG()
-        dag.add_nodes_from(scarf_df.columns)
-        dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
-        nsga = NSGADiscovery(scarf_df)
+def test_multiobjective_fitness(scarf_df):
+    """
+    Test that multi_objective_fitness returns the expected fitness vector for the scarf example.
+    """
+    dag = CausalDAG()
+    dag.add_nodes_from(scarf_df.columns)
+    dag.add_edges_from([("length_in", "completed"), ("large_gauge", "completed")])
+    nsga = NSGADiscovery(scarf_df)
 
-        expected = np.array([2, 2, 2, 0.0, 0.0, 2])
-        multiobjective_fitness = nsga.multi_objective_fitness(None, nsga.causal_dag_to_binary_string(dag), None)
-        self.assertTrue(
-            np.array_equal(multiobjective_fitness, expected), f"Arrays differ: {expected} != {multiobjective_fitness}"
-        )
+    expected = np.array([2, 2, 2, 0.0, 0.0, 2])
+    multiobjective_fitness = nsga.multi_objective_fitness(None, nsga.causal_dag_to_binary_string(dag), None)
+    np.testing.assert_array_equal(multiobjective_fitness, expected)
 
-    def test_discovery_edges(self):
-        scarf_df = pd.read_csv("tests/resources/data/scarf_data.csv")
-        hill_climber = NSGADiscovery(
-            scarf_df,
-            include_edges=[("length_in", "completed")],
-            exclude_edges=[("color", "length_in")],
-            max_iterations=20,
-        )
-        dag = hill_climber.discover()
-        self.assertTrue(
-            ("length_in", "completed") in dag.edges, f"Expected ('length_in', 'completed') to be in {dag.edges}"
-        )
-        self.assertFalse(
-            ("color", "completed") in dag.edges, f"Expected ('color', 'completed') NOT to be in {dag.edges}"
-        )
+
+def test_discovery_edges(scarf_df):
+    """
+    Test that the discovered DAG contains the included edges and not the excluded edges.
+    """
+    nsga = NSGADiscovery(
+        scarf_df,
+        include_edges=[("length_in", "completed")],
+        exclude_edges=[("color", "length_in")],
+        max_iterations=20,
+    )
+    dag = nsga.discover()
+    assert ("length_in", "completed") in dag.edges, f"Expected ('length_in', 'completed') to be in {dag.edges}"
+    assert ("color", "completed") not in dag.edges, f"Expected ('color', 'completed') NOT to be in {dag.edges}"

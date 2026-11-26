@@ -352,6 +352,9 @@ ignored-parents=
 # Maximum number of arguments for function / method.
 max-args=12
 
+# Maximum number of positional arguments for function / method.
+max-positional-arguments=12
+
 # Maximum number of attributes for a class (see R0902).
 max-attributes=10
 

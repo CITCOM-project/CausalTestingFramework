@@ -23,7 +23,7 @@ To contribute to our work, please ensure the following:
 Our CI/CD tests include:
     - Build: Install the necessary Python and runtime dependencies.
     - Linting: [pylint](https://pypi.org/project/pylint/) is employed for our code linter and analyser.
-    - Testing: We use the [unittest]() module to develop our tests and the [pytest](https://pytest.org/en/latest/) framework as our test discovery.
+    - Testing: We use the [pytest](https://pytest.org/en/latest/) module to develop and run our tests.
     - Formatting: We use [black](https://pypi.org/project/black/) for our code formatting.
 
 To find the other (optional) developer dependencies, please check `pyproject.toml`.

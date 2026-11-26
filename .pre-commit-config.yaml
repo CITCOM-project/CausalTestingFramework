@@ -36,8 +36,8 @@ repos:
         entry: pylint
         language: system
         types: [python]
-        args: ['--rcfile=.pylintrc', '--max-line-length=120', '--max-positional-arguments=12', '--disable=W1401']
-        files: ^causal_testing/
+        args: ['--rcfile=.pylintrc']
+        files: ^(causal_testing|tests)/
 
   - repo: https://github.com/jsh9/pydoclint
     rev: 0.8.3

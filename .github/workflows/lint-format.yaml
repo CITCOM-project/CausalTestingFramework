@@ -11,23 +11,29 @@ concurrency:
 
 jobs:
   build:
-    name: MegaLinter
+    name: Pre-commit checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: MegaLinter
-        id: ml
-        uses: oxsecurity/megalinter/flavors/python@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For detailed check status
-
-      - name: Archive production artifacts
-        if: ${{ success() }} || ${{ failure() }}
-        uses: actions/upload-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: MegaLinter reports
-          path: |
-            megalinter-reports
-            mega-linter.log
+          python-version: 3.12
+          cache: pip
+
+      - name: Install dependencies
+        # pylint runs as a local (system) hook, so it needs the project and its dev dependencies installed
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files --show-diff-on-failure

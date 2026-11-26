@@ -145,8 +145,8 @@ class GP:
             self.pset.addPrimitive(func, 1, name=name)
             if name in self.sympy_conversions:
                 raise ValueError(
-                    f"You have provided a function called {name}, which is reserved for raising to power"
-                    f"{i}. Please choose a different name for your function."
+                    f"You have provided a function called {name}, which is reserved for raising to power {i}. "
+                    "Please choose a different name for your function."
                 )
             self.sympy_conversions[name] = conversion
 

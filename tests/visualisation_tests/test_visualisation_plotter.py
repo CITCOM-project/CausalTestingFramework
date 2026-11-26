@@ -1,4 +1,4 @@
-from pathlib import Path
+"""This module tests the VisualisationPlotter class."""
 
 import holoviews as hv
 import pandas as pd
@@ -28,10 +28,8 @@ def _dag() -> CausalTestingFramework:
 
 
 @pytest.fixture(name="plotter")
-def _plotter(dag) -> VisualisationPlotter:
-    return VisualisationPlotter(
-        dag=dag, df=pd.read_csv(Path(__file__).parent.parent / "resources" / "data" / "doubling_beta_results.csv")
-    )
+def _plotter(dag, resources_dir) -> VisualisationPlotter:
+    return VisualisationPlotter(dag=dag, df=pd.read_csv(resources_dir / "doubling_beta_results.csv"))
 
 
 def test_results_dag(dag, plotter):
@@ -97,7 +95,10 @@ def test_interactive_results_dag(dag, plotter):
             assert edge_data is None, "Passing independence tests should not have edges in the result DAG."
 
 
-def test_outcome_adjacency(dag, plotter):
+def test_outcome_adjacency(plotter):
+    """
+    Test that the outcome adjacency heatmap has the expected axes and colours each cell according to its test outcome.
+    """
     heatmap = plotter.outcome_adjacency()
     # Check correct axes
     assert [kdim.name for kdim in heatmap.kdims] == [
@@ -113,7 +114,7 @@ def test_outcome_adjacency(dag, plotter):
 
     df = pd.DataFrame(glyph_renderer.data_source.data)
     category_color_map = dict(zip(color_mapper.factors, color_mapper.palette))
-    df["rendered_color"] = df[fill_color_transform.field].apply(lambda c: category_color_map.get(c))
+    df["rendered_color"] = df[fill_color_transform.field].apply(category_color_map.get)
 
     test_df = plotter.df.copy()
     test_df["expected_color"] = [

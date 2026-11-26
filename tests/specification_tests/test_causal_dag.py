@@ -1,478 +1,430 @@
-import os
-import shutil
-import tempfile
-import unittest
+"""
+This module tests the main functionality of the CausalDAG class, primarily to do with identification.
+"""
+
+import re
+from pathlib import Path
 
 import networkx as nx
+import pytest
 
-from causal_testing.specification.causal_dag import CausalDAG, close_separator, list_all_min_sep
+from causal_testing.specification.causal_dag import CausalDAG
 
 
-class TestCausalDAGIssue90(unittest.TestCase):
+def write_dot(tmp_path: Path, filename: str, dot: str) -> Path:
+    """
+    Write a DOT graph to a temporary file and return its path.
+    """
+    path = tmp_path / filename
+    path.write_text(dot)
+    return path
+
+
+@pytest.fixture(name="issue_90_dag_path")
+def _issue_90_dag_path(tmp_path):
+    """
+    Path to a DAG in which Z confounds X and is also a cause of the mediator M.
+    """
+    return write_dot(tmp_path, "dag.dot", "digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }")
+
+
+@pytest.fixture(name="iv_dag_path")
+def _iv_dag_path(tmp_path):
+    """
+    Path to a DAG in which I is a valid instrument for the effect of X on Y, with U an unobserved confounder.
+    """
+    return write_dot(tmp_path, "dag.dot", "digraph G { I -> X; X -> Y; U -> X; U -> Y;}")
+
+
+@pytest.fixture(name="acyclic_dag_path")
+def _acyclic_dag_path(tmp_path):
+    """
+    Path to a simple acyclic DAG.
+    """
+    return write_dot(tmp_path, "dag.dot", "digraph G { A -> B; B -> C; D -> A; D -> C;}")
+
+
+@pytest.fixture(name="two_cycle_dcg_path")
+def _two_cycle_dcg_path(tmp_path):
+    """
+    Path to a directed graph containing the cycle A -> B -> A.
+    """
+    return write_dot(tmp_path, "dcg.dot", "digraph G { A -> B; B -> A; }")
+
+
+@pytest.fixture(name="cyclic_dag_path")
+def _cyclic_dag_path(tmp_path):
+    """
+    Path to a directed graph containing the cycle A -> B -> C -> A.
+    """
+    return write_dot(tmp_path, "dag.dot", "digraph G { A -> B; B -> C; D -> A; D -> C; C -> A;}")
+
+
+@pytest.fixture(name="identification_dag_path")
+def _identification_dag_path(tmp_path):
+    """
+    Path to the DAG used to test the identification algorithms.
+    """
+    return write_dot(tmp_path, "dag.dot", "digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}")
+
+
+def test_graphml(issue_90_dag_path, resources_dir):
+    """Test that a DAG loaded from a GraphML (.xml) file matches the same DAG loaded from a DOT file."""
+    dot_dag = CausalDAG(issue_90_dag_path)
+    xml_dag = CausalDAG(resources_dir / "dag.xml")
+    assert dot_dag.nodes == xml_dag.nodes
+    assert dot_dag.edges == xml_dag.edges
+
+
+@pytest.mark.parametrize("filename", ["dag.dot", "dag.xml"])
+def test_path_object(resources_dir, filename):
+    """Test that loading a CausalDAG from a pathlib.Path gives the same DAG as loading it from a string."""
+    path = resources_dir / filename
+    path_dag = CausalDAG(path)
+    str_dag = CausalDAG(str(path))
+    # graphs_equal also compares graph, node, and edge attributes
+    assert nx.utils.graphs_equal(path_dag, str_dag)
+    assert path_dag.number_of_nodes() > 0, f"Expected {filename} to contain a non-empty DAG"
+
+
+def test_uppercase_file_extension(tmp_path):
+    """Test that file extensions are matched case-insensitively."""
+    dag = CausalDAG(write_dot(tmp_path, "dag.DOT", "digraph DAG { X -> Y; }"))
+    assert set(dag.edges) == {("X", "Y")}
+
+
+def test_invalid_file_extension():
+    """Test that creating a CausalDAG from a file that is not .dot or .xml raises an error."""
+    with pytest.raises(
+        ValueError, match=re.escape("Unsupported file extension test.csv. We only support .dot and .xml files.")
+    ):
+        CausalDAG("test.csv")
+
+
+def test_enumerate_minimal_adjustment_sets_issue_90(issue_90_dag_path):
     """
     Test the CausalDAG class for the resolution of Issue 90.
+    Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets.
     """
-
-    def setUp(self) -> None:
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph DAG { rankdir=LR; Z -> X; X -> M; M -> Y; Z -> M; }"""
-        with open(self.dag_dot_path, "w") as f:
-            f.write(dag_dot)
-
-    def test_graphml(self):
-        dot_dag = CausalDAG(self.dag_dot_path)
-        xml_dag = CausalDAG(os.path.join("tests", "resources", "data", "dag.xml"))
-        self.assertEqual(dot_dag.nodes, xml_dag.nodes)
-        self.assertEqual(dot_dag.edges, xml_dag.edges)
-
-    def test_invalid_file_extension(self):
-        with self.assertRaises(ValueError) as e:
-            CausalDAG("test.csv")
-            self.assertEqual(e.exception, "Unsupported file extension test.csv. We only support .dot and .xml files.")
-
-    def test_enumerate_minimal_adjustment_sets(self):
-        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys = ["X"], ["Y"]
-        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual([{"Z"}], list(adjustment_sets))
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
+    causal_dag = CausalDAG(issue_90_dag_path)
+    xs, ys = ["X"], ["Y"]
+    adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+    assert [{"Z"}] == list(adjustment_sets)
 
 
-class TestIVAssumptions(unittest.TestCase):
-    def setUp(self) -> None:
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph G { I -> X; X -> Y; U -> X; U -> Y;}"""
-        f = open(self.dag_dot_path, "w")
-        f.write(dag_dot)
-        f.close()
-
-    def test_valid_iv(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        self.assertTrue(causal_dag.check_iv_assumptions("X", "Y", "I"))
-
-    def test_unrelated_instrument(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.remove_edge("I", "X")
-        with self.assertRaises(ValueError):
-            causal_dag.check_iv_assumptions("X", "Y", "I")
-
-    def test_direct_cause(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.add_edge("I", "Y")
-        with self.assertRaises(ValueError):
-            causal_dag.check_iv_assumptions("X", "Y", "I")
-
-    def test_common_cause(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        causal_dag.add_edge("U", "I")
-        with self.assertRaises(ValueError):
-            causal_dag.check_iv_assumptions("X", "Y", "I")
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
+def test_valid_iv(iv_dag_path):
+    """Test that check_iv_assumptions accepts a valid instrument."""
+    causal_dag = CausalDAG(iv_dag_path)
+    assert causal_dag.check_iv_assumptions("X", "Y", "I")
 
 
-class TestCausalDAG(unittest.TestCase):
+def test_unrelated_instrument(iv_dag_path):
+    """Test that check_iv_assumptions rejects an instrument that is not a cause of the treatment."""
+    causal_dag = CausalDAG(iv_dag_path)
+    causal_dag.remove_edge("I", "X")
+    with pytest.raises(ValueError, match=re.escape("Instrument I is not associated with treatment X in the DAG")):
+        causal_dag.check_iv_assumptions("X", "Y", "I")
+
+
+def test_direct_cause(iv_dag_path):
+    """Test that check_iv_assumptions rejects an instrument that affects the outcome other than through the
+    treatment.
     """
-    Test the CausalDAG class for creation of Causal Directed Acyclic Graphs (DAGs).
+    causal_dag = CausalDAG(iv_dag_path)
+    causal_dag.add_edge("I", "Y")
+    with pytest.raises(
+        ValueError, match=re.escape("Instrument I affects the outcome Y other than through the treatment X")
+    ):
+        causal_dag.check_iv_assumptions("X", "Y", "I")
 
-    In particular, confirm whether the Causal DAG class creates valid causal directed acyclic graphs (empty and directed
-    graphs without cycles) and refuses to create invalid (cycle-containing) graphs.
+
+def test_common_cause(iv_dag_path):
+    """Test that check_iv_assumptions rejects an instrument that shares a common cause with the outcome."""
+    causal_dag = CausalDAG(iv_dag_path)
+    causal_dag.add_edge("U", "I")
+    with pytest.raises(ValueError, match=re.escape("Instrument I and outcome Y share common causes")):
+        causal_dag.check_iv_assumptions("X", "Y", "I")
+
+
+def test_valid_causal_dag(acyclic_dag_path):
+    """Test whether the Causal DAG is valid."""
+    causal_dag = CausalDAG(acyclic_dag_path)
+    assert list(causal_dag.nodes) == ["A", "B", "C", "D"]
+    assert list(causal_dag.edges) == [("A", "B"), ("B", "C"), ("D", "A"), ("D", "C")]
+
+
+def test_add_cycle(acyclic_dag_path):
+    """Test that adding an edge that introduces a cycle raises an error."""
+    causal_dag = CausalDAG(acyclic_dag_path)
+    with pytest.raises(nx.HasACycle):
+        causal_dag.add_edge("C", "A")
+
+
+def test_read_cycle(two_cycle_dcg_path):
+    """Test that reading a graph that has a cycle raises an error."""
+    with pytest.raises(nx.HasACycle):
+        CausalDAG(two_cycle_dcg_path)
+
+
+def test_empty_causal_dag():
+    """Test whether an empty dag can be created."""
+    causal_dag = CausalDAG()
+    assert not list(causal_dag.nodes)
+    assert not list(causal_dag.edges)
+
+
+def test_to_dot_string(acyclic_dag_path):
+    """Test that to_dot_string produces the expected DOT representation of the DAG."""
+    causal_dag = CausalDAG(acyclic_dag_path)
+    assert causal_dag.to_dot_string() == """digraph G {\nA -> B;\nB -> C;\nD -> A;\nD -> C;\n}"""
+
+
+def test_invalid_causal_dag(cyclic_dag_path):
+    """Test that reading a graph containing a cycle raises an error."""
+    with pytest.raises(nx.HasACycle):
+        CausalDAG(cyclic_dag_path)
+
+
+def test_ignore_cycles(cyclic_dag_path):
+    """Test that a cyclic graph can be read and used for identification when ignore_cycles is set."""
+    dag = CausalDAG(cyclic_dag_path, ignore_cycles=True)
+    assert dag.identification(treatment_variable="B", outcome_variable="C") == {"A"}
+
+
+def test_direct_effect_adjustment_sets(identification_dag_path):
+    """Test that direct_effect_adjustment_sets finds all adjustment sets for a direct effect."""
+    causal_dag = CausalDAG(identification_dag_path)
+    adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X1"], ["Y"])
+    assert list(adjustment_sets) == [{"D1", "Z"}, {"X2", "Z"}]
+
+
+def test_direct_effect_adjustment_sets_no_adjustment(identification_dag_path):
+    """Test that direct_effect_adjustment_sets returns the empty set when no adjustment is needed."""
+    causal_dag = CausalDAG(identification_dag_path)
+    adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X2"], ["D1"])
+    assert list(adjustment_sets) == [set()]
+
+
+def test_get_indirect_graph(identification_dag_path):
+    """Test that get_indirect_graph removes the edge from treatment to outcome and leaves the rest of the graph
+    unchanged.
     """
+    causal_dag = CausalDAG(identification_dag_path)
+    indirect_graph = causal_dag.get_indirect_graph(["D1"], ["Y"])
+    original_edges = list(causal_dag.edges)
+    original_edges.remove(("D1", "Y"))
+    assert list(indirect_graph.edges) == original_edges
+    assert indirect_graph.nodes == causal_dag.nodes
 
-    def setUp(self) -> None:
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        f = open(self.dag_dot_path, "w")
-        f.write("digraph G { A -> B; B -> C; D -> A; D -> C;}")
 
-        self.dcg_dot_path = os.path.join(self.temp_dir_path, "dcg.dot")
-        f = open(self.dcg_dot_path, "w")
-        f.write("digraph G { A -> B; B -> A; }")
-        f.close()
-
-    def test_valid_causal_dag(self):
-        """Test whether the Causal DAG is valid."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        assert list(causal_dag.nodes) == ["A", "B", "C", "D"] and list(causal_dag.edges) == [
-            ("A", "B"),
-            ("B", "C"),
-            ("D", "A"),
-            ("D", "C"),
+def test_proper_backdoor_graph(identification_dag_path):
+    """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
+    causal_dag = CausalDAG(identification_dag_path)
+    proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(["X1", "X2"], ["Y"])
+    edges = set(
+        [
+            ("X1", "X2"),
+            ("X2", "V"),
+            ("X2", "D2"),
+            ("D1", "D2"),
+            ("D1", "Y"),
+            ("Y", "D3"),
+            ("Z", "X2"),
+            ("Z", "Y"),
         ]
-
-    def test_add_cycle(self):
-        """Test that adding an edge that introduces a cycle raises an error."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        self.assertRaises(nx.HasACycle, causal_dag.add_edge, "C", "A")
-
-    def test_read_cycle(self):
-        """Test that reading a graph that has a cycle raises an error."""
-        self.assertRaises(nx.HasACycle, CausalDAG, self.dcg_dot_path)
-
-    def test_empty_casual_dag(self):
-        """Test whether an empty dag can be created."""
-        causal_dag = CausalDAG()
-        assert list(causal_dag.nodes) == [] and list(causal_dag.edges) == []
-
-    def test_to_dot_string(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        self.assertEqual(causal_dag.to_dot_string(), """digraph G {\nA -> B;\nB -> C;\nD -> A;\nD -> C;\n}""")
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
+    )
+    assert set(proper_backdoor_graph.edges) == edges
 
 
-class TestCyclicCausalDAG(unittest.TestCase):
+def test_proper_backdoor_graph_invalid_treatment(identification_dag_path):
+    """Test that an invalid treatment variable raises an `IndexError`.."""
+    causal_dag = CausalDAG(identification_dag_path)
+    with pytest.raises(IndexError):
+        causal_dag.get_proper_backdoor_graph(["INVALID"], ["Y"])
+
+
+def test_constructive_backdoor_criterion_should_hold(identification_dag_path):
+    """Test whether the constructive criterion holds when it should."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys, zs = ["X1", "X2"], ["Y"], ["Z"]
+    proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+    assert causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs)
+
+
+def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_proper_backdoor_graph(
+    identification_dag_path,
+):
+    """Test whether the constructive criterion fails when the adjustment set is not a d-separator."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys, zs = ["X1", "X2"], ["Y"], ["V"]
+    proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+    assert not causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs)
+
+
+def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_causal_path(identification_dag_path):
+    """Test that the constructive criterion does not hold when the adjustment set Z contains a descendant of a variable
+    on a proper causal path between X and Y."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys, zs = ["X1", "X2"], ["Y"], ["D1"]
+    proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+    assert not causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs)
+
+
+def test_is_min_adjustment_for_min_adjustment(identification_dag_path):
+    """Test whether the minimum adjustment set is minimal."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys, zs = ["X1", "X2"], ["Y"], {"Z"}
+    assert causal_dag.adjustment_set_is_minimal(xs, ys, zs)
+
+
+def test_is_min_adjustment_for_not_min_adjustment(identification_dag_path):
+    """Test whether the minimum adjustment set is not minimal."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys, zs = ["X1", "X2"], ["Y"], {"Z", "V"}
+    assert not causal_dag.adjustment_set_is_minimal(xs, ys, zs)
+
+
+def test_is_min_adjustment_for_invalid_adjustment(identification_dag_path):
+    """Test correct identification of an invalid minimum adjustment set."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys, zs = ["X1", "X2"], ["Y"], set()
+    with pytest.raises(ValueError, match=re.escape("set() is not a valid adjustment set.")):
+        causal_dag.adjustment_set_is_minimal(xs, ys, zs)
+
+
+def test_get_ancestor_graph_of_causal_dag(identification_dag_path):
+    """Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys = ["X1", "X2"], ["Y"]
+    ancestor_graph = causal_dag.get_ancestor_graph(xs, ys)
+    assert list(ancestor_graph.nodes) == ["X1", "X2", "D1", "Y", "Z"]
+    assert list(ancestor_graph.edges) == [("X1", "X2"), ("X2", "D1"), ("D1", "Y"), ("Z", "X2"), ("Z", "Y")]
+
+
+def test_get_ancestor_graph_of_proper_backdoor_graph(identification_dag_path):
+    """Test whether get_ancestor_graph converts a CausalDAG to the correct proper back-door graph."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys = ["X1", "X2"], ["Y"]
+    proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
+    ancestor_graph = proper_backdoor_graph.get_ancestor_graph(xs, ys)
+    assert list(ancestor_graph.nodes) == ["X1", "X2", "D1", "Y", "Z"]
+    assert list(ancestor_graph.edges) == [("X1", "X2"), ("D1", "Y"), ("Z", "X2"), ("Z", "Y")]
+
+
+def test_enumerate_minimal_adjustment_sets(identification_dag_path):
+    """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
+    causal_dag = CausalDAG(identification_dag_path)
+    xs, ys = ["X1", "X2"], ["Y"]
+    adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+    assert [{"Z"}] == list(adjustment_sets)
+
+
+def test_identification_total_effect():
+    """Test whether identification works for total effect."""
+    causal_dag = CausalDAG()
+    causal_dag.add_edges_from([("X", "M"), ("M", "Y")])
+
+    assert set() == causal_dag.identification(treatment_variable="X", outcome_variable="Y", effect_type="total")
+
+
+def test_identification_invalid_effect():
+    """Test that identification raises an error for an effect type other than total or direct."""
+    causal_dag = CausalDAG()
+    with pytest.raises(ValueError, match=re.escape("Causal effect should be 'total' or 'direct', not 'invalid'")):
+        causal_dag.identification(treatment_variable="X", outcome_variable="Y", effect_type="invalid")
+
+
+def test_enumerate_minimal_adjustment_sets_multiple():
+    """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
+    causal_dag = CausalDAG()
+    causal_dag.add_edges_from(
+        [
+            ("X1", "X2"),
+            ("X2", "V"),
+            ("Z1", "X2"),
+            ("Z1", "Z2"),
+            ("Z2", "Z3"),
+            ("Z3", "Y"),
+            ("D1", "Y"),
+            ("D1", "D2"),
+            ("Y", "D3"),
+        ]
+    )
+    xs, ys = ["X1", "X2"], ["Y"]
+    adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+    set_of_adjustment_sets = set(frozenset(min_separator) for min_separator in adjustment_sets)
+    assert {frozenset({"Z1"}), frozenset({"Z2"}), frozenset({"Z3"})} == set_of_adjustment_sets
+
+
+def test_enumerate_minimal_adjustment_sets_two_adjustments():
+    """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets of arity two."""
+    causal_dag = CausalDAG()
+    causal_dag.add_edges_from(
+        [
+            ("X1", "X2"),
+            ("X2", "V"),
+            ("Z1", "X2"),
+            ("Z1", "Z2"),
+            ("Z2", "Z3"),
+            ("Z3", "Y"),
+            ("D1", "Y"),
+            ("D1", "D2"),
+            ("Y", "D3"),
+            ("Z4", "X1"),
+            ("Z4", "Y"),
+            ("X2", "D1"),
+        ]
+    )
+    xs, ys = ["X1", "X2"], ["Y"]
+    adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+    set_of_adjustment_sets = set(frozenset(min_separator) for min_separator in adjustment_sets)
+    assert {frozenset({"Z1", "Z4"}), frozenset({"Z2", "Z4"}), frozenset({"Z3", "Z4"})} == set_of_adjustment_sets
+
+
+def test_dag_with_non_character_nodes():
+    """Test identification for a DAG whose nodes are strings of length greater than 1."""
+    causal_dag = CausalDAG()
+    causal_dag.add_edges_from(
+        [
+            ("va", "ba"),
+            ("ba", "ia"),
+            ("ba", "da"),
+            ("ba", "ra"),
+            ("la", "va"),
+            ("la", "aa"),
+            ("aa", "ia"),
+            ("aa", "da"),
+            ("aa", "ra"),
+        ]
+    )
+    xs, ys = ["ba"], ["da"]
+    adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
+    assert list(adjustment_sets) == [{"aa"}, {"la"}, {"va"}]
+
+
+def test_impossible_identification():
+    """Test that identification raises an error when the only valid adjustment set contains a node in
+    nodes_to_ignore.
     """
-    Test the creation of a cyclic causal graph.
-    """
+    causal_dag = CausalDAG()
+    causal_dag.add_edges_from([("X", "M"), ("M", "Y"), ("X", "Y")])
 
-    def setUp(self) -> None:
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph G { A -> B; B -> C; D -> A; D -> C; C -> A;}"""
-        f = open(self.dag_dot_path, "w")
-        f.write(dag_dot)
-        f.close()
+    assert causal_dag.identification(treatment_variable="X", outcome_variable="Y") == {"M"}
 
-    def test_invalid_causal_dag(self):
-        self.assertRaises(nx.HasACycle, CausalDAG, self.dag_dot_path)
-
-    def test_ignore_cycles(self):
-        dag = CausalDAG(self.dag_dot_path, ignore_cycles=True)
-        self.assertEqual(dag.identification(treatment_variable="B", outcome_variable="C"), {"A"})
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
-
-
-class TestDAGDirectEffectIdentification(unittest.TestCase):
-    """
-    Test the Causal DAG identification algorithms and supporting algorithms.
-    """
-
-    def setUp(self) -> None:
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
-        f = open(self.dag_dot_path, "w")
-        f.write(dag_dot)
-        f.close()
-
-    def test_direct_effect_adjustment_sets(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X1"], ["Y"])
-        self.assertEqual(list(adjustment_sets), [{"D1", "Z"}, {"X2", "Z"}])
-
-    def test_direct_effect_adjustment_sets_no_adjustment(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        adjustment_sets = causal_dag.direct_effect_adjustment_sets(["X2"], ["D1"])
-        self.assertEqual(list(adjustment_sets), [set()])
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
-
-
-class TestDAGIdentification(unittest.TestCase):
-    """
-    Test the Causal DAG identification algorithms and supporting algorithms.
-    """
-
-    def setUp(self) -> None:
-        self.temp_dir_path = tempfile.mkdtemp()
-        self.dag_dot_path = os.path.join(self.temp_dir_path, "dag.dot")
-        dag_dot = """digraph G { X1->X2;X2->V;X2->D1;X2->D2;D1->Y;D1->D2;Y->D3;Z->X2;Z->Y;}"""
-        f = open(self.dag_dot_path, "w")
-        f.write(dag_dot)
-        f.close()
-
-    def test_get_indirect_graph(self):
-        causal_dag = CausalDAG(self.dag_dot_path)
-        indirect_graph = causal_dag.get_indirect_graph(["D1"], ["Y"])
-        original_edges = list(causal_dag.edges)
-        original_edges.remove(("D1", "Y"))
-        self.assertEqual(list(indirect_graph.edges), original_edges)
-        self.assertEqual(indirect_graph.nodes, causal_dag.nodes)
-
-    def test_proper_backdoor_graph(self):
-        """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(["X1", "X2"], ["Y"])
-        edges = set(
-            [
-                ("X1", "X2"),
-                ("X2", "V"),
-                ("X2", "D2"),
-                ("D1", "D2"),
-                ("D1", "Y"),
-                ("Y", "D3"),
-                ("Z", "X2"),
-                ("Z", "Y"),
-            ]
-        )
-        self.assertTrue(set(proper_backdoor_graph.edges).issubset(edges))
-
-    def test_proper_backdoor_graph_invalid_tratment(self):
-        """Test whether converting a Causal DAG to a proper back-door graph works correctly."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        with self.assertRaises(IndexError):
-            causal_dag.get_proper_backdoor_graph(["INVALID"], ["Y"])
-
-    def test_constructive_backdoor_criterion_should_hold(self):
-        """Test whether the constructive criterion holds when it should."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys, zs = ["X1", "X2"], ["Y"], ["Z"]
-        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
-        self.assertTrue(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
-
-    def test_constructive_backdoor_criterion_should_not_hold_not_d_separator_in_proper_backdoor_graph(
-        self,
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Could not find a suitable adjustment set for the direct effect of X on Y while avoiding nodes in set "
+            "{'M'}."
+        ),
     ):
-        """Test whether the constructive criterion fails when the adjustment set is not a d-separator."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys, zs = ["X1", "X2"], ["Y"], ["V"]
-        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
-        self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
-
-    def test_constructive_backdoor_criterion_should_not_hold_descendent_of_proper_causal_path(
-        self,
-    ):
-        """Test whether the constructive criterion holds when the adjustment set Z contains a descendent of a variable
-        on a proper causal path between X and Y."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys, zs = ["X1", "X2"], ["Y"], ["D1"]
-        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
-        self.assertFalse(causal_dag.constructive_backdoor_criterion(proper_backdoor_graph, xs, ys, zs))
-
-    def test_is_min_adjustment_for_min_adjustment(self):
-        """Test whether is_min_adjustment can correctly test whether the minimum adjustment set is minimal."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys, zs = ["X1", "X2"], ["Y"], {"Z"}
-        self.assertTrue(causal_dag.adjustment_set_is_minimal(xs, ys, zs))
-
-    def test_is_min_adjustment_for_not_min_adjustment(self):
-        """Test whether is_min_adjustment can correctly test whether the minimum adjustment set is not minimal."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys, zs = ["X1", "X2"], ["Y"], {"Z", "V"}
-        self.assertFalse(causal_dag.adjustment_set_is_minimal(xs, ys, zs))
-
-    def test_is_min_adjustment_for_invalid_adjustment(self):
-        """Test whether is min_adjustment can correctly identify that the minimum adjustment set is invalid."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys, zs = ["X1", "X2"], ["Y"], set()
-        self.assertRaises(ValueError, causal_dag.adjustment_set_is_minimal, xs, ys, zs)
-
-    def test_get_ancestor_graph_of_causal_dag(self):
-        """Test whether get_ancestor_graph converts a CausalDAG to the correct ancestor graph."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys = ["X1", "X2"], ["Y"]
-        ancestor_graph = causal_dag.get_ancestor_graph(xs, ys)
-        self.assertEqual(list(ancestor_graph.nodes), ["X1", "X2", "D1", "Y", "Z"])
-        self.assertEqual(
-            list(ancestor_graph.edges),
-            [("X1", "X2"), ("X2", "D1"), ("D1", "Y"), ("Z", "X2"), ("Z", "Y")],
-        )
-
-    def test_get_ancestor_graph_of_proper_backdoor_graph(self):
-        """Test whether get_ancestor_graph converts a CausalDAG to the correct proper back-door graph."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys = ["X1", "X2"], ["Y"]
-        proper_backdoor_graph = causal_dag.get_proper_backdoor_graph(xs, ys)
-        ancestor_graph = proper_backdoor_graph.get_ancestor_graph(xs, ys)
-        self.assertEqual(list(ancestor_graph.nodes), ["X1", "X2", "D1", "Y", "Z"])
-        self.assertEqual(
-            list(ancestor_graph.edges),
-            [("X1", "X2"), ("D1", "Y"), ("Z", "X2"), ("Z", "Y")],
-        )
-
-    def test_enumerate_minimal_adjustment_sets(self):
-        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum sized adjustment sets."""
-        causal_dag = CausalDAG(self.dag_dot_path)
-        xs, ys = ["X1", "X2"], ["Y"]
-        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual([{"Z"}], list(adjustment_sets))
-
-    def test_identification_total_effect(self):
-        """Test whether identification works for total effect."""
-        causal_dag = CausalDAG()
-        causal_dag.add_edges_from([("X", "M"), ("M", "Y")])
-
-        self.assertEqual(
-            set(), causal_dag.identification(treatment_variable="X", outcome_variable="Y", effect_type="total")
-        )
-
-    def test_identification_invalid_effect(self):
-        causal_dag = CausalDAG()
-        with self.assertRaises(ValueError) as e:
-            causal_dag.identification(treatment_variable="X", outcome_variable="Y", effect_type="invalid")
-            self.assertEqual(e.exception, f"Causal effect should be 'total' or 'direct', not 'invalid'.")
-
-    def test_enumerate_minimal_adjustment_sets_multiple(self):
-        """Test whether enumerate_minimal_adjustment_sets lists all minimum adjustment sets if multiple are possible."""
-        causal_dag = CausalDAG()
-        causal_dag.add_edges_from(
-            [
-                ("X1", "X2"),
-                ("X2", "V"),
-                ("Z1", "X2"),
-                ("Z1", "Z2"),
-                ("Z2", "Z3"),
-                ("Z3", "Y"),
-                ("D1", "Y"),
-                ("D1", "D2"),
-                ("Y", "D3"),
-            ]
-        )
-        xs, ys = ["X1", "X2"], ["Y"]
-        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        set_of_adjustment_sets = set(frozenset(min_separator) for min_separator in adjustment_sets)
-        self.assertEqual(
-            {frozenset({"Z1"}), frozenset({"Z2"}), frozenset({"Z3"})},
-            set_of_adjustment_sets,
-        )
-
-    def test_enumerate_minimal_adjustment_sets_two_adjustments(self):
-        """Test whether enumerate_minimal_adjustment_sets lists all possible minimum adjustment sets of arity two."""
-        causal_dag = CausalDAG()
-        causal_dag.add_edges_from(
-            [
-                ("X1", "X2"),
-                ("X2", "V"),
-                ("Z1", "X2"),
-                ("Z1", "Z2"),
-                ("Z2", "Z3"),
-                ("Z3", "Y"),
-                ("D1", "Y"),
-                ("D1", "D2"),
-                ("Y", "D3"),
-                ("Z4", "X1"),
-                ("Z4", "Y"),
-                ("X2", "D1"),
-            ]
-        )
-        xs, ys = ["X1", "X2"], ["Y"]
-        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        set_of_adjustment_sets = set(frozenset(min_separator) for min_separator in adjustment_sets)
-        self.assertEqual(
-            {frozenset({"Z1", "Z4"}), frozenset({"Z2", "Z4"}), frozenset({"Z3", "Z4"})},
-            set_of_adjustment_sets,
-        )
-
-    def test_dag_with_non_character_nodes(self):
-        """Test identification for a DAG whose nodes are not just characters (strings of length greater than 1)."""
-        causal_dag = CausalDAG()
-        causal_dag.add_edges_from(
-            [
-                ("va", "ba"),
-                ("ba", "ia"),
-                ("ba", "da"),
-                ("ba", "ra"),
-                ("la", "va"),
-                ("la", "aa"),
-                ("aa", "ia"),
-                ("aa", "da"),
-                ("aa", "ra"),
-            ]
-        )
-        xs, ys = ["ba"], ["da"]
-        adjustment_sets = causal_dag.enumerate_minimal_adjustment_sets(xs, ys)
-        self.assertEqual(list(adjustment_sets), [{"aa"}, {"la"}, {"va"}])
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.temp_dir_path)
+        causal_dag.identification(treatment_variable="X", outcome_variable="Y", nodes_to_ignore=["M"])
 
 
-class TestUndirectedGraphAlgorithms(unittest.TestCase):
-    """
-    Test the graph algorithms designed for the undirected graph variants of a Causal DAG.
-    During the identification process, a Causal DAG is converted into several forms of undirected graph which allow for
-    more efficient computation of minimal separators. This suite of tests covers the two main algorithms applied to
-    these forms of undirected graphs (ancestor and moral graphs): close_separator and list_all_min_sep."""
+def test_adjustment_set_nodes_to_ignore():
+    """Test whether identification produces different adjustment sets if nodes_to_ignore is set."""
+    causal_dag = CausalDAG()
+    causal_dag.add_edges_from([("L", "V"), ("V", "X"), ("X", "Y"), ("L", "C"), ("C", "Y")])
 
-    def setUp(self) -> None:
-        self.graph = nx.Graph()
-        self.graph.add_edges_from([("a", 2), ("a", 3), (2, 4), (3, 5), (3, 4), (4, "b"), (5, "b")])
-        self.treatment_node = "a"
-        self.outcome_node = "b"
-        self.treatment_node_set = {"a"}
-        self.outcome_node_set = set(nx.neighbors(self.graph, "b"))
-        self.outcome_node_set.add("b")
-
-    def test_close_separator(self):
-        """Test whether close_separator correctly identifies the close separator of {2,3} in the undirected graph."""
-        result = close_separator(self.graph, self.treatment_node, self.outcome_node, self.treatment_node_set)
-        self.assertEqual({2, 3}, result)
-
-    def test_list_all_min_sep(self):
-        """Test whether list_all_min_sep finds all minimal separators for the undirected graph relative to a and b."""
-        min_separators = list(
-            list_all_min_sep(
-                self.graph,
-                self.treatment_node,
-                self.outcome_node,
-                self.treatment_node_set,
-                self.outcome_node_set,
-            )
-        )
-
-        # Convert list of sets to set of frozen sets for comparison
-        min_separators = set(frozenset(min_separator) for min_separator in min_separators)
-        self.assertEqual({frozenset({2, 3}), frozenset({3, 4}), frozenset({4, 5})}, min_separators)
-
-    def test_close_separator_exception(self):
-        g = nx.Graph()
-        g.add_edges_from([("X", "Y")])
-
-        with self.assertRaises(ValueError) as e:
-            close_separator(
-                graph=g,
-                treatment_node="X",
-                outcome_node="X",
-                treatment_node_set={"Y"},
-            )
-            self.assertEqual(e.exception, "No X-Y separator in the graph.")
-
-
-class TestHiddenVariableDAG(unittest.TestCase):
-    """
-    Test the CausalDAG identification for the exclusion of hidden variables.
-    """
-
-    def test_impossible_identification(self):
-        """Test whether identification produces different adjustment sets if nodes_to_ignore is set."""
-        causal_dag = CausalDAG()
-        causal_dag.add_edges_from([("X", "M"), ("M", "Y"), ("X", "Y")])
-
-        self.assertEqual(causal_dag.identification(treatment_variable="X", outcome_variable="Y"), {"M"})
-
-        with self.assertRaises(ValueError) as e:
-            causal_dag.identification(treatment_variable="X", outcome_variable="Y", nodes_to_ignore=["M"])
-            self.assertEqual(
-                e.exception,
-                "Could not find a suitable adjustment set for the direct effect of X on Y while avoiding nodes in set {M}.",
-            )
-
-    def test_adjustment_set_nodes_to_ignore(self):
-        """Test whether identification produces different adjustment sets if nodes_to_ignore is set."""
-        causal_dag = CausalDAG()
-        causal_dag.add_edges_from([("L", "V"), ("V", "X"), ("X", "Y"), ("L", "C"), ("C", "Y")])
-
-        self.assertEqual(causal_dag.identification(treatment_variable="X", outcome_variable="Y"), {"C"})
-        self.assertEqual(
-            causal_dag.identification(treatment_variable="X", outcome_variable="Y", nodes_to_ignore={"C"}), {"L"}
-        )
-
-
-def time_it(label, func, *args, **kwargs):
-    import time
-
-    start = time.time()
-    result = func(*args, **kwargs)
-    print(f"{label} took {time.time() - start:.6f} seconds")
-    return result
+    assert causal_dag.identification(treatment_variable="X", outcome_variable="Y") == {"C"}
+    assert causal_dag.identification(treatment_variable="X", outcome_variable="Y", nodes_to_ignore={"C"}) == {"L"}
