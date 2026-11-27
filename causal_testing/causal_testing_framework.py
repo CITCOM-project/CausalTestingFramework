@@ -245,6 +245,7 @@ class CausalTestingFramework:
             for test_case in self.test_cases:
                 if test_case.skip:
                     continue
+                effect_estimate = None
                 try:
                     effect_estimate = test_case.estimate_effect(
                         df=self.df.sample(len(self.df), replace=True, random_state=sample_index)
@@ -262,8 +263,8 @@ class CausalTestingFramework:
         sample_results = pd.DataFrame(sample_results)
 
         # Calculate the confidence interval of each column
-        ci_low_inx = round((alpha / 2) * bootstrap_size)
-        ci_high_inx = round(((1 - alpha) / 2) * bootstrap_size)
+        ci_low_inx = round((alpha / 2) * (bootstrap_size - 1))
+        ci_high_inx = round((1 - alpha / 2) * (bootstrap_size - 1))
         for outcome in TestOutcome:
             data = sorted(sample_results[outcome])
             results[f"{outcome.name}_ci_low"] = data[ci_low_inx]
