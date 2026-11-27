@@ -12,7 +12,7 @@ authors = [{ name = "The CITCOM team" }]
 description = "A framework for causal testing using causal directed acyclic graphs."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
-license = { text = "MIT" }
+license = "MIT"
 keywords = ["causal inference","verification"]
 dependencies = [
     "lifelines",
