@@ -201,7 +201,7 @@ class TestCausalTestingFramework(unittest.TestCase):
                 "PASS_ci_low": 0,
                 "PASS_ci_high": 1,
                 "FAIL_ci_low": 0,
-                "FAIL_ci_high": 0,
+                "FAIL_ci_high": 1,
                 "INESTIMABLE_ci_low": 0,
                 "INESTIMABLE_ci_high": 0,
             }
@@ -219,10 +219,10 @@ class TestCausalTestingFramework(unittest.TestCase):
         expected = pd.Series(
             {
                 "FAIL": 1,
-                "FAIL_ci_high": 1,
+                "FAIL_ci_high": 4,
                 "FAIL_ci_low": 0,
                 "INESTIMABLE": 0,
-                "INESTIMABLE_ci_high": 0,
+                "INESTIMABLE_ci_high": 1,
                 "INESTIMABLE_ci_low": 0,
                 "PASS": 5,
                 "PASS_ci_high": 5,
@@ -230,3 +230,55 @@ class TestCausalTestingFramework(unittest.TestCase):
             }
         ).sort_index()
         pd.testing.assert_series_equal(results, expected)
+
+    def test_ctf_evaluate_dag_ci_upper_quantile(self):
+        class StubTestCase:
+            def __init__(self, outcomes):
+                self.skip = False
+                self._outcomes = iter(outcomes)
+                self.expected_causal_effect = type("Effect", (), {"apply": staticmethod(lambda est: est[0])})()
+
+            def execute_test(self, *args, **kwargs):
+                self.result = None
+
+            def estimate_effect(self, df):
+                return (next(self._outcomes),)
+
+        # 20 bootstrap samples where PASS counts are 0, 1, 2, ..., 19 (sorted).
+        # For alpha=0.05, lower index is round(0.025 * 19) = 0 and upper is round(0.975 * 19) = 19,
+        # not round(((1 - 0.05) / 2) * 20) = 10.
+        n_boot = 20
+        cases = [StubTestCase([i > idx for i in range(n_boot)]) for idx in range(n_boot)]
+        framework = CausalTestingFramework(df=pd.DataFrame({"x": [1, 2]}), test_cases=cases)
+        results = framework.evaluate_dag(bootstrap_size=n_boot, alpha=0.05)
+        self.assertEqual(results["PASS_ci_low"], 0)
+        self.assertEqual(results["PASS_ci_high"], 19)
+        self.assertEqual(results["FAIL_ci_low"], 1)
+        self.assertEqual(results["FAIL_ci_high"], 20)
+
+    def test_ctf_evaluate_dag_inestimable_no_stale_estimate(self):
+        class FailingThenPassing:
+            def __init__(self, fail):
+                self.skip = False
+                self._fail = fail
+                self.expected_causal_effect = type("Effect", (), {"apply": staticmethod(lambda est: est[0])})()
+
+            def execute_test(self, *args, **kwargs):
+                self.result = None
+
+            def estimate_effect(self, df):
+                if self._fail:
+                    raise ValueError("singular")
+                return (True,)
+
+        # First test fails (would raise UnboundLocalError if effect_estimate is unbound),
+        # second passes, third fails (would double-count second's estimate if not reset).
+        cases = [FailingThenPassing(True), FailingThenPassing(False), FailingThenPassing(True)]
+        framework = CausalTestingFramework(df=pd.DataFrame({"x": [1, 2]}), test_cases=cases)
+        results = framework.evaluate_dag(bootstrap_size=10, alpha=0.05)
+        self.assertEqual(results["PASS_ci_low"], 1)
+        self.assertEqual(results["PASS_ci_high"], 1)
+        self.assertEqual(results["INESTIMABLE_ci_low"], 2)
+        self.assertEqual(results["INESTIMABLE_ci_high"], 2)
+        self.assertEqual(results["FAIL_ci_low"], 0)
+        self.assertEqual(results["FAIL_ci_high"], 0)
